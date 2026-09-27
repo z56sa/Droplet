@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const btn = document.getElementById('save-logs-settings');
         const originalText = btn.textContent;
-        btn.textContent = t('جاري الحفظ...');
+        btn.textContent = t('Saving...');
         btn.disabled = true;
 
         try {
@@ -49,9 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ settings })
             });
             const result = await res.json();
-            alert(result.success ? t('✅ تم حفظ إعدادات السجلات!') : t('❌ فشل حفظ الإعدادات'));
+            alert(result.success ? t('✅ Log settings saved!') : t('❌ Failed to save log settings'));
         } catch (err) {
-            alert(t('حدث خطأ في الاتصال'));
+            alert(t('Connection error'));
         } finally {
             btn.textContent = originalText;
             btn.disabled = false;
