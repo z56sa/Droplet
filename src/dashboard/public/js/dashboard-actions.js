@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!btn) return;
 
             const originalText = btn.textContent;
-            btn.textContent = t('جارٍ الحفظ...');
+            btn.textContent = t('Saving...');
             btn.disabled = true;
 
             try {
@@ -31,12 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const result = await res.json();
                 if (result.success) {
-                    alert(t('تم الحفظ بنجاح!'));
+                    alert(t('Saved successfully!'));
                 } else {
-                    alert(t('خطأ: ') + (result.error || t('فشل في حفظ الإعدادات')));
+                    alert(t('Error: ') + (result.error || t('Failed to save settings')));
                 }
             } catch (err) {
-                alert(t('حدث خطأ في الاتصال بالسيرفر'));
+                alert(t('Server connection error'));
             } finally {
                 btn.textContent = originalText;
                 btn.disabled = false;
