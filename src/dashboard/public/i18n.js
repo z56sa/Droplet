@@ -725,12 +725,20 @@
         // placeholders, IDs, or already translated English text.
         if (targetLang === "en" && /[\u0600-\u06FF]/.test(result)) {
             result = result.replace(/[\u0600-\u06FF]+/g, function (word) {
-                const clean = word.trim();
-                return fallbackWords[clean] || word;
+                return translateFallbackWord(word);
             });
         }
 
         return result;
+    }
+
+    function translateFallbackWord(word) {
+        if (fallbackWords[word]) return fallbackWords[word];
+        const candidates = [word, "ال" + word, "و" + word, "وال" + word, "ب" + word, "بال" + word, "ل" + word, "لل" + word];
+        for (const candidate of candidates) {
+            if (fallbackWords[candidate]) return fallbackWords[candidate];
+        }
+        return word;
     }
 
     /**
