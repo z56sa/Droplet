@@ -132,6 +132,7 @@
         "ذكي": "Smart",
 
         // Common General Buttons & Texts
+        "خروج": "Logout",
         "تفعيل": "Enable",
         "تعطيل": "Disable",
         "حذف": "Delete",
@@ -563,7 +564,12 @@
         }
     }
 
-    const STORAGE_KEY = "zeno-dashboard-lang";
+    // Match the storage keys already used by the landing page's inline
+    // toggleZenoLang() script, so language stays in sync across the whole
+    // site (landing page + every dashboard page) instead of each page
+    // keeping its own separate preference.
+    const STORAGE_KEYS = ["zeno_dashboard_lang", "zeno_lang"];
+    const COOKIE_NAME = "zeno_dashboard_lang";
     const ATTRS_TO_TRANSLATE = ["placeholder", "title", "aria-label", "value"];
     // Only translate `value` for these input types (buttons/submits), never text inputs
     const VALUE_TRANSLATABLE_TYPES = ["button", "submit", "reset"];
@@ -650,19 +656,28 @@
     }
 
     function getSavedLanguage() {
-        try {
-            return localStorage.getItem(STORAGE_KEY);
-        } catch (e) {
-            return null;
+        for (const key of STORAGE_KEYS) {
+            try {
+                const v = localStorage.getItem(key);
+                if (v === "ar" || v === "en") return v;
+            } catch (e) { /* ignore */ }
         }
+        try {
+            const match = document.cookie.match(
+                new RegExp("(?:^|; )" + COOKIE_NAME + "=([^;]+)")
+            );
+            if (match && (match[1] === "ar" || match[1] === "en")) return match[1];
+        } catch (e) { /* ignore */ }
+        return null;
     }
 
     function saveLanguage(lang) {
+        STORAGE_KEYS.forEach(function (key) {
+            try { localStorage.setItem(key, lang); } catch (e) { /* ignore */ }
+        });
         try {
-            localStorage.setItem(STORAGE_KEY, lang);
-        } catch (e) {
-            /* ignore (private mode / storage disabled) */
-        }
+            document.cookie = COOKIE_NAME + "=" + lang + ";path=/;max-age=31536000;SameSite=Lax";
+        } catch (e) { /* ignore */ }
     }
 
     function detectInitialLanguage() {
@@ -677,15 +692,36 @@
 
     let currentLang = "ar";
 
-    function setLanguage(lang) {
+    /**
+     * Switch language. Server-rendered dashboard pages only show the
+     * correct language after a fresh page load (the server bakes translated
+     * strings into the HTML), so this persists the choice then reloads —
+     * same pattern as the landing page's toggleZenoLang(). Pass
+     * { reload:false } to only patch the DOM client-side without reloading
+     * (useful for pages with no server-side translation at all).
+     */
+    function setLanguage(lang, options) {
         if (lang !== "ar" && lang !== "en") return;
         currentLang = lang;
-        applyLanguage(lang, document.body);
         saveLanguage(lang);
+        applyLanguage(lang, document.body); // instant feedback before reload
+        const shouldReload = !options || options.reload !== false;
+        if (shouldReload) {
+            setTimeout(function () { location.reload(); }, 50);
+        }
     }
 
-    function toggleLanguage() {
-        setLanguage(currentLang === "ar" ? "en" : "ar");
+    function toggleLanguage(options) {
+        setLanguage(currentLang === "ar" ? "en" : "ar", options);
+    }
+
+    /**
+     * Translate a single string for dynamic/runtime text (e.g. alert()
+     * messages, text injected after an AJAX call). Matches how this
+     * project's pages already call `_t('نص عربي')` inline.
+     */
+    function t(text) {
+        return translateText(text, currentLang);
     }
 
     // Updates the label/state of the site's OWN language button, instead of
@@ -695,7 +731,10 @@
     const TOGGLE_BUTTON_SELECTORS = [
         "[data-lang-toggle]",
         "#lang-toggle-btn"
-        // add your button's real id/class here, e.g. "#navLangBtn"
+        // Not including ".zeno-lang-toggle-btn" here on purpose: dashboard
+        // pages already wire that button with onclick="window.zenoI18n.toggleLang()"
+        // directly in the HTML. Auto-binding a second click listener to it
+        // here would fire the toggle twice per click.
     ];
 
     function getToggleButton() {
@@ -756,7 +795,26 @@
         init();
     }
 
-    // Expose a small public API in case the dashboard wants manual control
+    // ===== Public API =====
+    // `window.zenoI18n` (lowercase z) is the name your dashboard pages
+    // already call via onclick="window.zenoI18n.toggleLang()" — this is
+    // what was missing and causing the "Cannot read properties of undefined
+    // (reading 'toggleLang')" error.
+    window.zenoI18n = {
+        toggleLang: toggleLanguage,
+        setLang: setLanguage,
+        getLang: function () { return currentLang; },
+        t: t
+    };
+
+    // Also expose a plain global `_t()`, matching how server.js's inline
+    // scripts already call it directly: _t('حدث خطأ أثناء الشراء')
+    if (typeof window._t !== "function") {
+        window._t = t;
+    }
+
+    // Kept for backward compatibility with anything already using the
+    // capitalized name from an earlier version of this file.
     window.ZenoI18n = {
         setLanguage: setLanguage,
         toggleLanguage: toggleLanguage,
