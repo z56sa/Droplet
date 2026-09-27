@@ -692,7 +692,7 @@
         "الخادم": "Server", "الخوادم": "Servers", "البرودكاست": "Broadcast", "الإعلانات": "Announcements",
         "الإعلان": "Announcement", "الاقتراحات": "Suggestions", "اقتراح": "Suggestion", "الشكاوي": "Complaints",
         "شكوى": "Complaint", "التقديمات": "Applications", "تقديم": "Application", "التطبيق": "Application",
-        "المسابقة": "Giveaway", "مسابقة": "Giveaway", "القيف": "Giveaway", "اواي": "Giveaway"
+        "المسابقة": "Giveaway", "مسابقة": "Giveaway", "القيف": "Giveaway", "اواي": "Giveaway",
         "الاستثناءات": "Exceptions",
         "الإيموجيات": "Emojis",
         "التحليلات": "Analytics",
