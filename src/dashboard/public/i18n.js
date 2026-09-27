@@ -766,6 +766,12 @@
         "الممنوعة": "Forbidden",
         "برودكاست": "Broadcast",
         "رياكشنات": "Reactions",
+        "ABOUT ME": "About Me",
+        "About Me": "عنّي",
+        "ABOUT": "عن",
+        "ME": "أنا",
+        "مرحباً بك in Panel تحكم ZENO Bot!": "Welcome to the ZENO Bot Control Panel!",
+        "مرحباً بك في لوحة تحكم ZENO Bot!": "Welcome to the ZENO Bot Control Panel!",
         "المحاولة": "Attempt",
     };
 
@@ -773,6 +779,50 @@
         en: Object.entries(dictionary).sort((a, b) => b[0].length - a[0].length),
         ar: Object.entries(reverseDictionary).sort((a, b) => b[0].length - a[0].length)
     };
+
+    // English fallback vocabulary for legacy UI strings authored directly in English.
+    // This keeps Arabic mode complete too, including tiny labels such as ABOUT ME.
+    const englishFallbackWords = {
+        "about": "عن", "me": "أنا", "home": "الرئيسية", "dashboard": "لوحة التحكم", "panel": "لوحة", "control": "تحكم",
+        "settings": "الإعدادات", "setting": "إعداد", "server": "السيرفر", "servers": "السيرفرات", "member": "عضو", "members": "الأعضاء",
+        "user": "مستخدم", "users": "المستخدمون", "role": "رتبة", "roles": "الرتب", "channel": "قناة", "channels": "القنوات",
+        "message": "رسالة", "messages": "الرسائل", "name": "الاسم", "title": "العنوان", "description": "الوصف", "status": "الحالة",
+        "actions": "الإجراءات", "action": "إجراء", "save": "حفظ", "saved": "تم الحفظ", "cancel": "إلغاء", "delete": "حذف", "edit": "تعديل",
+        "create": "إنشاء", "add": "إضافة", "remove": "إزالة", "enable": "تفعيل", "enabled": "مفعّل", "disable": "تعطيل", "disabled": "معطّل",
+        "apply": "تطبيق", "reset": "إعادة ضبط", "confirm": "تأكيد", "close": "إغلاق", "open": "فتح", "search": "بحث", "select": "اختيار",
+        "choose": "اختر", "loading": "جارٍ التحميل", "success": "نجاح", "error": "خطأ", "warning": "تحذير", "information": "معلومات",
+        "details": "التفاصيل", "general": "عام", "overview": "نظرة عامة", "profile": "الملف الشخصي", "identity": "الهوية", "rank": "الترتيب",
+        "level": "المستوى", "levels": "المستويات", "experience": "الخبرة", "gold": "الذهب", "balance": "الرصيد", "daily": "اليومي", "reward": "المكافأة",
+        "rewards": "المكافآت", "shop": "المتجر", "logout": "تسجيل الخروج", "login": "تسجيل الدخول", "support": "الدعم الفني", "features": "المميزات",
+        "systems": "الأنظمة", "security": "الأمان", "protection": "الحماية", "moderation": "الإشراف", "commands": "الأوامر", "command": "الأمر",
+        "logs": "السجلات", "log": "السجل", "analytics": "التحليلات", "stats": "الإحصائيات", "statistics": "الإحصائيات", "online": "متصل",
+        "offline": "غير متصل", "active": "نشط", "inactive": "غير نشط", "total": "الإجمالي", "count": "العدد", "none": "لا يوجد", "new": "جديد",
+        "recent": "الأخيرة", "other": "أخرى", "all": "الكل", "yes": "نعم", "no": "لا", "welcome": "الترحيب", "leave": "المغادرة",
+        "tickets": "التذاكر", "ticket": "تذكرة", "giveaways": "القيف أواي", "suggestions": "الاقتراحات", "applications": "التقديمات", "appearance": "المظهر",
+        "customization": "التخصيص", "custom": "مخصص", "default": "افتراضي", "advanced": "متقدم", "basic": "أساسي", "professional": "احترافي",
+        "automatic": "تلقائي", "automations": "الأتمتة", "broadcast": "الإعلانات", "invite": "دعوة", "invites": "الدعوات", "boost": "بوست", "boosts": "البوستات",
+        "emojis": "الإيموجيات", "stickers": "الستيكرات", "voice": "الصوت", "text": "النص", "color": "اللون", "colors": "الألوان", "image": "الصورة",
+        "images": "الصور", "wallpaper": "الخلفية", "wallpapers": "الخلفيات", "banner": "البنر", "bot": "البوت", "bots": "البوتات", "owner": "المالك",
+        "admin": "الإداري", "moderator": "المشرف", "permissions": "الصلاحيات", "permission": "الصلاحية", "data": "البيانات", "usage": "الاستخدام",
+        "view": "عرض", "view all": "عرض الكل", "back": "رجوع", "next": "التالي", "previous": "السابق", "submit": "إرسال", "send": "إرسال",
+        "upload": "رفع", "download": "تحميل", "about me": "عنّي", "switch to english": "التبديل إلى الإنجليزية", "switch to arabic": "التبديل إلى العربية",
+        "manage server": "إدارة السيرفر", "server overview": "نظرة عامة على السيرفر", "server settings": "إعدادات السيرفر", "quick actions": "الإجراءات السريعة",
+        "no results": "لا توجد نتائج", "no data": "لا توجد بيانات"
+    };
+
+    function translateEnglishFallback(text) {
+        const trimmed = text.trim();
+        if (!trimmed) return text;
+        const exact = englishFallbackWords[trimmed.toLowerCase()];
+        if (exact) {
+            const leading = text.slice(0, text.length - text.trimStart().length);
+            const trailing = text.slice(text.trimEnd().length);
+            return leading + exact + trailing;
+        }
+        return text.replace(/[A-Za-z]+(?:['-][A-Za-z]+)*/g, function (word) {
+            return englishFallbackWords[word.toLowerCase()] || word;
+        });
+    }
 
     function translateText(text, targetLang) {
         if (!text || !text.trim()) return text;
@@ -795,12 +845,14 @@
             result = result.split(source).join(target);
         }
 
-        // Final fallback: translate remaining Arabic words without touching HTML,
-        // placeholders, IDs, or already translated English text.
+        // Final fallback in both directions. This catches tiny labels and legacy
+        // mixed-language strings that were not explicitly added to the main dictionary.
         if (targetLang === "en" && /[\u0600-\u06FF]/.test(result)) {
             result = result.replace(/[\u0600-\u06FF]+/g, function (word) {
                 return translateFallbackWord(word);
             });
+        } else if (targetLang === "ar" && /[A-Za-z]/.test(result)) {
+            result = translateEnglishFallback(result);
         }
 
         return result;
