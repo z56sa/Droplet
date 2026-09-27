@@ -2470,33 +2470,33 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     </div>
 `;
             } else if (section === 'protection') {
-formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
+formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr">
 
-                        <!-- 1. Banner Alert: البوت لا يملك صلاحيات حرجة الآن -->
+                        <!-- 1. Banner Alert: Bot does not have critical permissions -->
                         <div class="bg-[#1e0e11] border border-rose-900/50 p-4 rounded-2xl flex items-center justify-between shadow-lg">
                             <div class="flex items-center gap-3">
                                 <label class="toggle">
                                     <input type="checkbox" name="lock_dashboard" value="1" ${settings.lock_dashboard ? 'checked' : ''} onchange="saveProtectionSetting('lock_dashboard', this.checked)">
                                     <span class="slider"></span>
                                 </label>
-                                <span class="text-xs font-bold text-rose-300">قفل لوحة التحكم</span>
+                                <span class="text-xs font-bold text-rose-300">Lock Dashboard</span>
                             </div>
                             <div class="flex items-center gap-2 text-rose-400 font-bold text-xs">
-                                <span>البوت لا يملك صلاحيات حرجة الآن</span>
+                                <span>Bot does not have critical permissions</span>
                                 <span class="text-base">⚠️</span>
                             </div>
                         </div>
 
-                        <!-- 2. Master Toggle: تفعيل نظام الحماية -->
+                        <!-- 2. Master Toggle: Enable Protection System -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl flex items-center justify-between shadow-lg">
                             <label class="toggle">
                                 <input type="checkbox" name="anti_nuke_enabled" value="1" ${settings.anti_nuke_enabled !== 0 ? 'checked' : ''} onchange="saveProtectionSetting('anti_nuke_enabled', this.checked)">
                                 <span class="slider"></span>
                             </label>
                             <div class="flex items-center gap-3">
-                                <div class="text-right">
-                                    <h4 class="font-black text-white text-sm">تفعيل نظام الحماية</h4>
-                                    <p class="text-gray-400 text-xs mt-0.5">تفعيل أو تعطيل نظام الحماية الشامل</p>
+                                <div class="text-left">
+                                    <h4 class="font-black text-white text-sm">Enable Protection System</h4>
+                                    <p class="text-gray-400 text-xs mt-0.5">Enable or disable the comprehensive protection system</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center text-lg border border-purple-500/30">
                                     🛡️
@@ -2504,14 +2504,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                         </div>
 
-                        <!-- 3. حماية المتصفح (Browser Protection) -->
+                        <!-- 3. Browser Protection -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl space-y-3 shadow-lg">
                             <div class="flex items-center justify-between">
                                 <span class="text-xs text-gray-500 font-mono">PRO ONLY</span>
                                 <div class="flex items-center gap-3">
-                                    <div class="text-right">
-                                        <h4 class="font-black text-white text-sm">حماية المتصفح</h4>
-                                        <p class="text-gray-400 text-xs mt-0.5">يزيل رتب الأعضاء المحمية مؤقتاً عند الدخول من متصفح — بوتات خاصة فقط</p>
+                                    <div class="text-left">
+                                        <h4 class="font-black text-white text-sm">Browser Protection</h4>
+                                        <p class="text-gray-400 text-xs mt-0.5">Temporarily removes protected member roles when joining from a browser — private bots only</p>
                                     </div>
                                     <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-lg border border-indigo-500/30">
                                         🌐
@@ -2519,74 +2519,74 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                             </div>
                             <div class="bg-[#0b0d14] border border-white/5 p-3 rounded-xl flex items-center justify-end gap-2 text-gray-400 text-xs">
-                                <span>هذه الميزة تعمل فقط مع البوتات الخاصة — يتطلب اشتراك بوت خاص نشط لهذا السيرفر.</span>
+                                <span>This feature only works with private bots — an active private-bot subscription is required for this server.</span>
                                 <span>🔒</span>
                             </div>
                         </div>
 
-                        <!-- 4. تحديد وعقوبة -->
+                        <!-- 4. Detection & Punishment -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl space-y-6 shadow-xl">
                             <div class="flex items-center justify-between border-b border-white/5 pb-3">
-                                <span id="badge_limit_punish" class="px-3 py-1 bg-amber-950/60 text-amber-300 border border-amber-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_channel_delete, settings.anti_channel_create, settings.anti_channel_update, settings.anti_channel_permissions, settings.anti_role_delete, settings.anti_role_create, settings.anti_role_update, settings.anti_webhook_create, settings.anti_webhook_update, settings.anti_mass_ban, settings.anti_mass_kick, settings.anti_mass_mention].filter(Boolean).length}/12 مفعل</span>
+                                <span id="badge_limit_punish" class="px-3 py-1 bg-amber-950/60 text-amber-300 border border-amber-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_channel_delete, settings.anti_channel_create, settings.anti_channel_update, settings.anti_channel_permissions, settings.anti_role_delete, settings.anti_role_create, settings.anti_role_update, settings.anti_webhook_create, settings.anti_webhook_update, settings.anti_mass_ban, settings.anti_mass_kick, settings.anti_mass_mention].filter(Boolean).length}/12 Enabled</span>
                                 <div class="flex items-center gap-2">
-                                    <div class="text-right">
-                                        <h4 class="font-black text-white text-sm">تحديد وعقوبة</h4>
-                                        <p class="text-gray-400 text-[11px]">تعيين حد وعقوبة لكل إجراء</p>
+                                    <div class="text-left">
+                                        <h4 class="font-black text-white text-sm">Detection & Punishment</h4>
+                                        <p class="text-gray-400 text-[11px]">Set a threshold and punishment for each action</p>
                                     </div>
                                     <span class="text-base">🛡️</span>
                                 </div>
                             </div>
 
-                            <!-- مجموعة 1: حماية الرومات / الشاتات -->
+                            <!-- Group 1: Channel Protection -->
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
-                                    <span id="badge_grp_channels">${[settings.anti_channel_delete, settings.anti_channel_create, settings.anti_channel_update, settings.anti_channel_permissions].filter(Boolean).length}/4 مفعل</span>
-                                    <span class="text-white">حماية الرومات / الشاتات</span>
+                                    <span id="badge_grp_channels">${[settings.anti_channel_delete, settings.anti_channel_create, settings.anti_channel_update, settings.anti_channel_permissions].filter(Boolean).length}/4 Enabled</span>
+                                    <span class="text-white">Channel Protection</span>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <!-- مكافحة حذف القنوات -->
+                                    <!-- Anti-Channel Deletion -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_channel_delete" value="1" ${settings.anti_channel_delete ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_delete', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-right">
+                                        <div class="flex items-center gap-2 text-left">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">مكافحة حذف القنوات</h5>
-                                                <p class="text-[10px] text-gray-400">منع حذف قنوات جماعي</p>
+                                                <h5 class="text-xs font-bold text-white">Anti-Channel Deletion</h5>
+                                                <p class="text-[10px] text-gray-400">Prevent mass channel deletion</p>
                                             </div>
                                             <span class="text-sm">🗑️</span>
                                         </div>
                                     </div>
 
-                                    <!-- مكافحة إنشاء القنوات -->
+                                    <!-- Anti-Channel Creation -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_channel_create" value="1" ${settings.anti_channel_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_create', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-right">
+                                        <div class="flex items-center gap-2 text-left">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">مكافحة إنشاء القنوات</h5>
-                                                <p class="text-[10px] text-gray-400">منع إنشاء قنوات جماعي</p>
+                                                <h5 class="text-xs font-bold text-white">Anti-Channel Creation</h5>
+                                                <p class="text-[10px] text-gray-400">Prevent mass channel creation</p>
                                             </div>
                                             <span class="text-sm">📢</span>
                                         </div>
                                     </div>
 
-                                    <!-- مكافحة تعديل القنوات -->
+                                    <!-- Anti-Channel Modification -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_channel_update" value="1" ${settings.anti_channel_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_update', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-right">
+                                        <div class="flex items-center gap-2 text-left">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">مكافحة تعديل القنوات</h5>
-                                                <p class="text-[10px] text-gray-400">منع تعديل قنوات جماعي</p>
+                                                <h5 class="text-xs font-bold text-white">Anti-Channel Modification</h5>
+                                                <p class="text-[10px] text-gray-400">Prevent mass channel modification</p>
                                             </div>
                                             <span class="text-sm">#️⃣</span>
                                         </div>
                                     </div>
 
-                                    <!-- حماية صلاحيات القنوات -->
+                                    <!-- Channel Permission Protection -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_channel_permissions" value="1" ${settings.anti_channel_permissions ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_permissions', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-right">
+                                        <div class="flex items-center gap-2 text-left">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">حماية صلاحيات القنوات</h5>
-                                                <p class="text-[10px] text-gray-400">منع أي تعديل على صلاحيات القنوات بأي شكل (Allow/Deny/Overwrites)</p>
+                                                <h5 class="text-xs font-bold text-white">Channel Permission Protection</h5>
+                                                <p class="text-[10px] text-gray-400">Prevent any changes to channel permissions (Allow/Deny/Overwrites)</p>
                                             </div>
                                             <span class="text-sm">⚙️</span>
                                         </div>
@@ -2594,44 +2594,44 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                             </div>
 
-                            <!-- مجموعة 2: حماية الرتب -->
+                            <!-- Group 2: Role Protection -->
                             <div class="space-y-3 pt-4 border-t border-white/5">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
-                                    <span id="badge_grp_roles">${[settings.anti_role_delete, settings.anti_role_create, settings.anti_role_update].filter(Boolean).length}/3 مفعل</span>
-                                    <span class="text-white">حماية الرتب</span>
+                                    <span id="badge_grp_roles">${[settings.anti_role_delete, settings.anti_role_create, settings.anti_role_update].filter(Boolean).length}/3 Enabled</span>
+                                    <span class="text-white">Role Protection</span>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <!-- مكافحة حذف الرتب -->
+                                    <!-- Anti-Role Deletion -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_role_delete" value="1" ${settings.anti_role_delete ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_delete', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-right">
+                                        <div class="flex items-center gap-2 text-left">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">مكافحة حذف الرتب</h5>
-                                                <p class="text-[10px] text-gray-400">منع حذف رتب جماعي</p>
+                                                <h5 class="text-xs font-bold text-white">Anti-Role Deletion</h5>
+                                                <p class="text-[10px] text-gray-400">Prevent mass role deletion</p>
                                             </div>
                                             <span class="text-sm">🗑️</span>
                                         </div>
                                     </div>
 
-                                    <!-- مكافحة إنشاء الرتب -->
+                                    <!-- Anti-Role Creation -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_role_create" value="1" ${settings.anti_role_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_create', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-right">
+                                        <div class="flex items-center gap-2 text-left">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">مكافحة إنشاء الرتب</h5>
-                                                <p class="text-[10px] text-gray-400">منع إنشاء رتب جماعي</p>
+                                                <h5 class="text-xs font-bold text-white">Anti-Role Creation</h5>
+                                                <p class="text-[10px] text-gray-400">Prevent mass role creation</p>
                                             </div>
                                             <span class="text-sm">🎖️</span>
                                         </div>
                                     </div>
 
-                                    <!-- مكافحة تعديل الرتب -->
+                                    <!-- Anti-Role Modification -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_role_update" value="1" ${settings.anti_role_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_update', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-right">
+                                        <div class="flex items-center gap-2 text-left">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">مكافحة تعديل الرتب</h5>
-                                                <p class="text-[10px] text-gray-400">منع تعديل رتب جماعي</p>
+                                                <h5 class="text-xs font-bold text-white">Anti-Role Modification</h5>
+                                                <p class="text-[10px] text-gray-400">Prevent mass role modification</p>
                                             </div>
                                             <span class="text-sm">🏅</span>
                                         </div>
@@ -2639,32 +2639,32 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                             </div>
 
-                            <!-- مجموعة 3: حماية الويب هوك -->
+                            <!-- Group 3: Webhook Protection -->
                             <div class="space-y-3 pt-4 border-t border-white/5">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
-                                    <span id="badge_grp_webhooks">${[settings.anti_webhook_create, settings.anti_webhook_update].filter(Boolean).length}/2 مفعل</span>
-                                    <span class="text-white">حماية الويب هوك</span>
+                                    <span id="badge_grp_webhooks">${[settings.anti_webhook_create, settings.anti_webhook_update].filter(Boolean).length}/2 Enabled</span>
+                                    <span class="text-white">Webhook Protection</span>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <!-- مكافحة إنشاء الويب هوك -->
+                                    <!-- Anti-Webhook Creation -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_webhook_create" value="1" ${settings.anti_webhook_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_webhook_create', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-right">
+                                        <div class="flex items-center gap-2 text-left">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">مكافحة إنشاء الويب هوك</h5>
-                                                <p class="text-[10px] text-gray-400">منع إنشاء الويب هوك وحذفه فوراً مع معاقبة المسؤول</p>
+                                                <h5 class="text-xs font-bold text-white">Anti-Webhook Creation</h5>
+                                                <p class="text-[10px] text-gray-400">Prevent webhook creation and immediately remove it while punishing the responsible user</p>
                                             </div>
                                             <span class="text-sm">⚙️</span>
                                         </div>
                                     </div>
 
-                                    <!-- مكافحة تعديل الويب هوك -->
+                                    <!-- Anti-Webhook Modification -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_webhook_update" value="1" ${settings.anti_webhook_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_webhook_update', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-right">
+                                        <div class="flex items-center gap-2 text-left">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">مكافحة تعديل الويب هوك</h5>
-                                                <p class="text-[10px] text-gray-400">منع التعديل الجماعي على الويب هوكات الحالية مع معاقبة المسؤول</p>
+                                                <h5 class="text-xs font-bold text-white">Anti-Webhook Modification</h5>
+                                                <p class="text-[10px] text-gray-400">Prevent mass modification of existing webhooks while punishing the responsible user</p>
                                             </div>
                                             <span class="text-sm">⚙️</span>
                                         </div>
@@ -2672,32 +2672,32 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                             </div>
 
-                            <!-- مجموعة 4: حماية الأعضاء -->
+                            <!-- Group 4: Member Protection -->
                             <div class="space-y-3 pt-4 border-t border-white/5">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
-                                    <span id="badge_grp_members">${[settings.anti_mass_ban, settings.anti_mass_kick].filter(Boolean).length}/2 مفعل</span>
-                                    <span class="text-white">حماية الأعضاء</span>
+                                    <span id="badge_grp_members">${[settings.anti_mass_ban, settings.anti_mass_kick].filter(Boolean).length}/2 Enabled</span>
+                                    <span class="text-white">Member Protection</span>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <!-- مكافحة الحظر -->
+                                    <!-- Anti-Ban -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_mass_ban" value="1" ${settings.anti_mass_ban ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_ban', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-right">
+                                        <div class="flex items-center gap-2 text-left">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">مكافحة الحظر</h5>
-                                                <p class="text-[10px] text-gray-400">منع الحظر الجماعي</p>
+                                                <h5 class="text-xs font-bold text-white">Anti-Ban</h5>
+                                                <p class="text-[10px] text-gray-400">Prevent mass bans</p>
                                             </div>
                                             <span class="text-sm">🔨</span>
                                         </div>
                                     </div>
 
-                                    <!-- مكافحة الطرد -->
+                                    <!-- Anti-Kick -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_mass_kick" value="1" ${settings.anti_mass_kick ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_kick', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-right">
+                                        <div class="flex items-center gap-2 text-left">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">مكافحة الطرد</h5>
-                                                <p class="text-[10px] text-gray-400">منع الطرد الجماعي</p>
+                                                <h5 class="text-xs font-bold text-white">Anti-Kick</h5>
+                                                <p class="text-[10px] text-gray-400">Prevent mass kicks</p>
                                             </div>
                                             <span class="text-sm">👢</span>
                                         </div>
@@ -2705,20 +2705,20 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                             </div>
 
-                            <!-- مجموعة 5: حماية المحتوى -->
+                            <!-- Group 5: Content Protection -->
                             <div class="space-y-3 pt-4 border-t border-white/5">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
-                                    <span id="badge_grp_content">${[settings.anti_mass_mention].filter(Boolean).length}/1 مفعل</span>
-                                    <span class="text-white">حماية المحتوى</span>
+                                    <span id="badge_grp_content">${[settings.anti_mass_mention].filter(Boolean).length}/1 Enabled</span>
+                                    <span class="text-white">Content Protection</span>
                                 </div>
                                 <div class="grid grid-cols-1 gap-3">
-                                    <!-- مكافحة المنشنات -->
+                                    <!-- Anti-Mentions -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_mass_mention" value="1" ${settings.anti_mass_mention ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_mention', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-right">
+                                        <div class="flex items-center gap-2 text-left">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">مكافحة المنشنات</h5>
-                                                <p class="text-[10px] text-gray-400">منع المنشنات المفرطة</p>
+                                                <h5 class="text-xs font-bold text-white">Anti-Mentions</h5>
+                                                <p class="text-[10px] text-gray-400">Prevent excessive mentions</p>
                                             </div>
                                             <span class="text-sm">📢</span>
                                         </div>
@@ -2728,123 +2728,123 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                         </div>
 
-                        <!-- 5. عقوبة فورية -->
+                        <!-- 5. Instant Punishment -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl space-y-4 shadow-xl">
                             <div class="flex items-center justify-between border-b border-white/5 pb-3">
-                                <span id="badge_instant_punish" class="px-3 py-1 bg-rose-950/60 text-rose-300 border border-rose-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_onboarding_danger, settings.anti_join_danger_roles, settings.anti_raid_fast, settings.anti_dangerous_perms, settings.anti_linked_roles, settings.anti_bot_add, settings.anti_prune, settings.anti_server_name_change, settings.anti_server_icon_change].filter(Boolean).length}/9 مفعل</span>
+                                <span id="badge_instant_punish" class="px-3 py-1 bg-rose-950/60 text-rose-300 border border-rose-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_onboarding_danger, settings.anti_join_danger_roles, settings.anti_raid_fast, settings.anti_dangerous_perms, settings.anti_linked_roles, settings.anti_bot_add, settings.anti_prune, settings.anti_server_name_change, settings.anti_server_icon_change].filter(Boolean).length}/9 Enabled</span>
                                 <div class="flex items-center gap-2">
-                                    <div class="text-right">
-                                        <h4 class="font-black text-white text-sm">عقوبة فورية</h4>
-                                        <p class="text-gray-400 text-[11px]">تطبيق العقوبة فوراً</p>
+                                    <div class="text-left">
+                                        <h4 class="font-black text-white text-sm">Instant Punishment</h4>
+                                        <p class="text-gray-400 text-[11px]">Apply punishment immediately</p>
                                     </div>
                                     <span class="text-base">🏏</span>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <!-- رتب Onboarding الخطيرة -->
+                                <!-- Dangerous Onboarding Roles -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_onboarding_danger" value="1" ${settings.anti_onboarding_danger ? 'checked' : ''} onchange="saveProtectionSetting('anti_onboarding_danger', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">رتب Onboarding الخطيرة</h5>
-                                            <p class="text-[10px] text-gray-400">يمنع منح رتبة بصلاحيات خطيرة تلقائياً لأي عضو جديد عبر أسئلة الانضمام (Onboarding)</p>
+                                            <h5 class="text-xs font-bold text-white">Dangerous Onboarding Roles</h5>
+                                            <p class="text-[10px] text-gray-400">Prevent automatically granting dangerous-permission roles to new members through Onboarding</p>
                                         </div>
                                         <span class="text-sm">🚨</span>
                                     </div>
                                 </div>
 
-                                <!-- رتب خطيرة عند الانضمام (حماية الانفايت) -->
+                                <!-- Dangerous Join Roles (Invite Protection) -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_join_danger_roles" value="1" ${settings.anti_join_danger_roles ? 'checked' : ''} onchange="saveProtectionSetting('anti_join_danger_roles', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">رتب خطيرة عند الانضمام (حماية الانفايت)</h5>
-                                            <p class="text-[10px] text-gray-400">يزيل تلقائياً أي رتبة استقرت على عضو جديد عبر رابط دعوة أو Onboarding ولم تكن الرتبة التلقائية الرسمية</p>
+                                            <h5 class="text-xs font-bold text-white">Dangerous Join Roles (Invite Protection)</h5>
+                                            <p class="text-[10px] text-gray-400">Automatically remove any role assigned to a new member through an invite or Onboarding unless it is the official auto-role</p>
                                         </div>
                                         <span class="text-sm">🚨</span>
                                     </div>
                                 </div>
 
-                                <!-- مكافحة الريد -->
+                                <!-- Anti-Raid -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_raid_fast" value="1" ${settings.anti_raid_fast ? 'checked' : ''} onchange="saveProtectionSetting('anti_raid_fast', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">مكافحة الريد</h5>
-                                            <p class="text-[10px] text-gray-400">حماية ضد الانضمام الجماعي</p>
+                                            <h5 class="text-xs font-bold text-white">Anti-Raid</h5>
+                                            <p class="text-[10px] text-gray-400">Protection against mass joining</p>
                                         </div>
                                         <span class="text-sm">🛡️</span>
                                     </div>
                                 </div>
 
-                                <!-- مكافحة الصلاحيات الخطيرة -->
+                                <!-- Anti-Dangerous Permissions -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_dangerous_perms" value="1" ${settings.anti_dangerous_perms ? 'checked' : ''} onchange="saveProtectionSetting('anti_dangerous_perms', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">مكافحة الصلاحيات الخطيرة</h5>
-                                            <p class="text-[10px] text-gray-400">منع منح صلاحيات خطيرة</p>
+                                            <h5 class="text-xs font-bold text-white">Anti-Dangerous Permissions</h5>
+                                            <p class="text-[10px] text-gray-400">Prevent granting dangerous permissions</p>
                                         </div>
                                         <span class="text-sm">🚨</span>
                                     </div>
                                 </div>
 
-                                <!-- مكافحة الرتب الخطيرة القابلة للربط -->
+                                <!-- Anti-Dangerous Linked Roles -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_linked_roles" value="1" ${settings.anti_linked_roles ? 'checked' : ''} onchange="saveProtectionSetting('anti_linked_roles', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">مكافحة الرتب الخطيرة القابلة للربط</h5>
-                                            <p class="text-[10px] text-gray-400">يمنع أي رتبة تحمل صلاحية خطيرة من أن تصبح قابلة للحصول عليها ذاتياً عبر ربط حساب خارجي (Linked Roles)</p>
+                                            <h5 class="text-xs font-bold text-white">Anti-Dangerous Linked Roles</h5>
+                                            <p class="text-[10px] text-gray-400">Prevent roles with dangerous permissions from becoming self-assignable through external account linking (Linked Roles)</p>
                                         </div>
                                         <span class="text-sm">🚨</span>
                                     </div>
                                 </div>
 
-                                <!-- مكافحة إضافة البوتات -->
+                                <!-- Anti-Bot Addition -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_bot_add" value="1" ${settings.anti_bot_add ? 'checked' : ''} onchange="saveProtectionSetting('anti_bot_add', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">مكافحة إضافة البوتات</h5>
-                                            <p class="text-[10px] text-gray-400">منع إضافة بوتات بدون إذن</p>
+                                            <h5 class="text-xs font-bold text-white">Anti-Bot Addition</h5>
+                                            <p class="text-[10px] text-gray-400">Prevent adding bots without authorization</p>
                                         </div>
                                         <span class="text-sm">🤖</span>
                                     </div>
                                 </div>
 
-                                <!-- مكافحة التطهير -->
+                                <!-- Anti-Mass Purge -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_prune" value="1" ${settings.anti_prune ? 'checked' : ''} onchange="saveProtectionSetting('anti_prune', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">مكافحة التطهير</h5>
-                                            <p class="text-[10px] text-gray-400">منع تطهير الأعضاء</p>
+                                            <h5 class="text-xs font-bold text-white">Anti-Mass Purge</h5>
+                                            <p class="text-[10px] text-gray-400">Prevent mass member purging</p>
                                         </div>
                                         <span class="text-sm">🧹</span>
                                     </div>
                                 </div>
 
-                                <!-- مكافحة تغيير اسم السيرفر -->
+                                <!-- Anti-Server Name Change -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_server_name_change" value="1" ${settings.anti_server_name_change ? 'checked' : ''} onchange="saveProtectionSetting('anti_server_name_change', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">مكافحة تغيير اسم السيرفر</h5>
-                                            <p class="text-[10px] text-gray-400">منع تغيير اسم السيرفر</p>
+                                            <h5 class="text-xs font-bold text-white">Anti-Server Name Change</h5>
+                                            <p class="text-[10px] text-gray-400">Prevent server name changes</p>
                                         </div>
                                         <span class="text-sm">✏️</span>
                                     </div>
                                 </div>
 
-                                <!-- مكافحة تغيير أيقونة السيرفر -->
+                                <!-- Anti-Server Icon Change -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_server_icon_change" value="1" ${settings.anti_server_icon_change ? 'checked' : ''} onchange="saveProtectionSetting('anti_server_icon_change', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">مكافحة تغيير أيقونة السيرفر</h5>
-                                            <p class="text-[10px] text-gray-400">منع تغيير أيقونة السيرفر</p>
+                                            <h5 class="text-xs font-bold text-white">Anti-Server Icon Change</h5>
+                                            <p class="text-[10px] text-gray-400">Prevent server icon changes</p>
                                         </div>
                                         <span class="text-sm">🖼️</span>
                                     </div>
@@ -2852,87 +2852,87 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                         </div>
 
-                        <!-- 6. كشف فقط -->
+                        <!-- 6. Detection Only -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl space-y-4 shadow-xl">
                             <div class="flex items-center justify-between border-b border-white/5 pb-3">
-                                <span id="badge_detect_only" class="px-3 py-1 bg-cyan-950/60 text-cyan-300 border border-cyan-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_scam, settings.anti_invite_links, settings.anti_nsfw_content, settings.anti_ghost_ping, settings.anti_channel_move, (settings.anti_webhook_spam !== 0 ? 1 : 0)].filter(Boolean).length}/6 مفعل</span>
+                                <span id="badge_detect_only" class="px-3 py-1 bg-cyan-950/60 text-cyan-300 border border-cyan-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_scam, settings.anti_invite_links, settings.anti_nsfw_content, settings.anti_ghost_ping, settings.anti_channel_move, (settings.anti_webhook_spam !== 0 ? 1 : 0)].filter(Boolean).length}/6 Enabled</span>
                                 <div class="flex items-center gap-2">
-                                    <div class="text-right">
-                                        <h4 class="font-black text-white text-sm">كشف فقط</h4>
-                                        <p class="text-gray-400 text-[11px]">تسجيل فقط بدون عقوبة</p>
+                                    <div class="text-left">
+                                        <h4 class="font-black text-white text-sm">Detection Only</h4>
+                                        <p class="text-gray-400 text-[11px]">Log only without punishment</p>
                                     </div>
                                     <span class="text-base">🔭</span>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <!-- مكافحة الاحتيال -->
+                                <!-- Anti-Phishing -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_scam" value="1" ${settings.anti_scam ? 'checked' : ''} onchange="saveProtectionSetting('anti_scam', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">مكافحة الاحتيال</h5>
-                                            <p class="text-[10px] text-gray-400">كشف وحذف روابط الاحتيال</p>
+                                            <h5 class="text-xs font-bold text-white">Anti-Phishing</h5>
+                                            <p class="text-[10px] text-gray-400">Detect and remove phishing links</p>
                                         </div>
                                         <span class="text-sm">🦅</span>
                                     </div>
                                 </div>
 
-                                <!-- مكافحة روابط الدعوة -->
+                                <!-- Anti-Invite Links -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_invite_links" value="1" ${settings.anti_invite_links ? 'checked' : ''} onchange="saveProtectionSetting('anti_invite_links', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">مكافحة روابط الدعوة</h5>
-                                            <p class="text-[10px] text-gray-400">حذف روابط الدعوة</p>
+                                            <h5 class="text-xs font-bold text-white">Anti-Invite Links</h5>
+                                            <p class="text-[10px] text-gray-400">Remove invite links</p>
                                         </div>
                                         <span class="text-sm">🪵</span>
                                     </div>
                                 </div>
 
-                                <!-- مكافحة المحتوى الغير لائق -->
+                                <!-- Anti-Inappropriate Content -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_nsfw_content" value="1" ${settings.anti_nsfw_content ? 'checked' : ''} onchange="saveProtectionSetting('anti_nsfw_content', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">مكافحة المحتوى الغير لائق</h5>
-                                            <p class="text-[10px] text-gray-400">حذف المحتوى الغير لائق</p>
+                                            <h5 class="text-xs font-bold text-white">Anti-Inappropriate Content</h5>
+                                            <p class="text-[10px] text-gray-400">Remove inappropriate content</p>
                                         </div>
                                         <span class="text-sm">🛡️</span>
                                     </div>
                                 </div>
 
-                                <!-- مكافحة الغوست بينغ -->
+                                <!-- Anti-Ghost Ping -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_ghost_ping" value="1" ${settings.anti_ghost_ping ? 'checked' : ''} onchange="saveProtectionSetting('anti_ghost_ping', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">مكافحة الغوست بينغ</h5>
-                                            <p class="text-[10px] text-gray-400">كشف حذف المنشنات</p>
+                                            <h5 class="text-xs font-bold text-white">Anti-Ghost Ping</h5>
+                                            <p class="text-[10px] text-gray-400">Detect deleted mentions</p>
                                         </div>
                                         <span class="text-sm">👻</span>
                                     </div>
                                 </div>
 
-                                <!-- كشف نقل القنوات -->
+                                <!-- Channel Move Detection -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_channel_move" value="1" ${settings.anti_channel_move ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_move', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">كشف نقل القنوات</h5>
-                                            <p class="text-[10px] text-gray-400">كشف نقل القنوات إلى تصنيفات أخرى (تنبيه فقط)</p>
+                                            <h5 class="text-xs font-bold text-white">Channel Move Detection</h5>
+                                            <p class="text-[10px] text-gray-400">Channel Move Detection إلى تصنيفات أخرى (تنبيه فقط)</p>
                                         </div>
                                         <span class="text-sm">📍</span>
                                     </div>
                                 </div>
 
-                                <!-- مكافحة سبام الويب هوك -->
+                                <!-- Anti-Webhook Spam -->
                                 <div class="bg-[#0b0d14] border border-purple-500/40 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/60 transition shadow-inner">
                                     <label class="toggle"><input type="checkbox" name="anti_webhook_spam" value="1" checked onchange="saveProtectionSetting('anti_webhook_spam', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-right">
+                                    <div class="flex items-center gap-2 text-left">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">مكافحة سبام الويب هوك</h5>
-                                            <p class="text-[10px] text-gray-400">يحذف تلقائياً رسائل السبام المرسلة عبر أي ويبهوك ويزيل الويب هوك نفسه — يعمل باستمرار بالخلفية</p>
+                                            <h5 class="text-xs font-bold text-white">Anti-Webhook Spam</h5>
+                                            <p class="text-[10px] text-gray-400">Automatically delete spam messages sent through any webhook and remove the webhook itself — runs continuously in the background</p>
                                         </div>
                                         <span class="text-sm">⚙️</span>
                                     </div>
@@ -2940,13 +2940,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                         </div>
 
-                        <!-- 7. الدفاع الذاتي للبوت (Self Defense - مقفلة دائماً) -->
+                        <!-- 7. Bot Self-Defense (Always Locked) -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl space-y-4 shadow-xl">
                             <div class="flex items-center justify-between border-b border-white/5 pb-3">
-                                <span class="text-[11px] text-gray-400">مقفلة دائماً — تحمي البوت نفسه، لا يمكن إيقافها</span>
+                                <span class="text-[11px] text-gray-400">Always locked — protects the bot itself and cannot be disabled</span>
                                 <div class="flex items-center gap-2">
-                                    <div class="text-right">
-                                        <h4 class="font-black text-white text-sm">الدفاع الذاتي للبوت</h4>
+                                    <div class="text-left">
+                                        <h4 class="font-black text-white text-sm">Bot Self-Defense</h4>
                                     </div>
                                     <span class="text-base">🛡️</span>
                                 </div>
@@ -2954,18 +2954,18 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between">
-                                    <span class="px-2.5 py-1 bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[10px] font-bold rounded-lg">مقفلة دائماً</span>
-                                    <div class="text-right">
-                                        <h5 class="text-xs font-bold text-white">مكافحة نزع صلاحيات البوت</h5>
-                                        <p class="text-[10px] text-gray-400">ينبهك (عبر رسالة خاصة) لو فقدت رتبة البوت نفسها صلاحيات حرجة — مثلاً عند إعادة استخدام رابط دعوته وإلغاء تحديد الصلاحيات</p>
+                                    <span class="px-2.5 py-1 bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[10px] font-bold rounded-lg">Always Locked</span>
+                                    <div class="text-left">
+                                        <h5 class="text-xs font-bold text-white">Anti-Bot Permission Removal</h5>
+                                        <p class="text-[10px] text-gray-400">Notifies you via DM if the bot's own role loses critical permissions — for example, when its invite link is reused with permissions unchecked</p>
                                     </div>
                                 </div>
 
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between">
-                                    <span class="px-2.5 py-1 bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[10px] font-bold rounded-lg">مقفلة دائماً</span>
-                                    <div class="text-right">
-                                        <h5 class="text-xs font-bold text-white">مكافحة إزالة رتبة البوت</h5>
-                                        <p class="text-[10px] text-gray-400">ينبهك (عبر رسالة خاصة) لو أزيلت من البوت مباشرة رتبة تمنحه صلاحيات حرجة</p>
+                                    <span class="px-2.5 py-1 bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[10px] font-bold rounded-lg">Always Locked</span>
+                                    <div class="text-left">
+                                        <h5 class="text-xs font-bold text-white">Anti-Bot Role Removal</h5>
+                                        <p class="text-[10px] text-gray-400">Notifies you via DM if a role granting the bot critical permissions is removed directly from the bot</p>
                                     </div>
                                 </div>
                             </div>
@@ -2989,29 +2989,29 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         const detNames = ['anti_scam', 'anti_invite_links', 'anti_nsfw_content', 'anti_ghost_ping', 'anti_channel_move', 'anti_webhook_spam'];
 
                         const bCh = document.getElementById('badge_grp_channels');
-                        if (bCh) bCh.innerText = countChecked(chNames) + '/4 مفعل';
+                        if (bCh) bCh.innerText = countChecked(chNames) + '/4 Enabled';
 
                         const bRoles = document.getElementById('badge_grp_roles');
-                        if (bRoles) bRoles.innerText = countChecked(roleNames) + '/3 مفعل';
+                        if (bRoles) bRoles.innerText = countChecked(roleNames) + '/3 Enabled';
 
                         const bWh = document.getElementById('badge_grp_webhooks');
-                        if (bWh) bWh.innerText = countChecked(whNames) + '/2 مفعل';
+                        if (bWh) bWh.innerText = countChecked(whNames) + '/2 Enabled';
 
                         const bMem = document.getElementById('badge_grp_members');
-                        if (bMem) bMem.innerText = countChecked(memNames) + '/2 مفعل';
+                        if (bMem) bMem.innerText = countChecked(memNames) + '/2 Enabled';
 
                         const bCnt = document.getElementById('badge_grp_content');
-                        if (bCnt) bCnt.innerText = countChecked(cntNames) + '/1 مفعل';
+                        if (bCnt) bCnt.innerText = countChecked(cntNames) + '/1 Enabled';
 
                         const allPunishNames = chNames.concat(roleNames, whNames, memNames, cntNames);
                         const bPunish = document.getElementById('badge_limit_punish');
-                        if (bPunish) bPunish.innerText = countChecked(allPunishNames) + '/12 مفعل';
+                        if (bPunish) bPunish.innerText = countChecked(allPunishNames) + '/12 Enabled';
 
                         const bInst = document.getElementById('badge_instant_punish');
-                        if (bInst) bInst.innerText = countChecked(instNames) + '/9 مفعل';
+                        if (bInst) bInst.innerText = countChecked(instNames) + '/9 Enabled';
 
                         const bDet = document.getElementById('badge_detect_only');
-                        if (bDet) bDet.innerText = countChecked(detNames) + '/6 مفعل';
+                        if (bDet) bDet.innerText = countChecked(detNames) + '/6 Enabled';
                     }
 
                     async function saveProtectionSetting(key, value) {
