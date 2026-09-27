@@ -556,6 +556,36 @@
         "الذكاء الاصطناعي والتصفح الذكي": "AI & Smart Browsing"
     };
 
+
+        // Residual dashboard strings
+        "خطأ في إعدادات البوت: CLIENT_SECRET غير مضاف في لوحة Render.": "Bot configuration error: CLIENT_SECRET is not configured in the Render dashboard.",
+        "فشل جلب بيانات المستخدم من Discord": "Failed to fetch user data from Discord",
+        "فشل جلب سيرفرات المستخدم من Discord": "Failed to fetch user guilds from Discord",
+        "حدث خطأ أثناء تسجيل الدخول:": "An error occurred while logging in:",
+        "غير معروف": "Unknown",
+        "السيرفر غير موجود في كاش البوت": "Server not found in bot cache",
+        "يجب تسجيل الدخول أولاً": "You must log in first",
+        "بيانات غير صالحة": "Invalid data",
+        "إجراء غير معروف": "Unknown action",
+        "<p class=\"text-xs text-gray-500 text-center py-4\">لا توجد بيانات خبرة مسجلة بعد</p>": "<p class=\"text-xs text-gray-500 text-center py-4\">No XP data recorded yet</p>",
+        "<p class=\"text-xs text-gray-500 text-center py-4\">لا توجد بيانات ذهب مسجلة بعد</p>": "<p class=\"text-xs text-gray-500 text-center py-4\">No Gold data recorded yet</p>",
+        "<span class=\"absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-md\">✓ مفعّل حالياً</span>": "<span class=\"absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-md\">✓ Currently Active</span>",
+        "<span>مجهزة على بطاقتك 🪪</span>": "<span>Equipped on your card 🪪</span>",
+        "<span>شراء وتجهيز (${w.price.toLocaleString()} 🪙)</span>": "<span>Buy & Equip (${w.price.toLocaleString()} 🪙)</span>",
+        "جارٍ الاستلام... ⏳": "Claiming... ⏳",
+        "🎉 تم استلام": "🎉 Claimed",
+        "حدث خطأ في الاتصال بالسيرفر": "Server connection error",
+        "س": "h",
+        "د": "m",
+        "ث": "s",
+        "\" مقابل": "\" for",
+        "🪙؟": "🪙?",
+        "جارٍ الشراء... ⏳": "Purchasing... ⏳",
+        "رصيدك لا يكفي لإتمام الشراء": "Insufficient balance for this purchase",
+        "شراء وتجهيز": "Buy & Equip",
+        "حدث خطأ أثناء الشراء": "An error occurred while purchasing",
+        "الصفحة الرئيسية": "Home",
+
     // ---- Reverse dictionary (English -> Arabic) so we can toggle back ----
     const reverseDictionary = {};
     for (const ar in dictionary) {
