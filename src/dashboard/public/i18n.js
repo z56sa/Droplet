@@ -723,8 +723,8 @@
 
         // Final fallback: translate remaining Arabic words without touching HTML,
         // placeholders, IDs, or already translated English text.
-        if (targetLang === "en" && /[\\u0600-\\u06FF]/.test(result)) {
-            result = result.replace(/[\\u0600-\\u06FF]+/g, function (word) {
+        if (targetLang === "en" && /[\u0600-\u06FF]/.test(result)) {
+            result = result.replace(/[\u0600-\u06FF]+/g, function (word) {
                 const clean = word.trim();
                 return fallbackWords[clean] || word;
             });
