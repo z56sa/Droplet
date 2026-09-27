@@ -579,18 +579,35 @@
      * Falls back to the original text if nothing matches (unknown strings are
      * left untouched instead of breaking the UI).
      */
-    function translateText(text, targetLang) {
-        const trimmed = text.trim();
-        if (!trimmed) return text;
+    // Build phrase lists once so compound HTML/text nodes are translated too.
+    // Exact-match-only translation leaves Arabic fragments visible inside strings
+    // that contain counters, icons, variables, or multiple labels.
+    const translationPairs = {
+        en: Object.entries(dictionary).sort((a, b) => b[0].length - a[0].length),
+        ar: Object.entries(reverseDictionary).sort((a, b) => b[0].length - a[0].length)
+    };
 
+    function translateText(text, targetLang) {
+        if (!text || !text.trim()) return text;
+
+        const trimmed = text.trim();
         const leading = text.slice(0, text.length - text.trimStart().length);
         const trailing = text.slice(text.trimEnd().length);
-
         const map = targetLang === "en" ? dictionary : reverseDictionary;
+
+        // Exact match first.
         if (Object.prototype.hasOwnProperty.call(map, trimmed)) {
             return leading + map[trimmed] + trailing;
         }
-        return text;
+
+        // Then translate known phrases embedded in compound strings.
+        // Longest phrases are replaced first to avoid partial matches.
+        let result = text;
+        for (const [source, target] of (translationPairs[targetLang] || [])) {
+            if (!source || source === target || !result.includes(source)) continue;
+            result = result.split(source).join(target);
+        }
+        return result;
     }
 
     /**
