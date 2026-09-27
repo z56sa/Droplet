@@ -554,8 +554,6 @@
         "الذكاء الاصطناعي": "AI",
         "الذكاء الاصطناعي (ZENO AI & Web)": "AI (ZENO AI & Web)",
         "الذكاء الاصطناعي والتصفح الذكي": "AI & Smart Browsing"
-    };
-
 
         // Residual dashboard strings
         "خطأ في إعدادات البوت: CLIENT_SECRET غير مضاف في لوحة Render.": "Bot configuration error: CLIENT_SECRET is not configured in the Render dashboard.",
@@ -585,6 +583,7 @@
         "شراء وتجهيز": "Buy & Equip",
         "حدث خطأ أثناء الشراء": "An error occurred while purchasing",
         "الصفحة الرئيسية": "Home",
+    };
 
     // ---- Reverse dictionary (English -> Arabic) so we can toggle back ----
     const reverseDictionary = {};
