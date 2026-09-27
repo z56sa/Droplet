@@ -688,32 +688,43 @@
         setLanguage(currentLang === "ar" ? "en" : "ar");
     }
 
+    // Updates the label/state of the site's OWN language button, instead of
+    // creating a floating one. Set data-lang-toggle="true" on your existing
+    // button (or add its id/selector to TOGGLE_BUTTON_SELECTORS below) and
+    // this module will wire it up automatically — no duplicate button.
+    const TOGGLE_BUTTON_SELECTORS = [
+        "[data-lang-toggle]",
+        "#lang-toggle-btn"
+        // add your button's real id/class here, e.g. "#navLangBtn"
+    ];
+
+    function getToggleButton() {
+        for (const sel of TOGGLE_BUTTON_SELECTORS) {
+            const el = document.querySelector(sel);
+            if (el) return el;
+        }
+        return null;
+    }
+
     function updateToggleButtonLabel(lang) {
-        const btn = document.getElementById("lang-toggle-btn");
+        const btn = getToggleButton();
         if (!btn) return;
-        btn.textContent = lang === "ar" ? "English" : "العربية";
+        // Only touch a text-holding child if present (e.g. <span>AR</span>),
+        // so icons inside the button aren't wiped out.
+        const label = btn.querySelector("[data-lang-label]") || btn;
+        label.textContent = lang === "ar" ? "EN" : "AR";
         btn.setAttribute(
             "aria-label",
             lang === "ar" ? "Switch to English" : "التبديل إلى العربية"
         );
     }
 
-    /** Create the floating toggle button if the page hasn't defined its own */
+    /** Hook the click handler onto the site's existing language button. */
     function ensureToggleButton() {
-        if (document.getElementById("lang-toggle-btn")) return;
-
-        const btn = document.createElement("button");
-        btn.id = "lang-toggle-btn";
-        btn.type = "button";
-        btn.style.cssText = [
-            "position:fixed", "bottom:20px", "z-index:9999",
-            "inset-inline-end:20px",
-            "padding:10px 16px", "border-radius:999px", "border:none",
-            "background:#5865F2", "color:#fff", "font-size:14px",
-            "font-weight:600", "cursor:pointer", "box-shadow:0 4px 12px rgba(0,0,0,.25)"
-        ].join(";");
+        const btn = getToggleButton();
+        if (!btn || btn.dataset.langBound === "true") return;
         btn.addEventListener("click", toggleLanguage);
-        document.body.appendChild(btn);
+        btn.dataset.langBound = "true";
     }
 
     /** Watch for dynamically injected content (SPA-style dashboards) and translate it */

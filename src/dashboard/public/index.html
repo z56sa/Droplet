@@ -206,10 +206,6 @@
 
         /* ===== Global lang toggle: switch attr + persist + reload (guarantees clean render) ===== */
         function toggleZenoLang() {
-            if (window.zenoI18n && window.zenoI18n.toggleLang) {
-                window.zenoI18n.toggleLang();
-                return;
-            }
             var current = document.documentElement.getAttribute('lang') || 'ar';
             var next = current === 'ar' ? 'en' : 'ar';
             try {
@@ -224,15 +220,6 @@
             // Force clean re-render to avoid any CSS/DOM glitches
             setTimeout(function(){ location.reload(); }, 50);
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            var lang = document.documentElement.getAttribute('lang') || 'en';
-            document.querySelectorAll('.zeno-lang-toggle-btn').forEach(function(btn) {
-                btn.innerHTML = lang === 'ar'
-                    ? '<span class="text-sm">🌐</span><span class="font-black text-xs uppercase tracking-wider">EN</span>'
-                    : '<span class="text-sm">🌐</span><span class="font-black text-xs uppercase tracking-wider">AR</span>';
-            });
-        });
     </script>
 </head>
 
@@ -263,7 +250,7 @@
         <div class="flex items-center gap-3">
             <button type="button" onclick="toggleZenoLang()" class="zeno-lang-toggle-btn px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer">
                 <span class="text-sm">🌐</span>
-                <span class="lang-toggle-label font-black text-xs uppercase tracking-wider">EN</span>
+                <span class="lang-toggle-label font-black text-xs uppercase tracking-wider">AR</span>
             </button>
             <a href="/dashboard/manage" class="px-5 py-2.5 zeno-btn-primary rounded-xl text-xs font-black shadow-lg">
                 <span class="lang-ar">لوحة التحكم</span>
@@ -566,6 +553,5 @@
         updateLangToggleLabel();
     </script>
 
-    <script src="/i18n.js"></script>
 </body>
 </html>
