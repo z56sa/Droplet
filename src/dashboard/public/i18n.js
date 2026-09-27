@@ -755,7 +755,15 @@
         while ((current = walker.nextNode())) nodes.push(current);
 
         nodes.forEach(function (node) {
-            node.nodeValue = translateText(node.nodeValue, targetLang);
+            // Always translate from the original Arabic/source text so repeated
+            // AR <-> EN toggles never lose the source phrase.
+            if (node.nodeValue.trim()) {
+                if (!node.__zenoI18nOriginal) {
+                    node.__zenoI18nOriginal = node.nodeValue;
+                }
+                const source = node.__zenoI18nOriginal;
+                node.nodeValue = targetLang === "ar" ? source : translateText(source, "en");
+            }
         });
     }
 
@@ -771,8 +779,16 @@
                         return;
                     }
                 }
+
+                const marker = "data-zeno-i18n-" + attr.replace(/[^a-z0-9_-]/gi, "_");
                 const current = el.getAttribute(attr);
-                const translated = translateText(current, targetLang);
+
+                if (!el.hasAttribute(marker)) {
+                    el.setAttribute(marker, current);
+                }
+
+                const source = el.getAttribute(marker);
+                const translated = targetLang === "ar" ? source : translateText(source, "en");
                 if (translated !== current) el.setAttribute(attr, translated);
             });
         });
@@ -911,7 +927,10 @@
                     if (node.nodeType === 1) {
                         applyLanguage(currentLang, node);
                     } else if (node.nodeType === 3 && node.nodeValue.trim()) {
-                        node.nodeValue = translateText(node.nodeValue, currentLang);
+                        if (!node.__zenoI18nOriginal) node.__zenoI18nOriginal = node.nodeValue;
+                        node.nodeValue = currentLang === "ar"
+                            ? node.__zenoI18nOriginal
+                            : translateText(node.__zenoI18nOriginal, "en");
                     }
                 });
             });
