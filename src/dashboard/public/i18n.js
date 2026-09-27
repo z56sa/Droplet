@@ -2,11 +2,13 @@
  * @file i18n.js
  * @description Localization module for ZENO Dashboard (Arabic & English)
  * Features:
- * - Dynamic dictionary mapping English translations to all Arabic texts and phrases
+ * - Dynamic dictionary mapping Arabic texts/phrases to their English translations
  * - Automatically translates full DOM text nodes, attribute labels, and headings
- * - Detects device language (navigator.language)
+ * - Detects device language (navigator.language) on first visit
  * - Switch button toggles between Arabic and English instantly
  * - Flips direction (RTL for Arabic, LTR for English)
+ * - Remembers the user's choice (localStorage) across reloads
+ * - Watches for dynamically added content (MutationObserver) and translates it too
  */
 
 (function () {
@@ -22,7 +24,7 @@
         "تم الحفظ وتطبيق التغييرات في السيرفر بنجاح!": "Settings saved and applied to Discord successfully!",
         "البوت متصل ويعمل": "Bot is online & active",
         "يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.": "Changes are applied and saved directly to Discord in real-time.",
-        
+
         // Page Titles (sectionTitles)
         "نظرة عامة على السيرفر": "Server Overview",
         "نظرة عامة على السيرفر 📊": "Server Overview 📊",
@@ -155,7 +157,6 @@
         "متجر الخلفيات": "Wallpapers Shop",
         "سيرفراتي المدارة": "My Managed Servers",
         "خوادمك المتاحة للإدارة": "Your Manageable Servers",
-        "إدارة السيرفر": "Manage Server",
         "الملف الشخصي": "Profile",
         "بطاقة الهوية": "ID Card",
         "اليوم": "Today",
@@ -196,7 +197,7 @@
         "نظام اقتصاد ومكافآت يومية": "Economy & Daily Rewards System",
         "نظام راتب يومي مع مكافآت Streak متتالية، لوحة متصدرين بالذهب والخبرة، ومتجر خلفيات هوية غني بـ 105 خلفية حصرية.": "Daily salary system with consecutive Streak rewards, Gold and XP leaderboards, and a profile card wallpaper shop with 105 exclusive designs.",
         "لوحات تذاكر متعددة الأقسام": "Multi-Category Ticket Panels",
-        "نظام تذاكر احترافي بأزرار تفاعلية، استلاستلام التذاكر من فريق الدعم، حفظ سجل المحادثات (Transcripts)، وتقييم طاقم العمل.": "Professional ticket panels with interactive buttons, support staff claiming, full chat transcripts, and staff rating.",
+        "نظام تذاكر احترافي بأزرار تفاعلية، استلام التذاكر من فريق الدعم، حفظ سجل المحادثات (Transcripts)، وتقييم طاقم العمل.": "Professional ticket panels with interactive buttons, support staff claiming, full chat transcripts, and staff rating.",
         "سجلات دقيقة (Server Logs)": "Detailed Server Logs",
         "سجلات دقيقة": "Detailed Logs",
         "تسجيل شامل لـ 13 فئة (حذف وتعديل الرسائل، دخول وخروج الصوت، تعديل الرتب والقنوات، الطرد والحظر) بأدق التفاصيل.": "Comprehensive logging across 13 categories (messages, voice, roles, channels, kicks, bans) with precision details.",
@@ -496,11 +497,8 @@
         "قائمة المحظورين": "Banned members list",
         "قائمة الإدارة والمشرفين": "Admins and moderators list",
         "قائمة بوتات السيرفر": "Server bots list",
-        "رابط السيرفر المخصص": "Server vanity URL",
         "ميزات السيرفر المفعلة": "Enabled server features",
-        "تاريخ إنشاء السيرفر": "Server creation date",
         "مدة تشغيل البوت": "Bot uptime",
-        "سرعة الاستجابة": "Response speed",
         "معلومات الشاردات": "Shards information",
         "تغيير اسم البوت في السيرفر": "Change bot name in server",
         "تغيير صورة البوت": "Change bot avatar",
@@ -548,529 +546,210 @@
         "تخصيص وإدارة جميع أوامر البوت والصلاحيات": "Customize and manage all bot commands and permissions",
         "...ابحث عن أمر": "Search for a command...",
 
-        // Dashboard chrome & AI page (often left untranslated)
+        // Dashboard chrome & AI page
         "قائمة الأوامر": "Commands List",
         "الإشراف": "Moderation",
         "الأعضاء:": "Members:",
         "الذكاء الاصطناعي": "AI",
         "الذكاء الاصطناعي (ZENO AI & Web)": "AI (ZENO AI & Web)",
-        "الذكاء الاصطناعي والتصفح الذكي": "AI & Smart Browsing",
-        "تجربة الذكاء الاصطناعي الحي (Live Chat)": "Live AI Experience (Live Chat)",
-        "محادثة تجريبية مباشرة من الداشبورد": "Live Chat Test from Dashboard",
-        "اسأل ZENO أي سؤال أو Search في الويب...": "Ask ZENO any question or search the web...",
-        "جاري التفكير...": "Thinking...",
-        "جاري الحفظ...": "Saving...",
-        "جارٍ الحفظ...": "Saving...",
-        "ارسال": "Send",
-        "تصفح حي": "Live Browsing",
-        "بالإنترنت Online": "Online",
-        "logout": "Logout",
-        "support_server": "Support Server",
-        "back_to_dashboard": "Back to Dashboard",
-
-        // Client-side JS messages (dashboard.js, dashboard-actions.js, logs-manager.js)
-        "تم الحفظ بنجاح!": "Saved successfully!",
-        "فشل في حفظ الإعدادات": "Failed to save settings",
-        "حدث خطأ في الاتصال": "Connection error occurred",
-        "حدث خطأ في الاتصال بالسيرفر": "Server connection error occurred",
-        "✅ تم حفظ إعدادات السجلات!": "✅ Log settings saved!",
-        "❌ فشل حفظ الإعدادات": "❌ Failed to save settings",
-
-        // Server.js generated HTML & JS messages
-        "غير معروف": "Unknown",
-        "السيرفر غير موجود في كاش البوت": "Server not found in bot cache",
-        "يجب تسجيل الدخول أولاً": "Please login first",
-        "بيانات غير صالحة": "Invalid data",
-        "إجراء غير معروف": "Unknown action",
-        "تم تحديث الرصيد وحفظه فوراً في قاعدة البيانات": "Balance updated and saved to database instantly",
-        "لا توجد بيانات خبرة مسجلة بعد": "No XP data recorded yet",
-        "لا توجد بيانات ذهب مسجلة بعد": "No gold data recorded yet",
-        "لا توجد بيانات نشاط حتى الآن": "No activity data yet",
-        "✓ مفعّل حالياً": "✓ Currently Active",
-        "مجهزة على بطاقتك 🪪": "Equipped on your card 🪪",
-        "شراء وتجهيز": "Buy & Equip",
-        "جارٍ الاستلام... ⏳": "Claiming... ⏳",
-        "فشل استلام الراتب اليومي": "Failed to claim daily reward",
-        "استلام الرصيد 🎁": "Claim Reward 🎁",
-        "جارٍ الشراء... ⏳": "Purchasing... ⏳",
-        "✅ تم الشراء والتفعيل بنجاح!": "✅ Purchased and activated successfully!",
-        "رصيدك لا يكفي لإتمام الشراء": "Your balance is insufficient for this purchase",
-        "حدث خطأ أثناء الشراء": "Error occurred during purchase",
-        "الرصيد": "Balance",
-        "المبلغ": "Amount",
-        "اليوم": "Today",
-        "تاريخ": "Date",
-        "المكافأة اليومية (Daily)": "Daily Reward",
-        "الملف الشخصي": "Profile",
-        "بطاقة الهوية": "ID Card",
-        "مرحباً بك في لوحة تحكم ZENO Bot!": "Welcome to ZENO Bot Dashboard!",
-        "لوحة المتصدرين": "Leaderboards",
-        "أعلى 100 عضو بواسطة نقاط الخبرة (XP Leaderboard) 🏆": "Top 100 Members by XP 🏆",
-        "أغنى الأثرياء": "Richest Users",
-        "الراتب اليومي (Daily Reward)": "Daily Reward",
-        "مكافأة اليوم": "Today's Reward",
-        "التكرار": "Frequency",
-        "صوّت للبوت على Top.gg": "Vote for Bot on Top.gg",
-        "🗳️ صوّت الآن على Top.gg": "🗳️ Vote Now on Top.gg",
-        "عام": "General",
-        "أخرى": "Other",
-        "الصفحة الرئيسية": "Home",
-        "...اختر القناة": "...Select Channel",
-        "...اختر الرتبة": "...Select Role",
-        "حدد عدد المنشنات المسموح بها في الرسالة الواحدة": "Set maximum mentions allowed per message",
-        "حظر الحروف الكبيرة": "Block Capital Letters",
-        "منع الرسائل التي تحتوي على أحرف كبيرة بشكل مفرط (70% أو أكثر)": "Prevent messages with excessive capital letters (70% or more)",
-        "إزعاج Spoilers": "Spoiler Spam",
-        "منع الاستخدام المفرط لعلامات السبويلر": "Prevent excessive use of spoiler tags",
-        "نص Zalgo": "Zalgo Text",
-        "منع النصوص المشوهة والرموز الغريبة (Zalgo text)": "Prevent distorted text and weird symbols (Zalgo text)",
-        "مرونة أكثر في التخصيص": "More customization flexibility",
-        "حماية البوت — حماية متقدمة يديرها البوت مباشرة": "Bot Shield — Advanced protection managed directly by the bot",
-        "مكافحة السبام المتقدم": "Advanced Anti-Spam",
-        "مكافحة السبام": "Anti-Spam",
-        "عضو #": "Member #",
-        "خطأ في إعدادات البوت: CLIENT_SECRET غير مضاف في لوحة Render.": "Bot config error: CLIENT_SECRET is not added in Render dashboard.",
-        "تعذر إكمال تسجيل الدخول عبر Discord": "Could not complete Discord login",
-        "رسالة الخطأ من Discord: ": "Error message from Discord: ",
-        "تأكد من صحة Client Secret في إعدادات البوت.": "Verify the Client Secret in bot settings.",
-        "العودة للصفحة الرئيسية": "Back to Home",
-        "فشل جلب بيانات المستخدم من Discord": "Failed to fetch user data from Discord",
-        "فشل جلب سيرفرات المستخدم من Discord": "Failed to fetch user servers from Discord",
-        "الإعدادات": "Settings",
-        "ترتيبك الحالي: #": "Your current rank: #",
-        "عودة لخوادمك المتاحة": "Back to your available servers",
-        "ليس لديك صلاحيات إدارة في هذا السيرفر": "You don't have manage permissions in this server",
-        "يجب أن تكون مالك السيرفر أو تمتلك صلاحية Manage Server / Administrator": "You must be the server owner or have Manage Server / Administrator permission",
-        "البوت غير موجود في هذا السيرفر": "Bot is not in this server",
-        "حدث خطأ داخلي في الخادم": "Internal server error occurred",
-        "عذراً، حدث خطأ أثناء معالجة الطلب": "Sorry, an error occurred while processing the request",
-        "العودة للوحة التحكم": "Back to Dashboard",
-        "Unauthorized: يرجى تسجيل الدخول أولاً": "Unauthorized: Please login first",
-        "Bad Request: معرف السيرفر مطلوب": "Bad Request: Server ID is required",
-        "البوت غير متواجد في هذا السيرفر أو السيرفر غير موجود": "Bot is not in this server or server does not exist",
-        "Forbidden: لا تملك صلاحيات إدارة (Administrator أو Manage Server) في هذا السيرفر": "Forbidden: You don't have manage permissions (Administrator or Manage Server) in this server",
-        "حدث خطأ أثناء التحقق من الصلاحيات": "Error occurred while checking permissions",
-        "حدث خطأ أثناء فحص الصلاحيات": "Error occurred while verifying permissions",
-        "Too Many Requests: تم تجاوز حد الطلبات المسموح به. يرجى الانتظار قليلاً.": "Too Many Requests: Request limit exceeded. Please wait a moment.",
-        "Too Many Requests: عدد كبير من العمليات الحساسة في وقت قصير. يرجى المحاولة بعد قليل.": "Too Many Requests: Too many sensitive operations in a short time. Please try again later.",
-        "Too Many Requests: تم تجاوز حد رسائل الذكاء الاصطناعي للدقيقة. انتظر قليلاً.": "Too Many Requests: AI messages per minute limit exceeded. Please wait.",
-        "المحفز مطلوب": "Trigger word is required",
-        "الرد مطلوب": "Reply text is required",
-        "العنوان أو محتوى الوصف مطلوب على الأقل": "At least title or description content is required",
-        "اسم الجائزة مطلوب": "Prize name is required",
-        "محتوى الاقتراح مطلوب": "Suggestion content is required",
-        "نص السؤال مطلوب": "Question text is required",
-
-        // Guild dashboard JS alerts and messages (from server.js inline scripts)
-        "✅ تمت إضافة قاعدة العقوبة التلقائية بنجاح!": "✅ Auto-punishment rule added successfully!",
-        "❌ خطأ: ": "❌ Error: ",
-        "فشل الإضافة": "Addition failed",
-        "حدث خطأ في الاتصال": "Connection error occurred",
-        "✅ تم تحديث حد المنشنات بنجاح!": "✅ Mention limit updated successfully!",
-        "✅ تم تحديث حد طول الرسائل بنجاح!": "✅ Message length limit updated successfully!",
-        "⚙️ إعدادات ": "⚙️ Settings for ",
-        ":\\nيمكنك استثناء أعضاء محددين عبر حقل \"أعضاء معفيون من الفلتر\" بالأسفل.": ":\\nYou can exclude specific members via the \"Exempt Members\" field below.",
-        " تعمل بكفاءة وفق الإعدادات الحالية.": " is working efficiently with current settings.",
-        "هل أنت متأكد من رغبتك في حذف قاعدة العقوبة هذه؟": "Are you sure you want to delete this punishment rule?",
-        "✅ تم الحذف بنجاح!": "✅ Deleted successfully!",
-        "❌ خطأ في الحذف": "❌ Delete error",
-        "يرجى كتابة أيدي العضو أو منشن صالح وتحديد عدد الدعوات!": "Please enter a valid user ID/mention and set the invite count!",
-        "✅ تم تحديث رصيد دعوات العضو بنجاح!": "✅ Member invite balance updated successfully!",
-        "فشل التحديث": "Update failed",
-        "⚠️ تحذير: هل أنت متأكد من تصفير كافة بيانات الدعوات في السيرفر؟ لا يمكن التراجع عن هذا الإجراء!": "⚠️ Warning: Are you sure you want to reset all invite data in the server? This action cannot be undone!",
-        "✅ تم تصفير الدعوات بنجاح!": "✅ Invites reset successfully!",
-        "يرجى إدخال معرف المستخدم (User ID)!": "Please enter a valid User ID!",
-        "✅ تم إضافة العضو بنجاح!": "✅ Member added successfully!",
-        "حدث خطأ في الاتصال بالخادم": "Server connection error occurred",
-        "هل أنت متأكد من حذف هذا العضو؟": "Are you sure you want to delete this member?",
-        "فشل الحذف": "Deletion failed",
-        "يرجى كتابة كلمة أو عبارة المحفز": "Please enter a trigger word or phrase",
-        "يرجى كتابة الرد التلقائي": "Please enter the auto reply text",
-        "✅ تمت إضافة الرد التلقائي بنجاح!": "✅ Auto reply added successfully!",
-        "هل أنت متأكد من حذف هذا الرد التلقائي؟": "Are you sure you want to delete this auto reply?",
-        "❌ يرجى اختيار ملف صورة صالح (PNG, JPG, WEBP, GIF)": "❌ Please select a valid image file (PNG, JPG, WEBP, GIF)",
-        "❌ حجم الصورة يتجاوز 15 ميجابايت. يرجى اختيار صورة أصغر.": "❌ Image size exceeds 15 MB. Please choose a smaller image.",
-        "❌ فشل رفع الصورة: ": "❌ Image upload failed: ",
-        "خطأ غير معروف": "Unknown error",
-        "حدث خطأ أثناء رفع الصورة: ": "Error occurred while uploading image: ",
-        "يرجى اختيار \"روم إرسال لوحة التذاكر (Panel Channel)\" أولاً ثم حفظ التغييرات.": "Please select a \"Ticket Panel Channel\" first then save changes.",
-        "هل تريد إرسال لوحة التذاكر الآن مباشرة إلى الروم المختار؟": "Do you want to send the ticket panel now to the selected channel?",
-        "✅ تم إرسال لوحة التذاكر بنجاح إلى القناة!": "✅ Ticket panel sent to channel successfully!",
-        "❌ فشل الإرسال: ": "❌ Send failed: ",
-        "تأكد من صلاحيات البوت في القناة": "Check bot permissions in the channel",
-        "حدث خطأ أثناء محاولة الإرسال: ": "Error occurred while attempting to send: ",
-        "✅ تمت إضافة رتبة المستوى بنجاح!": "✅ Level reward role added successfully!",
-        "✅ تمت إضافة رتبة الشرط المزدوج بنجاح!": "✅ Dual condition role added successfully!",
-        "هل أنت متأكد من حذف هذه الرتبة؟": "Are you sure you want to delete this role?",
-        "هل أنت متأكد من مسح جميع التحذيرات المسجلة لجميع الأعضاء في هذا السيرفر؟": "Are you sure you want to clear all recorded warnings for all members in this server?",
-        "✅ تم مسح جميع التحذيرات بنجاح!": "✅ All warnings cleared successfully!",
-        "❌ فشل مسح التحذيرات": "❌ Failed to clear warnings",
-        "يرجى كتابة اسم الجائزة": "Please enter the prize name",
-        "يرجى اختيار القناة التي سيتم نشر القيف اواي فيها": "Please select the channel where the giveaway will be posted",
-        "✅ تم إنشاء ونشر القيف اواي في السيرفر بنجاح!": "✅ Giveaway created and posted to the server successfully!",
-        "❌ خطأ: ": "❌ Error: ",
-        "فشل إنشاء القيف اواي": "Giveaway creation failed",
-        "❌ حجم الصورة كبير جداً (أكثر من 15 ميجابايت)": "❌ Image size is too large (over 15 MB)",
-        "⚠️ تعذّر رفع الصورة: ": "⚠️ Image upload failed: ",
-        "⚠️ خطأ في الاتصال أثناء رفع الصورة": "⚠️ Connection error during image upload",
-        "يرجى كتابة تفاصيل الاقتراح": "Please enter suggestion details",
-        "✅ تم إرسال الاقتراح بنجاح ونشره في السيرفر!": "✅ Suggestion submitted and posted to the server successfully!",
-        "فشل إرسال الاقتراح": "Suggestion submission failed",
-        "✅ تم تحديث حالة الاقتراح بنجاح!": "✅ Suggestion status updated successfully!",
-        "❌ فشل تحديث الحالة": "❌ Status update failed",
-        "لا توجد سجلات مطابقة للبحث أو الفلتر 🔍": "No records match the search or filter 🔍",
-        " سجل": " records",
-
-        // Common variants (with/without tashkeel, etc.)
-        "جاري الحفظ...": "Saving...",
-        "جارٍ الحفظ...": "Saving...",
-        "تم الحفظ بنجاح!": "Saved successfully!",
-        "خطأ: ": "Error: ",
-        "❌ ": "❌ ",
-        "✅ ": "✅ ",
-        "⚠️ ": "⚠️ ",
-        "🗳️ ": "🗳️ ",
-        "🎁 ": "🎁 ",
-        "🪪 ": "🪪 ",
-        "⏳ ": "⏳ ",
-        "⚙️ ": "⚙️ ",
-        "🔍 ": "🔍 ",
-        "←": "←",
-        "->": "->",
-        "س": "h",
-        "د": "m",
-        "ث": "s",
-        "ساعة": "hour",
-        "دقيقة": "minute",
-        "ثانية": "second",
-        "؟": "?",
-        "!": "!"
+        "الذكاء الاصطناعي والتصفح الذكي": "AI & Smart Browsing"
     };
 
-    // Helper function to translate a single text string
-    function translateText(text) {
-        if (!text) return text;
-        const trimmed = text.trim();
-        return dictionary[trimmed] || text;
-    }
-
-    // Function to traverse and translate DOM nodes
-    function translateNode(node) {
-        if (node.nodeType === Node.TEXT_NODE) {
-            const original = node.nodeValue;
-            const trimmed = original.trim();
-            if (trimmed && dictionary[trimmed]) {
-                node.nodeValue = original.replace(trimmed, dictionary[trimmed]);
-            }
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
-            // Translate placeholders
-            if (node.hasAttribute('placeholder')) {
-                const ph = node.getAttribute('placeholder').trim();
-                if (dictionary[ph]) {
-                    node.setAttribute('placeholder', dictionary[ph]);
-                }
-            }
-            // Translate title attributes
-            if (node.hasAttribute('title')) {
-                const titleAttr = node.getAttribute('title').trim();
-                if (dictionary[titleAttr]) {
-                    node.setAttribute('title', dictionary[titleAttr]);
-                }
-            }
-            // Recursively translate child nodes
-            for (let child of node.childNodes) {
-                translateNode(child);
-            }
+    // ---- Reverse dictionary (English -> Arabic) so we can toggle back ----
+    const reverseDictionary = {};
+    for (const ar in dictionary) {
+        if (Object.prototype.hasOwnProperty.call(dictionary, ar)) {
+            reverseDictionary[dictionary[ar]] = ar;
         }
     }
 
-    const LANG_KEYS = ['zeno_dashboard_lang', 'zeno_lang'];
-    const reverseDictionary = {};
-    Object.keys(dictionary).forEach((ar) => {
-        const en = dictionary[ar];
-        if (en && !reverseDictionary[en]) reverseDictionary[en] = ar;
-    });
-    const arKeysByLength = Object.keys(dictionary).sort((a, b) => b.length - a.length);
-    const enKeysByLength = Object.keys(reverseDictionary).sort((a, b) => b.length - a.length);
+    const STORAGE_KEY = "zeno-dashboard-lang";
+    const ATTRS_TO_TRANSLATE = ["placeholder", "title", "aria-label", "value"];
+    // Only translate `value` for these input types (buttons/submits), never text inputs
+    const VALUE_TRANSLATABLE_TYPES = ["button", "submit", "reset"];
 
-    function translateString(text, dict, keys) {
-        if (!text) return text;
+    /**
+     * Look up a translation for a given piece of text in the target language.
+     * Falls back to the original text if nothing matches (unknown strings are
+     * left untouched instead of breaking the UI).
+     */
+    function translateText(text, targetLang) {
         const trimmed = text.trim();
         if (!trimmed) return text;
-        if (dict[trimmed]) return text.replace(trimmed, dict[trimmed]);
-        let out = text;
-        for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
-            if (key.length < 4) continue;
-            if (out.indexOf(key) !== -1) out = out.split(key).join(dict[key]);
+
+        const leading = text.slice(0, text.length - text.trimStart().length);
+        const trailing = text.slice(text.trimEnd().length);
+
+        const map = targetLang === "en" ? dictionary : reverseDictionary;
+        if (Object.prototype.hasOwnProperty.call(map, trimmed)) {
+            return leading + map[trimmed] + trailing;
         }
-        return out;
+        return text;
     }
 
-    function readStoredLang() {
-        try {
-            for (const key of LANG_KEYS) {
-                const value = localStorage.getItem(key);
-                if (value === 'ar' || value === 'en') return value;
+    /**
+     * Walk every text node under `root` and translate it in place.
+     * Skips <script> and <style> content.
+     */
+    function translateTextNodes(root, targetLang) {
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+            acceptNode: function (node) {
+                const parentTag = node.parentNode && node.parentNode.nodeName;
+                if (parentTag === "SCRIPT" || parentTag === "STYLE") {
+                    return NodeFilter.FILTER_REJECT;
+                }
+                return node.nodeValue.trim()
+                    ? NodeFilter.FILTER_ACCEPT
+                    : NodeFilter.FILTER_SKIP;
             }
-        } catch (e) {}
-        const match = (document.cookie || '').match(/(?:^|;\s*)zeno_dashboard_lang=(ar|en)/);
-        if (match) return match[1];
-        return null;
-    }
+        });
 
-    function persistLang(lang) {
-        try {
-            localStorage.setItem('zeno_dashboard_lang', lang);
-            localStorage.setItem('zeno_lang', lang);
-        } catch (e) {}
-        document.cookie = 'zeno_dashboard_lang=' + lang + ';path=/;max-age=31536000;SameSite=Lax';
-    }
+        const nodes = [];
+        let current;
+        while ((current = walker.nextNode())) nodes.push(current);
 
-    function detectLang() {
-        const stored = readStoredLang();
-        if (stored) return stored;
-        const htmlLang = (document.documentElement.getAttribute('lang') || '').toLowerCase();
-        if (htmlLang.startsWith('ar')) return 'ar';
-        if (htmlLang.startsWith('en')) return 'en';
-        const nav = (navigator.language || navigator.userLanguage || '').toLowerCase();
-        return nav.startsWith('ar') ? 'ar' : 'en';
-    }
-
-    function ensureLayoutStyle() {
-        if (document.getElementById('zeno-i18n-layout')) return;
-        const style = document.createElement('style');
-        style.id = 'zeno-i18n-layout';
-        style.textContent = [
-            'html.zeno-lang-en [dir="rtl"] { direction: ltr !important; }',
-            'html.zeno-lang-en .text-right { text-align: left !important; }',
-            'html.zeno-lang-en .justify-end { justify-content: flex-start !important; }',
-            'html.zeno-lang-en .flex-row-reverse { flex-direction: row !important; }',
-            'html.zeno-lang-en body > .flex-1.flex.items-stretch { flex-direction: row-reverse; }',
-            'html.zeno-lang-en body > div.flex-1.flex:not(.flex-col) { flex-direction: row-reverse; }',
-
-            'html.zeno-lang-en .lang-ar, html.zeno-lang-en [data-lang="ar"], html.zeno-lang-en span[lang="ar"] { display: none !important; }',
-            'html.zeno-lang-ar .lang-en, html.zeno-lang-ar [data-lang="en"], html.zeno-lang-ar span[lang="en"] { display: none !important; }',
-            'html.zeno-lang-en .lang-en, html.zeno-lang-en [data-lang="en"], html.zeno-lang-en span[lang="en"] { display: inline !important; }',
-            'html.zeno-lang-ar .lang-ar, html.zeno-lang-ar [data-lang="ar"], html.zeno-lang-ar span[lang="ar"] { display: inline !important; }'
-        ].join('\n');
-        (document.head || document.documentElement).appendChild(style);
-    }
-
-    function applyLayout(lang) {
-        ensureLayoutStyle();
-        const html = document.documentElement;
-        html.setAttribute('lang', lang);
-        html.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-        html.classList.toggle('zeno-lang-en', lang === 'en');
-        html.classList.toggle('zeno-lang-ar', lang === 'ar');
-        document.querySelectorAll('.zeno-lang-toggle-btn').forEach((btn) => {
-            const label = lang === 'ar' ? 'EN' : 'AR';
-            btn.innerHTML = '<span class="text-sm">🌐</span><span class="font-black text-xs uppercase tracking-wider">' + label + '</span>';
+        nodes.forEach(function (node) {
+            node.nodeValue = translateText(node.nodeValue, targetLang);
         });
     }
 
-    function isLangHandledSpan(node) {
-        if (!node) return false;
-        let cur = node;
-        while (cur) {
-            if (cur.nodeType === Node.ELEMENT_NODE) {
-                if (cur.classList && (cur.classList.contains('lang-ar') || cur.classList.contains('lang-en'))) {
-                    return true;
-                }
-                if (cur.getAttribute) {
-                    const dlang = cur.getAttribute('data-lang');
-                    const elang = cur.getAttribute('lang');
-                    if (dlang || elang === 'ar' || elang === 'en') {
-                        if (dlang && (dlang === 'ar' || dlang === 'en')) return true;
-                        if (elang === 'ar' || elang === 'en') return true;
+    /** Translate known attributes (placeholder, title, aria-label, button values) */
+    function translateAttributes(root, targetLang) {
+        const all = root.querySelectorAll("*");
+        all.forEach(function (el) {
+            ATTRS_TO_TRANSLATE.forEach(function (attr) {
+                if (!el.hasAttribute(attr)) return;
+                if (attr === "value") {
+                    const type = (el.getAttribute("type") || "").toLowerCase();
+                    if (el.tagName !== "INPUT" || VALUE_TRANSLATABLE_TYPES.indexOf(type) === -1) {
+                        return;
                     }
                 }
-            }
-            cur = cur.parentNode;
-        }
-        return false;
-    }
-
-    function translateNodeWithDict(node, dict, keys) {
-        if (!node || !dict) return;
-        if (isLangHandledSpan(node)) return;
-        if (node.nodeType === Node.TEXT_NODE) {
-            const original = node.nodeValue;
-            const next = translateString(original, dict, keys);
-            if (next !== original) node.nodeValue = next;
-            return;
-        }
-        if (node.nodeType !== Node.ELEMENT_NODE) return;
-        const tag = node.tagName;
-        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') return;
-
-        if (node.classList && (node.classList.contains('lang-ar') || node.classList.contains('lang-en'))) return;
-        if (node.getAttribute) {
-            const dlang = node.getAttribute('data-lang');
-            const elang = node.getAttribute('lang');
-            if ((dlang && (dlang === 'ar' || dlang === 'en')) || elang === 'ar' || elang === 'en') return;
-        }
-
-        if (node.hasAttribute('placeholder')) {
-            node.setAttribute('placeholder', translateString(node.getAttribute('placeholder'), dict, keys));
-        }
-        if (node.hasAttribute('title')) {
-            node.setAttribute('title', translateString(node.getAttribute('title'), dict, keys));
-        }
-        if (node.hasAttribute('data-i18n')) {
-            const key = node.getAttribute('data-i18n').trim();
-            if (dict[key] && node.childElementCount === 0) {
-                node.textContent = dict[key];
-            }
-        }
-        for (let i = 0; i < node.childNodes.length; i++) {
-            translateNodeWithDict(node.childNodes[i], dict, keys);
-        }
-    }
-
-    function isManualLangPage() {
-        if (document.body && document.body.hasAttribute && document.body.hasAttribute('data-zeno-manual-lang')) return true;
-        if (document.documentElement && document.documentElement.hasAttribute && document.documentElement.hasAttribute('data-zeno-manual-lang')) return true;
-        try {
-            var lp = location.pathname;
-            if (lp === '/' || lp === '' || lp === '/dashboard' || lp === '/index.html' || lp === '/dashboard/') {
-                var hasLangSpans = document.querySelector && (document.querySelector('.lang-ar') || document.querySelector('.lang-en'));
-                if (hasLangSpans) return true;
-            }
-        } catch(e){}
-        return false;
-    }
-
-    function applyLanguage() {
-        const lang = detectLang();
-        applyLayout(lang);
-        if (!document.body) return lang;
-        if (isManualLangPage()) return lang;
-        if (lang === 'en') {
-            translateNodeWithDict(document.body, dictionary, arKeysByLength);
-        } else {
-            translateNodeWithDict(document.body, reverseDictionary, enKeysByLength);
-        }
-        return lang;
-    }
-
-    function toggleLang() {
-        const next = detectLang() === 'ar' ? 'en' : 'ar';
-        persistLang(next);
-        applyLayout(next);
-        // Always reload to ensure clean render with correct lang CSS classes
-        location.reload();
-    }
-
-    function translateRuntimeText(text) {
-        if (!text || typeof text !== 'string') return text;
-        const lang = detectLang();
-        if (lang === 'en') {
-            return translateString(text, dictionary, arKeysByLength);
-        } else {
-            return translateString(text, reverseDictionary, enKeysByLength);
-        }
-    }
-
-    window._zenoT = function(text) {
-        return translateRuntimeText(text);
-    };
-    window._zenoIsEn = function() {
-        return detectLang() === 'en';
-    };
-
-    const originalAlert = window.alert;
-    window.alert = function(message) {
-        return originalAlert(translateRuntimeText(message));
-    };
-
-    const originalConfirm = window.confirm;
-    window.confirm = function(message) {
-        return originalConfirm(translateRuntimeText(message));
-    };
-
-    const originalPrompt = window.prompt;
-    window.prompt = function(message, defaultValue) {
-        return originalPrompt(translateRuntimeText(message), defaultValue);
-    };
-
-    const api = {
-        dictionary,
-        translate: translateText,
-        translateRuntime: translateRuntimeText,
-        detectLang,
-        apply: applyLanguage,
-        translatePage: applyLanguage,
-        toggleLang,
-        toggleLanguage: toggleLang
-    };
-
-    window.ZenoI18n = api;
-    window.zenoI18n = api;
-
-    let observerActive = false;
-    function startMutationObserver() {
-        if (observerActive || !('MutationObserver' in window)) return;
-        if (isManualLangPage()) return;
-        observerActive = true;
-        const observer = new MutationObserver(function(mutations) {
-            const lang = detectLang();
-            const dict = lang === 'en' ? dictionary : reverseDictionary;
-            const keys = lang === 'en' ? arKeysByLength : enKeysByLength;
-            mutations.forEach(function(m) {
-                if (m.addedNodes && m.addedNodes.length) {
-                    for (let i = 0; i < m.addedNodes.length; i++) {
-                        const node = m.addedNodes[i];
-                        if (node.nodeType === Node.ELEMENT_NODE || node.nodeType === Node.TEXT_NODE) {
-                            translateNodeWithDict(node, dict, keys);
-                        }
-                    }
-                }
-                if (m.type === 'characterData' && m.target.nodeType === Node.TEXT_NODE) {
-                    const next = translateString(m.target.nodeValue, dict, keys);
-                    if (next !== m.target.nodeValue) m.target.nodeValue = next;
-                }
-                if (m.type === 'attributes' && m.target.nodeType === Node.ELEMENT_NODE) {
-                    const el = m.target;
-                    if (m.attributeName === 'placeholder' && el.hasAttribute('placeholder')) {
-                        el.setAttribute('placeholder', translateString(el.getAttribute('placeholder'), dict, keys));
-                    }
-                    if (m.attributeName === 'title' && el.hasAttribute('title')) {
-                        el.setAttribute('title', translateString(el.getAttribute('title'), dict, keys));
-                    }
-                }
+                const current = el.getAttribute(attr);
+                const translated = translateText(current, targetLang);
+                if (translated !== current) el.setAttribute(attr, translated);
             });
         });
-        if (document.body) {
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true,
-                characterData: true,
-                attributes: true,
-                attributeFilter: ['placeholder', 'title']
-            });
-        } else {
-            document.addEventListener('DOMContentLoaded', function() {
-                if (document.body) observer.observe(document.body, {
-                    childList: true,
-                    subtree: true,
-                    characterData: true,
-                    attributes: true,
-                    attributeFilter: ['placeholder', 'title']
+    }
+
+    /** Apply full-page translation + direction/lang flip */
+    function applyLanguage(targetLang, root) {
+        root = root || document.body;
+        translateTextNodes(root, targetLang);
+        translateAttributes(root, targetLang);
+
+        if (root === document.body) {
+            document.documentElement.setAttribute("lang", targetLang);
+            document.documentElement.setAttribute(
+                "dir",
+                targetLang === "ar" ? "rtl" : "ltr"
+            );
+            document.documentElement.setAttribute("data-lang", targetLang);
+            updateToggleButtonLabel(targetLang);
+        }
+    }
+
+    function getSavedLanguage() {
+        try {
+            return localStorage.getItem(STORAGE_KEY);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function saveLanguage(lang) {
+        try {
+            localStorage.setItem(STORAGE_KEY, lang);
+        } catch (e) {
+            /* ignore (private mode / storage disabled) */
+        }
+    }
+
+    function detectInitialLanguage() {
+        const saved = getSavedLanguage();
+        if (saved === "ar" || saved === "en") return saved;
+
+        const nav = (navigator.language || navigator.userLanguage || "").toLowerCase();
+        // Page content is authored in Arabic, so only switch to English when the
+        // device is clearly *not* an Arabic locale.
+        return nav.indexOf("ar") === 0 ? "ar" : "en" === nav.split("-")[0] ? "en" : "ar";
+    }
+
+    let currentLang = "ar";
+
+    function setLanguage(lang) {
+        if (lang !== "ar" && lang !== "en") return;
+        currentLang = lang;
+        applyLanguage(lang, document.body);
+        saveLanguage(lang);
+    }
+
+    function toggleLanguage() {
+        setLanguage(currentLang === "ar" ? "en" : "ar");
+    }
+
+    function updateToggleButtonLabel(lang) {
+        const btn = document.getElementById("lang-toggle-btn");
+        if (!btn) return;
+        btn.textContent = lang === "ar" ? "English" : "العربية";
+        btn.setAttribute(
+            "aria-label",
+            lang === "ar" ? "Switch to English" : "التبديل إلى العربية"
+        );
+    }
+
+    /** Create the floating toggle button if the page hasn't defined its own */
+    function ensureToggleButton() {
+        if (document.getElementById("lang-toggle-btn")) return;
+
+        const btn = document.createElement("button");
+        btn.id = "lang-toggle-btn";
+        btn.type = "button";
+        btn.style.cssText = [
+            "position:fixed", "bottom:20px", "z-index:9999",
+            "inset-inline-end:20px",
+            "padding:10px 16px", "border-radius:999px", "border:none",
+            "background:#5865F2", "color:#fff", "font-size:14px",
+            "font-weight:600", "cursor:pointer", "box-shadow:0 4px 12px rgba(0,0,0,.25)"
+        ].join(";");
+        btn.addEventListener("click", toggleLanguage);
+        document.body.appendChild(btn);
+    }
+
+    /** Watch for dynamically injected content (SPA-style dashboards) and translate it */
+    function observeDynamicContent() {
+        const observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+                mutation.addedNodes.forEach(function (node) {
+                    if (node.nodeType === 1) {
+                        applyLanguage(currentLang, node);
+                    } else if (node.nodeType === 3 && node.nodeValue.trim()) {
+                        node.nodeValue = translateText(node.nodeValue, currentLang);
+                    }
                 });
             });
-        }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
     }
 
-    applyLayout(detectLang());
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            applyLanguage();
-            startMutationObserver();
-        });
-    } else {
-        applyLanguage();
-        startMutationObserver();
+    function init() {
+        currentLang = detectInitialLanguage();
+        ensureToggleButton();
+        applyLanguage(currentLang, document.body);
+        observeDynamicContent();
     }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+
+    // Expose a small public API in case the dashboard wants manual control
+    window.ZenoI18n = {
+        setLanguage: setLanguage,
+        toggleLanguage: toggleLanguage,
+        getLanguage: function () { return currentLang; },
+        translate: translateText
+    };
 })();
