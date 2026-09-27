@@ -915,8 +915,28 @@
     function ensureToggleButton() {
         const btn = getToggleButton();
         if (!btn || btn.dataset.langBound === "true") return;
-        btn.addEventListener("click", toggleLanguage);
+        btn.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleLanguage({ reload: false });
+        });
         btn.dataset.langBound = "true";
+    }
+
+    // Delegated fallback: keeps the toggle working even when the dashboard
+    // replaces/re-renders the header button after initial page load.
+    function ensureDelegatedToggle() {
+        if (document.documentElement.dataset.zenoI18nDelegated === "true") return;
+        document.documentElement.dataset.zenoI18nDelegated = "true";
+        document.addEventListener("click", function (event) {
+            const target = event.target && event.target.closest
+                ? event.target.closest(TOGGLE_BUTTON_SELECTORS.join(","))
+                : null;
+            if (!target) return;
+            event.preventDefault();
+            event.stopPropagation();
+            toggleLanguage({ reload: false });
+        }, true);
     }
 
     /** Watch for dynamically injected content (SPA-style dashboards) and translate it */
@@ -941,6 +961,7 @@
     function init() {
         currentLang = detectInitialLanguage();
         ensureToggleButton();
+        ensureDelegatedToggle();
         applyLanguage(currentLang, document.body);
         observeDynamicContent();
     }
