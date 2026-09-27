@@ -693,6 +693,80 @@
         "الإعلان": "Announcement", "الاقتراحات": "Suggestions", "اقتراح": "Suggestion", "الشكاوي": "Complaints",
         "شكوى": "Complaint", "التقديمات": "Applications", "تقديم": "Application", "التطبيق": "Application",
         "المسابقة": "Giveaway", "مسابقة": "Giveaway", "القيف": "Giveaway", "اواي": "Giveaway"
+        "الاستثناءات": "Exceptions",
+        "الإيموجيات": "Emojis",
+        "التحليلات": "Analytics",
+        "الصلاحيات": "Permissions",
+        "الاستخدام": "Usage",
+        "الإعلانات": "Announcements",
+        "المستخدمين": "Users",
+        "الاحتياطية": "Backups",
+        "المغادرين": "Leaving Members",
+        "الإجراءات": "Actions",
+        "الافتراضية": "Default",
+        "الستيكرات": "Stickers",
+        "المتحدثين": "Speakers",
+        "الاستجابة": "Response",
+        "التلقائية": "Automatic",
+        "المشاركون": "Participants",
+        "الموثوقين": "Trusted",
+        "التفاعلية": "Interactive",
+        "التغييرات": "Changes",
+        "المكتومين": "Muted Members",
+        "المتطلبات": "Requirements",
+        "المستخدمة": "Used",
+        "التفاصيل": "Details",
+        "التكاملات": "Integrations",
+        "التفصيلية": "Detailed",
+        "الاصطناعي": "Artificial",
+        "الأونلاين": "Online",
+        "العمليات": "Operations",
+        "الديسكورد": "Discord",
+        "البيانات": "Data",
+        "الداخلية": "Internal",
+        "المسجلين": "Registered",
+        "التفعيل": "Activation",
+        "الانتشار": "Growth",
+        "الإدارية": "Administrative",
+        "التفاعل": "Engagement",
+        "المتكررة": "Repeated",
+        "المكافآت": "Rewards",
+        "المنشنات": "Mentions",
+        "السبويلر": "Spoilers",
+        "الفيضان": "Flooding",
+        "تلقائياً": "Automatically",
+        "المحظورة": "Banned",
+        "الأدمنية": "Admin",
+        "الحقيقية": "Real",
+        "الوهمية": "Fake",
+        "الانتقال": "Navigation",
+        "الاحتيال": "Fraud",
+        "المعاينة": "Preview",
+        "المدعومة": "Supported",
+        "المطابقة": "Matching",
+        "الحساسية": "Sensitivity",
+        "الانتظار": "Waiting",
+        "المسموحة": "Allowed",
+        "تفاعلية": "Interactive",
+        "المفتوحة": "Open",
+        "الارتفاع": "Increase",
+        "الانضمام": "Join",
+        "الممنوحة": "Granted",
+        "الاحتفاظ": "Retention",
+        "المنتهية": "Expired",
+        "المطلوبة": "Required",
+        "المشاركة": "Participation",
+        "المرفوضة": "Rejected",
+        "المقبولة": "Accepted",
+        "اقتراحات": "Suggestions",
+        "بالتفصيل": "In Detail",
+        "المشبوهة": "Suspicious",
+        "البوسترز": "Boosters",
+        "الفانيتي": "Vanity",
+        "الممنوعة": "Forbidden",
+        "برودكاست": "Broadcast",
+        "رياكشنات": "Reactions",
+        "المحاولة": "Attempt",
     };
 
     const translationPairs = {
@@ -734,7 +808,14 @@
 
     function translateFallbackWord(word) {
         if (fallbackWords[word]) return fallbackWords[word];
-        const candidates = [word, "ال" + word, "و" + word, "وال" + word, "ب" + word, "بال" + word, "ل" + word, "لل" + word];
+        const candidates = [word];
+        if (word.indexOf("وال") === 0) candidates.push(word.slice(1), word.slice(2));
+        if (word.indexOf("بال") === 0) candidates.push(word.slice(1), word.slice(2));
+        if (word.indexOf("لل") === 0) candidates.push(word.slice(1), word.slice(2));
+        if (word.indexOf("و") === 0) candidates.push(word.slice(1));
+        if (word.indexOf("ب") === 0) candidates.push(word.slice(1));
+        if (word.indexOf("ل") === 0) candidates.push(word.slice(1));
+        if (word.indexOf("ال") === 0) candidates.push(word.slice(2));
         for (const candidate of candidates) {
             if (fallbackWords[candidate]) return fallbackWords[candidate];
         }
