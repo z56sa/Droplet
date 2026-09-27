@@ -606,6 +606,95 @@
     // Build phrase lists once so compound HTML/text nodes are translated too.
     // Exact-match-only translation leaves Arabic fragments visible inside strings
     // that contain counters, icons, variables, or multiple labels.
+    // Fallback word-level dictionary for legacy/server-rendered UI strings that are not
+    // exact dictionary matches. This prevents Arabic fragments from remaining when English
+    // is selected, including dynamically generated labels and mixed HTML text.
+    const fallbackWords = {
+        "لوحة": "Panel", "التحكم": "Control", "الرئيسية": "Home", "العودة": "Back",
+        "السيرفر": "Server", "السيرفرات": "Servers", "سيرفر": "Server", "سيرفرات": "Servers",
+        "عضو": "Member", "الأعضاء": "Members", "عضوًا": "members", "المستخدم": "User",
+        "المستخدمين": "Users", "الرتبة": "Role", "الرتب": "Roles", "قناة": "Channel",
+        "القنوات": "Channels", "روم": "Channel", "الرومات": "Channels", "رسالة": "Message",
+        "الرسائل": "Messages", "الإعدادات": "Settings", "إعدادات": "Settings",
+        "نظام": "System", "أنظمة": "Systems", "حماية": "Protection", "الحماية": "Protection",
+        "أمان": "Security", "الأمان": "Security", "إشراف": "Moderation", "الإشراف": "Moderation",
+        "إدارة": "Management", "الإداريين": "Staff", "المشرف": "Moderator", "المشرفين": "Moderators",
+        "المميزات": "Features", "الميزات": "Features", "ميزة": "Feature", "ميزات": "Features",
+        "الأوامر": "Commands", "أمر": "Command", "الأمر": "Command", "الأوامر": "Commands",
+        "الكل": "All", "جميع": "All", "كل": "All", "بعض": "Some", "المجموع": "Total",
+        "إجمالي": "Total", "عدد": "Count", "مستوى": "Level", "المستوى": "Level", "مستويات": "Levels",
+        "الخبرة": "Experience", "الخبرة": "XP", "نقاط": "Points", "نقطة": "Point",
+        "ذهب": "Gold", "الذهب": "Gold", "الرصيد": "Balance", "المبلغ": "Amount",
+        "اليوم": "Today", "يوم": "Day", "ساعة": "hour", "ساعات": "hours", "دقيقة": "minute",
+        "دقائق": "minutes", "ثانية": "second", "ثواني": "seconds", "الآن": "Now",
+        "حالياً": "Currently", "مفعل": "Enabled", "مفعّل": "Enabled", "معطل": "Disabled",
+        "معطّل": "Disabled", "تفعيل": "Enable", "تعطيل": "Disable", "إضافة": "Add",
+        "أضف": "Add", "حذف": "Delete", "مسح": "Clear", "تعديل": "Edit", "حفظ": "Save",
+        "تطبيق": "Apply", "إلغاء": "Cancel", "تأكيد": "Confirm", "تراجع": "Undo",
+        "إرسال": "Send", "رفع": "Upload", "إزالة": "Remove", "اختيار": "Select",
+        "اختر": "Select", "ابحث": "Search", "بحث": "Search", "تفاصيل": "Details",
+        "معلومات": "Information", "بيانات": "Data", "إحصائيات": "Statistics", "سجل": "Log",
+        "السجلات": "Logs", "سجلات": "Logs", "حدث": "Event", "أحداث": "Events",
+        "دعوة": "Invite", "دعوات": "Invites", "البوست": "Boost", "البوستات": "Boosts",
+        "المشاركين": "Participants", "مشارك": "Participant", "الفائزين": "Winners", "الفائز": "Winner",
+        "الجائزة": "Prize", "الوصف": "Description", "المدة": "Duration", "الحالة": "Status",
+        "نشط": "Active", "نشطة": "Active", "منتهي": "Ended", "منتهية": "Ended",
+        "مفتوحة": "Open", "مفتوحة": "Open", "مغلقة": "Closed", "مغلق": "Closed",
+        "مراجعة": "Review", "المراجعة": "Review", "مقبول": "Accepted", "مقبولة": "Accepted",
+        "مرفوض": "Rejected", "مرفوضة": "Rejected", "تنفيذ": "Execute", "قبول": "Accept", "رفض": "Reject",
+        "الترحيب": "Welcome", "ترحيب": "Welcome", "المغادرة": "Leave", "مغادرة": "Leave",
+        "تذكرة": "Ticket", "التذاكر": "Tickets", "تذاكر": "Tickets", "دعم": "Support",
+        "الدعم": "Support", "الرد": "Response", "ردود": "Responses", "رد": "Reply",
+        "كلمة": "Word", "كلمات": "Words", "عبارة": "Phrase", "عبارات": "Phrases",
+        "مسموح": "Allowed", "مسموحة": "Allowed", "مستثنى": "Exempt", "مستثناة": "Exempt",
+        "المستثناة": "Excluded", "تحتوي": "Contains", "يحتوي": "Contains", "يبدأ": "Starts",
+        "ينتهي": "Ends", "مطابقة": "Match", "تامة": "Exact", "جزئي": "Partial",
+        "أعضاء": "Members", "عضو": "Member", "بشر": "Humans", "بوت": "Bot", "البوت": "Bot",
+        "البوتات": "Bots", "الحسابات": "Accounts", "حساب": "Account", "جديد": "New",
+        "جديدة": "New", "قديم": "Old", "الوهمية": "Fake", "الوهمي": "Fake",
+        "العقوبات": "Punishments", "عقوبة": "Punishment", "تحذير": "Warning", "تحذيرات": "Warnings",
+        "حظر": "Ban", "محظور": "Banned", "طرد": "Kick", "كتم": "Mute", "عزل": "Timeout",
+        "سجن": "Jail", "قفل": "Lock", "فتح": "Unlock", "إخفاء": "Hide", "إظهار": "Show",
+        "الصوت": "Voice", "صوت": "Voice", "النصية": "Text", "الكتابية": "Text",
+        "كتابي": "Text", "كتابية": "Text", "صوتية": "Voice", "صوتي": "Voice",
+        "الألوان": "Colors", "لون": "Color", "صورة": "Image", "صور": "Images", "خلفية": "Wallpaper",
+        "الخلفية": "Background", "بنر": "Banner", "اسم": "Name", "عنوان": "Title",
+        "المظهر": "Appearance", "مظهر": "Appearance", "التخصيص": "Customization", "تخصيص": "Customize",
+        "الملف": "Profile", "الشخصي": "Personal", "بطاقة": "Card", "بطاقات": "Cards",
+        "الهوية": "Identity", "التصنيف": "Rank", "ترتيب": "Rank", "ترتيبك": "Your rank",
+        "الأخيرة": "Recent", "عام": "General", "أخرى": "Other", "القسم": "Section", "الأقسام": "Categories",
+        "الفئة": "Category", "الفئات": "Categories", "اختصارات": "Aliases", "اختصار": "Alias",
+        "الرئيسي": "Main", "الرئيسية": "Main", "افتراضي": "Default", "مخصص": "Custom",
+        "مخصصة": "Custom", "مخصصة": "Custom", "متاح": "Available", "متاحة": "Available",
+        "غير": "Not", "لا": "No", "يوجد": "Exists", "توجد": "There are", "لايوجد": "None",
+        "بنجاح": "successfully", "بنجاح!": "successfully!", "فشل": "Failed", "خطأ": "Error",
+        "حدث": "Occurred", "يرجى": "Please", "فضلاً": "Please", "تأكد": "Make sure",
+        "هل": "Are", "متأكد": "sure", "رغبتك": "you want", "من": "from", "في": "in",
+        "هذا": "this", "هذه": "this", "ذلك": "that", "يمكن": "can", "يمكنك": "You can",
+        "يجب": "must", "سيتم": "will be", "يتم": "is", "عند": "when", "بعد": "after",
+        "قبل": "before", "فقط": "only", "أي": "any", "مع": "with", "بدون": "without",
+        "لـ": "for", "على": "on", "إلى": "to", "منه": "from it", "داخل": "inside",
+        "أعلى": "Top", "أسفل": "Bottom", "يمين": "Right", "يسار": "Left",
+        "الرئيسية": "Main", "المتقدم": "Advanced", "متقدم": "Advanced", "شامل": "Comprehensive",
+        "شاملة": "Comprehensive", "دقيق": "Detailed", "دقيقة": "Detailed", "سريع": "Fast",
+        "متطورة": "Advanced", "احترافي": "Professional", "احترافية": "Professional",
+        "آلي": "Automatic", "تلقائي": "Automatic", "تلقائية": "Automatic", "مباشر": "Live",
+        "لحظياً": "in real time", "فوراً": "immediately", "مباشرة": "directly",
+        "المتصلون": "Online", "المتاحة": "Available", "المتواجدين": "Present", "الصلاحيات": "Permissions",
+        "صلاحيات": "Permissions", "صلاحية": "Permission", "الأونر": "Owner", "المالك": "Owner",
+        "المالكين": "Owners", "المعرف": "ID", "معرف": "ID", "أيدي": "IDs", "منشن": "Mention",
+        "تغيير": "Change", "تحديث": "Update", "إنشاء": "Create", "توليد": "Generate",
+        "استعادة": "Restore", "إعادة": "Reset", "ضبط": "Set", "حفظ": "Save",
+        "استلام": "Claim", "مكافأة": "Reward", "المكافأة": "Reward", "راتب": "Salary",
+        "التصويت": "Voting", "صوّت": "Vote", "المتصدّرين": "Leaderboards", "المتصدرين": "Leaderboards",
+        "المتصدّر": "Leaderboard", "الأغنى": "Richest", "نشاط": "Activity", "النشاط": "Activity",
+        "المستوى": "Level", "المستويات": "Levels", "الاقتصاد": "Economy", "المتجر": "Shop",
+        "الخادم": "Server", "الخوادم": "Servers", "البرودكاست": "Broadcast", "الإعلانات": "Announcements",
+        "الإعلان": "Announcement", "الاقتراحات": "Suggestions", "اقتراح": "Suggestion", "الشكاوي": "Complaints",
+        "شكوى": "Complaint", "التقديمات": "Applications", "تقديم": "Application", "التطبيق": "Application",
+        "المسابقة": "Giveaway", "مسابقة": "Giveaway", "القيف": "Giveaway", "اواي": "Giveaway"
+    };
+
     const translationPairs = {
         en: Object.entries(dictionary).sort((a, b) => b[0].length - a[0].length),
         ar: Object.entries(reverseDictionary).sort((a, b) => b[0].length - a[0].length)
@@ -631,6 +720,16 @@
             if (!source || source === target || !result.includes(source)) continue;
             result = result.split(source).join(target);
         }
+
+        // Final fallback: translate remaining Arabic words without touching HTML,
+        // placeholders, IDs, or already translated English text.
+        if (targetLang === "en" && /[\\u0600-\\u06FF]/.test(result)) {
+            result = result.replace(/[\\u0600-\\u06FF]+/g, function (word) {
+                const clean = word.trim();
+                return fallbackWords[clean] || word;
+            });
+        }
+
         return result;
     }
 
