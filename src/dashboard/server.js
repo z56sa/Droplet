@@ -2920,7 +2920,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                     <div class="flex items-center gap-2 text-left">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">Channel Move Detection</h5>
-                                            <p class="text-[10px] text-gray-400">Channel Move Detection إلى تصنيفات أخرى (تنبيه فقط)</p>
+                                            <p class="text-[10px] text-gray-400">Detect channels moved to other categories (alert only)</p>
                                         </div>
                                         <span class="text-sm">📍</span>
                                     </div>
