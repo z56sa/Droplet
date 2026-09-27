@@ -746,7 +746,7 @@
         currentLang = lang;
         saveLanguage(lang);
         applyLanguage(lang, document.body); // instant feedback before reload
-        const shouldReload = !options || options.reload !== false;
+        const shouldReload = !!(options && options.reload === true);
         if (shouldReload) {
             setTimeout(function () { location.reload(); }, 50);
         }
@@ -771,11 +771,8 @@
     // this module will wire it up automatically — no duplicate button.
     const TOGGLE_BUTTON_SELECTORS = [
         "[data-lang-toggle]",
-        "#lang-toggle-btn"
-        // Not including ".zeno-lang-toggle-btn" here on purpose: dashboard
-        // pages already wire that button with onclick="window.zenoI18n.toggleLang()"
-        // directly in the HTML. Auto-binding a second click listener to it
-        // here would fire the toggle twice per click.
+        "#lang-toggle-btn",
+        ".zeno-lang-toggle-btn"
     ];
 
     function getToggleButton() {
@@ -791,7 +788,7 @@
         if (!btn) return;
         // Only touch a text-holding child if present (e.g. <span>AR</span>),
         // so icons inside the button aren't wiped out.
-        const label = btn.querySelector("[data-lang-label]") || btn;
+        const label = btn.querySelector("[data-lang-label]") || btn.querySelector(".lang-toggle-label") || btn.querySelector(".font-black") || btn;
         label.textContent = lang === "ar" ? "EN" : "AR";
         btn.setAttribute(
             "aria-label",
@@ -845,6 +842,13 @@
         toggleLang: toggleLanguage,
         setLang: setLanguage,
         getLang: function () { return currentLang; },
+        apply: function (lang) {
+            const target = lang === "ar" || lang === "en" ? lang : currentLang;
+            currentLang = target;
+            saveLanguage(target);
+            applyLanguage(target, document.body);
+            return target;
+        },
         t: t
     };
 
