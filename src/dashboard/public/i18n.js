@@ -1600,7 +1600,14 @@
         }
     }
 
+    function syncCurrentLanguageFromDocument() {
+        const domLang = document.documentElement.getAttribute("lang");
+        if (domLang === "ar" || domLang === "en") currentLang = domLang;
+        return currentLang;
+    }
+
     function toggleLanguage(options) {
+        syncCurrentLanguageFromDocument();
         setLanguage(currentLang === "ar" ? "en" : "ar", options);
     }
 
@@ -1710,6 +1717,12 @@
     // already call via onclick="window.zenoI18n.toggleLang()" — this is
     // what was missing and causing the "Cannot read properties of undefined
     // (reading 'toggleLang')" error.
+    // Compatibility aliases for older dashboard buttons that call a global toggle.
+    // These aliases intentionally point to the same single implementation so the
+    // button can never toggle twice or depend on a page-specific handler.
+    window.toggleZenoLang = toggleLanguage;
+    window.toggleLanguage = toggleLanguage;
+
     window.zenoI18n = {
         toggleLang: toggleLanguage,
         setLang: setLanguage,
