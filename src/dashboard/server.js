@@ -46,6 +46,8 @@ module.exports = function (app, client) {
     // reuse the same Discord API flow instead of exchanging the code multiple times.
     const oauthFlowCache = new Map();
     let discordRateLimitUntil = 0;
+    let discordOAuthRequestChain = Promise.resolve();
+    let lastDiscordOAuthRequestAt = 0;
     let sessionSecret = '';
     try {
         const secrets = SecretManager.getMultipleSecrets(['SESSION_SECRET']);
@@ -79,34 +81,64 @@ module.exports = function (app, client) {
     // A 429 is shared across the process so concurrent requests do not keep
     // hammering Discord while the global rate limit is active.
     const discordFetch = async (url, options = {}) => {
-        const remainingMs = discordRateLimitUntil - Date.now();
-        if (remainingMs > 0) {
-            const error = createOAuthError(429, 'Discord rate limit is active');
-            error.retryAfterMs = remainingMs;
-            throw error;
-        }
+        // OAuth requests are globally serialized. A burst of simultaneous
+        // logins/callbacks can otherwise hit Discord's anti-abuse limits even
+        // when every individual request is valid.
+        let release;
+        const previous = discordOAuthRequestChain;
+        discordOAuthRequestChain = new Promise(resolve => { release = resolve; });
+        await previous;
 
-        const response = await fetch(url, options);
-        if (response.status !== 429) return response;
-
-        let retryAfter = Number(response.headers.get('retry-after') || 0);
         try {
-            const data = await response.clone().json();
-            if (Number.isFinite(Number(data?.retry_after))) {
-                retryAfter = Number(data.retry_after);
+            const remainingMs = discordRateLimitUntil - Date.now();
+            if (remainingMs > 0) {
+                const error = createOAuthError(429, 'Discord rate limit is active');
+                error.retryAfterMs = remainingMs;
+                throw error;
             }
-        } catch (_) {}
 
-        // Discord's Retry-After is seconds. Never cap it to 15 seconds:
-        // doing so would immediately hammer Discord again while the global
-        // rate limit is still active.
-        const waitMs = Math.max(retryAfter * 1000, 1000);
-        discordRateLimitUntil = Math.max(discordRateLimitUntil, Date.now() + waitMs);
+            // Keep a small gap between OAuth API calls instead of sending
+            // token/user/guild requests back-to-back.
+            const gapMs = 750;
+            const sinceLast = Date.now() - lastDiscordOAuthRequestAt;
+            if (sinceLast < gapMs) {
+                await new Promise(resolve => setTimeout(resolve, gapMs - sinceLast));
+            }
 
-        const error = createOAuthError(429, 'Discord rate limit is active');
-        error.retryAfterMs = waitMs;
-        console.warn('[DISCORD RATE LIMIT] Retry-After: ' + Math.ceil(waitMs / 1000) + 's');
-        throw error;
+            const endpoint = (() => {
+                try {
+                    return new URL(url).pathname;
+                } catch (_) {
+                    return url;
+                }
+            })();
+
+            lastDiscordOAuthRequestAt = Date.now();
+            const response = await fetch(url, options);
+
+            if (response.status !== 429) return response;
+
+            let retryAfter = Number(response.headers.get('retry-after') || 0);
+            try {
+                const data = await response.clone().json();
+                if (Number.isFinite(Number(data?.retry_after))) {
+                    retryAfter = Number(data.retry_after);
+                }
+            } catch (_) {}
+
+            // Discord's Retry-After is seconds. Never cap it: retrying before
+            // the server-side cooldown expires can extend the temporary block.
+            const waitMs = Math.max(retryAfter * 1000, 1000);
+            discordRateLimitUntil = Math.max(discordRateLimitUntil, Date.now() + waitMs);
+
+            const error = createOAuthError(429, 'Discord rate limit is active');
+            error.retryAfterMs = waitMs;
+            console.warn('[DISCORD RATE LIMIT] endpoint=' + endpoint +
+                ' retry-after=' + Math.ceil(waitMs / 1000) + 's');
+            throw error;
+        } finally {
+            release();
+        }
     };
 
     const getOAuthConfig = (req) => {
@@ -149,9 +181,10 @@ module.exports = function (app, client) {
             const { clientId, clientSecret, redirectUri } = oauthConfig;
 
             const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+            // Match Discord's documented server-to-server OAuth2 exchange:
+            // credentials are supplied through Basic auth, not duplicated in
+            // both the Authorization header and the form body.
             const tokenParams = new URLSearchParams({
-                client_id: clientId,
-                client_secret: clientSecret,
                 grant_type: 'authorization_code',
                 code,
                 redirect_uri: redirectUri
