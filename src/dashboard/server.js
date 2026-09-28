@@ -78,40 +78,35 @@ module.exports = function (app, client) {
     // Discord OAuth helper.
     // A 429 is shared across the process so concurrent requests do not keep
     // hammering Discord while the global rate limit is active.
-    const discordFetch = async (url, options = {}, maxRetries = 2) => {
-        let lastResponse = null;
-
-        for (let attempt = 0; attempt <= maxRetries; attempt++) {
-            const remainingMs = discordRateLimitUntil - Date.now();
-            if (remainingMs > 0) {
-                await new Promise(resolve => setTimeout(resolve, Math.min(remainingMs, 15000)));
-            }
-
-            const response = await fetch(url, options);
-            lastResponse = response;
-
-            if (response.status !== 429) return response;
-
-            let retryAfter = Number(response.headers.get('retry-after') || 0);
-            try {
-                const data = await response.clone().json();
-                if (Number.isFinite(Number(data?.retry_after))) {
-                    retryAfter = Number(data.retry_after);
-                }
-            } catch (_) {}
-
-            const waitMs = Math.min(Math.max(retryAfter * 1000, 1000), 15000);
-            discordRateLimitUntil = Math.max(discordRateLimitUntil, Date.now() + waitMs);
-
-            if (attempt >= maxRetries) return response;
-
-            console.warn(
-                '[DISCORD RATE LIMIT] Waiting ' + waitMs +
-                'ms before retry (' + (attempt + 1) + '/' + maxRetries + ')'
-            );
+    const discordFetch = async (url, options = {}) => {
+        const remainingMs = discordRateLimitUntil - Date.now();
+        if (remainingMs > 0) {
+            const error = createOAuthError(429, 'Discord rate limit is active');
+            error.retryAfterMs = remainingMs;
+            throw error;
         }
 
-        return lastResponse;
+        const response = await fetch(url, options);
+        if (response.status !== 429) return response;
+
+        let retryAfter = Number(response.headers.get('retry-after') || 0);
+        try {
+            const data = await response.clone().json();
+            if (Number.isFinite(Number(data?.retry_after))) {
+                retryAfter = Number(data.retry_after);
+            }
+        } catch (_) {}
+
+        // Discord's Retry-After is seconds. Never cap it to 15 seconds:
+        // doing so would immediately hammer Discord again while the global
+        // rate limit is still active.
+        const waitMs = Math.max(retryAfter * 1000, 1000);
+        discordRateLimitUntil = Math.max(discordRateLimitUntil, Date.now() + waitMs);
+
+        const error = createOAuthError(429, 'Discord rate limit is active');
+        error.retryAfterMs = waitMs;
+        console.warn('[DISCORD RATE LIMIT] Retry-After: ' + Math.ceil(waitMs / 1000) + 's');
+        throw error;
     };
 
     const getOAuthConfig = (req) => {
@@ -122,14 +117,20 @@ module.exports = function (app, client) {
         return { clientId, clientSecret, redirectUri };
     };
 
-    const sendOAuthRateLimitPage = (res) => res.status(503).send(`
-        <div style="background:#0b0d14;color:#fff;font-family:sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
-            <h2 style="color:#f59e0b;">Discord is temporarily rate limiting ZENO</h2>
-            <p style="color:#aaa;max-width:560px;margin-top:10px;">Discord has temporarily limited API requests. This is a temporary rate-limit response, not an indication that your Client Secret is invalid.</p>
-            <p style="color:#888;font-size:13px;margin-top:5px;">Please wait a moment and try signing in again.</p>
-            <a href="/" style="color:#a855f7;margin-top:20px;text-decoration:none;font-weight:bold;">Back to Home</a>
-        </div>
-    `);
+    const sendOAuthRateLimitPage = (res, retryAfterMs = 60000) => {
+        const seconds = Math.max(1, Math.ceil(retryAfterMs / 1000));
+        const minutes = Math.ceil(seconds / 60);
+        const waitText = minutes > 1 ? (minutes + ' minutes') : (seconds + ' seconds');
+
+        return res.status(503).send(`
+            <div style="background:#0b0d14;color:#fff;font-family:sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
+                <h2 style="color:#f59e0b;">Discord is temporarily rate limiting ZENO</h2>
+                <p style="color:#aaa;max-width:560px;margin-top:10px;">Discord has temporarily limited API requests for ZENO. Discord returned a 429 rate-limit response.</p>
+                <p style="color:#888;font-size:13px;margin-top:5px;">Please wait approximately <strong>${waitText}</strong> before trying to sign in again.</p>
+                <a href="/" style="color:#a855f7;margin-top:20px;text-decoration:none;font-weight:bold;">Back to Home</a>
+            </div>
+        `);
+    };
 
     const createOAuthError = (status, message) => {
         const error = new Error(message);
@@ -270,6 +271,11 @@ module.exports = function (app, client) {
 
     // 2. Real Discord OAuth2 Authentication Routes
     app.get('/auth/discord', (req, res) => {
+        const activeRateLimitMs = discordRateLimitUntil - Date.now();
+        if (activeRateLimitMs > 0) {
+            return sendOAuthRateLimitPage(res, activeRateLimitMs);
+        }
+
         const { clientId, redirectUri } = getOAuthConfig(req);
 
         // Reuse an already-created authorization URL for a short window.
@@ -379,7 +385,7 @@ module.exports = function (app, client) {
             console.error('[OAUTH ERROR] OAuth callback error:', err);
 
             if (err?.status === 429) {
-                return sendOAuthRateLimitPage(res);
+                return sendOAuthRateLimitPage(res, err.retryAfterMs || (discordRateLimitUntil - Date.now()));
             }
 
             return res.status(502).send('Unable to complete Discord sign-in right now. Please try again.');
