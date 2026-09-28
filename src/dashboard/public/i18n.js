@@ -909,6 +909,26 @@
         "حفظ التفاصيل": "Save Details",
         "ABOUT ME": "ABOUT ME",
 
+
+        "🎉 مبروك يا [user]! لقد وصلت إلى المستوى [level]! 🚀": "🎉 Congratulations [user]! You reached level [level]! 🚀",
+        "كلمة1, كلمة2, كلمة3...": "word1, word2, word3...",
+        "current (نفس الروم) أو ضع ID الروم...": "current (same channel) or enter the channel ID...",
+        "📌 إثبات نفسك\\n\\nعشان تثبت نفسك، اضغط على الزر الموجود تحت الرسالة، وبكذا يتم تفعيلك وسترى جميع الرومات.": "📌 Verify Yourself\\n\\nTo verify yourself, click the button below the message to activate your account and see all channels.",
+        "أو اكتب ID الروم الصوتي هنا...": "or enter the voice channel ID here...",
+        "1. كم عمرك؟\\n2. ما هي خبراتك السابقة في الإدارة؟\\n3. كم ساعة تتواجد يومياً في الديسكورد؟": "1. How old are you?\\n2. What is your previous moderation experience?\\n3. How many hours are you active on Discord each day?",
+        "مثال: @MrBeast أو رابط القناة": "Example: @MrBeast or channel link",
+        "مثال: 🔔 نزل فيديو جديد على قناة {channel}! شاهد الآن: {url}": "Example: 🔔 A new video was posted on {channel}! Watch now: {url}",
+        "ضع ID القناة...": "Enter the channel ID...",
+        "مثال: نيترو / رتبة VIP...": "Example: Nitro / VIP role...",
+        "مثال: 10m / 2h / 1d": "Example: 10m / 2h / 1d",
+        "0 = لا يوجد شرط": "0 = no requirement",
+        "⏳ جاري الاستلام...": "⏳ Claiming...",
+        "تم استلام مكافأة اليوم! عد بعد انتهاء الوقت أعلاه": "Today's reward has been claimed! Come back when the time above expires",
+        "إرسال اللوحة ➔": "Send Panel ➔",
+        "➕ إضافة وتفعيل التنبيه الآن": "➕ Add & Enable Notification Now",
+        "🟢 نشط": "🟢 Active",
+        "⚪ منتهي": "⚪ Ended"
+
     };
 
     // ---- Reverse dictionary (English -> Arabic) so we can toggle back ----
