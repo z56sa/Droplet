@@ -1157,6 +1157,15 @@
         "⭐ أدنى مستوى مطلوب (Levels)": "⭐ Minimum Required Level (Levels)",
         "📅 الحد الأدنى لعمر الحساب (بالأيام)": "📅 Minimum Account Age (days)",
 
+        "لا توجد بيانات مستخدمين مسجلة بعد": "No user data recorded yet",
+        "لا توجد بيانات نجوم مسجلة بعد": "No star data recorded yet",
+        "لوحة التحكم | ZENO": "Dashboard | ZENO",
+        "تتبع دعوات الأعضاء، من جاب مين، الليدربورد، ومكافأة الداعي": "Track member invites, who invited whom, leaderboards, and inviter rewards",
+        "سحوبات متقدمة: شروط رول/مستوى، فرصة مضاعفة، Reroll، إشعار DM": "Advanced giveaways: role/level requirements, double chance, reroll, and DM notifications",
+        "📌 إثبات نفسك&#10;&#10;عشان تثبت نفسك، اضغط على الزر الموجود تحت الرسالة، وبكذا يتم تفعيلك وسترى جميع الرومات.": "📌 Verify Yourself&#10;&#10;To verify yourself, click the button below the message to activate your account and see all channels.",
+        "لا توجد سحوبات نشطة حالياً": "No active giveaways",
+        "لا توجد سحوبات منتهية": "No ended giveaways",
+
     };
 
     // ---- Reverse dictionary (English -> Arabic) so we can toggle back ----
