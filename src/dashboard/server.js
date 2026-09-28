@@ -4,6 +4,7 @@
  */
 
 const express = require('express');
+const crypto = require('crypto');
 const session = require('express-session');
 const SqliteStore = require('better-sqlite3-session-store')(session);
 const database = require('../database');
@@ -41,6 +42,10 @@ const {
 
 module.exports = function (app, client) {
     const sessionStore = new SqliteStore({ client: rawDb });
+    // OAuth single-flight/cache: duplicate callbacks for the same authorization code
+    // reuse the same Discord API flow instead of exchanging the code multiple times.
+    const oauthFlowCache = new Map();
+    let discordRateLimitUntil = 0;
     let sessionSecret = '';
     try {
         const secrets = SecretManager.getMultipleSecrets(['SESSION_SECRET']);
@@ -70,27 +75,42 @@ module.exports = function (app, client) {
     // Apply API rate limiter to all API endpoints
     app.use('/api/', apiLimiter);
 
-    // Helper: Discord OAuth2 config
-    // Discord may temporarily return 429 global rate limits. Respect Retry-After and retry briefly.
+    // Discord OAuth helper.
+    // A 429 is shared across the process so concurrent requests do not keep
+    // hammering Discord while the global rate limit is active.
     const discordFetch = async (url, options = {}, maxRetries = 2) => {
         let lastResponse = null;
+
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            const remainingMs = discordRateLimitUntil - Date.now();
+            if (remainingMs > 0) {
+                await new Promise(resolve => setTimeout(resolve, Math.min(remainingMs, 15000)));
+            }
+
             const response = await fetch(url, options);
             lastResponse = response;
+
             if (response.status !== 429) return response;
 
             let retryAfter = Number(response.headers.get('retry-after') || 0);
             try {
                 const data = await response.clone().json();
-                if (Number.isFinite(Number(data?.retry_after))) retryAfter = Number(data.retry_after);
+                if (Number.isFinite(Number(data?.retry_after))) {
+                    retryAfter = Number(data.retry_after);
+                }
             } catch (_) {}
+
+            const waitMs = Math.min(Math.max(retryAfter * 1000, 1000), 15000);
+            discordRateLimitUntil = Math.max(discordRateLimitUntil, Date.now() + waitMs);
 
             if (attempt >= maxRetries) return response;
 
-            const waitMs = Math.min(Math.max(retryAfter * 1000, 1000), 15000);
-            console.warn('[DISCORD RATE LIMIT] Waiting ' + waitMs + 'ms before retry (' + (attempt + 1) + '/' + maxRetries + ')');
-            await new Promise(resolve => setTimeout(resolve, waitMs));
+            console.warn(
+                '[DISCORD RATE LIMIT] Waiting ' + waitMs +
+                'ms before retry (' + (attempt + 1) + '/' + maxRetries + ')'
+            );
         }
+
         return lastResponse;
     };
 
@@ -100,6 +120,117 @@ module.exports = function (app, client) {
         const baseUrl = process.env.DASHBOARD_URL || config.dashboardUrl || `${req.protocol}://${req.get('host')}`;
         const redirectUri = `${baseUrl}/auth/discord/callback`;
         return { clientId, clientSecret, redirectUri };
+    };
+
+    const sendOAuthRateLimitPage = (res) => res.status(503).send(`
+        <div style="background:#0b0d14;color:#fff;font-family:sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
+            <h2 style="color:#f59e0b;">Discord is temporarily rate limiting ZENO</h2>
+            <p style="color:#aaa;max-width:560px;margin-top:10px;">Discord has temporarily limited API requests. This is a temporary rate-limit response, not an indication that your Client Secret is invalid.</p>
+            <p style="color:#888;font-size:13px;margin-top:5px;">Please wait a moment and try signing in again.</p>
+            <a href="/" style="color:#a855f7;margin-top:20px;text-decoration:none;font-weight:bold;">Back to Home</a>
+        </div>
+    `);
+
+    const createOAuthError = (status, message) => {
+        const error = new Error(message);
+        error.status = status;
+        return error;
+    };
+
+    // Runs the complete Discord OAuth exchange only once per authorization code.
+    // Successful results are kept briefly so duplicate browser callbacks can reuse
+    // the already-completed flow instead of calling Discord again.
+    const runOAuthFlow = (code, oauthConfig) => {
+        const cached = oauthFlowCache.get(code);
+        if (cached) return cached;
+
+        const flow = (async () => {
+            const { clientId, clientSecret, redirectUri } = oauthConfig;
+
+            const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+            const tokenParams = new URLSearchParams({
+                client_id: clientId,
+                client_secret: clientSecret,
+                grant_type: 'authorization_code',
+                code,
+                redirect_uri: redirectUri
+            });
+
+            const tokenRes = await discordFetch('https://discord.com/api/v10/oauth2/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': `Basic ${basicAuth}`
+                },
+                body: tokenParams.toString()
+            });
+
+            if (!tokenRes.ok) {
+                const errText = await tokenRes.text();
+                console.error('[OAUTH ERROR] Token exchange failed:', tokenRes.status, errText);
+                throw createOAuthError(tokenRes.status, 'Discord OAuth token exchange failed');
+            }
+
+            const tokenData = await tokenRes.json();
+            const accessToken = tokenData.access_token;
+            if (!accessToken) {
+                throw createOAuthError(502, 'Discord OAuth response did not contain an access token');
+            }
+
+            const userRes = await discordFetch('https://discord.com/api/v10/users/@me', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            if (!userRes.ok) {
+                const errText = await userRes.text();
+                console.error('[OAUTH ERROR] User lookup failed:', userRes.status, errText);
+                throw createOAuthError(userRes.status, 'Discord user lookup failed');
+            }
+            const userData = await userRes.json();
+
+            const guildsRes = await discordFetch('https://discord.com/api/v10/users/@me/guilds', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            if (!guildsRes.ok) {
+                const errText = await guildsRes.text();
+                console.error('[OAUTH ERROR] Guild lookup failed:', guildsRes.status, errText);
+                throw createOAuthError(guildsRes.status, 'Discord guild lookup failed');
+            }
+            const rawGuilds = await guildsRes.json();
+
+            const manageableGuilds = [];
+            if (Array.isArray(rawGuilds)) {
+                for (const g of rawGuilds) {
+                    const isOwner = !!g.owner;
+                    const perms = BigInt(g.permissions || '0');
+                    const hasPerm = (perms & BigInt(0x8)) !== 0n || (perms & BigInt(0x20)) !== 0n;
+
+                    if (isOwner || hasPerm) {
+                        const botGuild = client?.guilds?.cache?.get(g.id);
+                        if (botGuild) {
+                            manageableGuilds.push({
+                                id: g.id,
+                                name: g.name,
+                                icon: g.icon,
+                                memberCount: botGuild.memberCount || 0,
+                                permissions: Number(perms & 0xffn) || 8,
+                                isOwner
+                            });
+                        }
+                    }
+                }
+            }
+
+            return { tokenData, userData, manageableGuilds };
+        })();
+
+        oauthFlowCache.set(code, flow);
+
+        flow.then(
+            () => setTimeout(() => oauthFlowCache.delete(code), 30000),
+            () => oauthFlowCache.delete(code)
+        );
+
+        return flow;
     };
 
     // 1. الصفحة الرئيسية وشاشة البداية (ProBot Black & Purple Landing Page)
@@ -140,112 +271,75 @@ module.exports = function (app, client) {
     // 2. Real Discord OAuth2 Authentication Routes
     app.get('/auth/discord', (req, res) => {
         const { clientId, redirectUri } = getOAuthConfig(req);
-        const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=identify+guilds`;
-        res.redirect(discordAuthUrl);
+
+        // Reuse an already-created authorization URL for a short window.
+        // This prevents double-clicks/refreshes from creating multiple OAuth flows.
+        if (
+            req.session?.oauthState &&
+            req.session?.oauthStartedAt &&
+            Date.now() - req.session.oauthStartedAt < 2 * 60 * 1000 &&
+            req.session.oauthAuthUrl
+        ) {
+            return res.redirect(req.session.oauthAuthUrl);
+        }
+
+        const state = crypto.randomBytes(24).toString('hex');
+        const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=identify+guilds&state=${state}`;
+
+        req.session.oauthState = state;
+        req.session.oauthStartedAt = Date.now();
+        req.session.oauthAuthUrl = discordAuthUrl;
+
+        // Persist the state before redirecting to Discord.
+        req.session.save(err => {
+            if (err) {
+                console.error('[OAUTH ERROR] Failed to save OAuth session:', err);
+                return res.status(500).send('Unable to start Discord sign-in. Please try again.');
+            }
+            return res.redirect(discordAuthUrl);
+        });
     });
 
     app.get('/auth/discord/callback', async (req, res) => {
-        const code = req.query.code;
+        const code = typeof req.query.code === 'string' ? req.query.code : '';
+        const state = typeof req.query.state === 'string' ? req.query.state : '';
+
+        // If a duplicate callback arrives after the first one completed,
+        // the session is already authenticated; do not call Discord again.
+        if (!state && req.session?.user) {
+            return res.redirect('/dashboard/manage');
+        }
+
         if (!code) {
             return res.redirect('/auth/discord');
         }
 
-        const { clientId, clientSecret, redirectUri } = getOAuthConfig(req);
-        if (!clientSecret) {
-            console.error('[OAUTH ERROR] CLIENT_SECRET is missing from environment variables!');
-            return res.status(500).send('خطأ في إعدادات البوت: CLIENT_SECRET غير مضاف في لوحة Render.');
+        const expectedState = req.session?.oauthState;
+        const stateAge = req.session?.oauthStartedAt
+            ? Date.now() - req.session.oauthStartedAt
+            : Infinity;
+
+        if (!expectedState || !state || state !== expectedState || stateAge > 10 * 60 * 1000) {
+            console.warn('[OAUTH ERROR] Invalid or expired OAuth state');
+            return res.status(400).send('Unable to complete Discord sign-in. Please start the sign-in process again.');
+        }
+
+        // Consume the state immediately. This makes the authorization callback
+        // single-use at the session level.
+        delete req.session.oauthState;
+        delete req.session.oauthStartedAt;
+        delete req.session.oauthAuthUrl;
+
+        const oauthConfig = getOAuthConfig(req);
+        if (!oauthConfig.clientSecret) {
+            console.error('[OAUTH ERROR] OAuth client secret is missing from environment variables.');
+            return res.status(500).send('Discord sign-in is not configured correctly on the server.');
         }
 
         try {
-            // Exchange code for Access Token
-            const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-            const tokenParams = new URLSearchParams({
-                client_id: clientId,
-                client_secret: clientSecret,
-                grant_type: 'authorization_code',
-                code: code,
-                redirect_uri: redirectUri
-            });
-
-            const tokenRes = await discordFetch('https://discord.com/api/v10/oauth2/token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Authorization': `Basic ${basicAuth}`
-                },
-                body: tokenParams.toString()
-            });
-
-            if (!tokenRes.ok) {
-                const errText = await tokenRes.text();
-                console.error('[OAUTH ERROR] Token exchange failed:', tokenRes.status, errText);
-
-                if (tokenRes.status === 429) {
-                    return res.status(503).send(`
-                        <div style="background:#0b0d14;color:#fff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
-                            <h2 style="color:#f59e0b;">Discord is temporarily rate limiting ZENO</h2>
-                            <p style="color:#aaa;max-width:560px;margin-top:10px;">Discord has temporarily limited API requests. This is a temporary rate-limit response, not an indication that your Client Secret is invalid.</p>
-                            <p style="color:#888;font-size:13px;margin-top:5px;">Please wait a moment and try signing in again.</p>
-                            <a href="/" style="color:#a855f7;margin-top:20px;text-decoration:none;font-weight:bold;">Back to Home</a>
-                        </div>
-                    `);
-                }
-
-                return res.status(400).send(`
-                    <div style="background:#0b0d14;color:#fff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
-                        <h2 style="color:#ef4444;">Unable to complete Discord sign-in</h2>
-                        <p style="color:#aaa;max-width:560px;margin-top:10px;">Discord rejected the OAuth request. Please verify the dashboard OAuth configuration and try again.</p>
-                        <a href="/" style="color:#a855f7;margin-top:20px;text-decoration:none;font-weight:bold;">Back to Home</a>
-                    </div>
-                `);
-            }
-
-            const tokenData = await tokenRes.json();
+            const { tokenData, userData, manageableGuilds } = await runOAuthFlow(code, oauthConfig);
             const accessToken = tokenData.access_token;
 
-            // Fetch user profile from Discord
-            const userRes = await discordFetch('https://discord.com/api/v10/users/@me', {
-                headers: { Authorization: `Bearer ${accessToken}` }
-            });
-            if (!userRes.ok) throw new Error('فشل جلب بيانات المستخدم من Discord');
-            const userData = await userRes.json();
-
-            // Fetch user guilds from Discord
-            const guildsRes = await discordFetch('https://discord.com/api/v10/users/@me/guilds', {
-                headers: { Authorization: `Bearer ${accessToken}` }
-            });
-            if (!guildsRes.ok) throw new Error('فشل جلب سيرفرات المستخدم من Discord');
-            const rawGuilds = await guildsRes.json();
-
-            // Filter guilds: User must be Owner OR have MANAGE_GUILD (0x20) or ADMINISTRATOR (0x8)
-            // AND Bot must be currently present in this guild
-            const ADMIN_OR_MANAGE = 0x8 | 0x20;
-            const manageableGuilds = [];
-
-            if (Array.isArray(rawGuilds)) {
-                for (const g of rawGuilds) {
-                    const isOwner = !!g.owner;
-                    const perms = BigInt(g.permissions || '0');
-                    const hasPerm = (perms & BigInt(0x8)) !== 0n || (perms & BigInt(0x20)) !== 0n;
-
-                    if (isOwner || hasPerm) {
-                        // Check if bot is present in this guild
-                        const botGuild = client?.guilds?.cache?.get(g.id);
-                        if (botGuild) {
-                            manageableGuilds.push({
-                                id: g.id,
-                                name: g.name,
-                                icon: g.icon,
-                                memberCount: botGuild.memberCount || 0,
-                                permissions: Number(perms & 0xffn) || 8,
-                                isOwner: isOwner
-                            });
-                        }
-                    }
-                }
-            }
-
-            // Save to user session including OAuth token lifecycle
             req.session.user = {
                 id: userData.id,
                 username: userData.global_name || userData.username,
@@ -253,7 +347,7 @@ module.exports = function (app, client) {
                 avatar: userData.avatar
             };
             req.session.token = {
-                accessToken: accessToken,
+                accessToken,
                 refreshToken: tokenData.refresh_token || null,
                 tokenType: tokenData.token_type || 'Bearer',
                 scope: tokenData.scope || '',
@@ -262,22 +356,33 @@ module.exports = function (app, client) {
             req.session.guilds = manageableGuilds;
             req.session.lastActive = Date.now();
 
-            // حفظ بيانات المستخدم المسجل في كاش وقاعدة بيانات Turso
             if (database.trackUserProfile) {
                 database.trackUserProfile({
                     userId: userData.id,
                     username: userData.username,
                     displayName: userData.global_name || userData.username,
                     avatar: userData.avatar,
-                    avatarUrl: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'
+                    avatarUrl: userData.avatar
+                        ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`
+                        : 'https://cdn.discordapp.com/embed/avatars/0.png'
                 });
             }
 
-            // Redirect directly to dashboard
-            res.redirect('/dashboard/manage');
+            return req.session.save(err => {
+                if (err) {
+                    console.error('[OAUTH ERROR] Failed to save authenticated session:', err);
+                    return res.status(500).send('Unable to save the Discord session. Please try again.');
+                }
+                return res.redirect('/dashboard/manage');
+            });
         } catch (err) {
             console.error('[OAUTH ERROR] OAuth callback error:', err);
-            res.status(500).send('حدث خطأ أثناء تسجيل الدخول: ' + err.message);
+
+            if (err?.status === 429) {
+                return sendOAuthRateLimitPage(res);
+            }
+
+            return res.status(502).send('Unable to complete Discord sign-in right now. Please try again.');
         }
     });
 
