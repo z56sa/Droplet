@@ -4,7 +4,7 @@
  * Compatibility entry point for the dashboard server.
  *
  * This file was previously a renamed/truncated copy of the dashboard server,
- * which left incomplete JavaScript such as "/* ... */" and duplicated server
+ * which left incomplete JavaScript such as an incomplete placeholder comment and duplicated server
  * logic. The real implementation now lives in src/dashboard/server.js.
  *
  * Keeping this small re-export preserves compatibility for any older code
