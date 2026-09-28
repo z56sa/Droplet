@@ -71,9 +71,32 @@ module.exports = function (app, client) {
     app.use('/api/', apiLimiter);
 
     // Helper: Discord OAuth2 config
+    // Discord may temporarily return 429 global rate limits. Respect Retry-After and retry briefly.
+    const discordFetch = async (url, options = {}, maxRetries = 2) => {
+        let lastResponse = null;
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            const response = await fetch(url, options);
+            lastResponse = response;
+            if (response.status !== 429) return response;
+
+            let retryAfter = Number(response.headers.get('retry-after') || 0);
+            try {
+                const data = await response.clone().json();
+                if (Number.isFinite(Number(data?.retry_after))) retryAfter = Number(data.retry_after);
+            } catch (_) {}
+
+            if (attempt >= maxRetries) return response;
+
+            const waitMs = Math.min(Math.max(retryAfter * 1000, 1000), 15000);
+            console.warn('[DISCORD RATE LIMIT] Waiting ' + waitMs + 'ms before retry (' + (attempt + 1) + '/' + maxRetries + ')');
+            await new Promise(resolve => setTimeout(resolve, waitMs));
+        }
+        return lastResponse;
+    };
+
     const getOAuthConfig = (req) => {
         const clientId = process.env.CLIENT_ID || process.env.DISCORD_CLIENT_ID || client?.user?.id || config.clientId;
-        const clientSecret = process.env.CLIENT_SECRET || process.env.DISCORD_CLIENT_SECRET || 'MNeCz9uTvXRzXeEUp8lUckSQeviU-cRY';
+        const clientSecret = process.env.CLIENT_SECRET || process.env.DISCORD_CLIENT_SECRET || '';
         const baseUrl = process.env.DASHBOARD_URL || config.dashboardUrl || `${req.protocol}://${req.get('host')}`;
         const redirectUri = `${baseUrl}/auth/discord/callback`;
         return { clientId, clientSecret, redirectUri };
@@ -144,7 +167,7 @@ module.exports = function (app, client) {
                 redirect_uri: redirectUri
             });
 
-            const tokenRes = await fetch('https://discord.com/api/v10/oauth2/token', {
+            const tokenRes = await discordFetch('https://discord.com/api/v10/oauth2/token', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -155,13 +178,24 @@ module.exports = function (app, client) {
 
             if (!tokenRes.ok) {
                 const errText = await tokenRes.text();
-                console.error('[OAUTH ERROR] Token exchange failed:', errText);
+                console.error('[OAUTH ERROR] Token exchange failed:', tokenRes.status, errText);
+
+                if (tokenRes.status === 429) {
+                    return res.status(503).send(`
+                        <div style="background:#0b0d14;color:#fff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
+                            <h2 style="color:#f59e0b;">Discord is temporarily rate limiting ZENO</h2>
+                            <p style="color:#aaa;max-width:560px;margin-top:10px;">Discord has temporarily limited API requests. This is a temporary rate-limit response, not an indication that your Client Secret is invalid.</p>
+                            <p style="color:#888;font-size:13px;margin-top:5px;">Please wait a moment and try signing in again.</p>
+                            <a href="/" style="color:#a855f7;margin-top:20px;text-decoration:none;font-weight:bold;">Back to Home</a>
+                        </div>
+                    `);
+                }
+
                 return res.status(400).send(`
                     <div style="background:#0b0d14;color:#fff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
-                        <h2 style="color:#ef4444;">تعذر إكمال تسجيل الدخول عبر Discord</h2>
-                        <p style="color:#aaa;max-width:500px;margin-top:10px;">رسالة الخطأ من Discord: <code>${errText}</code></p>
-                        <p style="color:#888;font-size:13px;margin-top:5px;">تأكد من صحة Client Secret في إعدادات البوت.</p>
-                        <a href="/" style="color:#a855f7;margin-top:20px;text-decoration:none;font-weight:bold;">العودة للصفحة الرئيسية</a>
+                        <h2 style="color:#ef4444;">Unable to complete Discord sign-in</h2>
+                        <p style="color:#aaa;max-width:560px;margin-top:10px;">Discord rejected the OAuth request. Please verify the dashboard OAuth configuration and try again.</p>
+                        <a href="/" style="color:#a855f7;margin-top:20px;text-decoration:none;font-weight:bold;">Back to Home</a>
                     </div>
                 `);
             }
@@ -170,14 +204,14 @@ module.exports = function (app, client) {
             const accessToken = tokenData.access_token;
 
             // Fetch user profile from Discord
-            const userRes = await fetch('https://discord.com/api/v10/users/@me', {
+            const userRes = await discordFetch('https://discord.com/api/v10/users/@me', {
                 headers: { Authorization: `Bearer ${accessToken}` }
             });
             if (!userRes.ok) throw new Error('فشل جلب بيانات المستخدم من Discord');
             const userData = await userRes.json();
 
             // Fetch user guilds from Discord
-            const guildsRes = await fetch('https://discord.com/api/v10/users/@me/guilds', {
+            const guildsRes = await discordFetch('https://discord.com/api/v10/users/@me/guilds', {
                 headers: { Authorization: `Bearer ${accessToken}` }
             });
             if (!guildsRes.ok) throw new Error('فشل جلب سيرفرات المستخدم من Discord');
