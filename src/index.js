@@ -14,6 +14,11 @@ const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const dashboardServer = require('./dashboard/server');
 
 const app = express();
+
+// Render terminates HTTPS at its proxy and forwards the request to this process.
+// Trust the first proxy so express-session can correctly set secure cookies.
+app.set('trust proxy', 1);
+
 const PORT = Number(process.env.PORT || 3000);
 
 // Render health/port endpoint.
