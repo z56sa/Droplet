@@ -28,6 +28,7 @@ from discord.ext import commands, tasks
 from google import genai
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from turso_db import TursoDatabase
 try:  # الإصدارات الجديدة من مكتبة mcp غيّرت اسم الدالة
     from mcp.client.streamable_http import streamable_http_client as _http_client
     from mcp.client.streamable_http import create_mcp_http_client
@@ -61,6 +62,7 @@ DANGEROUS_EXT = {
 CODE_EXT = {".py", ".js", ".sh"}          # مسموحة فقط في قنوات الكود
 MAGIC_BYTES = {b"MZ": "Windows executable", b"\x7fELF": "Linux executable"}
 BLOCKED_HASHES: set[str] = set()
+turso_db = TursoDatabase()
 
 SENSITIVE_PATTERNS = {
     "Discord token": re.compile(r"[MNO][A-Za-z\d_-]{23,25}\.[A-Za-z\d_-]{6}\.[A-Za-z\d_-]{27,}"),
@@ -94,6 +96,14 @@ class SecureBot(commands.Bot):
     async def setup_hook(self):
         if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession()
+
+        try:
+            if await turso_db.init():
+                BLOCKED_HASHES.update(await turso_db.load_blocked_hashes())
+                print(f"[TURSO] Loaded {len(BLOCKED_HASHES)} blocked file hashes.")
+        except Exception as exc:
+            print(f"[TURSO] ⚠️ Database initialization failed: {exc}")
+
         await self.tree.sync()
         psutil.cpu_percent(interval=None)  # تهيئة القراءة الأولى (تُرجع 0.0 دائماً)
         health_monitor.start()
@@ -101,6 +111,10 @@ class SecureBot(commands.Bot):
 
     async def close(self):
         await mcp_manager.stop()
+        try:
+            await turso_db.close()
+        except Exception:
+            pass
         if self.session is not None and not self.session.closed:
             await self.session.close()
         await super().close()
@@ -527,8 +541,15 @@ async def status(interaction: discord.Interaction):
 @bot.tree.command(name="blockhash", description="أضف SHA256 لملف ضار إلى قائمة الحظر")
 @app_commands.checks.has_permissions(administrator=True)
 async def blockhash(interaction: discord.Interaction, sha256: str):
-    BLOCKED_HASHES.add(sha256.lower().strip())
-    await interaction.response.send_message("تمت الإضافة ✅", ephemeral=True)
+    value = sha256.lower().strip()
+    BLOCKED_HASHES.add(value)
+
+    try:
+        await turso_db.add_blocked_hash(value)
+    except Exception as exc:
+        print(f"[TURSO] ⚠️ Could not persist blocked hash: {exc}")
+
+    await interaction.response.send_message("تمت الإضافة وحفظها في قاعدة البيانات ✅", ephemeral=True)
 
 
 @bot.tree.command(name="pardon", description="(أدمن) فك العزل عن من عاقبهم البوت (للإنذارات الخاطئة)")
