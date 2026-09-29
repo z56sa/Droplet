@@ -60,7 +60,12 @@ class TursoDatabase:
         if not self.enabled:
             return None
         if self.session is None or self.session.closed:
-            await self.connect()
+            self.session = aiohttp.ClientSession(
+                headers={
+                    "Authorization": f"Bearer {self.token}",
+                    "Content-Type": "application/json",
+                }
+            )
 
         stmt = {"sql": sql}
         if args:
