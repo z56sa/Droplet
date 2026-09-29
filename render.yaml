@@ -7,3 +7,22 @@ services:
     branch: main
     dockerfilePath: ./Dockerfile
     autoDeploy: true
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: LOG_CHANNEL_ID
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: CODE_CHANNEL_IDS
+        value: ""
+      - key: MCP_SERVER_URL
+        sync: false
+      - key: MCP_COMMAND
+        sync: false
+      - key: MCP_ARGS
+        sync: false
+      - key: MCP_AUTH_TOKEN
+        sync: false
