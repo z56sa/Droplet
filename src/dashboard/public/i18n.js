@@ -927,7 +927,7 @@
         "إرسال اللوحة ➔": "Send Panel ➔",
         "➕ إضافة وتفعيل التنبيه الآن": "➕ Add & Enable Notification Now",
         "🟢 نشط": "🟢 Active",
-        "⚪ منتهي": "⚪ Ended"
+        "⚪ منتهي": "⚪ Ended",
 
         "رصيد الذهب": "Gold Balance",
         "الترتيب": "Rank",
