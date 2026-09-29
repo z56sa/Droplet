@@ -1538,6 +1538,15 @@ module.exports = function (app, client) {
                     await botGuild.fetch().catch(() => {});
                 } catch(e) {}
             }
+            if (botGuild) {
+                try {
+                    await Promise.allSettled([
+                        botGuild.channels?.fetch ? botGuild.channels.fetch() : Promise.resolve(),
+                        botGuild.roles?.fetch ? botGuild.roles.fetch() : Promise.resolve(),
+                        botGuild.emojis?.fetch ? botGuild.emojis.fetch() : Promise.resolve()
+                    ]);
+                } catch(e) {}
+            }
             if (!botGuild) {
                 return res.status(404).send(`
                     <div style="background:#0b0d14;color:#fff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
@@ -1744,7 +1753,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-sm">📁</div>
                                     <span class="text-[10px] text-gray-500 font-mono">CHANNELS</span>
                                 </div>
-                                <div class="text-2xl font-black text-white">${(botGuild?.channels?.cache?.size || 0)}</div>
+                                <div class="text-2xl font-black text-white" id="channelsCount">${(botGuild?.channels?.cache?.size || 0)}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">إجمالي القنوات</p>
                             </div>
                             <div class="bg-[#12141f] border border-amber-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-amber-500/40 transition group">
@@ -1752,7 +1761,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-amber-600/20 border border-amber-500/30 text-amber-400 flex items-center justify-center text-sm">💎</div>
                                     <span class="text-[10px] text-gray-500 font-mono">BOOSTS</span>
                                 </div>
-                                <div class="text-2xl font-black text-white">${(botGuild?.premiumSubscriptionCount || 0)}</div>
+                                <div class="text-2xl font-black text-white" id="boostsCount">${(botGuild?.premiumSubscriptionCount || 0)}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">بوستات السيرفر</p>
                             </div>
                         </div>
@@ -1764,7 +1773,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-pink-600/20 border border-pink-500/30 text-pink-400 flex items-center justify-center text-sm">🎖️</div>
                                     <span class="text-[10px] text-gray-500 font-mono">ROLES</span>
                                 </div>
-                                <div class="text-2xl font-black text-white">${(botGuild?.roles?.cache?.size || 0)}</div>
+                                <div class="text-2xl font-black text-white" id="rolesCount">${(botGuild?.roles?.cache?.size || 0)}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">إجمالي الرتب</p>
                             </div>
                             <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl shadow-xl text-right hover:border-purple-500/20 transition">
@@ -1772,7 +1781,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-purple-700/20 border border-purple-500/30 text-purple-400 flex items-center justify-center text-sm">😃</div>
                                     <span class="text-[10px] text-gray-500 font-mono">EMOJIS</span>
                                 </div>
-                                <div class="text-2xl font-black text-white">${(botGuild?.emojis?.cache?.size || 0)}</div>
+                                <div class="text-2xl font-black text-white" id="emojisCount">${(botGuild?.emojis?.cache?.size || 0)}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">الإيموجيات المخصصة</p>
                             </div>
                             <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl shadow-xl text-right hover:border-purple-500/20 transition">
@@ -1910,6 +1919,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 if (elBots) elBots.textContent = (data.bots || 0).toLocaleString();
                 var elGw = document.getElementById('giveawaysCount');
                 if (elGw) elGw.textContent = (data.giveaways || 0).toLocaleString();
+                var elCh = document.getElementById('channelsCount');
+                if (elCh && data.channels !== undefined) elCh.textContent = (data.channels || 0).toLocaleString();
+                var elRoles = document.getElementById('rolesCount');
+                if (elRoles && data.roles !== undefined) elRoles.textContent = (data.roles || 0).toLocaleString();
+                var elEmojis = document.getElementById('emojisCount');
+                if (elEmojis && data.emojis !== undefined) elEmojis.textContent = (data.emojis || 0).toLocaleString();
+                var elBoosts = document.getElementById('boostsCount');
+                if (elBoosts && data.boosts !== undefined) elBoosts.textContent = (data.boosts || 0).toLocaleString();
             })
             .catch(function() {
                 var elOnline = document.getElementById('onlineMembersCount');
@@ -11455,13 +11472,29 @@ ${embedScriptHtml}
         }
     });
 
-    // Real-time Stats API (online members, bots, giveaways)
+    // Real-time Stats API (online members, bots, giveaways, channels, roles, emojis, boosts)
     app.get('/api/guild/:guildId/online-count', async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
-            const botGuild = client.guilds.cache.get(guildId);
-            if (!botGuild) return res.json({ success: true, online: 0, bots: 0, giveaways: 0 });
+            let botGuild = client.guilds.cache.get(guildId);
+            if (!botGuild) {
+                try {
+                    botGuild = await client.guilds.fetch(guildId);
+                } catch(e) {}
+            }
+            if (!botGuild) return res.json({ success: true, online: 0, bots: 0, giveaways: 0, channels: 0, roles: 0, emojis: 0, boosts: 0 });
+
+            // --- Ensure Channels, Roles, and Emojis are populated ---
+            if (!botGuild.channels.cache.size || !botGuild.roles.cache.size || !botGuild.emojis.cache.size) {
+                try {
+                    await Promise.allSettled([
+                        botGuild.channels.fetch().catch(() => {}),
+                        botGuild.roles.fetch().catch(() => {}),
+                        botGuild.emojis.fetch().catch(() => {})
+                    ]);
+                } catch(e) {}
+            }
 
             // --- Online Members: use presences.cache directly (most accurate) ---
             let onlineCount = botGuild.presences.cache.filter(p =>
@@ -11508,10 +11541,14 @@ ${embedScriptHtml}
                 online: onlineCount,
                 bots: botsCount,
                 giveaways: giveawaysCount,
+                channels: botGuild.channels.cache.size || 0,
+                roles: botGuild.roles.cache.size || 0,
+                emojis: botGuild.emojis.cache.size || 0,
+                boosts: botGuild.premiumSubscriptionCount || 0,
                 total: botGuild.memberCount || 0
             });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message, online: 0, bots: 0, giveaways: 0 });
+            res.status(500).json({ success: false, error: e.message, online: 0, bots: 0, giveaways: 0, channels: 0, roles: 0, emojis: 0, boosts: 0 });
         }
     });
 
