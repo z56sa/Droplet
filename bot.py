@@ -1,5 +1,5 @@
 """
-بوت ديسكورد v4 — Gemini (Google) + MCP + نظام حماية
+بوت ديسكورد v6 — Gemini (Google) + MCP + نظام حماية (يتطلب Python 3.10+)
 
 pip install -U discord.py google-genai mcp psutil aiohttp
 المتغيرات الأساسية: DISCORD_TOKEN, GEMINI_API_KEY, LOG_CHANNEL_ID
@@ -9,6 +9,7 @@ MCP (اختر واحداً):
   MCP_COMMAND      (+ MCP_ARGS مفصولة بمسافات) سيرفر MCP محلي عبر stdio
   MCP_AUTH_TOKEN   اختياري، يُرسل كـ Bearer مع الرابط
 """
+import io
 import os
 import re
 import json
@@ -89,6 +90,7 @@ class SecureBot(commands.Bot):
     async def setup_hook(self):
         self.session = aiohttp.ClientSession()
         await self.tree.sync()
+        psutil.cpu_percent(interval=None)  # تهيئة القراءة الأولى (تُرجع 0.0 دائماً)
         health_monitor.start()
         mcp_manager.start()
 
@@ -158,9 +160,10 @@ class MCPManager:
 mcp_manager = MCPManager()
 
 msg_times: dict[int, deque] = defaultdict(deque)
-joins: dict[int, deque] = defaultdict(deque)     # guild_id -> (time, member)
+joins: dict[int, deque] = defaultdict(lambda: deque(maxlen=max(RAID_JOINS * 4, 50)))  # guild_id -> (time, member)
 raid_until: dict[int, float] = {}
 seen_problems: dict[str, float] = {}
+recent_punished: deque = deque(maxlen=200)      # (time, guild_id, user_id)
 
 
 # ───────────── أدوات مساعدة ─────────────
@@ -190,6 +193,28 @@ async def log_tool_calls(response, who: str):
                 args = json.dumps(dict(fc.args or {}), ensure_ascii=False, default=str)[:800]
                 e.add_field(name="المدخلات", value=f"```{args}```", inline=False)
                 await log(e)
+
+
+async def send_long(interaction: discord.Interaction, text: str, limit: int = 1900, max_parts: int = 3):
+    """رد قصير/متوسط: رسائل متتالية بالترتيب. رد ضخم: معاينة + الرد كاملاً كملف نصي (لا قطع صامت)."""
+    text = text.strip() or "(لا يوجد رد)"
+    if len(text) > limit * max_parts:
+        cut = text.rfind("\n", 0, limit)
+        preview = text[: cut if cut > limit // 2 else limit]
+        await interaction.followup.send(
+            preview + "\n\n… الرد كاملاً في الملف المرفق 👇",
+            file=discord.File(io.BytesIO(text.encode("utf-8")), filename="reply.txt"),
+            ephemeral=True,
+        )
+        return
+    while text:
+        if len(text) <= limit:
+            part, text = text, ""
+        else:
+            cut = text.rfind("\n", 0, limit)
+            cut = cut if cut > limit // 2 else limit
+            part, text = text[:cut], text[cut:].lstrip("\n")
+        await interaction.followup.send(part, ephemeral=True)
 
 
 async def ask_ai(prompt: str, system: str, max_tokens: int = 2048,
@@ -269,32 +294,14 @@ async def on_app_command_error(interaction: discord.Interaction, error):
 
 @tasks.loop(seconds=60)
 async def health_monitor():
-    problems = []
-    if bot.latency > LATENCY_LIMIT:
-        problems.append(f"Latency مرتفع: {bot.latency:.2f}s")
-    mem = psutil.virtual_memory().percent
-    if mem > MEMORY_LIMIT:
-        problems.append(f"استهلاك الذاكرة: {mem}%")
-    if psutil.cpu_percent(interval=None) > 90:
-        problems.append("استهلاك المعالج أعلى من 90%")
-    if problems:
-        await report_problem("مشكلة في أداء البوت", "\n".join(problems))
-
-    # تنظيف المفاتيح الميتة لمنع تسرب الذاكرة
-    now = time.time()
-    for uid in [k for k, q in msg_times.items() if not q or now - q[-1] > SPAM_WINDOW]:
-        del msg_times[uid]
-    for gid in [k for k, q in joins.items() if not q or now - q[-1][0] > RAID_WINDOW]:
-        del joins[gid]
-    for k in [k for k, t in seen_problems.items() if now - t > 600]:
-        del seen_problems[k]
-
-
-@health_monitor.error
-async def health_monitor_error(error):
-    await report_problem("توقف مهمة المراقبة", "".join(traceback.format_exception(error)))
-    if not health_monitor.is_running():
-        health_monitor.restart()
+    # أي خطأ يُلتقط هنا ولا يخرج من الحلقة، فتستمر الدورة التالية دائماً
+    try:
+        await health_checks()
+    except Exception:
+        try:
+            await report_problem("خطأ في مراقب الصحة", traceback.format_exc())
+        except Exception:
+            print(traceback.format_exc())
 
 
 # ───────────── نظام الحماية ─────────────
@@ -307,6 +314,8 @@ async def punish(message: discord.Message, reason: str, timeout_min: int = 10):
         await message.author.timeout(timedelta(minutes=timeout_min), reason=reason)
     except discord.HTTPException:
         pass
+    else:
+        recent_punished.append((time.time(), message.guild.id, message.author.id))
     e = discord.Embed(title="🛡️ إجراء حماية", color=discord.Color.red())
     e.add_field(name="العضو", value=f"{message.author.mention} ({message.author.id})")
     e.add_field(name="السبب", value=reason)
@@ -453,7 +462,7 @@ async def ask(interaction: discord.Interaction, problem: str):
         "أنت مساعد دعم فني لسيرفر ديسكورد. أجب بالعربية بإيجاز وبخطوات واضحة. "
         "ليس لديك أي أدوات ولا تنفّذ إجراءات." + INJECTION_GUARD,
     )
-    await interaction.followup.send(answer[:1900], ephemeral=True)
+    await send_long(interaction, answer)
 
 
 @bot.tree.command(name="aiop", description="(أدمن) اطلب من الـ AI تنفيذ مهمة باستخدام أدوات MCP")
@@ -474,7 +483,7 @@ async def aiop(interaction: discord.Interaction, task: str):
                             color=discord.Color.blurple()))
     answer = await ask_ai(f"<admin_request>\n{task}\n</admin_request>", system,
                           max_tokens=3000, use_mcp=True, who=str(interaction.user))
-    await interaction.followup.send(answer[:1900], ephemeral=True)
+    await send_long(interaction, answer)
 
 
 @bot.tree.command(name="status", description="حالة صحة البوت")
@@ -492,6 +501,32 @@ async def status(interaction: discord.Interaction):
 async def blockhash(interaction: discord.Interaction, sha256: str):
     BLOCKED_HASHES.add(sha256.lower().strip())
     await interaction.response.send_message("تمت الإضافة ✅", ephemeral=True)
+
+
+@bot.tree.command(name="pardon", description="(أدمن) فك العزل عن من عاقبهم البوت (للإنذارات الخاطئة)")
+@app_commands.describe(minutes="فك عزل من عوقبوا خلال آخر كم دقيقة", member="أو حدّد عضواً واحداً")
+@app_commands.checks.has_permissions(administrator=True)
+async def pardon(interaction: discord.Interaction, minutes: app_commands.Range[int, 1, 1440] = 30,
+                 member: discord.Member | None = None):
+    await interaction.response.defer(ephemeral=True)
+    g = interaction.guild
+    if member:
+        targets = {member.id}
+    else:
+        cutoff = time.time() - minutes * 60
+        targets = {uid for t, gid, uid in recent_punished if gid == g.id and t >= cutoff}
+    done = 0
+    for uid in targets:
+        m = g.get_member(uid)
+        if m and m.is_timed_out():
+            try:
+                await m.timeout(None, reason=f"Pardon by {interaction.user}")
+                done += 1
+            except discord.HTTPException:
+                pass
+    await log(discord.Embed(title="🕊️ فك عزل", color=discord.Color.green(),
+                            description=f"{interaction.user.mention} فك العزل عن {done} عضو"))
+    await interaction.followup.send(f"تم فك العزل عن {done} عضو ✅", ephemeral=True)
 
 
 @bot.event
