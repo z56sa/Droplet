@@ -8271,16 +8271,17 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
 
                                 <div class="flex items-center justify-between p-4 bg-[#0b0d14] border border-white/5 rounded-2xl">
-                                    <button type="button" onclick="document.getElementById('inpAvatarUrl').focus()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5">
-                                        <span>🖼️</span>
-                                        <span>اختر صورة</span>
+                                    <input type="file" id="fileAvatar" accept="image/*" class="hidden" onchange="uploadAppearanceFile(this, 'bot_avatar')">
+                                    <button type="button" onclick="document.getElementById('fileAvatar').click()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5 cursor-pointer">
+                                        <span>📁</span>
+                                        <span id="btnText_bot_avatar">اختر من الصور</span>
                                     </button>
                                     <div class="flex items-center gap-3">
-                                        <span class="text-[11px] text-gray-400">اضغط أو الصق رابط صورة جديدة</span>
+                                        <span class="text-[11px] text-gray-400">اختر صورة من جهازك أو الصق رابطاً</span>
                                         <img id="cardAvatarPreview" src="${settings.bot_avatar || (botGuild?.members?.me?.user?.displayAvatarURL() || userAvatar)}" class="w-10 h-10 rounded-xl object-cover ring-2 ring-purple-600/50">
                                     </div>
                                 </div>
-                                <input type="url" name="bot_avatar" id="inpAvatarUrl" value="${settings.bot_avatar || ''}" placeholder="https://i.imgur.com/... (رابط الصورة المباشر)" oninput="updateAvatarPreview(this.value)" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono">
+                                <input type="url" name="bot_avatar" id="inpAvatarUrl" value="${settings.bot_avatar || ''}" placeholder="https://... (أو سيظهر الرابط تلقائياً عند اختيار صورة من جهازك)" oninput="updateAvatarPreview(this.value)" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono">
                             </div>
 
                             <!-- بنر البوت في السيرفر -->
@@ -8294,13 +8295,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
 
                                 <div class="flex items-center justify-between p-4 bg-[#0b0d14] border border-white/5 rounded-2xl">
-                                    <button type="button" onclick="document.getElementById('inpBannerUrl').focus()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5">
-                                        <span>🖼️</span>
-                                        <span>اختر بنر</span>
+                                    <input type="file" id="fileBanner" accept="image/*" class="hidden" onchange="uploadAppearanceFile(this, 'bot_banner')">
+                                    <button type="button" onclick="document.getElementById('fileBanner').click()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5 cursor-pointer">
+                                        <span>📁</span>
+                                        <span id="btnText_bot_banner">اختر من الصور</span>
                                     </button>
-                                    <span class="text-[11px] text-gray-400">الصق رابط صورة البنر المباشر</span>
+                                    <span class="text-[11px] text-gray-400">اختر صورة بنر من جهازك أو الصق رابطاً</span>
                                 </div>
-                                <input type="url" name="bot_banner" id="inpBannerUrl" value="${settings.bot_banner || ''}" placeholder="https://i.imgur.com/... (رابط البنر المباشر)" oninput="updateBannerPreview(this.value)" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono">
+                                <input type="url" name="bot_banner" id="inpBannerUrl" value="${settings.bot_banner || ''}" placeholder="https://... (أو سيظهر الرابط تلقائياً عند اختيار صورة من جهازك)" oninput="updateBannerPreview(this.value)" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono">
                             </div>
 
                         </div>
@@ -8312,9 +8314,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <span>💬</span>
                             </div>
                             <ul class="text-[11px] text-gray-400 space-y-1 pr-2 list-none">
+                                <li>• يمكنك اختيار الصور المحفوظة في جهازك مباشرة أو وضع رابط مباشر.</li>
                                 <li>• تغيير الاسم والصورة والبنر يؤثر فقط على السيرفر المحدد.</li>
                                 <li>• قد يستغرق ظهور التغييرات بضع ثوانٍ في ديسكورد فور الضغط على حفظ.</li>
-                                <li>• الصور يجب أن تكون بروابط مباشرة بصيغة PNG أو JPG أو WEBP أو GIF.</li>
+                                <li>• الصيغ المدعومة: PNG أو JPG أو WEBP أو GIF (الحد الأقصى 15 ميجابايت).</li>
                             </ul>
                         </div>
 
@@ -8323,15 +8326,75 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <script>
                     function updateAvatarPreview(url) {
                         if (url) {
-                            document.getElementById('prevAvatarImg').src = url;
-                            document.getElementById('cardAvatarPreview').src = url;
+                            var p1 = document.getElementById('prevAvatarImg');
+                            var p2 = document.getElementById('cardAvatarPreview');
+                            if (p1) p1.src = url;
+                            if (p2) p2.src = url;
                         }
                     }
                     function updateBannerPreview(url) {
-                        const box = document.getElementById('prevBannerBox');
-                        if (url) {
+                        var box = document.getElementById('prevBannerBox');
+                        if (box && url) {
                             box.style.backgroundImage = 'url(' + url + ')';
                         }
+                    }
+
+                    async function uploadAppearanceFile(inputEl, fieldName) {
+                        var file = inputEl.files && inputEl.files[0];
+                        if (!file) return;
+
+                        if (file.size > 15 * 1024 * 1024) {
+                            alert('❌ حجم الصورة يتجاوز 15 ميجابايت. يرجى اختيار صورة أصغر.');
+                            return;
+                        }
+
+                        var btnText = document.getElementById('btnText_' + fieldName);
+                        var origText = btnText ? btnText.innerText : 'اختر من الصور';
+                        if (btnText) btnText.innerText = 'جاري الرفع... ⏳';
+
+                        var reader = new FileReader();
+                        reader.onload = async function(e) {
+                            var base64Data = e.target.result;
+                            // Immediate local preview
+                            if (fieldName === 'bot_avatar') updateAvatarPreview(base64Data);
+                            if (fieldName === 'bot_banner') updateBannerPreview(base64Data);
+
+                            try {
+                                var targetGuildId = '${guildId}';
+                                var res = await fetch('/api/guild/' + targetGuildId + '/upload-image', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        imageBase64: base64Data,
+                                        fieldName: fieldName
+                                    })
+                                });
+                                var data = await res.json();
+                                if (data.success && data.url) {
+                                    if (fieldName === 'bot_avatar') {
+                                        var inp = document.getElementById('inpAvatarUrl');
+                                        if (inp) inp.value = data.url;
+                                        updateAvatarPreview(data.url);
+                                    } else if (fieldName === 'bot_banner') {
+                                        var inp = document.getElementById('inpBannerUrl');
+                                        if (inp) inp.value = data.url;
+                                        updateBannerPreview(data.url);
+                                    }
+                                    if (btnText) btnText.innerText = 'تم الرفع بنجاح ✅';
+                                    setTimeout(function() {
+                                        if (btnText) btnText.innerText = origText;
+                                    }, 2500);
+                                } else {
+                                    alert('❌ فشل رفع الصورة: ' + (data.error || 'خطأ غير معروف'));
+                                    if (btnText) btnText.innerText = origText;
+                                }
+                            } catch (err) {
+                                console.error('Upload error:', err);
+                                alert('❌ حدث خطأ أثناء رفع الصورة');
+                                if (btnText) btnText.innerText = origText;
+                            }
+                        };
+                        reader.readAsDataURL(file);
                     }
                     </script>`;
             } else if (section === 'settings') {
