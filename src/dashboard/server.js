@@ -10517,6 +10517,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         const data = await res.json();
                         if (data.success) {
                             showSaveStatus();
+                            if (data.message) {
+                                alert('⚠️ ' + data.message);
+                            }
                         } else {
                             alert('❌ خطأ أثناء الحفظ: ' + (data.error || 'حدث خطأ غير متوقع'));
                         }
@@ -10734,7 +10737,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/settings', express.json(), validate(settingsSchema), (req, res) => {
+    app.post('/api/guild/:guildId/settings', express.json(), validate(settingsSchema), async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -10749,7 +10752,19 @@ ${embedScriptHtml}
                     targetGuild.members.me.setNickname(settings.bot_nickname || null).catch(() => {});
                 }
             }
-            res.json({ success: true });
+
+            // تطبيق صورة البوت في ديسكورد فوراً إذا تم تغييرها
+            let avatarNotice = null;
+            if (settings.bot_avatar && client?.user) {
+                try {
+                    await client.user.setAvatar(settings.bot_avatar);
+                } catch (avErr) {
+                    console.error('[SETTINGS] Failed to set bot avatar on Discord:', avErr.message);
+                    avatarNotice = 'تم حفظ الإعدادات لكن تعذر تغيير صورة البوت في ديسكورد فوراً: ' + avErr.message;
+                }
+            }
+
+            res.json({ success: true, message: avatarNotice });
         } catch (e) {
             res.status(500).json({ success: false, error: e.message });
         }
