@@ -292,6 +292,28 @@ async def on_app_command_error(interaction: discord.Interaction, error):
         await interaction.response.send_message(msg, ephemeral=True)
 
 
+async def health_checks():
+    problems = []
+    if bot.latency > LATENCY_LIMIT:
+        problems.append(f"Latency مرتفع: {bot.latency:.2f}s")
+    mem = psutil.virtual_memory().percent
+    if mem > MEMORY_LIMIT:
+        problems.append(f"استهلاك الذاكرة: {mem}%")
+    cpu = psutil.cpu_percent(interval=None)          # يقيس منذ الاستدعاء السابق (≈60 ث)
+    if health_monitor.current_loop > 0 and cpu > 90:  # أول دورة فترتها قصيرة وغير دقيقة
+        problems.append(f"استهلاك المعالج: {cpu}%")
+    if problems:
+        await report_problem("مشكلة في أداء البوت", "\n".join(problems))
+
+    now = time.time()
+    for uid in [k for k, q in msg_times.items() if not q or now - q[-1] > SPAM_WINDOW]:
+        del msg_times[uid]
+    for gid in [k for k, q in joins.items() if not q or now - q[-1][0] > RAID_WINDOW]:
+        del joins[gid]
+    for k in [k for k, t in seen_problems.items() if now - t > 600]:
+        del seen_problems[k]
+
+
 @tasks.loop(seconds=60)
 async def health_monitor():
     # أي خطأ يُلتقط هنا ولا يخرج من الحلقة، فتستمر الدورة التالية دائماً
