@@ -671,7 +671,17 @@ module.exports = function (app, client) {
             }
 
             const userAvatar = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
-            const botAvatarUrl = client?.user?.avatar ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
+            let botAvatarUrl = client?.user?.avatar ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png?size=128` : null;
+            if (!botAvatarUrl) {
+                try {
+                    const anyGuildId = guilds?.[0]?.id;
+                    if (anyGuildId) {
+                        const savedSettings = database.getGuildSettings ? database.getGuildSettings(anyGuildId) : null;
+                        if (savedSettings?.bot_avatar) botAvatarUrl = savedSettings.bot_avatar;
+                    }
+                } catch(e) {}
+            }
+            if (!botAvatarUrl) botAvatarUrl = 'https://cdn.discordapp.com/embed/avatars/0.png';
 
             let userCoins = 0, userLevel = 1, userStars = 0, userXp = 0, userLastDaily = 0, userWallpaper = 'default';
             let xpLeaderboard = [];
@@ -1635,7 +1645,9 @@ module.exports = function (app, client) {
             } catch (err) {}
 
             const userAvatar = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
-            const botAvatarUrl = client?.user?.avatar ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
+            const botAvatarUrl = client?.user?.avatar
+                ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png?size=128`
+                : (settings?.bot_avatar || 'https://cdn.discordapp.com/embed/avatars/0.png');
             const guildIcon = guild.icon ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
             const serverRailHtml = guilds.map(g => `
