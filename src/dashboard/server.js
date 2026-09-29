@@ -671,17 +671,9 @@ module.exports = function (app, client) {
             }
 
             const userAvatar = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
-            let botAvatarUrl = client?.user?.avatar ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png?size=128` : null;
-            if (!botAvatarUrl) {
-                try {
-                    const anyGuildId = guilds?.[0]?.id;
-                    if (anyGuildId) {
-                        const savedSettings = database.getGuildSettings ? database.getGuildSettings(anyGuildId) : null;
-                        if (savedSettings?.bot_avatar) botAvatarUrl = savedSettings.bot_avatar;
-                    }
-                } catch(e) {}
-            }
-            if (!botAvatarUrl) botAvatarUrl = 'https://cdn.discordapp.com/embed/avatars/0.png';
+            const botAvatarUrl = client?.user?.avatar
+                ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png?size=128`
+                : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
             let userCoins = 0, userLevel = 1, userStars = 0, userXp = 0, userLastDaily = 0, userWallpaper = 'default';
             let xpLeaderboard = [];
@@ -10782,18 +10774,10 @@ ${embedScriptHtml}
                 }
             }
 
-            // تطبيق صورة البوت في ديسكورد فوراً إذا تم تغييرها
-            let avatarNotice = null;
-            if (settings.bot_avatar && client?.user) {
-                try {
-                    await client.user.setAvatar(settings.bot_avatar);
-                } catch (avErr) {
-                    console.error('[SETTINGS] Failed to set bot avatar on Discord:', avErr.message);
-                    avatarNotice = 'تم حفظ الإعدادات لكن تعذر تغيير صورة البوت في ديسكورد فوراً: ' + avErr.message;
-                }
-            }
+            // ملاحظة: صورة البوت (bot_avatar) تُحفظ في قاعدة البيانات للعرض في الداشبورد فقط
+            // صورة البوت على ديسكورد عالمية ولا تتغير per-server
 
-            res.json({ success: true, message: avatarNotice });
+            res.json({ success: true });
         } catch (e) {
             res.status(500).json({ success: false, error: e.message });
         }
