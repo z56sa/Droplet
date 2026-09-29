@@ -8328,7 +8328,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                         </div>
 
-                        <!-- Important Notes Alert (Exact to Image 2) -->
+                        <!-- Important Notes Alert -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-3xl space-y-2 text-right shadow-lg">
                             <div class="flex items-center justify-end gap-2 text-amber-400 font-bold text-xs">
                                 <span>ملاحظات مهمة</span>
@@ -8340,6 +8340,17 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <li>• قد يستغرق ظهور التغييرات بضع ثوانٍ في ديسكورد فور الضغط على حفظ.</li>
                                 <li>• الصيغ المدعومة: PNG أو JPG أو WEBP أو GIF (الحد الأقصى 15 ميجابايت).</li>
                             </ul>
+                        </div>
+
+                        <!-- Restore Global Avatar Button -->
+                        <div class="bg-[#12141f] border border-rose-500/20 p-5 rounded-3xl text-right shadow-lg flex items-center justify-between gap-4">
+                            <button type="button" id="resetAvatarBtn" onclick="resetGlobalAvatar()" class="px-5 py-2.5 bg-rose-600/80 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer">
+                                <span>🔄</span><span>استعادة الصورة العالمية الأصلية</span>
+                            </button>
+                            <div class="text-right">
+                                <p class="text-xs font-bold text-rose-400">استعادة صورة البوت العالمية</p>
+                                <p class="text-[11px] text-gray-500 mt-0.5">يُعيد صورة البوت العالمية لتطابق الـ App Icon في Developer Portal</p>
+                            </div>
                         </div>
 
                     </div>
@@ -8357,6 +8368,30 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         var box = document.getElementById('prevBannerBox');
                         if (box && url) {
                             box.style.backgroundImage = 'url(' + url + ')';
+                        }
+                    }
+
+                    async function resetGlobalAvatar() {
+                        var btn = document.getElementById('resetAvatarBtn');
+                        if (btn) { btn.disabled = true; btn.innerText = '⏳ جاري الاستعادة...'; }
+                        try {
+                            var res = await fetch('/api/bot/reset-avatar', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' }
+                            });
+                            var data = await res.json();
+                            if (data.success) {
+                                if (btn) { btn.innerText = '✅ تم استعادة الصورة الأصلية!'; }
+                                setTimeout(function() {
+                                    if (btn) { btn.disabled = false; btn.innerHTML = '<span>🔄</span><span>استعادة الصورة العالمية الأصلية</span>'; }
+                                }, 3000);
+                            } else {
+                                alert('❌ فشلت الاستعادة: ' + (data.error || 'خطأ غير معروف'));
+                                if (btn) { btn.disabled = false; btn.innerHTML = '<span>🔄</span><span>استعادة الصورة العالمية الأصلية</span>'; }
+                            }
+                        } catch(e) {
+                            alert('❌ خطأ في الاتصال: ' + e.message);
+                            if (btn) { btn.disabled = false; btn.innerHTML = '<span>🔄</span><span>استعادة الصورة العالمية الأصلية</span>'; }
                         }
                     }
 
@@ -10837,6 +10872,45 @@ ${embedScriptHtml}
             res.status(500).json({ success: false, error: e.message });
         }
     });
+
+    // =============================================
+    // Reset Global Bot Avatar to App Icon
+    // =============================================
+    app.post('/api/bot/reset-avatar', express.json(), async (req, res) => {
+        try {
+            if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+            if (!client?.user || !client?.rest) {
+                return res.status(503).json({ success: false, error: 'Discord client not ready' });
+            }
+
+            // جلب معلومات التطبيق من Discord للحصول على App Icon الأصلي
+            const appInfo = await client.rest.get('/applications/@me');
+            if (!appInfo?.icon || !appInfo?.id) {
+                return res.status(404).json({ success: false, error: 'No App Icon found in Developer Portal' });
+            }
+
+            // بناء رابط صورة التطبيق
+            const iconUrl = `https://cdn.discordapp.com/app-icons/${appInfo.id}/${appInfo.icon}.png?size=512`;
+
+            // جلب الصورة وتحويلها لـ base64
+            const imgResponse = await fetch(iconUrl, { signal: AbortSignal.timeout(10000) });
+            if (!imgResponse.ok) throw new Error('Failed to fetch app icon');
+            const buffer = await imgResponse.arrayBuffer();
+            const base64 = Buffer.from(buffer).toString('base64');
+            const dataUri = `data:image/png;base64,${base64}`;
+
+            // تطبيق الصورة على البوت عالمياً
+            await client.user.setAvatar(dataUri);
+
+            res.json({ success: true, message: 'تم استعادة صورة البوت الأصلية بنجاح ✅', iconUrl });
+        } catch (e) {
+            console.error('[RESET AVATAR]', e.message);
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+
 
     // =============================================
     // Logs Auto-Setup & Delete-Channels API
