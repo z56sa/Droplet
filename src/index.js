@@ -11,9 +11,11 @@ require('dotenv').config(); // Keep dotenv for local development setup
 
 // --- Google GenAI Integration ---
 const { askAI } = require('./utils/ai');
+const { SecurityGuardian } = require('./services/securityGuardian');
 // -----------------------------
 
 const app = express();
+const config = require('./config.json');
 app.set('trust proxy', 1);
 
 // =============================================================================
@@ -49,6 +51,23 @@ Client.prototype.once = function (event, ...args) {
 client.commands = new Collection();
 client.prefixCommands = new Collection();
 client.aliases = new Collection();
+
+// Centralized AI + security guardian. It never writes source code automatically.
+const securityGuardian = new SecurityGuardian(client);
+client.securityGuardian = securityGuardian;
+
+process.on('unhandledRejection', (reason) => {
+    securityGuardian.report(null, 'Unhandled promise rejection', String(reason?.stack || reason), 'critical').catch(() => {});
+});
+
+process.on('uncaughtException', (error) => {
+    securityGuardian.report(null, 'Uncaught exception', error?.stack || String(error), 'critical').catch(() => {});
+    setTimeout(() => process.exit(1), 1500).unref?.();
+});
+
+client.on('error', (error) => {
+    securityGuardian.report(null, 'Discord client error', error?.stack || String(error), 'warning').catch(() => {});
+});
 
 // Intercept interaction responses globally to guarantee no library or handler triggers the ephemeral deprecation warning
 const { BaseInteraction, MessageFlags } = require('discord.js');
@@ -106,6 +125,7 @@ try {
         await commandHandler(client);
         eventHandler(client);
         console.log('[INFO] ✅ Successfully loaded commands and event handlers.');
+        securityGuardian.startHealthMonitor();
 
     } catch (err) {
         console.error('[CRITICAL FAILURE] 🛑 Initialization failed due to missing or invalid configuration:', err.message);
