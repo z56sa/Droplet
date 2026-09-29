@@ -1,30 +1,10 @@
-FROM node:20-bookworm-slim
-# Install runtime and build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++ \
-    build-essential \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libjpeg-dev \
-    libgif-dev \
-    librsvg2-dev \
-    libfontconfig1-dev \
-    fonts-liberation \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.12-slim
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-COPY package*.json ./
+COPY requirements.txt .
+RUN pip install --no-cache-dir -U -r requirements.txt
 
-RUN npm install
+COPY bot.py .
 
-COPY . .
-
-# إنشاء مجلد البيانات مسبقاً لضمان عمل RENDER Volume بشكل صحيح
-RUN mkdir -p /usr/src/app/data && chmod 777 /usr/src/app/data
-
-EXPOSE 3000
-
-CMD ["node", "src/index.js"]
+CMD ["python", "bot.py"]
