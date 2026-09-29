@@ -16,6 +16,48 @@ module.exports = {
     const userId = message.author.id;
     const settings = db.getGuildSettings(guildId);
 
+    // =========================================================================
+    // 🛡️ ZENO Security Guardian: secrets + dangerous files
+    // Runs before AI/Auto-Mod so sensitive data never reaches the AI layer.
+    // =========================================================================
+    if (client.securityGuardian) {
+      try {
+        const securityScan = await client.securityGuardian.scanMessage(message);
+        const sensitiveFindings = securityScan.findings.filter(f => !f.startsWith('Dangerous attachment:'));
+        const dangerousFiles = securityScan.findings.filter(f => f.startsWith('Dangerous attachment:'));
+
+        if (sensitiveFindings.length || dangerousFiles.length) {
+          await message.delete().catch(() => {});
+
+          const reasons = [
+            ...sensitiveFindings.map(f => `Sensitive information: ${f}`),
+            ...dangerousFiles
+          ];
+
+          await client.securityGuardian.report(
+            message.guild,
+            'Blocked security incident',
+            `User ${message.author.id} in guild ${guildId}. Findings: ${reasons.join(', ')}`,
+            'critical'
+          );
+
+          const warning = await message.channel.send({
+            content: `⚠️ ${message.author} تم حظر المحتوى تلقائياً لحماية السيرفر والبيانات.`
+          }).catch(() => null);
+          if (warning) setTimeout(() => warning.delete().catch(() => {}), 7000);
+          return;
+        }
+      } catch (securityError) {
+        // Security scanner failure is reported, but does not crash the message handler.
+        await client.securityGuardian.report(
+          message.guild,
+          'Security scanner error',
+          securityError?.stack || String(securityError),
+          'warning'
+        ).catch(() => {});
+      }
+    }
+
     // تحديث كاش السيرفر إذا لم يكن متوفراً
     const serverTracker = require('../../utils/serverTracker');
     if (!serverTracker.memoryGuilds.has(guildId)) {
