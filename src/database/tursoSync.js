@@ -13,8 +13,20 @@ class TursoSync {
     this.syncQueue = [];
     this.isProcessingQueue = false;
 
-    const url = (process.env.TURSO_DATABASE_URL || process.env.TURSO_DATABASE_UR || '').trim();
-    const authToken = (process.env.TURSO_AUTH_TOKEN || '').trim();
+    // Support the normal Turso names plus common aliases used by hosting panels.
+    // Never log the actual URL/token values.
+    const cleanEnv = (value) => String(value || '').trim().replace(/^['"]|['"]$/g, '');
+    const url = cleanEnv(
+      process.env.TURSO_DATABASE_URL ||
+      process.env.TURSO_URL ||
+      process.env.LIBSQL_URL ||
+      process.env.TURSO_DATABASE_UR
+    );
+    const authToken = cleanEnv(
+      process.env.TURSO_AUTH_TOKEN ||
+      process.env.TURSO_TOKEN ||
+      process.env.LIBSQL_AUTH_TOKEN
+    );
 
     if (url && (url.startsWith('libsql://') || url.startsWith('https://'))) {
       try {
@@ -24,11 +36,12 @@ class TursoSync {
         });
         this.enabled = true;
         console.log('[TURSO] 🌐 Turso Cloud Database Sync initialized successfully.');
+        console.log('[TURSO] 🔐 URL configured: yes | Auth token configured: ' + (authToken ? 'yes' : 'no'));
       } catch (err) {
         console.error('[TURSO] ⚠️ Failed to initialize Turso client:', err.message);
       }
     } else {
-      console.log('[TURSO] ℹ️ Turso credentials not detected. Running on local SQLite only.');
+      console.log('[TURSO] ℹ️ Turso credentials not detected. Expected TURSO_DATABASE_URL/TURSO_URL/LIBSQL_URL and TURSO_AUTH_TOKEN/TURSO_TOKEN/LIBSQL_AUTH_TOKEN. Running on local SQLite only.');
     }
   }
 
