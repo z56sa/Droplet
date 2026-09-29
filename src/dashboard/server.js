@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module server
  * @description Handles the web server setup for the zeno dashboard, managing sessions and routing.
  */
@@ -8209,7 +8209,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 ${!settings.bot_banner ? `
                                     <div class="text-center">
                                         <h2 class="text-2xl font-black text-amber-100 tracking-wider shadow-sm">Best System Bot</h2>
-                                        <p class="text-xs text-amber-200/80 font-mono mt-0.5">discord.gg/zeno</p>
                                     </div>
                                 ` : ''}
                                 <!-- Avatar Overlap -->
