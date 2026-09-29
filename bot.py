@@ -2,7 +2,7 @@
 بوت ديسكورد v6 — Gemini (Google) + MCP + نظام حماية (يتطلب Python 3.10+)
 
 pip install -U discord.py google-genai mcp psutil aiohttp
-المتغيرات الأساسية: DISCORD_TOKEN, GEMINI_API_KEY, LOG_CHANNEL_ID
+المتغيرات الأساسية: BOT_TOKEN, GEMINI_API_KEY, LOG_CHANNEL_ID
 اختيارية: GEMINI_MODEL, CODE_CHANNEL_IDS (قنوات تسمح بملفات الكود)
 MCP (اختر واحداً):
   MCP_SERVER_URL   سيرفر MCP عبر HTTP (https)
@@ -37,7 +37,7 @@ except ImportError:
     NEW_MCP = False
 
 # ───────────── الإعدادات ─────────────
-TOKEN = os.environ["DISCORD_TOKEN"]
+TOKEN = os.environ["BOT_TOKEN"]
 LOG_CHANNEL_ID = int(os.environ.get("LOG_CHANNEL_ID", "0"))
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 MCP_URL = os.environ.get("MCP_SERVER_URL", "")
