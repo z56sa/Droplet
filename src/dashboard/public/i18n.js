@@ -1655,9 +1655,12 @@
     function ensureToggleButton() {
         const btn = getToggleButton();
         if (!btn || btn.dataset.langBound === "true") return;
+
+        // Use the same public toggle function used by older dashboard pages.
+        // Do not stop propagation here; the delegated handler below is the
+        // single fallback for buttons that are replaced dynamically.
         btn.addEventListener("click", function (event) {
             event.preventDefault();
-            event.stopPropagation();
             toggleLanguage({ reload: false });
         });
         btn.dataset.langBound = "true";
@@ -1673,10 +1676,13 @@
                 ? event.target.closest(TOGGLE_BUTTON_SELECTORS.join(","))
                 : null;
             if (!target) return;
+
+            // Ignore clicks already handled by the direct listener.
+            if (target.dataset.langBound === "true") return;
+
             event.preventDefault();
-            event.stopPropagation();
             toggleLanguage({ reload: false });
-        }, true);
+        }, false);
     }
 
     /** Watch for dynamically injected content (SPA-style dashboards) and translate it */
