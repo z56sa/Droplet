@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @module server
  * @description Handles the web server setup for the zeno dashboard, managing sessions and routing.
  */
@@ -1780,7 +1780,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-cyan-600/20 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-sm">🤖</div>
                                     <span class="text-[10px] text-gray-500 font-mono">BOTS</span>
                                 </div>
-                                <div class="text-2xl font-black text-white">${(botGuild?.members?.cache?.filter(m => m.user.bot).size || 0)}</div>
+                                <div class="text-2xl font-black text-white" id="botsCount">…</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">عدد البوتات</p>
                             </div>
                             <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl shadow-xl text-right hover:border-purple-500/20 transition">
@@ -1788,7 +1788,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-violet-600/20 border border-violet-500/30 text-violet-400 flex items-center justify-center text-sm">🎁</div>
                                     <span class="text-[10px] text-gray-500 font-mono">GIVEAWAYS</span>
                                 </div>
-                                <div class="text-2xl font-black text-white">${guildGiveawaysList?.length || 0}</div>
+                                <div class="text-2xl font-black text-white" id="giveawaysCount">${guildGiveawaysList?.length || 0}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">إجمالي القيف اوايز</p>
                             </div>
                         </div>
@@ -1899,22 +1899,27 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 <script>
 (function() {
     var guildId = '${guildId}';
-    function fetchOnlineCount() {
+    function fetchStats() {
         fetch('/api/guild/' + guildId + '/online-count')
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                var el = document.getElementById('onlineMembersCount');
-                if (el && data.success) {
-                    el.textContent = (data.online || 0).toLocaleString();
-                }
+                if (!data.success) return;
+                var elOnline = document.getElementById('onlineMembersCount');
+                if (elOnline) elOnline.textContent = (data.online || 0).toLocaleString();
+                var elBots = document.getElementById('botsCount');
+                if (elBots) elBots.textContent = (data.bots || 0).toLocaleString();
+                var elGw = document.getElementById('giveawaysCount');
+                if (elGw) elGw.textContent = (data.giveaways || 0).toLocaleString();
             })
             .catch(function() {
-                var el = document.getElementById('onlineMembersCount');
-                if (el && el.textContent === '\u2026') el.textContent = '0';
+                var elOnline = document.getElementById('onlineMembersCount');
+                if (elOnline && elOnline.textContent === '\u2026') elOnline.textContent = '0';
+                var elBots = document.getElementById('botsCount');
+                if (elBots && elBots.textContent === '\u2026') elBots.textContent = '0';
             });
     }
-    fetchOnlineCount();
-    setInterval(fetchOnlineCount, 30000);
+    fetchStats();
+    setInterval(fetchStats, 30000);
 })();
 </script>
 `;
@@ -2672,22 +2677,27 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 <script>
 (function() {
     var guildId = '${guildId}';
-    function fetchOnlineCount() {
+    function fetchStats() {
         fetch('/api/guild/' + guildId + '/online-count')
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                var el = document.getElementById('onlineMembersCount');
-                if (el && data.success) {
-                    el.textContent = (data.online || 0).toLocaleString();
-                }
+                if (!data.success) return;
+                var elOnline = document.getElementById('onlineMembersCount');
+                if (elOnline) elOnline.textContent = (data.online || 0).toLocaleString();
+                var elBots = document.getElementById('botsCount');
+                if (elBots) elBots.textContent = (data.bots || 0).toLocaleString();
+                var elGw = document.getElementById('giveawaysCount');
+                if (elGw) elGw.textContent = (data.giveaways || 0).toLocaleString();
             })
             .catch(function() {
-                var el = document.getElementById('onlineMembersCount');
-                if (el && el.textContent === '\u2026') el.textContent = '0';
+                var elOnline = document.getElementById('onlineMembersCount');
+                if (elOnline && elOnline.textContent === '\u2026') elOnline.textContent = '0';
+                var elBots = document.getElementById('botsCount');
+                if (elBots && elBots.textContent === '\u2026') elBots.textContent = '0';
             });
     }
-    fetchOnlineCount();
-    setInterval(fetchOnlineCount, 30000);
+    fetchStats();
+    setInterval(fetchStats, 30000);
 })();
 </script>
 `;
@@ -3578,22 +3588,27 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 <script>
 (function() {
     var guildId = '${guildId}';
-    function fetchOnlineCount() {
+    function fetchStats() {
         fetch('/api/guild/' + guildId + '/online-count')
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                var el = document.getElementById('onlineMembersCount');
-                if (el && data.success) {
-                    el.textContent = (data.online || 0).toLocaleString();
-                }
+                if (!data.success) return;
+                var elOnline = document.getElementById('onlineMembersCount');
+                if (elOnline) elOnline.textContent = (data.online || 0).toLocaleString();
+                var elBots = document.getElementById('botsCount');
+                if (elBots) elBots.textContent = (data.bots || 0).toLocaleString();
+                var elGw = document.getElementById('giveawaysCount');
+                if (elGw) elGw.textContent = (data.giveaways || 0).toLocaleString();
             })
             .catch(function() {
-                var el = document.getElementById('onlineMembersCount');
-                if (el && el.textContent === '\u2026') el.textContent = '0';
+                var elOnline = document.getElementById('onlineMembersCount');
+                if (elOnline && elOnline.textContent === '\u2026') elOnline.textContent = '0';
+                var elBots = document.getElementById('botsCount');
+                if (elBots && elBots.textContent === '\u2026') elBots.textContent = '0';
             });
     }
-    fetchOnlineCount();
-    setInterval(fetchOnlineCount, 30000);
+    fetchStats();
+    setInterval(fetchStats, 30000);
 })();
 </script>
 `;
@@ -4637,22 +4652,27 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 <script>
 (function() {
     var guildId = '${guildId}';
-    function fetchOnlineCount() {
+    function fetchStats() {
         fetch('/api/guild/' + guildId + '/online-count')
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                var el = document.getElementById('onlineMembersCount');
-                if (el && data.success) {
-                    el.textContent = (data.online || 0).toLocaleString();
-                }
+                if (!data.success) return;
+                var elOnline = document.getElementById('onlineMembersCount');
+                if (elOnline) elOnline.textContent = (data.online || 0).toLocaleString();
+                var elBots = document.getElementById('botsCount');
+                if (elBots) elBots.textContent = (data.bots || 0).toLocaleString();
+                var elGw = document.getElementById('giveawaysCount');
+                if (elGw) elGw.textContent = (data.giveaways || 0).toLocaleString();
             })
             .catch(function() {
-                var el = document.getElementById('onlineMembersCount');
-                if (el && el.textContent === '\u2026') el.textContent = '0';
+                var elOnline = document.getElementById('onlineMembersCount');
+                if (elOnline && elOnline.textContent === '\u2026') elOnline.textContent = '0';
+                var elBots = document.getElementById('botsCount');
+                if (elBots && elBots.textContent === '\u2026') elBots.textContent = '0';
             });
     }
-    fetchOnlineCount();
-    setInterval(fetchOnlineCount, 30000);
+    fetchStats();
+    setInterval(fetchStats, 30000);
 })();
 </script>
 `;
@@ -8547,22 +8567,27 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 <script>
 (function() {
     var guildId = '${guildId}';
-    function fetchOnlineCount() {
+    function fetchStats() {
         fetch('/api/guild/' + guildId + '/online-count')
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                var el = document.getElementById('onlineMembersCount');
-                if (el && data.success) {
-                    el.textContent = (data.online || 0).toLocaleString();
-                }
+                if (!data.success) return;
+                var elOnline = document.getElementById('onlineMembersCount');
+                if (elOnline) elOnline.textContent = (data.online || 0).toLocaleString();
+                var elBots = document.getElementById('botsCount');
+                if (elBots) elBots.textContent = (data.bots || 0).toLocaleString();
+                var elGw = document.getElementById('giveawaysCount');
+                if (elGw) elGw.textContent = (data.giveaways || 0).toLocaleString();
             })
             .catch(function() {
-                var el = document.getElementById('onlineMembersCount');
-                if (el && el.textContent === '\u2026') el.textContent = '0';
+                var elOnline = document.getElementById('onlineMembersCount');
+                if (elOnline && elOnline.textContent === '\u2026') elOnline.textContent = '0';
+                var elBots = document.getElementById('botsCount');
+                if (elBots && elBots.textContent === '\u2026') elBots.textContent = '0';
             });
     }
-    fetchOnlineCount();
-    setInterval(fetchOnlineCount, 30000);
+    fetchStats();
+    setInterval(fetchStats, 30000);
 })();
 </script>
 `;
@@ -11353,37 +11378,63 @@ ${embedScriptHtml}
         }
     });
 
-    // Real-time Online Members Count API
+    // Real-time Stats API (online members, bots, giveaways)
     app.get('/api/guild/:guildId/online-count', async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
             const botGuild = client.guilds.cache.get(guildId);
-            if (!botGuild) return res.json({ success: true, online: 0 });
+            if (!botGuild) return res.json({ success: true, online: 0, bots: 0, giveaways: 0 });
 
-            // Try to use cached presences first
-            let onlineCount = botGuild.members.cache.filter(m =>
-                !m.user.bot && (m.presence?.status === 'online' || m.presence?.status === 'idle' || m.presence?.status === 'dnd')
+            // --- Online Members: use presences.cache directly (most accurate) ---
+            let onlineCount = botGuild.presences.cache.filter(p =>
+                p.status === 'online' || p.status === 'idle' || p.status === 'dnd'
             ).size;
 
-            // If cache seems empty, try fetching members to populate presence cache
-            if (onlineCount === 0 && botGuild.members.cache.size < botGuild.memberCount) {
+            // Fallback: fetch members with presences if cache is empty
+            if (onlineCount === 0) {
                 try {
-                    await botGuild.members.fetch({ withPresences: true }).catch(() => null);
-                    onlineCount = botGuild.members.cache.filter(m =>
-                        !m.user.bot && (m.presence?.status === 'online' || m.presence?.status === 'idle' || m.presence?.status === 'dnd')
+                    await botGuild.members.fetch({ withPresences: true });
+                    onlineCount = botGuild.presences.cache.filter(p =>
+                        p.status === 'online' || p.status === 'idle' || p.status === 'dnd'
                     ).size;
                 } catch(e) {
-                    // fallback: use presences cache size
-                    onlineCount = botGuild.presences?.cache?.filter(p =>
-                        p.status === 'online' || p.status === 'idle' || p.status === 'dnd'
-                    ).size || 0;
+                    onlineCount = 0;
                 }
             }
 
-            res.json({ success: true, online: onlineCount, total: botGuild.memberCount || 0 });
+            // --- Bots count: use REST to get accurate count ---
+            let botsCount = botGuild.members.cache.filter(m => m.user.bot).size;
+            // If members cache is not fully populated, fetch all members
+            if (botGuild.members.cache.size < botGuild.memberCount) {
+                try {
+                    await botGuild.members.fetch();
+                    botsCount = botGuild.members.cache.filter(m => m.user.bot).size;
+                } catch(e) {
+                    // keep whatever we have
+                }
+            }
+
+            // --- Giveaways count: query DB directly ---
+            let giveawaysCount = 0;
+            try {
+                const gwRows = rawDb.prepare('SELECT COUNT(*) as cnt FROM giveaways WHERE guild_id = ?').get(guildId);
+                giveawaysCount = gwRows?.cnt || 0;
+            } catch(e) {
+                try {
+                    giveawaysCount = (database.getGuildGiveaways ? database.getGuildGiveaways(guildId) : []).length;
+                } catch(e2) {}
+            }
+
+            res.json({
+                success: true,
+                online: onlineCount,
+                bots: botsCount,
+                giveaways: giveawaysCount,
+                total: botGuild.memberCount || 0
+            });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message, online: 0 });
+            res.status(500).json({ success: false, error: e.message, online: 0, bots: 0, giveaways: 0 });
         }
     });
 
