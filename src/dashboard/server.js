@@ -10766,16 +10766,71 @@ ${embedScriptHtml}
             if (database.updateGuildSettings) {
                 database.updateGuildSettings(guildId, settings);
             }
-            // تطبيق اسم البوت في السيرفر في ديسكورد فوراً
-            if (settings.bot_nickname !== undefined && client?.guilds?.cache) {
-                const targetGuild = client.guilds.cache.get(guildId);
-                if (targetGuild?.members?.me) {
-                    targetGuild.members.me.setNickname(settings.bot_nickname || null).catch(() => {});
+
+            // --- تطبيق الإعدادات على Discord فوراً ---
+            const discordPatchBody = {};
+
+            // 1. اسم البوت في السيرفر (Nickname)
+            if (settings.bot_nickname !== undefined) {
+                discordPatchBody.nick = settings.bot_nickname || null;
+                // أيضاً عبر discord.js كـ fallback
+                try {
+                    const targetGuild = client?.guilds?.cache?.get(guildId);
+                    if (targetGuild?.members?.me) {
+                        targetGuild.members.me.setNickname(settings.bot_nickname || null).catch(() => {});
+                    }
+                } catch(e) {}
+            }
+
+            // helper: تحويل URL إلى base64 data URI
+            async function urlToBase64DataUri(url) {
+                const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+                if (!response.ok) throw new Error('Failed to fetch image: ' + response.status);
+                const buffer = await response.arrayBuffer();
+                const base64 = Buffer.from(buffer).toString('base64');
+                const contentType = response.headers.get('content-type') || 'image/png';
+                return `data:${contentType};base64,${base64}`;
+            }
+
+            // 2. صورة البوت per-guild (Per-Server Avatar)
+            if (settings.bot_avatar) {
+                try {
+                    let avatarData = settings.bot_avatar;
+                    // إذا كان URL (مو base64)، نحوّله
+                    if (avatarData.startsWith('http')) {
+                        avatarData = await urlToBase64DataUri(avatarData);
+                    }
+                    discordPatchBody.avatar = avatarData;
+                } catch(e) {
+                    console.error('[SETTINGS] Failed to prepare per-guild avatar:', e.message);
                 }
             }
 
-            // ملاحظة: صورة البوت (bot_avatar) تُحفظ في قاعدة البيانات للعرض في الداشبورد فقط
-            // صورة البوت على ديسكورد عالمية ولا تتغير per-server
+            // 3. بنر البوت per-guild (Per-Server Banner)
+            if (settings.bot_banner) {
+                try {
+                    let bannerData = settings.bot_banner;
+                    if (bannerData.startsWith('http')) {
+                        bannerData = await urlToBase64DataUri(bannerData);
+                    }
+                    discordPatchBody.banner = bannerData;
+                } catch(e) {
+                    console.error('[SETTINGS] Failed to prepare per-guild banner:', e.message);
+                }
+            }
+
+            // إرسال PATCH /guilds/{guildId}/members/@me لتطبيق التغييرات per-guild
+            if (Object.keys(discordPatchBody).length > 0 && client?.rest) {
+                try {
+                    const { Routes } = require('discord.js');
+                    await client.rest.patch(Routes.guildMember(guildId, '@me'), {
+                        body: discordPatchBody
+                    });
+                } catch(patchErr) {
+                    console.error('[SETTINGS] Discord PATCH guild member failed:', patchErr.message);
+                    // لا نوقف العملية — الإعدادات محفوظة في DB حتى لو Discord رد بخطأ
+                }
+            }
 
             res.json({ success: true });
         } catch (e) {
