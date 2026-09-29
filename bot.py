@@ -562,4 +562,35 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
 
 
-bot.run(TOKEN)
+async def run_bot():
+    """Start Discord without turning a temporary login 429 into a Render restart loop."""
+    while True:
+        try:
+            await bot.start(TOKEN, reconnect=True)
+            return
+        except discord.HTTPException as exc:
+            if exc.status != 429:
+                raise
+
+            # Discord may omit Retry-After for a global login block. In that case,
+            # wait 15 minutes before making another authentication request.
+            retry_after = None
+            try:
+                retry_after = float(exc.response.headers.get("Retry-After", ""))
+            except (AttributeError, TypeError, ValueError):
+                pass
+
+            wait_seconds = max(60, int(retry_after or 900) + 10)
+            print(
+                f"Discord rate-limited ZENO during login (HTTP 429). "
+                f"Waiting {wait_seconds}s before retrying; the process will stay alive."
+            )
+            await asyncio.sleep(wait_seconds)
+
+        except discord.LoginFailure:
+            # Invalid/revoked token: retrying would only create unnecessary requests.
+            raise
+
+
+if __name__ == "__main__":
+    asyncio.run(run_bot())
