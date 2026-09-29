@@ -150,13 +150,8 @@ async function askAI(promptText) {
         }
     }
 
-    const modelsToTry = [
-        'gemini-3.6-flash',
-        'gemini-3.8-flash',
-        'gemini-3.7-flash',
-        'gemini-3.5-flash',
-        'gemini-flash-latest'
-    ];
+    const configuredModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const modelsToTry = [configuredModel];
 
     let lastError = null;
 
@@ -197,7 +192,13 @@ async function askAI(promptText) {
             }
         } catch (error) {
             lastError = error;
-            console.warn(`[AI] فشلت المحاولة باستخدام النموذج ${model}:`, error?.message || error);
+            const status = Number(error?.status || error?.code || 0);
+            console.warn(`[AI] فشلت المحاولة باستخدام النموذج ${model} (status ${status}):`, error?.message || error);
+            // لا تدوّر على نماذج متعددة عند 429/503؛ ذلك يحوّل عطلًا مؤقتًا إلى استنزاف للكوتا.
+            if (status === 429 || status === 503) {
+                const retrySeconds = Number(error?.error?.details?.find?.(d => d['@type']?.includes('RetryInfo'))?.retryDelay?.replace?.('s','') || 30);
+                await new Promise(resolve => setTimeout(resolve, Math.min(Math.max(retrySeconds * 1000, 5000), 30000)));
+            }
         }
     }
 
