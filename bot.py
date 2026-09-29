@@ -85,10 +85,15 @@ def luhn_ok(number: str) -> bool:
 
 
 class SecureBot(commands.Bot):
-    session: aiohttp.ClientSession
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # هذه الجلسة تُستخدم فقط لتحميل المرفقات؛ قد يفشل Discord login
+        # قبل setup_hook، لذلك يجب ألا نفترض أنها موجودة في close().
+        self.session: aiohttp.ClientSession | None = None
 
     async def setup_hook(self):
-        self.session = aiohttp.ClientSession()
+        if self.session is None or self.session.closed:
+            self.session = aiohttp.ClientSession()
         await self.tree.sync()
         psutil.cpu_percent(interval=None)  # تهيئة القراءة الأولى (تُرجع 0.0 دائماً)
         health_monitor.start()
@@ -96,7 +101,8 @@ class SecureBot(commands.Bot):
 
     async def close(self):
         await mcp_manager.stop()
-        await self.session.close()
+        if self.session is not None and not self.session.closed:
+            await self.session.close()
         await super().close()
 
 
