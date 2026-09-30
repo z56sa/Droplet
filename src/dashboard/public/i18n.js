@@ -867,6 +867,15 @@
         document.querySelectorAll('.zeno-lang-toggle-btn').forEach((btn) => {
             const label = lang === 'ar' ? 'EN' : 'AR';
             btn.innerHTML = '<span class="text-sm">🌐</span><span class="font-black text-xs uppercase tracking-wider">' + label + '</span>';
+            // ربط حدث الضغط إذا لم يكن مربوطاً
+            if (!btn._zenoClickBound) {
+                btn._zenoClickBound = true;
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleLang();
+                });
+            }
         });
     }
 
@@ -1064,6 +1073,17 @@
     }
 
     applyLayout(detectLang());
+
+    // Event delegation: اضغط على أي مكان وإذا كان زر الترجمة شغّل toggleLang
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('[data-lang-toggle="true"], .zeno-lang-toggle-btn');
+        if (btn) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleLang();
+        }
+    }, true);
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
             applyLanguage();
@@ -1073,4 +1093,4 @@
         applyLanguage();
         startMutationObserver();
     }
-})();
+})();
