@@ -2151,19 +2151,36 @@ module.exports = {
     try { upvotes = JSON.parse(row.upvotes || '[]'); } catch(e) {}
     try { downvotes = JSON.parse(row.downvotes || '[]'); } catch(e) {}
 
+    const wasUp = upvotes.includes(userId);
+    const wasDown = downvotes.includes(userId);
+
     upvotes = upvotes.filter(u => u !== userId);
     downvotes = downvotes.filter(u => u !== userId);
 
+    let action = 'voted';
     if (voteType === 'up') {
-      upvotes.push(userId);
+      if (wasUp) {
+        action = 'removed';
+      } else {
+        upvotes.push(userId);
+      }
     } else if (voteType === 'down') {
-      downvotes.push(userId);
+      if (wasDown) {
+        action = 'removed';
+      } else {
+        downvotes.push(userId);
+      }
     }
 
     db.prepare('UPDATE suggestions SET upvotes = ?, downvotes = ? WHERE id = ?').run(
       JSON.stringify(upvotes), JSON.stringify(downvotes), row.id
     );
-    return { upvotesCount: upvotes.length, downvotesCount: downvotes.length };
+    return {
+      upvotesCount: upvotes.length,
+      downvotesCount: downvotes.length,
+      action,
+      voteType
+    };
   },
   deleteSuggestion: (id) => db.prepare('DELETE FROM suggestions WHERE id = ? OR message_id = ?').run(id, id),
   // 🔒 Jail System Exports

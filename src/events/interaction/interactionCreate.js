@@ -94,18 +94,46 @@ module.exports = {
           return interaction.reply({ content: '❌ تعذر العثور على بيانات هذا الاقتراح في قاعدة البيانات.', flags: 64 });
         }
 
-        const compList = interaction.message.components[0].components;
-        const upBtn = ButtonBuilder.from(compList[0]).setLabel(String(res.upvotesCount));
-        const downBtn = ButtonBuilder.from(compList[1]).setLabel(String(res.downvotesCount));
-        const remainingBtns = compList.slice(2).map(c => ButtonBuilder.from(c));
-        const newRow = new ActionRowBuilder().addComponents(upBtn, downBtn, ...remainingBtns);
+        const sugg = db.getSuggestion(interaction.message.id);
+        const { buildSuggestionEmbed, buildSuggestionComponents } = require('../../utils/suggestionBuilder');
 
-        await interaction.message.edit({ components: [newRow] }).catch(() => {});
-        return interaction.reply({ content: `✅ تم تسجيل تصويتك (${voteType === 'up' ? 'مؤيد 👍' : 'معارض 👎'}) بنجاح!`, flags: 64 });
+        // تحديث إيمبد الاقتراح بنسبة التصويت وشريط التقدم الحي
+        try {
+          const suggAuthor = sugg ? await client.users.fetch(sugg.user_id).catch(() => null) : null;
+          const userObj = suggAuthor || { tag: 'عضو', username: 'عضو' };
+
+          const updatedEmbed = buildSuggestionEmbed({
+            user: userObj,
+            content: sugg?.content || interaction.message.embeds[0]?.description || '',
+            title: sugg?.title || null,
+            code: sugg?.id ? sugg.id.toString(36) : interaction.message.id.slice(-8),
+            status: sugg?.status || 'pending',
+            upvotes: res.upvotesCount,
+            downvotes: res.downvotesCount,
+            createdAt: sugg?.created_at ? sugg.created_at * 1000 : interaction.message.createdTimestamp,
+            reviewerId: sugg?.reviewed_by || null,
+            reason: sugg?.status_reason || null
+          });
+
+          // الحفاظ على أزرار التصويت والإدارة بنفس الحالة
+          const isClosed = sugg?.status && sugg.status !== 'pending' && sugg.status !== 'considered';
+          const newComponents = buildSuggestionComponents({
+            upvotes: res.upvotesCount,
+            downvotes: res.downvotesCount,
+            disabled: isClosed
+          });
+
+          await interaction.message.edit({ embeds: [updatedEmbed], components: newComponents }).catch(() => {});
+        } catch (e) {
+          console.error('[Suggestion Vote Edit Error]:', e);
+        }
+
+        const actionText = res.action === 'removed' ? 'إلغاء تصويتك' : (voteType === 'up' ? 'تسجيل تأييدك 👍' : 'تسجيل معارضتك 👎');
+        return interaction.reply({ content: `✅ تم ${actionText} بنجاح!`, flags: 64 });
       }
 
-      // 2.1.1 التعامل مع قبول أو رفض الاقتراح إدارياً (Suggestion Staff Decision)
-      if (interaction.isButton() && (interaction.customId === 'sugg_accept_btn' || interaction.customId === 'sugg_reject_btn')) {
+      // 2.1.1 التعامل مع قبول أو رفض أو دراسة الاقتراح إدارياً (Suggestion Staff Decision)
+      if (interaction.isButton() && (interaction.customId === 'sugg_accept_btn' || interaction.customId === 'sugg_reject_btn' || interaction.customId === 'sugg_consider_btn')) {
         const isStaffOrAdmin = interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) ||
                                interaction.member.permissions.has(PermissionFlagsBits.Administrator) ||
                                interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers);
@@ -114,17 +142,27 @@ module.exports = {
           return interaction.reply({ content: '❌ هذا الإجراء مخصص لإدارة ومشرفي السيرفر فقط.', flags: 64 });
         }
 
-        const isAccept = interaction.customId === 'sugg_accept_btn';
-        const modal = new ModalBuilder()
-          .setCustomId(`modal_sugg_${isAccept ? 'accept' : 'reject'}_${interaction.message.id}`)
-          .setTitle(isAccept ? '✅ قبول الاقتراح رسمياً' : '❌ رفض الاقتراح');
+        let actionType = 'accept';
+        let modalTitle = '✅ قبول الاقتراح رسمياً';
+        if (interaction.customId === 'sugg_reject_btn') {
+          actionType = 'reject';
+          modalTitle = '❌ رفض الاقتراح';
+        } else if (interaction.customId === 'sugg_consider_btn') {
+          actionType = 'consider';
+          modalTitle = '🔍 وضع الاقتراح قيد الدراسة';
+        }
 
+        const modal = new ModalBuilder()
+          .setCustomId(`modal_sugg_${actionType}_${interaction.message.id}`)
+          .setTitle(modalTitle);
+
+        const isRequired = actionType === 'reject';
         const reasonInput = new TextInputBuilder()
           .setCustomId('sugg_decision_reason')
-          .setLabel(isAccept ? 'سبب أو تعليق القبول (اختياري):' : 'سبب الرفض:')
+          .setLabel(actionType === 'accept' ? 'ملاحظة القبول (اختياري):' : (actionType === 'reject' ? 'سبب الرفض:' : 'ملاحظات قيد الدراسة (اختياري):'))
           .setStyle(TextInputStyle.Paragraph)
-          .setPlaceholder(isAccept ? 'اكتب ملاحظة للإدارة أو صاحب الاقتراح...' : 'اكتب سبب عدم إمكانية تطبيق الاقتراح...')
-          .setRequired(!isAccept)
+          .setPlaceholder(actionType === 'accept' ? 'اكتب ملاحظة للإدارة أو صاحب الاقتراح...' : (actionType === 'reject' ? 'اكتب سبب عدم إمكانية تطبيق الاقتراح...' : 'اكتب ملاحظة حول كيفية وتفاصيل دراسة الفكرة...'))
+          .setRequired(isRequired)
           .setMaxLength(500);
 
         modal.addComponents(new ActionRowBuilder().addComponents(reasonInput));
@@ -882,71 +920,106 @@ module.exports = {
       }
 
       // ==========================================
-      // 5.5 معالجة قبول أو رفض الاقتراح بعد إرسال النموذج (Suggestion Modal Submit)
+      // 5.5 معالجة قبول أو رفض أو دراسة الاقتراح بعد إرسال النموذج (Suggestion Modal Submit)
       // ==========================================
-      if (interaction.isModalSubmit() && (interaction.customId.startsWith('modal_sugg_accept_') || interaction.customId.startsWith('modal_sugg_reject_'))) {
+      if (interaction.isModalSubmit() && (interaction.customId.startsWith('modal_sugg_accept_') || interaction.customId.startsWith('modal_sugg_reject_') || interaction.customId.startsWith('modal_sugg_consider_'))) {
         await interaction.deferReply({ flags: 64 }).catch(() => {});
-        const isAccept = interaction.customId.startsWith('modal_sugg_accept_');
-        const msgId = interaction.customId.replace(isAccept ? 'modal_sugg_accept_' : 'modal_sugg_reject_', '');
-        const reason = interaction.fields.getTextInputValue('sugg_decision_reason') || (isAccept ? 'تمت الموافقة من قبل الإدارة' : 'تم الرفض من قبل الإدارة');
+        let actionType = 'accept';
+        if (interaction.customId.startsWith('modal_sugg_reject_')) actionType = 'reject';
+        if (interaction.customId.startsWith('modal_sugg_consider_')) actionType = 'consider';
+
+        const prefix = `modal_sugg_${actionType}_`;
+        const msgId = interaction.customId.replace(prefix, '');
+        const defaultReasons = {
+          accept: 'تمت الموافقة من قبل الإدارة',
+          reject: 'تم الرفض من قبل الإدارة',
+          consider: 'الفكرة مميزة وقيد الدراسة من قبل الفريق'
+        };
+        const reason = interaction.fields.getTextInputValue('sugg_decision_reason') || defaultReasons[actionType];
 
         const sugg = db.getSuggestion ? db.getSuggestion(msgId) : null;
         if (!sugg) {
           return interaction.editReply({ content: '❌ لم يتم العثور على بيانات هذا الاقتراح في قاعدة البيانات.' });
         }
 
-        const newStatus = isAccept ? 'accepted' : 'rejected';
+        const statusMap = { accept: 'accepted', reject: 'rejected', consider: 'considered' };
+        const newStatus = statusMap[actionType];
         db.updateSuggestionStatus(msgId, newStatus, reason, interaction.user.id);
 
         if (db.recordStaffAction) {
           db.recordStaffAction(interaction.guild.id, interaction.user.id, `sugg_${newStatus}`, sugg.user_id, reason);
         }
 
+        const { buildSuggestionEmbed, buildSuggestionComponents } = require('../../utils/suggestionBuilder');
+
         // تحديث رسالة الاقتراح الأصلية
         try {
           const suggChannel = interaction.guild.channels.cache.get(sugg.channel_id) || await interaction.guild.channels.fetch(sugg.channel_id).catch(() => null);
           if (suggChannel) {
             const targetMsg = await suggChannel.messages.fetch(sugg.message_id).catch(() => null);
-            if (targetMsg && targetMsg.embeds.length > 0) {
-              const oldEmbed = targetMsg.embeds[0];
-              const updatedEmbed = EmbedBuilder.from(oldEmbed)
-                .setColor(isAccept ? '#2ecc71' : '#e74c3c')
-                .spliceFields(1, 1, {
-                  name: '⏳ الحالة',
-                  value: isAccept ? `✅ **مقبول** (بواسطة <@${interaction.user.id}>)` : `❌ **مرفوض** (بواسطة <@${interaction.user.id}>)`,
-                  inline: true
-                });
+            if (targetMsg) {
+              const suggAuthor = await client.users.fetch(sugg.user_id).catch(() => null);
+              const userObj = suggAuthor || { tag: 'عضو', username: 'عضو' };
 
-              if (reason) {
-                updatedEmbed.addFields({ name: isAccept ? '💬 تعليق الإدارة' : '📝 سبب الرفض', value: reason, inline: false });
-              }
+              let upvotesList = [];
+              let downvotesList = [];
+              try { upvotesList = JSON.parse(sugg.upvotes || '[]'); } catch(e) {}
+              try { downvotesList = JSON.parse(sugg.downvotes || '[]'); } catch(e) {}
 
-              // إزالة أزرار القبول والرفض والإبقاء على التصويتات فقط
-              const compList = targetMsg.components[0].components.slice(0, 2).map(c => ButtonBuilder.from(c).setDisabled(true));
-              const finalRow = new ActionRowBuilder().addComponents(...compList);
+              const updatedEmbed = buildSuggestionEmbed({
+                user: userObj,
+                content: sugg.content,
+                title: sugg.title,
+                code: sugg.id ? sugg.id.toString(36) : msgId.slice(-8),
+                status: newStatus,
+                upvotes: upvotesList.length,
+                downvotes: downvotesList.length,
+                createdAt: sugg.created_at ? sugg.created_at * 1000 : targetMsg.createdTimestamp,
+                reviewerId: interaction.user.id,
+                reason: reason
+              });
 
-              await targetMsg.edit({ embeds: [updatedEmbed], components: [finalRow] });
+              // إذا تم القبول أو الرفض النهائي، نقفل الأزرار؛ إذا كانت قيد الدراسة تبقى الأزرار مفعلة
+              const isFinal = newStatus === 'accepted' || newStatus === 'rejected';
+              const newComponents = buildSuggestionComponents({
+                upvotes: upvotesList.length,
+                downvotes: downvotesList.length,
+                disabled: isFinal
+              });
+
+              await targetMsg.edit({ embeds: [updatedEmbed], components: newComponents });
             }
           }
         } catch (editErr) {
           console.error('Error updating suggestion message:', editErr);
         }
 
-        // إرسال إشعار في الخاص لصاحب الاقتراح إذا كان مفعلاً
+        // إرسال إشعار في الخاص لصاحب الاقتراح
         try {
           const owner = await client.users.fetch(sugg.user_id).catch(() => null);
           if (owner) {
+            const statusTitles = {
+              accepted: '🎉 تم قبول اقتراحك!',
+              rejected: '📌 تم رفض اقتراحك',
+              considered: '🔍 اقتراحك الآن قيد الدراسة!'
+            };
+            const statusColors = {
+              accepted: '#22c55e',
+              rejected: '#ef4444',
+              considered: '#3b82f6'
+            };
             const notifyEmbed = new EmbedBuilder()
-              .setColor(isAccept ? '#2ecc71' : '#e74c3c')
-              .setTitle(isAccept ? '🎉 تم قبول اقتراحك!' : '📌 تحديث بخصوص اقتراحك')
-              .setDescription(`مرحباً **${owner.username}**!\nقام فريق الإدارة بمراجعة اقتراحك في سيرفر **${interaction.guild.name}**:\n\n**الاقتراح:** ${sugg.content.slice(0, 300)}\n**الحالة:** ${isAccept ? '✅ مقبول' : '❌ مرفوض'}\n**التعليق/السبب:** \`${reason}\``)
+              .setColor(statusColors[newStatus] || '#9333ea')
+              .setTitle(statusTitles[newStatus] || '📌 تحديث بخصوص اقتراحك')
+              .setDescription(`مرحباً **${owner.username}**!\nقام فريق الإدارة بمراجعة اقتراحك في سيرفر **${interaction.guild.name}**:\n\n**الاقتراح:** ${sugg.content.slice(0, 300)}\n**الحالة الجديدة:** \`${newStatus}\`\n**التعليق/السبب:** \`${reason}\``)
               .setTimestamp();
             await owner.send({ embeds: [notifyEmbed] }).catch(() => {});
           }
         } catch (e) {}
 
+        const actionLabels = { accept: 'قبول', reject: 'رفض', consider: 'وضع الاقتراح قيد الدراسة' };
         return interaction.editReply({
-          content: `✅ تم ${isAccept ? 'قبول' : 'رفض'} الاقتراح بنجاح وتحديث حالته وإشعار صاحب الاقتراح.`
+          content: `✅ تم ${actionLabels[actionType]} بنجاح وتحديث حالته وشريط التصويت وإشعار صاحب الاقتراح.`
         });
       }
 

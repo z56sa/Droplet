@@ -613,6 +613,54 @@ module.exports = {
       }
     }
 
+    // --- 4.6.1. روم الاقتراحات التلقائي (Auto Suggestions Channel) ---
+    if (settings.suggestions_enabled !== 0 && settings.suggestions_channel && message.channel.id === settings.suggestions_channel && !message.content.startsWith(settings.prefix || '#')) {
+      const content = message.content.trim();
+      if (content.length > 0) {
+        const { buildSuggestionEmbed, buildSuggestionComponents } = require('../../utils/suggestionBuilder');
+        const suggCode = Math.random().toString(36).substring(2, 11);
+
+        const suggEmbed = buildSuggestionEmbed({
+          user: message.author,
+          content: content,
+          title: null,
+          code: suggCode,
+          status: 'pending',
+          upvotes: 0,
+          downvotes: 0,
+          createdAt: Date.now()
+        });
+
+        const components = buildSuggestionComponents({
+          upvotes: 0,
+          downvotes: 0
+        });
+
+        await message.delete().catch(() => {});
+        const sentMsg = await message.channel.send({ embeds: [suggEmbed], components }).catch(() => null);
+
+        if (sentMsg) {
+          if (settings.suggestions_auto_thread !== 0) {
+            sentMsg.startThread({
+              name: `مناقشة اقتراح #${message.author.username}`.slice(0, 95),
+              autoArchiveDuration: 1440
+            }).catch(() => {});
+          }
+
+          db.createSuggestion({
+            guild_id: guildId,
+            channel_id: message.channel.id,
+            message_id: sentMsg.id,
+            user_id: message.author.id,
+            title: null,
+            content: content,
+            category: 'عام'
+          });
+        }
+        return;
+      }
+    }
+
     // --- 4.7. روم ناديكو (Nadeko Room Protection / Whitelist) ---
     let nadekoChannels = [];
     try {

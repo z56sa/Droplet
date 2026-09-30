@@ -66,28 +66,27 @@ module.exports = {
       return interactionOrMessage.reply(msg);
     }
 
-    const suggEmbed = new EmbedBuilder()
-      .setColor('#9333ea')
-      .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) })
-      .setTitle(title ? `💡 ${title}` : '💡 اقتراح جديد')
-      .setDescription(content)
-      .addFields(
-        { name: '📂 التصنيف', value: category, inline: true },
-        { name: '⏳ الحالة', value: 'قيد المراجعة', inline: true },
-        { name: '👤 صاحب الاقتراح', value: `<@${user.id}>`, inline: true }
-      )
-      .setFooter({ text: 'صوت على الاقتراح باستخدام الأزرار أدناه 🌟' })
-      .setTimestamp();
+    const { buildSuggestionEmbed, buildSuggestionComponents } = require('../../utils/suggestionBuilder');
+    const suggCode = Math.random().toString(36).substring(2, 11);
 
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('sugg_upvote').setLabel('0').setEmoji('👍').setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId('sugg_downvote').setLabel('0').setEmoji('👎').setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId('sugg_accept_btn').setLabel('قبول').setEmoji('✅').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId('sugg_reject_btn').setLabel('رفض').setEmoji('❌').setStyle(ButtonStyle.Secondary)
-    );
+    const suggEmbed = buildSuggestionEmbed({
+      user,
+      content,
+      title,
+      code: suggCode,
+      status: 'pending',
+      upvotes: 0,
+      downvotes: 0,
+      createdAt: Date.now()
+    });
+
+    const components = buildSuggestionComponents({
+      upvotes: 0,
+      downvotes: 0
+    });
 
     try {
-      const sentMsg = await targetChannel.send({ embeds: [suggEmbed], components: [row] });
+      const sentMsg = await targetChannel.send({ embeds: [suggEmbed], components });
 
       if (settings.suggestions_auto_thread !== 0) {
         sentMsg.startThread({
