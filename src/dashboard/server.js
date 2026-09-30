@@ -10419,6 +10419,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
 
 
+                            ${(section === 'general' || section === 'commands') ? `
+                                <div id="settingsContainer" class="space-y-6">
+                                    ${formFieldsHtml}
+                                </div>
+                            ` : `
                             <form id="settingsForm" class="space-y-6">
                                 ${formFieldsHtml}
 
@@ -10433,6 +10438,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </span>
                                 </div>
                             </form>
+                            `}
                         </div>
                     </main>
 
