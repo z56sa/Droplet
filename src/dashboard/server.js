@@ -2159,17 +2159,21 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         if (el) { el.classList.remove('opacity-0'); setTimeout(function() { el.classList.add('opacity-0'); }, 2000); }
     }
 
+    var saveTimeout = null;
     function saveStates() {
-        try {
-            var gId = '${guildId}' || window.location.pathname.split('/')[2];
-            if (!gId) return;
-            var disArr = Object.keys(disabledCmds).filter(function(k) { return disabledCmds[k] === true; });
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/guild/' + gId + '/settings', true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.onload = function() { try { if (JSON.parse(xhr.responseText).success) showSaved(); } catch(e) {} };
-            xhr.send(JSON.stringify({ disabled_commands: JSON.stringify(disArr), command_configs: JSON.stringify(commandConfigs) }));
-        } catch(e) {}
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(function() {
+            try {
+                var gId = '${guildId}' || window.location.pathname.split('/')[2];
+                if (!gId) return;
+                var disArr = Object.keys(disabledCmds).filter(function(k) { return disabledCmds[k] === true; });
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/guild/' + gId + '/settings', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.onload = function() { try { if (JSON.parse(xhr.responseText).success) showSaved(); } catch(e) {} };
+                xhr.send(JSON.stringify({ disabled_commands: JSON.stringify(disArr), command_configs: JSON.stringify(commandConfigs) }));
+            } catch(e) {}
+        }, 300);
     }
 
     window.switchCmdCategory = function(catKey) {
@@ -2210,9 +2214,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 disabledCmds[items[i].name] = true;
             }
         }
-        saveStates();
         render();
-        updateCounters();
+        saveStates();
     };
 
     window.toggleSingleCmd = function(cmdName, enabled) {
@@ -2221,8 +2224,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         } else {
             disabledCmds[cmdName] = true;
         }
-        saveStates();
         updateCounters();
+        saveStates();
     };
 
     render();
