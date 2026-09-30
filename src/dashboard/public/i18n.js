@@ -744,7 +744,42 @@
         "دقيقة": "minute",
         "ثانية": "second",
         "؟": "?",
-        "!": "!"
+        "!": "!",
+
+        // Arabic Month Names (Gregorian, Levantine, and North African)
+        "يناير": "January",
+        "فبراير": "February",
+        "مارس": "March",
+        "أبريل": "April",
+        "ابريل": "April",
+        "مايو": "May",
+        "يونيو": "June",
+        "يوليو": "July",
+        "أغسطس": "August",
+        "اغسطس": "August",
+        "سبتمبر": "September",
+        "أكتوبر": "October",
+        "اكتوبر": "October",
+        "نوفمبر": "November",
+        "ديسمبر": "December",
+        "كانون الثاني": "January",
+        "شباط": "February",
+        "آذار": "March",
+        "اذار": "March",
+        "نيسان": "April",
+        "أيار": "May",
+        "ايار": "May",
+        "حزيران": "June",
+        "تموز": "July",
+        "آب": "August",
+        "اب": "August",
+        "أيلول": "September",
+        "ايلول": "September",
+        "تشرين الأول": "October",
+        "تشرين الاول": "October",
+        "تشرين الثاني": "November",
+        "كانون الأول": "December",
+        "كانون الاول": "December"
     };
 
     // Helper function to translate a single text string
@@ -793,16 +828,30 @@
     const arKeysByLength = Object.keys(dictionary).sort((a, b) => b.length - a.length);
     const enKeysByLength = Object.keys(reverseDictionary).sort((a, b) => b.length - a.length);
 
+    const easternToArabicMap = {
+        '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+        '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+    };
+
     function translateString(text, dict, keys) {
         if (!text) return text;
         const trimmed = text.trim();
         if (!trimmed) return text;
-        if (dict[trimmed]) return text.replace(trimmed, dict[trimmed]);
+        if (dict[trimmed]) {
+            let res = text.replace(trimmed, dict[trimmed]);
+            if (dict === dictionary) {
+                res = res.replace(/[٠-٩]/g, d => easternToArabicMap[d] || d);
+            }
+            return res;
+        }
         let out = text;
         for (let i = 0; i < keys.length; i++) {
             const key = keys[i];
             if (key.length < 2) continue;
             if (out.indexOf(key) !== -1) out = out.split(key).join(dict[key]);
+        }
+        if (dict === dictionary) {
+            out = out.replace(/[٠-٩]/g, d => easternToArabicMap[d] || d);
         }
         return out;
     }
