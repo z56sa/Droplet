@@ -35,11 +35,24 @@ module.exports = {
     const guild = interactionOrMessage.guild;
     const user = isSlash ? interactionOrMessage.user : interactionOrMessage.author;
 
+    // فوراً تأجيل الرد لأمر السلاش لتجنب انتهاء مهلة الـ 3 ثواني أو خطأ 40060
+    if (isSlash) {
+      await interactionOrMessage.deferReply({ flags: 64 }).catch(() => {});
+    }
+
+    const safeReply = async (msg) => {
+      if (isSlash) {
+        if (interactionOrMessage.deferred || interactionOrMessage.replied) {
+          return interactionOrMessage.editReply({ content: msg }).catch(() => {});
+        }
+        return interactionOrMessage.reply({ content: msg, flags: 64 }).catch(() => {});
+      }
+      return interactionOrMessage.reply(msg).catch(() => {});
+    };
+
     const settings = db.getGuildSettings(guild.id);
     if (settings.suggestions_enabled === 0) {
-      const msg = '❌ نظام الاقتراحات معطل حالياً في هذا السيرفر.';
-      if (isSlash) return interactionOrMessage.reply({ content: msg, flags: [64] });
-      return interactionOrMessage.reply(msg);
+      return safeReply('❌ نظام الاقتراحات معطل حالياً في هذا السيرفر.');
     }
 
     let content = '';
@@ -52,7 +65,7 @@ module.exports = {
       category = interactionOrMessage.options.getString('category') || 'عام';
     } else {
       if (!args || args.length === 0) {
-        return interactionOrMessage.reply('❌ يرجى كتابة محتوى الاقتراح بعد الأمر! مثال: `#suggest إضافة روم للألعاب`');
+        return safeReply('❌ يرجى كتابة محتوى الاقتراح بعد الأمر! مثال: `#suggest إضافة روم للألعاب`');
       }
       content = args.join(' ');
     }
@@ -61,9 +74,7 @@ module.exports = {
     const targetChannel = guild.channels.cache.get(channelId) || await guild.channels.fetch(channelId).catch(() => null);
 
     if (!targetChannel || !targetChannel.isTextBased()) {
-      const msg = '❌ لم يتم تعيين قناة صالحة لنشر الاقتراحات في إعدادات الداشبورد.';
-      if (isSlash) return interactionOrMessage.reply({ content: msg, flags: [64] });
-      return interactionOrMessage.reply(msg);
+      return safeReply('❌ لم يتم تعيين قناة صالحة لنشر الاقتراحات في إعدادات الداشبورد.');
     }
 
     const { buildSuggestionEmbed, buildSuggestionComponents } = require('../../utils/suggestionBuilder');
@@ -105,17 +116,10 @@ module.exports = {
         category: category
       });
 
-      const successReply = `✅ تم إرسال اقتراحك بنجاح ونشره في <#${targetChannel.id}>!`;
-      if (isSlash) {
-        await interactionOrMessage.reply({ content: successReply, flags: [64] });
-      } else {
-        await interactionOrMessage.reply(successReply);
-      }
+      return safeReply(`✅ تم إرسال اقتراحك بنجاح ونشره في <#${targetChannel.id}>!`);
     } catch (err) {
       console.error('Error posting suggestion:', err);
-      const errMsg = '❌ حدث خطأ أثناء إرسال الاقتراح، يرجى التأكد من صلاحيات البوت في القناة.';
-      if (isSlash) return interactionOrMessage.reply({ content: errMsg, flags: [64] });
-      return interactionOrMessage.reply(errMsg);
+      return safeReply('❌ حدث خطأ أثناء إرسال الاقتراح، يرجى التأكد من صلاحيات البوت في القناة.');
     }
   }
 };
