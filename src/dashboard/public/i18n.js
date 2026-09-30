@@ -1087,37 +1087,44 @@
     window.zenoI18n = api;
 
     let observerActive = false;
+    let isTranslating = false;
     function startMutationObserver() {
         if (observerActive || !('MutationObserver' in window)) return;
         if (isManualLangPage()) return;
         observerActive = true;
         const observer = new MutationObserver(function(mutations) {
+            if (isTranslating) return;
             const lang = detectLang();
             const dict = lang === 'en' ? dictionary : reverseDictionary;
             const keys = lang === 'en' ? arKeysByLength : enKeysByLength;
-            mutations.forEach(function(m) {
-                if (m.addedNodes && m.addedNodes.length) {
-                    for (let i = 0; i < m.addedNodes.length; i++) {
-                        const node = m.addedNodes[i];
-                        if (node.nodeType === Node.ELEMENT_NODE || node.nodeType === Node.TEXT_NODE) {
-                            translateNodeWithDict(node, dict, keys);
+            isTranslating = true;
+            try {
+                mutations.forEach(function(m) {
+                    if (m.addedNodes && m.addedNodes.length) {
+                        for (let i = 0; i < m.addedNodes.length; i++) {
+                            const node = m.addedNodes[i];
+                            if (node.nodeType === Node.ELEMENT_NODE || node.nodeType === Node.TEXT_NODE) {
+                                translateNodeWithDict(node, dict, keys);
+                            }
                         }
                     }
-                }
-                if (m.type === 'characterData' && m.target.nodeType === Node.TEXT_NODE) {
-                    const next = translateString(m.target.nodeValue, dict, keys);
-                    if (next !== m.target.nodeValue) m.target.nodeValue = next;
-                }
-                if (m.type === 'attributes' && m.target.nodeType === Node.ELEMENT_NODE) {
-                    const el = m.target;
-                    if (m.attributeName === 'placeholder' && el.hasAttribute('placeholder')) {
-                        el.setAttribute('placeholder', translateString(el.getAttribute('placeholder'), dict, keys));
+                    if (m.type === 'characterData' && m.target.nodeType === Node.TEXT_NODE) {
+                        const next = translateString(m.target.nodeValue, dict, keys);
+                        if (next !== m.target.nodeValue) m.target.nodeValue = next;
                     }
-                    if (m.attributeName === 'title' && el.hasAttribute('title')) {
-                        el.setAttribute('title', translateString(el.getAttribute('title'), dict, keys));
+                    if (m.type === 'attributes' && m.target.nodeType === Node.ELEMENT_NODE) {
+                        const el = m.target;
+                        if (m.attributeName === 'placeholder' && el.hasAttribute('placeholder')) {
+                            el.setAttribute('placeholder', translateString(el.getAttribute('placeholder'), dict, keys));
+                        }
+                        if (m.attributeName === 'title' && el.hasAttribute('title')) {
+                            el.setAttribute('title', translateString(el.getAttribute('title'), dict, keys));
+                        }
                     }
-                }
-            });
+                });
+            } finally {
+                isTranslating = false;
+            }
         });
         if (document.body) {
             observer.observe(document.body, {

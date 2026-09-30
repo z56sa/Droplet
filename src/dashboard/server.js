@@ -978,10 +978,6 @@ module.exports = function (app, client) {
             btn.classList.add('bg-purple-600', 'text-white', 'font-bold', 'shadow-md');
             btn.classList.remove('text-gray-300', 'hover:text-white', 'hover:bg-[#151724]', 'font-medium');
         }
-
-        if (window.zenoI18n && typeof window.zenoI18n.apply === 'function') {
-            window.zenoI18n.apply();
-        }
     };
 
     window.claimDailyReward = async function() {
