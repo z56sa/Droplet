@@ -70,8 +70,9 @@ class AIAutoHealer {
             const errStack = error?.stack || '';
             const cacheKey = `${context}:${errMessage.slice(0, 100)}`;
 
+            const isTest = context && context.startsWith('Test');
             const lastReported = errorCache.get(cacheKey) || 0;
-            if (Date.now() - lastReported < COOLDOWN_MS) {
+            if (!isTest && Date.now() - lastReported < COOLDOWN_MS) {
                 return; // Suppress duplicate flood
             }
             errorCache.set(cacheKey, Date.now());

@@ -81,33 +81,42 @@ module.exports = function (app, client) {
     // 🧪 TEST: AI Auto-Healer endpoint (owner-only, temp)
     // Hit: GET /api/test-ai-healer?secret=ZENO_TEST
     // ═══════════════════════════════════════════════════
-    app.get('/api/test-ai-healer', (req, res) => {
+    const aiAutoHealer = require('../services/aiAutoHealer');
+    app.get('/api/test-ai-healer', async (req, res) => {
         const secret = req.query.secret;
         if (secret !== 'ZENO_TEST') {
             return res.status(403).json({ error: 'Forbidden' });
         }
-        const type = req.query.type || 'unhandledRejection';
+        const type = req.query.type || 'rejection';
 
-        res.json({ ok: true, message: `Test error (${type}) triggered! Check your Discord DMs in 5-10 seconds.` });
+        res.json({
+            ok: true,
+            message: `Test error (${type}) initiated! Check your Discord DMs shortly.`,
+            discordReady: client?.isReady(),
+            botTag: client?.user?.tag
+        });
 
-        // Trigger the error AFTER responding so it doesn't affect the response
-        setTimeout(() => {
-            if (type === 'uncaught') {
-                // Simulate uncaughtException via process.emit
-                process.emit('uncaughtException', Object.assign(new Error('[AI Healer Test] Simulated uncaughtException — نظام الاختبار يعمل بنجاح'), { code: 'TEST_ERROR' }));
-            } else if (type === 'rejection') {
-                // Simulate unhandledRejection
-                process.emit('unhandledRejection', Object.assign(new Error('[AI Healer Test] Simulated unhandledRejection — اختبار الرفض غير المعالج'), { code: 'TEST_REJECTION' }));
-            } else if (type === 'db') {
-                process.emit('uncaughtException', Object.assign(new Error('SQLITE_BUSY: database is locked'), { code: 'SQLITE_BUSY' }));
-            } else if (type === 'ratelimit') {
-                const err = new Error('You are being rate limited.');
-                err.status = 429;
-                process.emit('uncaughtException', err);
-            } else {
-                process.emit('unhandledRejection', new Error('[AI Healer Test] Default test error — التقرير الذكي الفوري قيد الإرسال إلى مالك البوت'));
+        // Trigger handleError directly so we guarantee execution regardless of process.emit quirks
+        setTimeout(async () => {
+            try {
+                let testErr;
+                if (type === 'uncaught') {
+                    testErr = new Error('[AI Healer Test] Simulated uncaughtException — نظام رصد وحل المشاكل يعمل بنجاح');
+                } else if (type === 'db') {
+                    testErr = new Error('SQLITE_BUSY: database is locked');
+                } else if (type === 'ratelimit') {
+                    testErr = new Error('You are being rate limited.');
+                    testErr.status = 429;
+                } else {
+                    testErr = new Error('[AI Healer Test] تجربة خطأ برمجية في لوحة التحكم — الذكاء الاصطناعي يرصد ويحل تلقائياً');
+                }
+
+                console.log('[AI AutoHealer Test] Dispatched test error directly to handleError...');
+                await aiAutoHealer.handleError(testErr, `Test:${type}`);
+            } catch (err) {
+                console.error('[AI AutoHealer Test Error]:', err);
             }
-        }, 500);
+        }, 100);
     });
 
 
