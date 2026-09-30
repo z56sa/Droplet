@@ -45,7 +45,7 @@ module.exports = async (client) => {
   client.slashCommandsData = slashCommandsArray;
 
   // تسجيل أوامر السلاش في الديسكورد
-  const botToken = (process.env.DISCORD_BOT_TOKEN || process.env.BOT_TOKEN || process.env.DISCORD_TOKEN || process.env.TOKEN || '').trim();
+  const botToken = (process.env.DASHBOARD_BOT_TOKEN || process.env.DISCORD_BOT_TOKEN || process.env.BOT_TOKEN || process.env.DISCORD_TOKEN || process.env.TOKEN || '').trim();
   
   client.registerSlashCommands = async () => {
     if (!client.user?.id) return;

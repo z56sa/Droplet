@@ -67,9 +67,22 @@ const client = new Client({
 });
 
 const aiAutoHealer = require('./services/aiAutoHealer');
+const commandHandler = require('./handlers/commandHandler');
+const eventHandler = require('./handlers/eventHandler');
 
 // Initialize AI Auto-Healer immediately (hooks process errors before client is ready)
 aiAutoHealer.init(null);
+
+// Initialize Command and Event Handlers (slash commands, interaction buttons, modals, auto-suggestions)
+(async () => {
+    try {
+        await commandHandler(client);
+        eventHandler(client);
+        console.log('[Dashboard Discord] Commands and Event handlers loaded successfully ✅');
+    } catch(err) {
+        console.error('[Dashboard Discord] Failed to load handlers:', err);
+    }
+})();
 
 client.once('ready', async () => {
     console.log('[Dashboard Discord] Connected as ' + client.user.tag);
@@ -77,6 +90,13 @@ client.once('ready', async () => {
 
     // Attach Discord client to Auto-Healer so it can send owner DMs
     aiAutoHealer.init(client);
+
+    // Register slash commands to Discord globally
+    if (client.registerSlashCommands) {
+        client.registerSlashCommands().catch(err => {
+            console.error('[Dashboard Discord] Error registering slash commands:', err);
+        });
+    }
 
     // استعادة صورة البوت الأصلية من App Icon في Developer Portal
     try {
