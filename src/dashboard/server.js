@@ -8054,7 +8054,34 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
                     statChannelsRows = rawDb.prepare('SELECT * FROM stat_channels WHERE guild_id = ?').all(guildId);
                 } catch(e) {}
 
-                const STAT_TYPES_DEF = {
+                const STAT_COMBINED_DEF = {
+                    combined_boosts: {
+                        label: 'البوستات ومستوى البوست',
+                        icon: '💎🚀',
+                        desc: 'عرض عدد بوستات السيرفر والمستوى الحالي معاً في قناة واحدة',
+                        example: '💎 3 بوست │ 🚀 مستوى 1'
+                    },
+                    combined_roles_channels: {
+                        label: 'الرتب والقنوات الكلية',
+                        icon: '🏷️📂',
+                        desc: 'عرض إجمالي عدد الرتب وإجمالي القنوات في قناة واحدة',
+                        example: '🏷️ 60 رتبة │ 📂 64 قناة'
+                    },
+                    combined_channel_types: {
+                        label: 'القنوات الصوتية والنصية والمتصلين',
+                        icon: '📝🔊🎙️',
+                        desc: 'عرض عدد القنوات النصية والصوتية والمتصلين بالصوت معاً في قناة واحدة',
+                        example: '📝 40 │ 🔊 24 │ 🎙️ 5'
+                    },
+                    combined_members: {
+                        label: 'إجمالي الأعضاء والبشر والبوتات والمتصلين',
+                        icon: '👥🟢🤖',
+                        desc: 'عرض إجمالي الأعضاء، المتصلين أونلاين، البشر، والبوتات في قناة واحدة شاملة',
+                        example: '👥 250 │ 🟢 37 │ 👤 237 │ 🤖 13'
+                    }
+                };
+
+                const STAT_INDIVIDUAL_DEF = {
                     total_members:  { label: 'إجمالي الأعضاء', icon: '👥', desc: 'عدد جميع الأعضاء في السيرفر' },
                     humans:         { label: 'البشر', icon: '👤', desc: 'عدد الأعضاء البشريين فقط' },
                     bots:           { label: 'البوتات', icon: '🤖', desc: 'عدد البوتات في السيرفر' },
@@ -8073,31 +8100,37 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
                     configuredMap[row.stat_type] = row;
                 }
 
-                const statRowsHtml = Object.entries(STAT_TYPES_DEF).map(([type, def]) => {
+                function renderStatRow(type, def, isCombined = false) {
                     const configured = configuredMap[type];
                     const hasChannel = !!configured;
                     return `
-                    <div class="bg-[#12141f] border ${hasChannel ? 'border-purple-500/40' : 'border-white/5'} rounded-2xl p-4 flex items-center justify-between gap-4 hover:border-purple-500/30 transition" id="stat-row-${type}">
+                    <div class="bg-[#12141f] border ${hasChannel ? 'border-purple-500/40 bg-purple-950/10' : 'border-white/5'} rounded-2xl p-4 flex items-center justify-between gap-4 hover:border-purple-500/30 transition" id="stat-row-${type}">
                         <div class="flex items-center gap-3">
                             ${hasChannel ? `
                             <form method="POST" action="/api/guild/${guildId}/stat-channels/${configured.id}/delete" class="inline">
                                 <button type="submit" class="px-3 py-2 bg-rose-900/40 hover:bg-rose-700/50 text-rose-300 rounded-xl text-xs font-bold border border-rose-800/30 transition" title="حذف هذه القناة">🗑️</button>
                             </form>
                             ` : `
-                            <button onclick="openAddStatChannel('${type}', '${def.label}')" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow transition">إنشاء</button>
+                            <button onclick="openAddStatChannel('${type}', '${def.label}')" class="px-4 py-2 ${isCombined ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500' : 'bg-purple-600 hover:bg-purple-700'} text-white rounded-xl text-xs font-bold shadow transition cursor-pointer">إنشاء</button>
                             `}
                         </div>
                         <div class="flex-1 text-right">
                             <div class="flex items-center justify-end gap-2">
+                                ${isCombined ? '<span class="text-[10px] font-black text-purple-300 bg-purple-900/50 border border-purple-500/30 px-2 py-0.5 rounded-lg">قناة مجمّعة</span>' : ''}
                                 <span class="text-sm font-black text-white">${def.label}</span>
                                 <div class="w-8 h-8 rounded-xl bg-purple-600/20 border border-purple-500/30 text-base flex items-center justify-center">${def.icon}</div>
                             </div>
                             <p class="text-[11px] text-gray-400 mt-0.5">${def.desc}</p>
+                            ${def.example ? `<p class="text-[10px] text-emerald-400 font-mono mt-1">✨ الشكل: <span class="bg-black/40 px-2 py-0.5 rounded border border-white/5">${def.example}</span></p>` : ''}
                             ${hasChannel ? `<p class="text-[10px] text-purple-400 font-mono mt-1">📡 مربوطة بـ: <code class="bg-purple-950/40 px-1.5 py-0.5 rounded">${configured.channel_id}</code></p>` : ''}
                         </div>
                     </div>
                     `;
-                }).join('');
+                }
+
+                const combinedRowsHtml = Object.entries(STAT_COMBINED_DEF).map(([type, def]) => renderStatRow(type, def, true)).join('');
+                const individualRowsHtml = Object.entries(STAT_INDIVIDUAL_DEF).map(([type, def]) => renderStatRow(type, def, false)).join('');
+                const totalAvailableTypes = Object.keys(STAT_COMBINED_DEF).length + Object.keys(STAT_INDIVIDUAL_DEF).length;
 
 formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
 
@@ -8111,7 +8144,7 @@ formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
         </div>
         <div class="text-right">
             <h3 class="font-black text-white text-xl">قنوات الإحصائيات</h3>
-            <p class="text-gray-400 text-xs mt-0.5">اعرض إحصائيات سيرفرك في قنوات صوتية مقفلة في الشريط الجانبي.</p>
+            <p class="text-gray-400 text-xs mt-0.5">اعرض إحصائيات سيرفرك في قنوات صوتية مقفلة في الشريط الجانبي (فردية أو مجمّعة في قناة واحدة).</p>
             <p class="text-gray-500 text-[10px] mt-0.5">⚠️ تأكد أن البوت لديه صلاحية إدارة القنوات (Manage Channels)</p>
         </div>
     </div>
@@ -8123,7 +8156,7 @@ formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
             <div class="text-xs text-gray-400 font-bold mt-1">قناة مُفعّلة</div>
         </div>
         <div class="bg-[#12141f] border border-white/5 p-4 rounded-2xl text-center">
-            <div class="text-2xl font-black text-purple-400">${Object.keys(STAT_TYPES_DEF).length}</div>
+            <div class="text-2xl font-black text-purple-400">${totalAvailableTypes}</div>
             <div class="text-xs text-gray-400 font-bold mt-1">نوع متاح</div>
         </div>
         <div class="bg-[#12141f] border border-white/5 p-4 rounded-2xl text-center">
@@ -8132,13 +8165,25 @@ formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
         </div>
     </div>
 
-    <!-- Stat Channels List -->
+    <!-- Combined Channels List (العدادات المجمّعة في قناة واحدة) -->
+    <div class="bg-gradient-to-br from-[#15102a] to-[#12141f] border border-purple-500/30 rounded-3xl p-6 shadow-2xl space-y-3">
+        <div class="flex items-center justify-between pb-3 border-b border-purple-500/20">
+            <span class="text-xs text-purple-300 font-bold font-mono">🌟 قنوات ذكية موفرة للقنوات</span>
+            <div class="flex items-center gap-2">
+                <h4 class="text-sm font-black text-white">العدادات المجمّعة (عدة إحصائيات في قناة واحدة)</h4>
+                <span>⚡</span>
+            </div>
+        </div>
+        ${combinedRowsHtml}
+    </div>
+
+    <!-- Stat Channels List (العدادات الأساسية الفردية) -->
     <div class="bg-[#12141f] border border-white/5 rounded-3xl p-6 shadow-xl space-y-3">
         <div class="flex items-center justify-between pb-3 border-b border-white/5">
-            <span class="text-xs text-purple-400 font-bold">${statChannelsRows.length}/9 قنوات</span>
-            <h4 class="text-sm font-black text-white">العدادات الأساسية</h4>
+            <span class="text-xs text-purple-400 font-bold">إحصائية واحدة لكل قناة</span>
+            <h4 class="text-sm font-black text-white">العدادات الأساسية الفردية</h4>
         </div>
-        ${statRowsHtml}
+        ${individualRowsHtml}
     </div>
 
     <!-- Add Modal -->
@@ -11533,7 +11578,10 @@ ${embedScriptHtml}
 
             if (!stat_type || !channel_id) return res.status(400).json({ success: false, error: 'stat_type and channel_id are required' });
 
-            const VALID_TYPES = ['total_members','humans','bots','online','voice','text_channels','voice_channels','total_channels','roles','boosts','boost_level'];
+            const VALID_TYPES = [
+                'total_members','humans','bots','online','voice','text_channels','voice_channels','total_channels','roles','boosts','boost_level',
+                'combined_boosts','combined_roles_channels','combined_channel_types','combined_members'
+            ];
             if (!VALID_TYPES.includes(stat_type)) return res.status(400).json({ success: false, error: 'Invalid stat_type' });
 
             rawDb.exec(`CREATE TABLE IF NOT EXISTS stat_channels (

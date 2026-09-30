@@ -7,18 +7,38 @@
 const database = require('../database');
 
 const STAT_TYPES = {
-    total_members:  { label: '👥 الأعضاء', format: (g) => `👥 إجمالي الأعضاء: ${g.memberCount}` },
-    humans:         { label: '👤 البشر', format: (g) => `👤 البشر: ${g.members.cache.filter(m => !m.user.bot).size}` },
-    bots:           { label: '🤖 البوتات', format: (g) => `🤖 البوتات: ${g.members.cache.filter(m => m.user.bot).size}` },
-    online:         { label: '🟢 أونلاين', format: (g) => `🟢 أونلاين: ${g.members.cache.filter(m => m.presence?.status !== 'offline' && m.presence?.status).size}` },
-    voice:          { label: '🎙️ صوتياً', format: (g) => `🎙️ في الصوت: ${g.voiceStates.cache.filter(v => v.channelId).size}` },
-    text_channels:  { label: '📝 نصية', format: (g) => `📝 قنوات نصية: ${g.channels.cache.filter(c => c.type === 0).size}` },
-    voice_channels: { label: '🔊 صوتية', format: (g) => `🔊 قنوات صوتية: ${g.channels.cache.filter(c => c.type === 2).size}` },
-    total_channels: { label: '📂 القنوات', format: (g) => `📂 جميع القنوات: ${g.channels.cache.size}` },
-    roles:          { label: '🏷️ الرتب', format: (g) => `🏷️ الرتب: ${g.roles.cache.size}` },
-    boosts:         { label: '💎 البوستات', format: (g) => `💎 البوستات: ${g.premiumSubscriptionCount || 0}` },
-    boost_level:    { label: '🚀 مستوى البوست', format: (g) => `🚀 مستوى البوست: ${g.premiumTier || 0}` },
+    // ── الإحصائيات الفردية ──
+    total_members:  { label: '👥 إجمالي الأعضاء',    format: (g) => `👥 إجمالي الأعضاء: ${g.memberCount}` },
+    humans:         { label: '👤 البشر',               format: (g) => `👤 البشر: ${g.members.cache.filter(m => !m.user.bot).size}` },
+    bots:           { label: '🤖 البوتات',             format: (g) => `🤖 البوتات: ${g.members.cache.filter(m => m.user.bot).size}` },
+    online:         { label: '🟢 الأعضاء الأونلاين',  format: (g) => `🟢 أونلاين: ${g.members.cache.filter(m => m.presence?.status !== 'offline' && m.presence?.status).size}` },
+    voice:          { label: '🎙️ المتصلين صوتياً',   format: (g) => `🎙️ في الصوت: ${g.voiceStates.cache.filter(v => v.channelId).size}` },
+    text_channels:  { label: '📝 القنوات النصية',     format: (g) => `📝 قنوات نصية: ${g.channels.cache.filter(c => c.type === 0).size}` },
+    voice_channels: { label: '🔊 القنوات الصوتية',    format: (g) => `🔊 قنوات صوتية: ${g.channels.cache.filter(c => c.type === 2).size}` },
+    total_channels: { label: '📂 عدد القنوات الكلي',  format: (g) => `📂 جميع القنوات: ${g.channels.cache.size}` },
+    roles:          { label: '🏷️ الرتب الكلية',       format: (g) => `🏷️ الرتب: ${g.roles.cache.size}` },
+    boosts:         { label: '💎 عدد البوستات',        format: (g) => `💎 البوستات: ${g.premiumSubscriptionCount || 0}` },
+    boost_level:    { label: '🚀 مستوى البوست',        format: (g) => `🚀 مستوى البوست: ${g.premiumTier || 0}` },
+
+    // ── الإحصائيات المجمّعة (قناة واحدة لعدة إحصائيات) ──
+    combined_boosts:   {
+        label: '💎🚀 البوستات ومستواها',
+        format: (g) => `💎 ${g.premiumSubscriptionCount || 0} بوست │ 🚀 مستوى ${g.premiumTier || 0}`
+    },
+    combined_roles_channels: {
+        label: '🏷️📂 الرتب والقنوات الكلية',
+        format: (g) => `🏷️ ${g.roles.cache.size} رتبة │ 📂 ${g.channels.cache.size} قناة`
+    },
+    combined_channel_types: {
+        label: '📝🔊🎙️ أنواع القنوات والمتصلين',
+        format: (g) => `📝 ${g.channels.cache.filter(c => c.type === 0).size} │ 🔊 ${g.channels.cache.filter(c => c.type === 2).size} │ 🎙️ ${g.voiceStates.cache.filter(v => v.channelId).size}`
+    },
+    combined_members: {
+        label: '👥👤🤖🟢 إحصائيات الأعضاء',
+        format: (g) => `👥 ${g.memberCount} │ 🟢 ${g.members.cache.filter(m => m.presence?.status && m.presence.status !== 'offline').size} │ 👤 ${g.members.cache.filter(m => !m.user.bot).size} │ 🤖 ${g.members.cache.filter(m => m.user.bot).size}`
+    },
 };
+
 
 class StatChannelsService {
     constructor(client) {
@@ -87,8 +107,16 @@ class StatChannelsService {
             const prefix = row.custom_prefix || '';
             let newName;
             try {
-                const rawValue = this._getValue(row.stat_type, guild);
-                newName = prefix ? `${prefix}: ${rawValue}` : typeDef.format(guild);
+                if (prefix) {
+                    const rawValue = this._getValue(row.stat_type, guild);
+                    if (rawValue !== null && rawValue !== undefined) {
+                        newName = `${prefix}: ${rawValue}`;
+                    } else {
+                        newName = `${prefix} │ ${typeDef.format(guild)}`;
+                    }
+                } else {
+                    newName = typeDef.format(guild);
+                }
             } catch (e) {
                 newName = typeDef.format(guild);
             }
