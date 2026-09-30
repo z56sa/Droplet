@@ -88,10 +88,13 @@ module.exports = {
 
       // 2.1 التعامل مع تصويتات الاقتراحات (Suggestion Upvote & Downvote Buttons)
       if (interaction.isButton() && (interaction.customId === 'sugg_upvote' || interaction.customId === 'sugg_downvote')) {
+        // Defer early to prevent "didn't respond in time" timeout (3s limit)
+        await interaction.deferReply({ flags: 64 }).catch(() => {});
+
         const voteType = interaction.customId === 'sugg_upvote' ? 'up' : 'down';
         const res = db.voteSuggestion(interaction.message.id, interaction.user.id, voteType);
         if (!res) {
-          return interaction.reply({ content: '❌ تعذر العثور على بيانات هذا الاقتراح في قاعدة البيانات.', flags: 64 });
+          return interaction.editReply({ content: '❌ تعذر العثور على بيانات هذا الاقتراح في قاعدة البيانات.' });
         }
 
         const sugg = db.getSuggestion(interaction.message.id);
@@ -129,7 +132,7 @@ module.exports = {
         }
 
         const actionText = res.action === 'removed' ? 'إلغاء تصويتك' : (voteType === 'up' ? 'تسجيل تأييدك 👍' : 'تسجيل معارضتك 👎');
-        return interaction.reply({ content: `✅ تم ${actionText} بنجاح!`, flags: 64 });
+        return interaction.editReply({ content: `✅ تم ${actionText} بنجاح!` });
       }
 
       // 2.1.1 التعامل مع قبول أو رفض أو دراسة الاقتراح إدارياً (Suggestion Staff Decision)

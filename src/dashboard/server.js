@@ -11312,30 +11312,33 @@ ${embedScriptHtml}
             if (channelId) {
                 const channel = client.channels.cache.get(channelId) || await client.channels.fetch(channelId).catch(() => null);
                 if (channel && channel.isTextBased()) {
-                    const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+                    const { buildSuggestionEmbed, buildSuggestionComponents } = require('../utils/suggestionBuilder');
                     const avatarURL = req.session.user.avatar
                         ? `https://cdn.discordapp.com/avatars/${req.session.user.id}/${req.session.user.avatar}.png`
                         : `https://cdn.discordapp.com/embed/avatars/0.png`;
 
-                    const suggEmbed = new EmbedBuilder()
-                        .setColor(0x9333ea)
-                        .setAuthor({ name: req.session.user.username + ' • اقتراح جديد', iconURL: avatarURL })
-                        .setTitle(title ? ('💡 ' + title) : '💡 اقتراح جديد')
-                        .setDescription(content)
-                        .addFields(
-                            { name: '📂 التصنيف', value: category || 'عام', inline: true },
-                            { name: '⏳ الحالة', value: 'قيد المراجعة', inline: true },
-                            { name: '📊 التصويت | 0%', value: '░░░░░░░░░░\n👍 0  |  👎 0', inline: false }
-                        )
-                        .setFooter({ text: 'صاحب الاقتراح: ' + req.session.user.username + ' • من الداشبورد' })
-                        .setTimestamp();
+                    const suggCode = Math.random().toString(36).substring(2, 11);
+                    const userObj = {
+                        tag: req.session.user.username + '#0000',
+                        username: req.session.user.username,
+                        id: req.session.user.id,
+                        displayAvatarURL: () => avatarURL
+                    };
 
-                    const row = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder().setCustomId('sugg_upvote').setLabel('0').setEmoji('👍').setStyle(ButtonStyle.Success),
-                        new ButtonBuilder().setCustomId('sugg_downvote').setLabel('0').setEmoji('👎').setStyle(ButtonStyle.Danger)
-                    );
+                    const suggEmbed = buildSuggestionEmbed({
+                        user: userObj,
+                        content: content,
+                        title: title || null,
+                        code: suggCode,
+                        status: 'pending',
+                        upvotes: 0,
+                        downvotes: 0,
+                        createdAt: Date.now()
+                    });
 
-                    const sentMsg = await channel.send({ embeds: [suggEmbed], components: [row] });
+                    const components = buildSuggestionComponents({ upvotes: 0, downvotes: 0 });
+
+                    const sentMsg = await channel.send({ embeds: [suggEmbed], components });
                     msgId = sentMsg.id;
 
                     if (settings.suggestions_auto_thread !== 0) {
@@ -11371,49 +11374,43 @@ ${embedScriptHtml}
 
             const updated = database.updateSuggestionStatus(id, status, reason, req.session.user.id);
 
-            // ✅ تحديث embed ديسكورد إذا كانت الرسالة موجودة
+            // ✅ تحديث embed ديسكورد بالفورمات الجديد إذا كانت الرسالة موجودة
             if (updated && updated.message_id && updated.channel_id) {
                 try {
-                    const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+                    const { buildSuggestionEmbed, buildSuggestionComponents } = require('../utils/suggestionBuilder');
                     const ch = client.channels.cache.get(updated.channel_id) || await client.channels.fetch(updated.channel_id).catch(() => null);
                     if (ch && ch.isTextBased()) {
                         const msg = await ch.messages.fetch(updated.message_id).catch(() => null);
                         if (msg) {
-                            let upCount = 0, downCount = 0;
-                            try { upCount = JSON.parse(updated.upvotes || '[]').length; } catch(e) {}
-                            try { downCount = JSON.parse(updated.downvotes || '[]').length; } catch(e) {}
-                            const total = upCount + downCount || 1;
-                            const pct = Math.round((upCount / total) * 100);
-                            const bar = '█'.repeat(Math.round(pct / 10)) + '░'.repeat(10 - Math.round(pct / 10));
+                            let upvotesList = [], downvotesList = [];
+                            try { upvotesList = JSON.parse(updated.upvotes || '[]'); } catch(e) {}
+                            try { downvotesList = JSON.parse(updated.downvotes || '[]'); } catch(e) {}
 
-                            const statusMap = {
-                                pending: { label: '⏳ قيد المراجعة', color: 0xf59e0b },
-                                accepted: { label: '✅ مقبول', color: 0x22c55e },
-                                rejected: { label: '❌ مرفوض', color: 0xef4444 },
-                                implemented: { label: '🚀 تم التنفيذ', color: 0x6366f1 }
-                            };
-                            const sm = statusMap[status] || statusMap.pending;
+                            // جلب بيانات صاحب الاقتراح
+                            const suggAuthor = await client.users.fetch(updated.user_id).catch(() => null);
+                            const userObj = suggAuthor || { tag: 'عضو', username: 'عضو', displayAvatarURL: () => null };
 
-                            const newEmbed = new EmbedBuilder()
-                                .setColor(sm.color)
-                                .setTitle(updated.title ? ('💡 ' + updated.title) : '💡 اقتراح')
-                                .setDescription(updated.content)
-                                .addFields(
-                                    { name: '📂 التصنيف', value: updated.category || 'عام', inline: true },
-                                    { name: '📊 الحالة', value: sm.label, inline: true },
-                                    { name: `📊 التصويت | ${pct}%`, value: `${bar}\n👍 ${upCount}  |  👎 ${downCount}`, inline: false }
-                                )
-                                .setFooter({ text: `صاحب الاقتراح: ${updated.user_id} • راجعه: ${req.session.user.username}` })
-                                .setTimestamp();
+                            const newEmbed = buildSuggestionEmbed({
+                                user: userObj,
+                                content: updated.content,
+                                title: updated.title || null,
+                                code: updated.id ? updated.id.toString(36) : id,
+                                status: status,
+                                upvotes: upvotesList.length,
+                                downvotes: downvotesList.length,
+                                createdAt: updated.created_at ? updated.created_at * 1000 : Date.now(),
+                                reviewerId: req.session.user.id,
+                                reason: reason || null
+                            });
 
-                            if (reason) newEmbed.addFields({ name: '💬 رد الإدارة', value: reason });
+                            const isFinal = status === 'accepted' || status === 'rejected';
+                            const newComponents = buildSuggestionComponents({
+                                upvotes: upvotesList.length,
+                                downvotes: downvotesList.length,
+                                disabled: isFinal
+                            });
 
-                            const row = new ActionRowBuilder().addComponents(
-                                new ButtonBuilder().setCustomId('sugg_upvote').setLabel(String(upCount)).setEmoji('👍').setStyle(ButtonStyle.Success),
-                                new ButtonBuilder().setCustomId('sugg_downvote').setLabel(String(downCount)).setEmoji('👎').setStyle(ButtonStyle.Danger)
-                            );
-
-                            await msg.edit({ embeds: [newEmbed], components: [row] });
+                            await msg.edit({ embeds: [newEmbed], components: newComponents });
                         }
                     }
                 } catch(embedErr) {
