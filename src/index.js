@@ -66,9 +66,24 @@ const client = new Client({
     partials: [Partials.GuildMember, Partials.User, Partials.Channel]
 });
 
-client.once('ready', () => {
+client.once('ready', async () => {
     console.log('[Dashboard Discord] Connected as ' + client.user.tag);
     console.log('[Dashboard Discord] Guilds: ' + client.guilds.cache.size);
+
+    // استعادة صورة البوت الأصلية من App Icon في Developer Portal
+    try {
+        const appInfo = await client.rest.get('/applications/@me');
+        if (appInfo?.icon && appInfo?.id) {
+            const iconUrl = `https://cdn.discordapp.com/app-icons/${appInfo.id}/${appInfo.icon}.png?size=512`;
+            const imgRes = await fetch(iconUrl);
+            const buf = await imgRes.arrayBuffer();
+            const b64 = Buffer.from(buf).toString('base64');
+            await client.user.setAvatar(`data:image/png;base64,${b64}`);
+            console.log('[Dashboard Discord] Bot avatar restored to App Icon ✅');
+        }
+    } catch(e) {
+        console.error('[Dashboard Discord] Avatar restore skipped:', e.message);
+    }
 });
 
 client.on('error', (error) => {
