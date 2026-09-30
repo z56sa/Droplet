@@ -4,7 +4,6 @@
  */
 
 const express = require('express');
-const crypto = require('crypto');
 const session = require('express-session');
 const SqliteStore = require('better-sqlite3-session-store')(session);
 const database = require('../database');
@@ -42,12 +41,6 @@ const {
 
 module.exports = function (app, client) {
     const sessionStore = new SqliteStore({ client: rawDb });
-    // OAuth single-flight/cache: duplicate callbacks for the same authorization code
-    // reuse the same Discord API flow instead of exchanging the code multiple times.
-    const oauthFlowCache = new Map();
-    let discordRateLimitUntil = 0;
-    let discordOAuthRequestChain = Promise.resolve();
-    let lastDiscordOAuthRequestAt = 0;
     let sessionSecret = '';
     try {
         const secrets = SecretManager.getMultipleSecrets(['SESSION_SECRET']);
@@ -77,295 +70,13 @@ module.exports = function (app, client) {
     // Apply API rate limiter to all API endpoints
     app.use('/api/', apiLimiter);
 
-    // ═══════════════════════════════════════════════════
-    // 🧪 TEST: AI Auto-Healer endpoint (owner-only, temp)
-    // Hit: GET /api/test-ai-healer?secret=ZENO_TEST
-    // ═══════════════════════════════════════════════════
-    const aiAutoHealer = require('../services/aiAutoHealer');
-    app.get('/api/test-ai-healer', async (req, res) => {
-        const secret = req.query.secret;
-        if (secret !== 'ZENO_TEST') {
-            return res.status(403).json({ error: 'Forbidden' });
-        }
-        const type = req.query.type || 'rejection';
-
-        res.json({
-            ok: true,
-            message: `Test error (${type}) initiated! Check your Discord DMs shortly.`,
-            discordReady: client?.isReady(),
-            botTag: client?.user?.tag
-        });
-
-        // Trigger handleError directly so we guarantee execution regardless of process.emit quirks
-        setTimeout(async () => {
-            try {
-                let testErr;
-                if (type === 'uncaught') {
-                    testErr = new Error('[AI Healer Test] Simulated uncaughtException — نظام رصد وحل المشاكل يعمل بنجاح');
-                } else if (type === 'db') {
-                    testErr = new Error('SQLITE_BUSY: database is locked');
-                } else if (type === 'ratelimit') {
-                    testErr = new Error('You are being rate limited.');
-                    testErr.status = 429;
-                } else {
-                    testErr = new Error('[AI Healer Test] تجربة خطأ برمجية في لوحة التحكم — الذكاء الاصطناعي يرصد ويحل تلقائياً');
-                }
-
-                console.log('[AI AutoHealer Test] Dispatched test error directly to handleError...');
-                await aiAutoHealer.handleError(testErr, `Test:${type}`);
-            } catch (err) {
-                console.error('[AI AutoHealer Test Error]:', err);
-            }
-        }, 100);
-    });
-
-    // ═══════════════════════════════════════════════════
-    // 🚀 Manual / Instant Slash Commands Deploy Endpoint
-    // Hit: GET /api/admin/deploy-slash-commands?secret=ZENO_TEST
-    // ═══════════════════════════════════════════════════
-    app.get('/api/admin/deploy-slash-commands', async (req, res) => {
-        const secret = req.query.secret;
-        if (secret !== 'ZENO_TEST') {
-            return res.status(403).json({ error: 'Forbidden' });
-        }
-
-        const { REST, Routes } = require('discord.js');
-        const tokenToUse = process.env.DASHBOARD_BOT_TOKEN || process.env.BOT_TOKEN || client.token;
-        if (!tokenToUse) {
-            return res.status(500).json({ ok: false, error: 'No bot token found in environment' });
-        }
-
-        const commandsData = client.slashCommandsData || [];
-        const rest = new REST({ version: '10' }).setToken(tokenToUse);
-        const results = {
-            totalLoadedCommands: commandsData.length,
-            commandNames: commandsData.map(c => c.name),
-            clientReady: client.isReady(),
-            clientId: client.user?.id,
-            guildResults: []
-        };
-
-        try {
-            // Register to all guilds
-            if (client.guilds?.cache?.size > 0 && client.user?.id) {
-                for (const [gId, g] of client.guilds.cache) {
-                    try {
-                        const r = await rest.put(
-                            Routes.applicationGuildCommands(client.user.id, gId),
-                            { body: commandsData }
-                        );
-                        results.guildResults.push({ guildId: gId, guildName: g.name, registeredCount: r.length, ok: true });
-                    } catch(ge) {
-                        results.guildResults.push({ guildId: gId, guildName: g.name, error: ge.message, ok: false });
-                    }
-                }
-            }
-
-            // Also register globally
-            if (client.user?.id) {
-                const globalReg = await rest.put(
-                    Routes.applicationCommands(client.user.id),
-                    { body: commandsData }
-                );
-                results.globalRegisteredCount = globalReg.length;
-            }
-
-            return res.json({ ok: true, message: 'Slash commands deployed successfully!', results });
-        } catch(err) {
-            return res.status(500).json({ ok: false, error: err.message, results });
-        }
-    });
-
-
-
-    // Discord OAuth helper.
-    // A 429 is shared across the process so concurrent requests do not keep
-    // hammering Discord while the global rate limit is active.
-    const discordFetch = async (url, options = {}) => {
-        // OAuth requests are globally serialized. A burst of simultaneous
-        // logins/callbacks can otherwise hit Discord's anti-abuse limits even
-        // when every individual request is valid.
-        let release;
-        const previous = discordOAuthRequestChain;
-        discordOAuthRequestChain = new Promise(resolve => { release = resolve; });
-        await previous;
-
-        try {
-            const remainingMs = discordRateLimitUntil - Date.now();
-            if (remainingMs > 0) {
-                const error = createOAuthError(429, 'Discord rate limit is active');
-                error.retryAfterMs = remainingMs;
-                throw error;
-            }
-
-            // Keep a small gap between OAuth API calls instead of sending
-            // token/user/guild requests back-to-back.
-            const gapMs = 750;
-            const sinceLast = Date.now() - lastDiscordOAuthRequestAt;
-            if (sinceLast < gapMs) {
-                await new Promise(resolve => setTimeout(resolve, gapMs - sinceLast));
-            }
-
-            const endpoint = (() => {
-                try {
-                    return new URL(url).pathname;
-                } catch (_) {
-                    return url;
-                }
-            })();
-
-            lastDiscordOAuthRequestAt = Date.now();
-            const response = await fetch(url, options);
-
-            if (response.status !== 429) return response;
-
-            let retryAfter = Number(response.headers.get('retry-after') || 0);
-            try {
-                const data = await response.clone().json();
-                if (Number.isFinite(Number(data?.retry_after))) {
-                    retryAfter = Number(data.retry_after);
-                }
-            } catch (_) {}
-
-            // Discord's Retry-After is seconds. Never cap it: retrying before
-            // the server-side cooldown expires can extend the temporary block.
-            const waitMs = Math.max(retryAfter * 1000, 1000);
-            discordRateLimitUntil = Math.max(discordRateLimitUntil, Date.now() + waitMs);
-
-            const error = createOAuthError(429, 'Discord rate limit is active');
-            error.retryAfterMs = waitMs;
-            console.warn('[DISCORD RATE LIMIT] endpoint=' + endpoint +
-                ' retry-after=' + Math.ceil(waitMs / 1000) + 's');
-            throw error;
-        } finally {
-            release();
-        }
-    };
-
+    // Helper: Discord OAuth2 config
     const getOAuthConfig = (req) => {
         const clientId = process.env.CLIENT_ID || process.env.DISCORD_CLIENT_ID || client?.user?.id || config.clientId;
-        const clientSecret = process.env.CLIENT_SECRET || process.env.DISCORD_CLIENT_SECRET || '';
+        const clientSecret = process.env.CLIENT_SECRET || process.env.DISCORD_CLIENT_SECRET || 'MNeCz9uTvXRzXeEUp8lUckSQeviU-cRY';
         const baseUrl = process.env.DASHBOARD_URL || config.dashboardUrl || `${req.protocol}://${req.get('host')}`;
         const redirectUri = `${baseUrl}/auth/discord/callback`;
         return { clientId, clientSecret, redirectUri };
-    };
-
-    const sendOAuthRateLimitPage = (res, retryAfterMs = 60000) => {
-        const seconds = Math.max(1, Math.ceil(retryAfterMs / 1000));
-        const minutes = Math.ceil(seconds / 60);
-        const waitText = minutes > 1 ? (minutes + ' minutes') : (seconds + ' seconds');
-
-        return res.status(503).send(`
-            <div style="background:#0b0d14;color:#fff;font-family:sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
-                <h2 style="color:#f59e0b;">Discord is temporarily rate limiting ZENO</h2>
-                <p style="color:#aaa;max-width:560px;margin-top:10px;">Discord has temporarily limited API requests for ZENO. Discord returned a 429 rate-limit response.</p>
-                <p style="color:#888;font-size:13px;margin-top:5px;">Please wait approximately <strong>${waitText}</strong> before trying to sign in again.</p>
-                <a href="/" style="color:#a855f7;margin-top:20px;text-decoration:none;font-weight:bold;">Back to Home</a>
-            </div>
-        `);
-    };
-
-    const createOAuthError = (status, message) => {
-        const error = new Error(message);
-        error.status = status;
-        return error;
-    };
-
-    // Runs the complete Discord OAuth exchange only once per authorization code.
-    // Successful results are kept briefly so duplicate browser callbacks can reuse
-    // the already-completed flow instead of calling Discord again.
-    const runOAuthFlow = (code, oauthConfig) => {
-        const cached = oauthFlowCache.get(code);
-        if (cached) return cached;
-
-        const flow = (async () => {
-            const { clientId, clientSecret, redirectUri } = oauthConfig;
-
-            const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-            // Match Discord's documented server-to-server OAuth2 exchange:
-            // credentials are supplied through Basic auth, not duplicated in
-            // both the Authorization header and the form body.
-            const tokenParams = new URLSearchParams({
-                grant_type: 'authorization_code',
-                code,
-                redirect_uri: redirectUri
-            });
-
-            const tokenRes = await discordFetch('https://discord.com/api/v10/oauth2/token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Authorization': `Basic ${basicAuth}`
-                },
-                body: tokenParams.toString()
-            });
-
-            if (!tokenRes.ok) {
-                const errText = await tokenRes.text();
-                console.error('[OAUTH ERROR] Token exchange failed:', tokenRes.status, errText);
-                throw createOAuthError(tokenRes.status, 'Discord OAuth token exchange failed');
-            }
-
-            const tokenData = await tokenRes.json();
-            const accessToken = tokenData.access_token;
-            if (!accessToken) {
-                throw createOAuthError(502, 'Discord OAuth response did not contain an access token');
-            }
-
-            const userRes = await discordFetch('https://discord.com/api/v10/users/@me', {
-                headers: { Authorization: `Bearer ${accessToken}` }
-            });
-            if (!userRes.ok) {
-                const errText = await userRes.text();
-                console.error('[OAUTH ERROR] User lookup failed:', userRes.status, errText);
-                throw createOAuthError(userRes.status, 'Discord user lookup failed');
-            }
-            const userData = await userRes.json();
-
-            const guildsRes = await discordFetch('https://discord.com/api/v10/users/@me/guilds', {
-                headers: { Authorization: `Bearer ${accessToken}` }
-            });
-            if (!guildsRes.ok) {
-                const errText = await guildsRes.text();
-                console.error('[OAUTH ERROR] Guild lookup failed:', guildsRes.status, errText);
-                throw createOAuthError(guildsRes.status, 'Discord guild lookup failed');
-            }
-            const rawGuilds = await guildsRes.json();
-
-            const manageableGuilds = [];
-            if (Array.isArray(rawGuilds)) {
-                for (const g of rawGuilds) {
-                    const isOwner = !!g.owner;
-                    const perms = BigInt(g.permissions || '0');
-                    const hasPerm = (perms & BigInt(0x8)) !== 0n || (perms & BigInt(0x20)) !== 0n;
-
-                    if (isOwner || hasPerm) {
-                        const botGuild = client?.guilds?.cache?.get(g.id);
-                        if (botGuild) {
-                            manageableGuilds.push({
-                                id: g.id,
-                                name: g.name,
-                                icon: g.icon,
-                                memberCount: botGuild.memberCount || 0,
-                                permissions: Number(perms & 0xffn) || 8,
-                                isOwner
-                            });
-                        }
-                    }
-                }
-            }
-
-            return { tokenData, userData, manageableGuilds };
-        })();
-
-        oauthFlowCache.set(code, flow);
-
-        flow.then(
-            () => setTimeout(() => oauthFlowCache.delete(code), 30000),
-            () => oauthFlowCache.delete(code)
-        );
-
-        return flow;
     };
 
     // 1. الصفحة الرئيسية وشاشة البداية (ProBot Black & Purple Landing Page)
@@ -405,81 +116,102 @@ module.exports = function (app, client) {
 
     // 2. Real Discord OAuth2 Authentication Routes
     app.get('/auth/discord', (req, res) => {
-        const activeRateLimitMs = discordRateLimitUntil - Date.now();
-        if (activeRateLimitMs > 0) {
-            return sendOAuthRateLimitPage(res, activeRateLimitMs);
-        }
-
         const { clientId, redirectUri } = getOAuthConfig(req);
-
-        // Reuse an already-created authorization URL for a short window.
-        // This prevents double-clicks/refreshes from creating multiple OAuth flows.
-        if (
-            req.session?.oauthState &&
-            req.session?.oauthStartedAt &&
-            Date.now() - req.session.oauthStartedAt < 2 * 60 * 1000 &&
-            req.session.oauthAuthUrl
-        ) {
-            return res.redirect(req.session.oauthAuthUrl);
-        }
-
-        const state = crypto.randomBytes(24).toString('hex');
-        const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=identify+guilds&state=${state}`;
-
-        req.session.oauthState = state;
-        req.session.oauthStartedAt = Date.now();
-        req.session.oauthAuthUrl = discordAuthUrl;
-
-        // Persist the state before redirecting to Discord.
-        req.session.save(err => {
-            if (err) {
-                console.error('[OAUTH ERROR] Failed to save OAuth session:', err);
-                return res.status(500).send('Unable to start Discord sign-in. Please try again.');
-            }
-            return res.redirect(discordAuthUrl);
-        });
+        const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=identify+guilds`;
+        res.redirect(discordAuthUrl);
     });
 
     app.get('/auth/discord/callback', async (req, res) => {
-        const code = typeof req.query.code === 'string' ? req.query.code : '';
-        const state = typeof req.query.state === 'string' ? req.query.state : '';
-
-        // If a duplicate callback arrives after the first one completed,
-        // the session is already authenticated; do not call Discord again.
-        if (!state && req.session?.user) {
-            return res.redirect('/dashboard/manage');
-        }
-
+        const code = req.query.code;
         if (!code) {
             return res.redirect('/auth/discord');
         }
 
-        const expectedState = req.session?.oauthState;
-        const stateAge = req.session?.oauthStartedAt
-            ? Date.now() - req.session.oauthStartedAt
-            : Infinity;
-
-        if (!expectedState || !state || state !== expectedState || stateAge > 10 * 60 * 1000) {
-            console.warn('[OAUTH ERROR] Invalid or expired OAuth state');
-            return res.status(400).send('Unable to complete Discord sign-in. Please start the sign-in process again.');
-        }
-
-        // Consume the state immediately. This makes the authorization callback
-        // single-use at the session level.
-        delete req.session.oauthState;
-        delete req.session.oauthStartedAt;
-        delete req.session.oauthAuthUrl;
-
-        const oauthConfig = getOAuthConfig(req);
-        if (!oauthConfig.clientSecret) {
-            console.error('[OAUTH ERROR] OAuth client secret is missing from environment variables.');
-            return res.status(500).send('Discord sign-in is not configured correctly on the server.');
+        const { clientId, clientSecret, redirectUri } = getOAuthConfig(req);
+        if (!clientSecret) {
+            console.error('[OAUTH ERROR] CLIENT_SECRET is missing from environment variables!');
+            return res.status(500).send('خطأ في إعدادات البوت: CLIENT_SECRET غير مضاف في لوحة Render.');
         }
 
         try {
-            const { tokenData, userData, manageableGuilds } = await runOAuthFlow(code, oauthConfig);
+            // Exchange code for Access Token
+            const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+            const tokenParams = new URLSearchParams({
+                client_id: clientId,
+                client_secret: clientSecret,
+                grant_type: 'authorization_code',
+                code: code,
+                redirect_uri: redirectUri
+            });
+
+            const tokenRes = await fetch('https://discord.com/api/v10/oauth2/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': `Basic ${basicAuth}`
+                },
+                body: tokenParams.toString()
+            });
+
+            if (!tokenRes.ok) {
+                const errText = await tokenRes.text();
+                console.error('[OAUTH ERROR] Token exchange failed:', errText);
+                return res.status(400).send(`
+                    <div style="background:#0b0d14;color:#fff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
+                        <h2 style="color:#ef4444;">تعذر إكمال تسجيل الدخول عبر Discord</h2>
+                        <p style="color:#aaa;max-width:500px;margin-top:10px;">رسالة الخطأ من Discord: <code>${errText}</code></p>
+                        <p style="color:#888;font-size:13px;margin-top:5px;">تأكد من صحة Client Secret في إعدادات البوت.</p>
+                        <a href="/" style="color:#a855f7;margin-top:20px;text-decoration:none;font-weight:bold;">العودة للصفحة الرئيسية</a>
+                    </div>
+                `);
+            }
+
+            const tokenData = await tokenRes.json();
             const accessToken = tokenData.access_token;
 
+            // Fetch user profile from Discord
+            const userRes = await fetch('https://discord.com/api/v10/users/@me', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            if (!userRes.ok) throw new Error('فشل جلب بيانات المستخدم من Discord');
+            const userData = await userRes.json();
+
+            // Fetch user guilds from Discord
+            const guildsRes = await fetch('https://discord.com/api/v10/users/@me/guilds', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            if (!guildsRes.ok) throw new Error('فشل جلب سيرفرات المستخدم من Discord');
+            const rawGuilds = await guildsRes.json();
+
+            // Filter guilds: User must be Owner OR have MANAGE_GUILD (0x20) or ADMINISTRATOR (0x8)
+            // AND Bot must be currently present in this guild
+            const ADMIN_OR_MANAGE = 0x8 | 0x20;
+            const manageableGuilds = [];
+
+            if (Array.isArray(rawGuilds)) {
+                for (const g of rawGuilds) {
+                    const isOwner = !!g.owner;
+                    const perms = BigInt(g.permissions || '0');
+                    const hasPerm = (perms & BigInt(0x8)) !== 0n || (perms & BigInt(0x20)) !== 0n;
+
+                    if (isOwner || hasPerm) {
+                        // Check if bot is present in this guild
+                        const botGuild = client?.guilds?.cache?.get(g.id);
+                        if (botGuild) {
+                            manageableGuilds.push({
+                                id: g.id,
+                                name: g.name,
+                                icon: g.icon,
+                                memberCount: botGuild.memberCount || 0,
+                                permissions: Number(perms & 0xffn) || 8,
+                                isOwner: isOwner
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Save to user session including OAuth token lifecycle
             req.session.user = {
                 id: userData.id,
                 username: userData.global_name || userData.username,
@@ -487,7 +219,7 @@ module.exports = function (app, client) {
                 avatar: userData.avatar
             };
             req.session.token = {
-                accessToken,
+                accessToken: accessToken,
                 refreshToken: tokenData.refresh_token || null,
                 tokenType: tokenData.token_type || 'Bearer',
                 scope: tokenData.scope || '',
@@ -496,33 +228,22 @@ module.exports = function (app, client) {
             req.session.guilds = manageableGuilds;
             req.session.lastActive = Date.now();
 
+            // حفظ بيانات المستخدم المسجل في كاش وقاعدة بيانات Turso
             if (database.trackUserProfile) {
                 database.trackUserProfile({
                     userId: userData.id,
                     username: userData.username,
                     displayName: userData.global_name || userData.username,
                     avatar: userData.avatar,
-                    avatarUrl: userData.avatar
-                        ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`
-                        : 'https://cdn.discordapp.com/embed/avatars/0.png'
+                    avatarUrl: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'
                 });
             }
 
-            return req.session.save(err => {
-                if (err) {
-                    console.error('[OAUTH ERROR] Failed to save authenticated session:', err);
-                    return res.status(500).send('Unable to save the Discord session. Please try again.');
-                }
-                return res.redirect('/dashboard/manage');
-            });
+            // Redirect directly to dashboard
+            res.redirect('/dashboard/manage');
         } catch (err) {
             console.error('[OAUTH ERROR] OAuth callback error:', err);
-
-            if (err?.status === 429) {
-                return sendOAuthRateLimitPage(res, err.retryAfterMs || (discordRateLimitUntil - Date.now()));
-            }
-
-            return res.status(502).send('Unable to complete Discord sign-in right now. Please try again.');
+            res.status(500).send('حدث خطأ أثناء تسجيل الدخول: ' + err.message);
         }
     });
 
@@ -772,9 +493,7 @@ module.exports = function (app, client) {
             }
 
             const userAvatar = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
-            const botAvatarUrl = client?.user?.avatar
-                ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png?size=128`
-                : 'https://cdn.discordapp.com/embed/avatars/0.png';
+            const botAvatarUrl = client?.user?.avatar ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
             let userCoins = 0, userLevel = 1, userStars = 0, userXp = 0, userLastDaily = 0, userWallpaper = 'default';
             let xpLeaderboard = [];
@@ -1079,6 +798,10 @@ module.exports = function (app, client) {
             btn.classList.add('bg-purple-600', 'text-white', 'font-bold', 'shadow-md');
             btn.classList.remove('text-gray-300', 'hover:text-white', 'hover:bg-[#151724]', 'font-medium');
         }
+
+        if (window.zenoI18n && typeof window.zenoI18n.apply === 'function') {
+            window.zenoI18n.apply();
+        }
     };
 
     window.claimDailyReward = async function() {
@@ -1180,9 +903,9 @@ module.exports = function (app, client) {
             <body class="min-h-screen flex flex-col bg-[#0b0d14] text-gray-200">
                 <header class="h-16 bg-[#10121b]/95 backdrop-blur-md border-b border-white/5 px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-3">
-                        <button type="button" data-lang-toggle="true" class="zeno-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
+                        <button type="button" onclick="window.zenoI18n.toggleLang()" class="zeno-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
                             <span class="text-sm">🌐</span>
-                            <span data-lang-label class="font-black text-xs uppercase tracking-wider">EN</span>
+                            <span class="font-black text-xs uppercase tracking-wider">EN</span>
                         </button>
                         <span class="text-gray-700">|</span>
                         <a href="/logout" data-i18n="logout" class="text-xs text-rose-400 hover:text-rose-300 font-bold transition">تسجيل الخروج</a>
@@ -1637,15 +1360,6 @@ module.exports = function (app, client) {
                     await botGuild.fetch().catch(() => {});
                 } catch(e) {}
             }
-            if (botGuild) {
-                try {
-                    await Promise.allSettled([
-                        botGuild.channels?.fetch ? botGuild.channels.fetch() : Promise.resolve(),
-                        botGuild.roles?.fetch ? botGuild.roles.fetch() : Promise.resolve(),
-                        botGuild.emojis?.fetch ? botGuild.emojis.fetch() : Promise.resolve()
-                    ]);
-                } catch(e) {}
-            }
             if (!botGuild) {
                 return res.status(404).send(`
                     <div style="background:#0b0d14;color:#fff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
@@ -1704,9 +1418,7 @@ module.exports = function (app, client) {
             let guildLeaderboardUsers = [];
             const currentTab = req.query?.tab || 'settings';
             try {
-                if (database.getLeaderboardFromTurso) {
-                    guildLeaderboardUsers = await database.getLeaderboardFromTurso(guildId, 20) || [];
-                } else if (database.getLeaderboard) {
+                if (database.getLeaderboard) {
                     guildLeaderboardUsers = database.getLeaderboard(guildId, 20) || [];
                 }
             } catch(e) {}
@@ -1736,9 +1448,7 @@ module.exports = function (app, client) {
             } catch (err) {}
 
             const userAvatar = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
-            const botAvatarUrl = client?.user?.avatar
-                ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png?size=128`
-                : (settings?.bot_avatar || 'https://cdn.discordapp.com/embed/avatars/0.png');
+            const botAvatarUrl = client?.user?.avatar ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
             const guildIcon = guild.icon ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
             const serverRailHtml = guilds.map(g => `
@@ -1856,7 +1566,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-sm">📁</div>
                                     <span class="text-[10px] text-gray-500 font-mono">CHANNELS</span>
                                 </div>
-                                <div class="text-2xl font-black text-white" id="channelsCount">${(botGuild?.channels?.cache?.size || 0)}</div>
+                                <div class="text-2xl font-black text-white">${(botGuild?.channels?.cache?.size || 0)}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">إجمالي القنوات</p>
                             </div>
                             <div class="bg-[#12141f] border border-amber-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-amber-500/40 transition group">
@@ -1864,7 +1574,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-amber-600/20 border border-amber-500/30 text-amber-400 flex items-center justify-center text-sm">💎</div>
                                     <span class="text-[10px] text-gray-500 font-mono">BOOSTS</span>
                                 </div>
-                                <div class="text-2xl font-black text-white" id="boostsCount">${(botGuild?.premiumSubscriptionCount || 0)}</div>
+                                <div class="text-2xl font-black text-white">${(botGuild?.premiumSubscriptionCount || 0)}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">بوستات السيرفر</p>
                             </div>
                         </div>
@@ -1876,7 +1586,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-pink-600/20 border border-pink-500/30 text-pink-400 flex items-center justify-center text-sm">🎖️</div>
                                     <span class="text-[10px] text-gray-500 font-mono">ROLES</span>
                                 </div>
-                                <div class="text-2xl font-black text-white" id="rolesCount">${(botGuild?.roles?.cache?.size || 0)}</div>
+                                <div class="text-2xl font-black text-white">${(botGuild?.roles?.cache?.size || 0)}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">إجمالي الرتب</p>
                             </div>
                             <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl shadow-xl text-right hover:border-purple-500/20 transition">
@@ -1884,7 +1594,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-purple-700/20 border border-purple-500/30 text-purple-400 flex items-center justify-center text-sm">😃</div>
                                     <span class="text-[10px] text-gray-500 font-mono">EMOJIS</span>
                                 </div>
-                                <div class="text-2xl font-black text-white" id="emojisCount">${(botGuild?.emojis?.cache?.size || 0)}</div>
+                                <div class="text-2xl font-black text-white">${(botGuild?.emojis?.cache?.size || 0)}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">الإيموجيات المخصصة</p>
                             </div>
                             <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl shadow-xl text-right hover:border-purple-500/20 transition">
@@ -2022,14 +1732,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 if (elBots) elBots.textContent = (data.bots || 0).toLocaleString();
                 var elGw = document.getElementById('giveawaysCount');
                 if (elGw) elGw.textContent = (data.giveaways || 0).toLocaleString();
-                var elCh = document.getElementById('channelsCount');
-                if (elCh && data.channels !== undefined) elCh.textContent = (data.channels || 0).toLocaleString();
-                var elRoles = document.getElementById('rolesCount');
-                if (elRoles && data.roles !== undefined) elRoles.textContent = (data.roles || 0).toLocaleString();
-                var elEmojis = document.getElementById('emojisCount');
-                if (elEmojis && data.emojis !== undefined) elEmojis.textContent = (data.emojis || 0).toLocaleString();
-                var elBoosts = document.getElementById('boostsCount');
-                if (elBoosts && data.boosts !== undefined) elBoosts.textContent = (data.boosts || 0).toLocaleString();
             })
             .catch(function() {
                 var elOnline = document.getElementById('onlineMembersCount');
@@ -2044,7 +1746,475 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 </script>
 `;
             } else if (section === 'general' || section === 'commands') {
-formFieldsHtml = "<div id=\"cmdsMgmtRoot\" class=\"space-y-6 text-right\" dir=\"rtl\" style=\"margin-top:0\">\n\n    <!-- Header Card -->\n    <div class=\"bg-[#12141f] border border-white/5 p-6 rounded-2xl flex items-center justify-between shadow-xl\">\n        <div class=\"flex items-center gap-6\">\n            <div class=\"text-center\">\n                <span id=\"customAliasesCount\" class=\"text-xl font-black text-purple-400 font-mono\">0</span>\n                <span class=\"text-[10px] text-gray-400 block font-bold\">اختصارات مخصصة</span>\n            </div>\n            <div class=\"text-center\">\n                <span id=\"enabledCmdsCount\" class=\"text-xl font-black text-emerald-400 font-mono\">177</span>\n                <span class=\"text-[10px] text-gray-400 block font-bold\">الأوامر المفعلة</span>\n            </div>\n            <div class=\"text-center\">\n                <span id=\"totalCmdsCount\" class=\"text-xl font-black text-white font-mono\">177</span>\n                <span class=\"text-[10px] text-gray-400 block font-bold\">إجمالي الأوامر</span>\n            </div>\n        </div>\n        <div class=\"flex items-center gap-3\">\n            <div class=\"text-right\">\n                <h4 class=\"font-black text-white text-base\">إدارة الأوامر</h4>\n                <p class=\"text-gray-400 text-xs mt-0.5\">تخصيص وإدارة جميع أوامر البوت والصلاحيات</p>\n            </div>\n            <div class=\"w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center text-lg border border-purple-500/30\">🎛️</div>\n        </div>\n    </div>\n\n    <!-- Search & Filter Bar -->\n    <div class=\"flex items-center justify-between gap-4\">\n        <div class=\"flex items-center gap-1.5 bg-[#12141f] border border-white/5 p-1 rounded-xl\">\n            <button type=\"button\" id=\"btnFilterDisabled\" onclick=\"window.filterCmdStatus('disabled')\" class=\"px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition cursor-pointer\">معطل</button>\n            <button type=\"button\" id=\"btnFilterEnabled\" onclick=\"window.filterCmdStatus('enabled')\" class=\"px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition cursor-pointer\">مفعل</button>\n            <button type=\"button\" id=\"btnFilterAll\" onclick=\"window.filterCmdStatus('all')\" class=\"px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 text-white transition shadow cursor-pointer\">الكل</button>\n        </div>\n        <div class=\"flex-1 relative\">\n            <input type=\"text\" id=\"cmdSearchInput\" placeholder=\"...ابحث عن أمر\" oninput=\"window.searchCommands()\" class=\"w-full bg-[#12141f] border border-white/5 focus:border-purple-500 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right pr-10\">\n            <span class=\"absolute right-3 top-2.5 text-gray-400\">🔍</span>\n        </div>\n    </div>\n\n    <!-- Main Grid -->\n    <div class=\"grid grid-cols-1 lg:grid-cols-4 gap-6\">\n\n        <!-- Sidebar: Categories -->\n        <div class=\"lg:col-span-1 space-y-1.5 bg-[#12141f] border border-white/5 p-3 rounded-2xl shadow-xl h-fit\">\n            <div class=\"flex items-center justify-end gap-1.5 text-xs font-black text-white px-2 py-1.5 border-b border-white/5 mb-1\">\n                <span>الأقسام</span><span>📁</span>\n            </div>\n            <button type=\"button\" id=\"btnCatBasic\" onclick=\"window.switchCmdCategory('basic')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatBasic\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">17/17</span>\n                <span class=\"flex items-center gap-1.5\"><span>الأوامر الأساسية</span><span>⚙️</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatPunishments\" onclick=\"window.switchCmdCategory('punishments')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg transition cursor-pointer\">\n                <span id=\"badgeCatPunishments\" class=\"px-2 py-0.5 bg-white/20 text-white rounded-lg text-[10px] font-mono\">22/22</span>\n                <span class=\"flex items-center gap-1.5\"><span>العقوبات</span><span>🔨</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatPunishmentLogs\" onclick=\"window.switchCmdCategory('punishment_logs')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatPunishmentLogs\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">17/17</span>\n                <span class=\"flex items-center gap-1.5\"><span>سجلات العقوبات</span><span>📜</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatChannels\" onclick=\"window.switchCmdCategory('channels')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatChannels\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">9/9</span>\n                <span class=\"flex items-center gap-1.5\"><span>إدارة القنوات</span><span>📌</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatChat\" onclick=\"window.switchCmdCategory('chat')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatChat\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">12/12</span>\n                <span class=\"flex items-center gap-1.5\"><span>أدوات الشات</span><span>💬</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatVoice\" onclick=\"window.switchCmdCategory('voice')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatVoice\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">19/19</span>\n                <span class=\"flex items-center gap-1.5\"><span>إدارة الصوت</span><span>🎙️</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatRoles\" onclick=\"window.switchCmdCategory('roles')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatRoles\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">10/10</span>\n                <span class=\"flex items-center gap-1.5\"><span>إدارة الرتب</span><span>🎖️</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatCustomRoles\" onclick=\"window.switchCmdCategory('custom_roles')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatCustomRoles\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">9/9</span>\n                <span class=\"flex items-center gap-1.5\"><span>الرتب الخاصة</span><span>👑</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatServerInfo\" onclick=\"window.switchCmdCategory('server_info')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatServerInfo\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">19/19</span>\n                <span class=\"flex items-center gap-1.5\"><span>معلومات السيرفر</span><span>📊</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatCustomBot\" onclick=\"window.switchCmdCategory('custom_bot')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatCustomBot\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">5/5</span>\n                <span class=\"flex items-center gap-1.5\"><span>أدوات البوت الخاص</span><span>🤖</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatSecurity\" onclick=\"window.switchCmdCategory('security')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatSecurity\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">15/15</span>\n                <span class=\"flex items-center gap-1.5\"><span>الحماية</span><span>🛡️</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatLevels\" onclick=\"window.switchCmdCategory('levels_cat')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatLevels\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">10/10</span>\n                <span class=\"flex items-center gap-1.5\"><span>المستويات والخبرة</span><span>⭐</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatServerStats\" onclick=\"window.switchCmdCategory('server_stats')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatServerStats\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">11/11</span>\n                <span class=\"flex items-center gap-1.5\"><span>إحصائيات السيرفر</span><span>📈</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatProfile\" onclick=\"window.switchCmdCategory('profile_cat')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatProfile\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">10/10</span>\n                <span class=\"flex items-center gap-1.5\"><span>الملف الشخصي</span><span>👤</span></span>\n            </button>\n        </div>\n\n        <!-- Commands Display Area -->\n        <div class=\"lg:col-span-3 space-y-4\">\n            <!-- Active Category Header -->\n            <div class=\"bg-[#12141f] border border-white/5 p-4 rounded-2xl flex items-center justify-between shadow-xl\">\n                <div class=\"flex items-center gap-2\">\n                    <span id=\"cmdSaveIndicator\" class=\"text-xs font-bold text-emerald-400 bg-emerald-950/60 px-2 py-1 rounded-lg opacity-0 transition-opacity duration-300\">✓ حُفظ</span>\n                    <button type=\"button\" onclick=\"window.toggleAllCategoryCmds(false)\" class=\"px-3.5 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 rounded-xl text-xs font-bold transition flex items-center gap-1\">\n                        <span>✕</span><span>تعطيل الكل</span>\n                    </button>\n                    <button type=\"button\" onclick=\"window.toggleAllCategoryCmds(true)\" class=\"px-3.5 py-1.5 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-400 border border-emerald-800/40 rounded-xl text-xs font-bold transition flex items-center gap-1\">\n                        <span>✓</span><span>تفعيل الكل</span>\n                    </button>\n                </div>\n                <div class=\"flex items-center gap-3\">\n                    <div class=\"text-right\">\n                        <h5 id=\"catTitle\" class=\"font-black text-white text-sm\">العقوبات</h5>\n                        <p id=\"catDesc\" class=\"text-gray-400 text-[11px] mt-0.5\">أوامر تنفيذ العقوبات المباشرة على الأعضاء</p>\n                    </div>\n                    <span id=\"catIcon\" class=\"text-xl\">🔨</span>\n                </div>\n            </div>\n            <!-- Commands List -->\n            <div id=\"cmdsListContainer\" class=\"space-y-3\"></div>\n        </div>\n    </div>\n</div>\n\n<script>\n\n(function() {\n    var DB = {\n        basic: { title: 'الأوامر الأساسية', desc: 'الأوامر الرئيسية للبوت والاستخدام اليومي', icon: '⚙️', items: [\n            { name: '/help', desc: 'قائمة جميع الأوامر المتاحة', badge: '', icon: '📖' },\n            { name: '/ping', desc: 'سرعة استجابة البوت', badge: '', icon: '📶' },\n            { name: '/botinfo', desc: 'معلومات البوت الكاملة', badge: '', icon: '🤖' },\n            { name: '/serverinfo', desc: 'معلومات السيرفر الشاملة', badge: '', icon: '🏠' },\n            { name: '/userinfo', desc: 'معلومات عضو في السيرفر', badge: '', icon: '👤' },\n            { name: '/avatar', desc: 'عرض صورة عضو بدقة عالية', badge: '', icon: '🖼️' },\n            { name: '/banner', desc: 'عرض بنر عضو', badge: '', icon: '🎨' },\n            { name: '/invites', desc: 'عدد دعوات عضو في السيرفر', badge: '', icon: '🔗' },\n            { name: '/roles', desc: 'قائمة رتب السيرفر الكاملة', badge: '', icon: '🎖️' },\n            { name: '/channels', desc: 'قائمة قنوات السيرفر', badge: '', icon: '📁' },\n            { name: '/emojis', desc: 'قائمة إيموجيات السيرفر المخصصة', badge: '', icon: '😃' },\n            { name: '/apply', desc: 'تقديم طلب وظيفي بالسيرفر', badge: '', icon: '📝' },\n            { name: '/ticket', desc: 'فتح تذكرة دعم', badge: '', icon: '🎫' },\n            { name: '/daily', desc: 'استلام الراتب اليومي', badge: '', icon: '🪙' },\n            { name: '/profile', desc: 'عرض بطاقة البروفايل', badge: '', icon: '💳' },\n            { name: '/leaderboard', desc: 'قائمة المتصدرين', badge: '', icon: '🏆' },\n            { name: '/gold', desc: 'رصيد الذهب والعملات', badge: '', icon: '🪙' }\n        ]},\n        punishments: { title: 'العقوبات', desc: 'أوامر تنفيذ العقوبات المباشرة على الأعضاء', icon: '🔨', items: [\n            { name: '/ban', desc: 'حظر عضو', badge: 'صلاحيات ديسكورد', icon: '🪓' },\n            { name: '/unban', desc: 'فك حظر عضو', badge: 'صلاحيات ديسكورد', icon: '🛡️' },\n            { name: '/kick', desc: 'طرد عضو', badge: 'صلاحيات ديسكورد', icon: '🪓' },\n            { name: '/mute', desc: 'كتم عضو', badge: 'صلاحيات ديسكورد', icon: '🚨' },\n            { name: '/unmute', desc: 'فك كتم عضو', badge: 'صلاحيات ديسكورد', icon: '📢' },\n            { name: '/timeout', desc: 'عزل عضو', badge: 'صلاحيات ديسكورد', icon: '⏳' },\n            { name: '/untimeout', desc: 'فك عزل عضو', badge: 'صلاحيات ديسكورد', icon: '🛡️' },\n            { name: '/warn', desc: 'تحذير عضو', badge: 'صلاحيات ديسكورد', icon: '🚨' },\n            { name: '/delwarn', desc: 'حذف تحذير', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/clearwarns', desc: 'مسح جميع التحذيرات', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/clearallwarns', desc: 'مسح تحذيرات عضو كاملة', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/clearallpunishments', desc: 'حذف نهائي لكل سجلات العقوبات', badge: '', icon: '🗑️' },\n            { name: '/prison', desc: 'سجن عضو', badge: 'صلاحيات ديسكورد', icon: '🪓' },\n            { name: '/unprison', desc: 'إخراج من السجن', badge: 'صلاحيات ديسكورد', icon: '🛡️' },\n            { name: '/setnick', desc: 'تغيير الاسم المستعار', badge: 'صلاحيات ديسكورد', icon: '✏️' },\n            { name: '/blacklist', desc: 'بلاك لست عضو (دائم)', badge: 'صلاحيات ديسكورد', icon: '🪓' },\n            { name: '/unblacklist', desc: 'فك بلاك لست عضو', badge: 'صلاحيات ديسكورد', icon: '🛡️' },\n            { name: '/remove', desc: 'حذف عقوبة من عضو', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/down', desc: 'إزالة الرتب الإدارية لمدة محددة', badge: 'صلاحيات ديسكورد', icon: '🪓' },\n            { name: '/undown', desc: 'استعادة الرتب الإدارية المزالة', badge: '', icon: '🛡️' },\n            { name: '/block', desc: 'حظر عضو من رتبة', badge: 'صلاحيات ديسكورد', icon: '🛡️' },\n            { name: '/unblock', desc: 'فك حظر عضو من رتبة', badge: 'صلاحيات ديسكورد', icon: '🛡️' }\n        ]},\n        punishment_logs: { title: 'سجلات العقوبات', desc: 'استعلام وعرض سجلات العقوبات السابقة', icon: '📜', items: [\n            { name: '/allwarns', desc: 'عرض كل التحذيرات النشطة', badge: '', icon: '📋' },\n            { name: '/bans', desc: 'سجل باندات عضو', badge: '', icon: '📜' },\n            { name: '/blacklists', desc: 'سجل بلاك لست عضو', badge: '', icon: '📜' },\n            { name: '/blocks', desc: 'سجل بلوكات عضو', badge: '', icon: '📜' },\n            { name: '/case', desc: 'عرض تفاصيل عقوبة', badge: 'صلاحيات ديسكورد', icon: '📄' },\n            { name: '/crime', desc: 'سجل عقوبات العضو الكامل', badge: '', icon: '📜' },\n            { name: '/crimes', desc: 'عقوبات العضو النشطة حالياً', badge: '', icon: '📜' },\n            { name: '/downs', desc: 'سجل داونات عضو', badge: '', icon: '📜' },\n            { name: '/modlogs', desc: 'سجل إشراف المشرفين', badge: 'صلاحيات ديسكورد', icon: '📜' },\n            { name: '/kicks', desc: 'سجل طرديات عضو', badge: '', icon: '📜' },\n            { name: '/mutes', desc: 'سجل كتمات عضو', badge: '', icon: '📜' },\n            { name: '/prisons', desc: 'سجل سجنات عضو', badge: '', icon: '📜' },\n            { name: '/timeouts', desc: 'سجل عزلات عضو', badge: '', icon: '📜' },\n            { name: '/warns', desc: 'سجل تحذيرات عضو', badge: '', icon: '📜' },\n            { name: '/staffactivity', desc: 'تقرير نشاط فريق الإدارة', badge: 'صلاحيات ديسكورد', icon: '📊' },\n            { name: '/audit', desc: 'سجل التدقيق والعمليات', badge: 'صلاحيات ديسكورد', icon: '🔍' },\n            { name: '/punishments', desc: 'ملخص جميع العقوبات النشطة', badge: '', icon: '📋' }\n        ]},\n        channels: { title: 'إدارة القنوات', desc: 'أوامر قفل وإخفاء وإدارة القنوات', icon: '📌', items: [\n            { name: '/lock', desc: 'قفل قناة', badge: 'صلاحيات ديسكورد', icon: '🔒' },\n            { name: '/unlock', desc: 'فتح قناة مقفولة', badge: 'صلاحيات ديسكورد', icon: '🔓' },\n            { name: '/hide', desc: 'إخفاء قناة عن الأعضاء', badge: 'صلاحيات ديسكورد', icon: '👁️' },\n            { name: '/unhide', desc: 'إظهار قناة مخفية', badge: 'صلاحيات ديسكورد', icon: '👁️' },\n            { name: '/slowmode', desc: 'تفعيل السلو مود في القناة', badge: 'صلاحيات ديسكورد', icon: '🐌' },\n            { name: '/clone', desc: 'نسخ قناة بكامل إعداداتها', badge: 'صلاحيات ديسكورد', icon: '📋' },\n            { name: '/rename', desc: 'تغيير اسم القناة', badge: 'صلاحيات ديسكورد', icon: '✏️' },\n            { name: '/settopic', desc: 'تغيير وصف القناة', badge: 'صلاحيات ديسكورد', icon: '📝' },\n            { name: '/setnsfw', desc: 'تفعيل/تعطيل وضع NSFW', badge: 'صلاحيات ديسكورد', icon: '🔞' }\n        ]},\n        chat: { title: 'أدوات الشات', desc: 'أوامر حذف الرسائل والإعلانات والتفاعل', icon: '💬', items: [\n            { name: '/clear', desc: 'حذف عدد محدد من الرسائل', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/clearpinned', desc: 'حذف الرسائل المثبتة', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/clearbots', desc: 'حذف رسائل البوتات', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/clearuser', desc: 'حذف رسائل عضو معين', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/say', desc: 'إرسال رسالة عبر البوت', badge: 'صلاحيات ديسكورد', icon: '💬' },\n            { name: '/embed', desc: 'إنشاء Embed مخصص', badge: 'صلاحيات ديسكورد', icon: '📦' },\n            { name: '/poll', desc: 'إنشاء استطلاع رأي', badge: 'صلاحيات ديسكورد', icon: '📊' },\n            { name: '/remind', desc: 'تعيين تذكير مؤقت', badge: '', icon: '⏰' },\n            { name: '/announce', desc: 'إرسال إعلان رسمي', badge: 'صلاحيات ديسكورد', icon: '📢' },\n            { name: '/broadcast', desc: 'بث رسالة في جميع القنوات', badge: 'صلاحيات ديسكورد', icon: '📡' },\n            { name: '/translate', desc: 'ترجمة نص إلى لغة أخرى', badge: '', icon: '🌐' },\n            { name: '/quote', desc: 'اقتباس رسالة قديمة', badge: '', icon: '💬' }\n        ]},\n        voice: { title: 'إدارة الصوت', desc: 'أوامر التحكم في قنوات الصوت والأعضاء', icon: '🎙️', items: [\n            { name: '/vcmute', desc: 'كتم عضو في الصوت', badge: 'صلاحيات ديسكورد', icon: '🔇' },\n            { name: '/vcunmute', desc: 'فك كتم عضو في الصوت', badge: 'صلاحيات ديسكورد', icon: '🔊' },\n            { name: '/vcdeafen', desc: 'صمم عضو في الصوت', badge: 'صلاحيات ديسكورد', icon: '🔕' },\n            { name: '/vcundeafen', desc: 'فك تصميم عضو في الصوت', badge: 'صلاحيات ديسكورد', icon: '🔔' },\n            { name: '/vckick', desc: 'طرد عضو من قناة الصوت', badge: 'صلاحيات ديسكورد', icon: '👢' },\n            { name: '/vcmove', desc: 'نقل عضو بين قنوات الصوت', badge: 'صلاحيات ديسكورد', icon: '🔀' },\n            { name: '/vcmoveall', desc: 'نقل جميع الأعضاء لقناة أخرى', badge: 'صلاحيات ديسكورد', icon: '🔀' },\n            { name: '/vclimit', desc: 'تحديد الحد الأقصى للمستخدمين', badge: 'صلاحيات ديسكورد', icon: '🔢' },\n            { name: '/vclock', desc: 'قفل قناة الصوت', badge: 'صلاحيات ديسكورد', icon: '🔒' },\n            { name: '/vcunlock', desc: 'فتح قناة الصوت', badge: 'صلاحيات ديسكورد', icon: '🔓' },\n            { name: '/vchide', desc: 'إخفاء قناة الصوت', badge: 'صلاحيات ديسكورد', icon: '👁️' },\n            { name: '/vcunhide', desc: 'إظهار قناة الصوت', badge: 'صلاحيات ديسكورد', icon: '👁️' },\n            { name: '/vcbitrate', desc: 'تغيير جودة الصوت (Bitrate)', badge: 'صلاحيات ديسكورد', icon: '🎵' },\n            { name: '/tempvoice', desc: 'إنشاء قناة صوتية مؤقتة', badge: '', icon: '⏳' },\n            { name: '/vcinfo', desc: 'معلومات قناة الصوت الحالية', badge: '', icon: '📊' },\n            { name: '/vcactivity', desc: 'تشغيل نشاط جماعي بالصوت', badge: '', icon: '🎮' },\n            { name: '/vcrename', desc: 'تغيير اسم قناة الصوت', badge: 'صلاحيات ديسكورد', icon: '✏️' },\n            { name: '/vcpermit', desc: 'السماح لعضو بالدخول', badge: 'صلاحيات ديسكورد', icon: '✅' },\n            { name: '/vcreject', desc: 'منع عضو من الدخول', badge: 'صلاحيات ديسكورد', icon: '🚫' }\n        ]},\n        roles: { title: 'إدارة الرتب', desc: 'أوامر إعطاء وإزالة وإنشاء الرتب', icon: '🎖️', items: [\n            { name: '/giverole', desc: 'إعطاء رتبة لعضو', badge: 'صلاحيات ديسكورد', icon: '🎁' },\n            { name: '/removerole', desc: 'إزالة رتبة من عضو', badge: 'صلاحيات ديسكورد', icon: '❌' },\n            { name: '/roleall', desc: 'إعطاء رتبة لجميع الأعضاء', badge: 'صلاحيات ديسكورد', icon: '👥' },\n            { name: '/rolebots', desc: 'إعطاء رتبة لجميع البوتات', badge: 'صلاحيات ديسكورد', icon: '🤖' },\n            { name: '/rolehumans', desc: 'إعطاء رتبة لجميع البشر', badge: 'صلاحيات ديسكورد', icon: '👤' },\n            { name: '/createrole', desc: 'إنشاء رتبة جديدة', badge: 'صلاحيات ديسكورد', icon: '✨' },\n            { name: '/deleterole', desc: 'حذف رتبة من السيرفر', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/rolecolor', desc: 'تغيير لون رتبة', badge: 'صلاحيات ديسكورد', icon: '🎨' },\n            { name: '/roleinfo', desc: 'معلومات رتبة مفصلة', badge: '', icon: '📋' },\n            { name: '/inrole', desc: 'قائمة أعضاء رتبة معينة', badge: '', icon: '👥' }\n        ]},\n        custom_roles: { title: 'الرتب الخاصة', desc: 'أوامر الرتب الشخصية المخصصة لكل عضو', icon: '👑', items: [\n            { name: '/customrole', desc: 'إنشاء رتبة خاصة بك', badge: '', icon: '👑' },\n            { name: '/myrole', desc: 'عرض معلومات رتبتك الخاصة', badge: '', icon: '👤' },\n            { name: '/myrole-color', desc: 'تغيير لون رتبتك الخاصة', badge: '', icon: '🎨' },\n            { name: '/myrole-name', desc: 'تغيير اسم رتبتك الخاصة', badge: '', icon: '✏️' },\n            { name: '/myrole-icon', desc: 'تغيير أيقونة رتبتك الخاصة', badge: '', icon: '🖼️' },\n            { name: '/myrole-give', desc: 'مشاركة رتبتك الخاصة مع عضو', badge: '', icon: '🎁' },\n            { name: '/myrole-remove', desc: 'إلغاء مشاركة الرتبة مع عضو', badge: '', icon: '❌' },\n            { name: '/myrole-delete', desc: 'حذف رتبتك الخاصة نهائياً', badge: '', icon: '🗑️' },\n            { name: '/customroles-list', desc: 'قائمة جميع الرتب الخاصة', badge: 'صلاحيات ديسكورد', icon: '📋' }\n        ]},\n        server_info: { title: 'معلومات السيرفر', desc: 'أوامر عرض إحصائيات ومعلومات السيرفر', icon: '📊', items: [\n            { name: '/serverinfo', desc: 'معلومات السيرفر الشاملة', badge: '', icon: '🏠' },\n            { name: '/serverbanner', desc: 'بنر السيرفر الرسمي', badge: '', icon: '🎨' },\n            { name: '/servericon', desc: 'أيقونة السيرفر بدقة عالية', badge: '', icon: '🖼️' },\n            { name: '/serverstats', desc: 'إحصائيات السيرفر المفصلة', badge: '', icon: '📊' },\n            { name: '/boosts', desc: 'قائمة المبوستين وعدد البوستات', badge: '', icon: '💎' },\n            { name: '/invites-top', desc: 'أكثر الأعضاء دعوةً', badge: '', icon: '🔗' },\n            { name: '/channels-list', desc: 'قائمة كاملة بالقنوات', badge: '', icon: '📁' },\n            { name: '/roles-list', desc: 'قائمة وتوزيع الرتب', badge: '', icon: '🎖️' },\n            { name: '/emojis-list', desc: 'قائمة الإيموجيات المخصصة', badge: '', icon: '😃' },\n            { name: '/stickers-list', desc: 'قائمة الستيكرات', badge: '', icon: '🏷️' },\n            { name: '/bans-list', desc: 'قائمة المحظورين', badge: 'صلاحيات ديسكورد', icon: '🔨' },\n            { name: '/admins', desc: 'قائمة الإدارة والمشرفين', badge: '', icon: '👮' },\n            { name: '/bots', desc: 'قائمة بوتات السيرفر', badge: '', icon: '🤖' },\n            { name: '/vanity', desc: 'رابط السيرفر المخصص', badge: '', icon: '🌐' },\n            { name: '/features', desc: 'ميزات السيرفر المفعلة', badge: '', icon: '✨' },\n            { name: '/created', desc: 'تاريخ إنشاء السيرفر', badge: '', icon: '📅' },\n            { name: '/uptime', desc: 'مدة تشغيل البوت', badge: '', icon: '⏱️' },\n            { name: '/ping', desc: 'سرعة الاستجابة', badge: '', icon: '📶' },\n            { name: '/shards', desc: 'معلومات الشاردات', badge: '', icon: '🖧' }\n        ]},\n        custom_bot: { title: 'أدوات البوت الخاص', desc: 'أوامر تخصيص مظهر وحالة البوت الخاص', icon: '🤖', items: [\n            { name: '/bot-setnick', desc: 'تغيير اسم البوت في السيرفر', badge: 'صلاحيات ديسكورد', icon: '✏️' },\n            { name: '/bot-setavatar', desc: 'تغيير صورة البوت', badge: 'صلاحيات ديسكورد', icon: '🖼️' },\n            { name: '/bot-setbanner', desc: 'تغيير بنر البوت', badge: 'صلاحيات ديسكورد', icon: '🎨' },\n            { name: '/bot-setactivity', desc: 'تغيير نشاط وحالة البوت', badge: 'صلاحيات ديسكورد', icon: '🎮' },\n            { name: '/bot-setstatus', desc: 'تغيير حالة التواجد Online/DND/Idle', badge: 'صلاحيات ديسكورد', icon: '🟢' }\n        ]},\n        security: { title: 'الحماية', desc: 'أوامر الحماية من التخريب ومكافحة السبام', icon: '🛡️', items: [\n            { name: '/antiraid', desc: 'تفعيل/تعطيل مكافحة الغزو', badge: 'صلاحيات ديسكورد', icon: '🚨' },\n            { name: '/antinuke', desc: 'إعدادات جدار الحماية Anti-Nuke', badge: 'صلاحيات ديسكورد', icon: '🛡️' },\n            { name: '/whitelist-add', desc: 'إضافة عضو للقائمة البيضاء', badge: 'صلاحيات ديسكورد', icon: '⚪' },\n            { name: '/whitelist-remove', desc: 'إزالة عضو من القائمة البيضاء', badge: 'صلاحيات ديسكورد', icon: '⚫' },\n            { name: '/whitelist-list', desc: 'عرض القائمة البيضاء', badge: 'صلاحيات ديسكورد', icon: '📋' },\n            { name: '/antibot', desc: 'منع دخول البوتات غير الموثقة', badge: 'صلاحيات ديسكورد', icon: '🤖' },\n            { name: '/antispam', desc: 'مكافحة السبام والرسائل المتكررة', badge: 'صلاحيات ديسكورد', icon: '⚡' },\n            { name: '/antilink', desc: 'منع نشر الروابط', badge: 'صلاحيات ديسكورد', icon: '🔗' },\n            { name: '/backup-create', desc: 'إنشاء نسخة احتياطية للسيرفر', badge: 'صلاحيات ديسكورد', icon: '📦' },\n            { name: '/backup-load', desc: 'استعادة نسخة احتياطية', badge: 'صلاحيات ديسكورد', icon: '🔄' },\n            { name: '/backup-list', desc: 'قائمة النسخ الاحتياطية', badge: 'صلاحيات ديسكورد', icon: '📜' },\n            { name: '/lockdown', desc: 'إغلاق كامل قنوات السيرفر فوراً', badge: 'صلاحيات ديسكورد', icon: '🔒' },\n            { name: '/unlockdown', desc: 'إعادة فتح جميع القنوات المغلقة', badge: 'صلاحيات ديسكورد', icon: '🔓' },\n            { name: '/security-status', desc: 'تقرير حالة الحماية', badge: '', icon: '📊' },\n            { name: '/security-audit', desc: 'فحص ثغرات وصلاحيات السيرفر', badge: 'صلاحيات ديسكورد', icon: '🔍' }\n        ]},\n        levels_cat: { title: 'المستويات والخبرة', desc: 'أوامر المستويات وبطاقات الرانك', icon: '⭐', items: [\n            { name: '/rank', desc: 'عرض بطاقة مستواك الحالية', badge: '', icon: '💳' },\n            { name: '/levels-leaderboard', desc: 'المتصدرين في المستويات', badge: '', icon: '🏆' },\n            { name: '/setxp', desc: 'تعديل نقاط الخبرة لعضو', badge: 'صلاحيات ديسكورد', icon: '⚡' },\n            { name: '/setlevel', desc: 'تعديل مستوى عضو', badge: 'صلاحيات ديسكورد', icon: '🎖️' },\n            { name: '/resetlevels', desc: 'تصفير نظام المستويات', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/level-reward-add', desc: 'إضافة رتبة مكافأة عند مستوى', badge: 'صلاحيات ديسكورد', icon: '🎁' },\n            { name: '/level-reward-remove', desc: 'إزالة رتبة مكافأة', badge: 'صلاحيات ديسكورد', icon: '❌' },\n            { name: '/level-rewards-list', desc: 'قائمة جميع رتب المكافآت', badge: '', icon: '📜' },\n            { name: '/levelcard-bg', desc: 'تغيير خلفية بطاقة الرانك', badge: '', icon: '🎨' },\n            { name: '/doublexp', desc: 'تفعيل مضاعفة الخبرة 2x', badge: 'صلاحيات ديسكورد', icon: '🚀' }\n        ]},\n        server_stats: { title: 'إحصائيات السيرفر', desc: 'أوامر قنوات العدادات التلقائية', icon: '📈', items: [\n            { name: '/stats-setup', desc: 'إنشاء قنوات عدادات السيرفر', badge: 'صلاحيات ديسكورد', icon: '📊' },\n            { name: '/stats-members', desc: 'تفعيل عداد الأعضاء', badge: 'صلاحيات ديسكورد', icon: '👥' },\n            { name: '/stats-bots', desc: 'تفعيل عداد البوتات', badge: 'صلاحيات ديسكورد', icon: '🤖' },\n            { name: '/stats-channels', desc: 'تفعيل عداد القنوات', badge: 'صلاحيات ديسكورد', icon: '📁' },\n            { name: '/stats-roles', desc: 'تفعيل عداد الرتب', badge: 'صلاحيات ديسكورد', icon: '🎖️' },\n            { name: '/stats-boosts', desc: 'تفعيل عداد البوستات', badge: 'صلاحيات ديسكورد', icon: '💎' },\n            { name: '/stats-online', desc: 'تفعيل عداد المتواجدين أونلاين', badge: 'صلاحيات ديسكورد', icon: '🟢' },\n            { name: '/stats-voice', desc: 'تفعيل عداد المتواجدين في الصوت', badge: 'صلاحيات ديسكورد', icon: '🎙️' },\n            { name: '/stats-delete', desc: 'حذف جميع قنوات العدادات', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/stats-refresh', desc: 'تحديث فوري لأرقام العدادات', badge: 'صلاحيات ديسكورد', icon: '🔄' },\n            { name: '/stats-format', desc: 'تعديل شكل قنوات العدادات', badge: 'صلاحيات ديسكورد', icon: '✏️' }\n        ]},\n        profile_cat: { title: 'الملف الشخصي', desc: 'أوامر البروفايل والسمعة والعملات', icon: '👤', items: [\n            { name: '/profile', desc: 'عرض بطاقة بروفايلك الشاملة', badge: '', icon: '💳' },\n            { name: '/rep', desc: 'إعطاء نقطة سمعة لعضو (+rep)', badge: '', icon: '⭐' },\n            { name: '/daily', desc: 'استلام الراتب اليومي (Gold)', badge: '', icon: '🪙' },\n            { name: '/coins', desc: 'رصيدك من عملات Gold', badge: '', icon: '💰' },\n            { name: '/pay', desc: 'تحويل عملات Gold لعضو آخر', badge: '', icon: '💸' },\n            { name: '/setbio', desc: 'تعديل النبذة الشخصية', badge: '', icon: '📝' },\n            { name: '/settitle', desc: 'تعديل اللقب الشخصي', badge: '', icon: '🏷️' },\n            { name: '/setbadge', desc: 'تعديل الشارة المفضلة', badge: '', icon: '🎖️' },\n            { name: '/profile-bg', desc: 'تغيير خلفية بطاقة البروفايل', badge: '', icon: '🎨' },\n            { name: '/marry', desc: 'الزواج التفاعلي في السيرفر', badge: '', icon: '💍' }\n        ]}\n    };\n\n    var catBtnMap = {\n        basic:'btnCatBasic', punishments:'btnCatPunishments', punishment_logs:'btnCatPunishmentLogs',\n        channels:'btnCatChannels', chat:'btnCatChat', voice:'btnCatVoice',\n        roles:'btnCatRoles', custom_roles:'btnCatCustomRoles', server_info:'btnCatServerInfo',\n        custom_bot:'btnCatCustomBot', security:'btnCatSecurity', levels_cat:'btnCatLevels',\n        server_stats:'btnCatServerStats', profile_cat:'btnCatProfile'\n    };\n    var catBadgeMap = {\n        basic:'badgeCatBasic', punishments:'badgeCatPunishments', punishment_logs:'badgeCatPunishmentLogs',\n        channels:'badgeCatChannels', chat:'badgeCatChat', voice:'badgeCatVoice',\n        roles:'badgeCatRoles', custom_roles:'badgeCatCustomRoles', server_info:'badgeCatServerInfo',\n        custom_bot:'badgeCatCustomBot', security:'badgeCatSecurity', levels_cat:'badgeCatLevels',\n        server_stats:'badgeCatServerStats', profile_cat:'badgeCatProfile'\n    };\n\n    var currentCat = 'punishments';\n    var currentFilter = 'all';\n    var disabledCmds = " + JSON.stringify((function() { try { var raw = settings.disabled_commands; if (!raw) return {}; var arr = typeof raw === "string" ? JSON.parse(raw) : raw; var m = {}; for (var i = 0; i < arr.length; i++) m[arr[i]] = true; return m; } catch(e) { return {}; } })()) + ";\n    var commandConfigs = " + JSON.stringify((function() { try { var raw = settings.command_configs; if (!raw) return {}; return typeof raw === "string" ? JSON.parse(raw) : (raw || {}); } catch(e) { return {}; } })()) + ";\n    var guildRoles = " + JSON.stringify((guildRoles || []).map(function(r) { return { id: r.id, name: r.name }; })) + ";\n    var guildChannels = " + JSON.stringify((guildTextChannels || []).map(function(c) { return { id: c.id, name: c.name }; })) + ";\n\n    function isEn(name) { return !disabledCmds[name]; }\n\n    function render() {\n        var container = document.getElementById('cmdsListContainer');\n        if (!container) return;\n        var data = DB[currentCat] || DB.punishments;\n        var t = document.getElementById('catTitle');\n        var d = document.getElementById('catDesc');\n        var ic = document.getElementById('catIcon');\n        if (t) t.innerText = data.title;\n        if (d) d.innerText = data.desc;\n        if (ic) ic.innerText = data.icon;\n        var searchEl = document.getElementById('cmdSearchInput');\n        var sv = searchEl ? searchEl.value.toLowerCase().trim() : '';\n        var filtered = data.items.filter(function(item) {\n            if (currentFilter === 'enabled' && !isEn(item.name)) return false;\n            if (currentFilter === 'disabled' && isEn(item.name)) return false;\n            if (sv && item.name.toLowerCase().indexOf(sv) === -1 && item.desc.toLowerCase().indexOf(sv) === -1) return false;\n            return true;\n        });\n        if (!filtered.length) {\n            container.innerHTML = '<div class=\"py-12 bg-[#12141f] border border-white/5 rounded-2xl text-center text-xs text-gray-500\">لا توجد أوامر مطابقة 🔍</div>';\n            updateCounters(); return;\n        }\n        var html = '';\n        for (var i = 0; i < filtered.length; i++) {\n            var item = filtered[i];\n            var en = isEn(item.name);\n            var bh = item.badge ? '<span class=\"px-2.5 py-0.5 bg-purple-950/60 text-purple-300 border border-purple-800/40 rounded-lg text-[10px] font-bold flex items-center gap-1\"><span>' + item.badge + '</span><span>&#128737;</span></span>' : '';\n            var cfg = commandConfigs[item.name] || {};\n            var alias = cfg.alias || '';\n            var aRoles = cfg.allowedRoles || [];\n            var aChs = cfg.allowedChannels || [];\n            html += '<div class=\"cmd-card-wrap border border-white/5 rounded-2xl bg-[#12141f] overflow-hidden transition hover:border-purple-500/40' + (en ? '' : ' opacity-50') + '\" data-cmd=\"' + item.name + '\">';\n            html += '<div class=\"p-4 flex items-center justify-between\">';\n            html += '<div class=\"flex items-center gap-3\">';\n            html += '<label class=\"toggle\"><input type=\"checkbox\" data-cmd=\"' + item.name + '\"' + (en ? ' checked' : '') + '><span class=\"slider\"></span></label>';\n            html += '<button type=\"button\" class=\"cmd-expand-btn text-gray-500 hover:text-purple-400 p-1 text-xs transition cursor-pointer\" data-cmd=\"' + item.name + '\">&#9660;</button>';\n            html += '</div>';\n            html += '<div class=\"flex items-center gap-3\">';\n            html += '<div class=\"text-right\">';\n            html += '<div class=\"flex items-center justify-end gap-2\">' + bh + '<span class=\"font-black text-white text-xs font-mono\">' + item.name + '</span></div>';\n            html += '<p class=\"text-[11px] text-gray-400 mt-0.5\">' + item.desc + '</p>';\n            html += '</div>';\n            html += '<div class=\"w-9 h-9 rounded-xl bg-[#0b0d14] border border-white/5 flex items-center justify-center text-sm shadow-inner\">' + (item.icon || '&#9881;') + '</div>';\n            html += '</div>';\n            html += '</div>';\n            // Accordion Settings Details\n            html += '<div class=\"cmd-accordion border-t border-white/5 bg-[#0b0d14] p-4 space-y-4 text-right\" data-cmd=\"' + item.name + '\" style=\"display:none;\">';\n            html += '<div class=\"flex items-center justify-between gap-4 flex-wrap\">';\n            html += '<div class=\"flex-1 min-w-[200px]\">';\n            html += '<label class=\"block text-[10px] text-gray-400 font-bold mb-1\">اختصار مخصص للأمر (Custom Alias)</label>';\n            html += '<input type=\"text\" class=\"cmd-alias-input w-full bg-[#12141f] border border-white/10 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white outline-none text-right\" placeholder=\"مثال: !b أو /b\" data-cmd=\"' + item.name + '\" value=\"' + alias.split('\"').join('&quot;') + '\">';\n            html += '</div>';\n            html += '</div>';\n            html += '<div>';\n            html += '<label class=\"block text-[10px] text-gray-400 font-bold mb-1.5\">الرتب المسموح لها فقط بتشغيل الأمر (Allowed Roles)</label>';\n            html += '<div class=\"flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end\">';\n            for (var ri = 0; ri < guildRoles.length; ri++) {\n                var role = guildRoles[ri];\n                var rChecked = aRoles.indexOf(role.id) !== -1;\n                html += '<label class=\"flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300\">';\n                html += '<span>' + role.name + '</span>';\n                html += '<input type=\"checkbox\" class=\"cmd-role-chk accent-purple-600\" data-cmd=\"' + item.name + '\" data-rid=\"' + role.id + '\"' + (rChecked ? ' checked' : '') + '>';\n                html += '</label>';\n            }\n            html += '</div>';\n            html += '</div>';\n            html += '<div>';\n            html += '<label class=\"block text-[10px] text-gray-400 font-bold mb-1.5\">القنوات المسموح فيها فقط بتشغيل الأمر (Allowed Channels)</label>';\n            html += '<div class=\"flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end\">';\n            for (var ci = 0; ci < guildChannels.length; ci++) {\n                var ch = guildChannels[ci];\n                var cChecked = aChs.indexOf(ch.id) !== -1;\n                html += '<label class=\"flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300\">';\n                html += '<span>#' + ch.name + '</span>';\n                html += '<input type=\"checkbox\" class=\"cmd-ch-chk accent-purple-600\" data-cmd=\"' + item.name + '\" data-chid=\"' + ch.id + '\"' + (cChecked ? ' checked' : '') + '>';\n                html += '</label>';\n            }\n            html += '</div>';\n            html += '</div>';\n            html += '<div class=\"flex items-center justify-between pt-2 border-t border-white/5\">';\n            html += '<button type=\"button\" class=\"cmd-reset-btn px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 rounded-xl text-xs font-bold transition cursor-pointer\" data-cmd=\"' + item.name + '\">إعادة ضبط</button>';\n            html += '<button type=\"button\" class=\"cmd-save-btn px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-lg cursor-pointer\" data-cmd=\"' + item.name + '\">حفظ تفاصيل الأمر</button>';\n            html += '</div>';\n            html += '</div>';\n            html += '</div>';\n        }\n        container.innerHTML = html;\n        var checks = container.querySelectorAll('input[type=\"checkbox\"][data-cmd]:not(.cmd-role-chk):not(.cmd-ch-chk)');\n        for (var j = 0; j < checks.length; j++) {\n            (function(cb) {\n                cb.addEventListener('change', function() {\n                    window.toggleSingleCmd(cb.getAttribute('data-cmd'), cb.checked);\n                    var card = cb.closest('div.cmd-card-wrap');\n                    if (card) { if (cb.checked) card.classList.remove('opacity-50'); else card.classList.add('opacity-50'); }\n                });\n            })(checks[j]);\n        }\n        var expBtns = container.querySelectorAll('.cmd-expand-btn');\n        for (var eb = 0; eb < expBtns.length; eb++) {\n            (function(btn) {\n                btn.addEventListener('click', function() {\n                    var cmdName = btn.getAttribute('data-cmd');\n                    var panel = container.querySelector('.cmd-accordion[data-cmd=\"' + cmdName + '\"]');\n                    if (!panel) return;\n                    var open = panel.style.display !== 'none';\n                    panel.style.display = open ? 'none' : 'block';\n                    btn.innerHTML = open ? '&#9660;' : '&#9650;';\n                });\n            })(expBtns[eb]);\n        }\n        var saveBtns = container.querySelectorAll('.cmd-save-btn');\n        for (var sb = 0; sb < saveBtns.length; sb++) {\n            (function(btn) {\n                btn.addEventListener('click', function() {\n                    var cmdName = btn.getAttribute('data-cmd');\n                    var panel = container.querySelector('.cmd-accordion[data-cmd=\"' + cmdName + '\"]');\n                    if (!panel) return;\n                    var aliasInput = panel.querySelector('.cmd-alias-input');\n                    var alias = aliasInput ? aliasInput.value.trim() : '';\n                    var roleChks = panel.querySelectorAll('.cmd-role-chk:checked');\n                    var chChks = panel.querySelectorAll('.cmd-ch-chk:checked');\n                    var roles = [], chs = [];\n                    for (var i = 0; i < roleChks.length; i++) roles.push(roleChks[i].getAttribute('data-rid'));\n                    for (var i = 0; i < chChks.length; i++) chs.push(chChks[i].getAttribute('data-chid'));\n                    if (!commandConfigs[cmdName]) commandConfigs[cmdName] = {};\n                    commandConfigs[cmdName].alias = alias;\n                    commandConfigs[cmdName].allowedRoles = roles;\n                    commandConfigs[cmdName].allowedChannels = chs;\n                    saveStates();\n                    updateCounters();\n                });\n            })(saveBtns[sb]);\n        }\n        var resetBtns = container.querySelectorAll('.cmd-reset-btn');\n        for (var rb = 0; rb < resetBtns.length; rb++) {\n            (function(btn) {\n                btn.addEventListener('click', function() {\n                    var cmdName = btn.getAttribute('data-cmd');\n                    delete commandConfigs[cmdName];\n                    render();\n                    saveStates();\n                    updateCounters();\n                });\n            })(resetBtns[rb]);\n        }\n        updateCounters();\n        if (window.zenoI18n && typeof window.zenoI18n.apply === \"function\") { try { window.zenoI18n.apply(); } catch(e) {} }\n    }\n\n    function updateCounters() {\n        var total = 0, enabled = 0;\n        var keys = Object.keys(DB);\n        for (var i = 0; i < keys.length; i++) {\n            var cat = keys[i];\n            var items = DB[cat].items;\n            total += items.length;\n            var catEn = 0;\n            for (var j = 0; j < items.length; j++) { if (isEn(items[j].name)) catEn++; }\n            enabled += catEn;\n            var bId = catBadgeMap[cat];\n            if (bId) {\n                var badge = document.getElementById(bId);\n                if (badge) {\n                    badge.textContent = catEn + '/' + items.length;\n                    badge.className = catEn === 0\n                        ? 'px-2 py-0.5 bg-rose-950/60 text-rose-400 rounded-lg text-[10px] font-mono'\n                        : catEn < items.length\n                            ? 'px-2 py-0.5 bg-amber-950/60 text-amber-400 rounded-lg text-[10px] font-mono'\n                            : 'px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono';\n                }\n            }\n        }\n        var aliasCount = Object.keys(commandConfigs).filter(function(k){ return commandConfigs[k] && commandConfigs[k].alias; }).length;\n        var acEl = document.getElementById('customAliasesCount');\n        if (acEl) acEl.textContent = aliasCount;\n        var te = document.getElementById('totalCmdsCount');\n        var ee = document.getElementById('enabledCmdsCount');\n        if (te) te.textContent = total;\n        if (ee) ee.textContent = enabled;\n    }\n\n    function showSaved() {\n        var el = document.getElementById('cmdSaveIndicator');\n        if (el) { el.classList.remove('opacity-0'); setTimeout(function() { el.classList.add('opacity-0'); }, 2000); }\n    }\n\n    function saveStates() {\n        try {\n            var gId = window.location.pathname.split('/')[2];\n            if (!gId) return;\n            var disArr = Object.keys(disabledCmds).filter(function(k) { return disabledCmds[k]; });\n            var xhr = new XMLHttpRequest();\n            xhr.open('POST', '/api/guild/' + gId + '/settings', true);\n            xhr.setRequestHeader('Content-Type', 'application/json');\n            xhr.onload = function() { try { if (JSON.parse(xhr.responseText).success) showSaved(); } catch(e) {} };\n            xhr.send(JSON.stringify({ disabled_commands: JSON.stringify(disArr), command_configs: JSON.stringify(commandConfigs) }));\n        } catch(e) {}\n    }\n\n    window.switchCmdCategory = function(catKey) {\n        currentCat = catKey;\n        var bKeys = Object.keys(catBtnMap);\n        for (var i = 0; i < bKeys.length; i++) {\n            var btn = document.getElementById(catBtnMap[bKeys[i]]);\n            if (!btn) continue;\n            btn.className = bKeys[i] === catKey\n                ? 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg transition cursor-pointer'\n                : 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer';\n        }\n        render();\n    };\n\n    window.searchCommands = function() { render(); };\n\n    window.filterCmdStatus = function(status) {\n        currentFilter = status;\n        var statusList = ['all','enabled','disabled'];\n        for (var i = 0; i < statusList.length; i++) {\n            var s = statusList[i];\n            var label = s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1);\n            var btn = document.getElementById('btnFilter' + label);\n            if (btn) btn.className = s === status\n                ? 'px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 text-white transition shadow cursor-pointer'\n                : 'px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition cursor-pointer';\n        }\n        render();\n    };\n\n    window.toggleAllCategoryCmds = function(enable) {\n        var items = (DB[currentCat] || DB.punishments).items;\n        for (var i = 0; i < items.length; i++) { disabledCmds[items[i].name] = !enable; }\n        saveStates(); render();\n    };\n\n    window.toggleSingleCmd = function(cmdName, enabled) {\n        disabledCmds[cmdName] = !enabled;\n        saveStates(); updateCounters();\n    };\n\n    // Run render immediately\n    render();\n})();\n\n</script>";
+              formFieldsHtml = `<div id="cmdsMgmtRoot" class="space-y-6 text-right" dir="rtl" style="margin-top:0">
+
+    <!-- Header Card -->
+    <div class="bg-[#12141f] border border-white/5 p-6 rounded-2xl flex items-center justify-between shadow-xl">
+        <div class="flex items-center gap-6">
+            <div class="text-center">
+                <span id="customAliasesCount" class="text-xl font-black text-purple-400 font-mono">0</span>
+                <span class="text-[10px] text-gray-400 block font-bold">اختصارات مخصصة</span>
+            </div>
+            <div class="text-center">
+                <span id="enabledCmdsCount" class="text-xl font-black text-emerald-400 font-mono">98</span>
+                <span class="text-[10px] text-gray-400 block font-bold">الأوامر المفعلة</span>
+            </div>
+            <div class="text-center">
+                <span id="totalCmdsCount" class="text-xl font-black text-white font-mono">98</span>
+                <span class="text-[10px] text-gray-400 block font-bold">إجمالي الأوامر</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="text-right">
+                <h4 class="font-black text-white text-base">إدارة الأوامر</h4>
+                <p class="text-gray-400 text-xs mt-0.5">تخصيص وإدارة جميع أوامر البوت والصلاحيات</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center text-lg border border-purple-500/30">🎛️</div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-1.5 bg-[#12141f] border border-white/5 p-1 rounded-xl">
+            <button type="button" id="btnFilterDisabled" onclick="window.filterCmdStatus('disabled')" class="px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition cursor-pointer">معطل</button>
+            <button type="button" id="btnFilterEnabled" onclick="window.filterCmdStatus('enabled')" class="px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition cursor-pointer">مفعل</button>
+            <button type="button" id="btnFilterAll" onclick="window.filterCmdStatus('all')" class="px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 text-white transition shadow cursor-pointer">الكل</button>
+        </div>
+        <div class="flex-1 relative">
+            <input type="text" id="cmdSearchInput" placeholder="...ابحث عن أمر" oninput="window.searchCommands()" class="w-full bg-[#12141f] border border-white/5 focus:border-purple-500 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right pr-10">
+            <span class="absolute right-3 top-2.5 text-gray-400">🔍</span>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+        <!-- Sidebar: Categories -->
+        <div class="lg:col-span-1 space-y-1.5 bg-[#12141f] border border-white/5 p-3 rounded-2xl shadow-xl h-fit">
+            <div class="flex items-center justify-end gap-1.5 text-xs font-black text-white px-2 py-1.5 border-b border-white/5 mb-1">
+                <span>الأقسام</span><span>📁</span>
+            </div>
+            <button type="button" id="btnCatGeneral" onclick="window.switchCmdCategory('general')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg transition cursor-pointer">
+                <span id="badgeCatGeneral" class="px-2 py-0.5 bg-white/20 text-white rounded-lg text-[10px] font-mono">30/30</span>
+                <span class="flex items-center gap-1.5"><span>الأوامر العامة</span><span>⚙️</span></span>
+            </button>
+            <button type="button" id="btnCatModeration" onclick="window.switchCmdCategory('moderation')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatModeration" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">17/17</span>
+                <span class="flex items-center gap-1.5"><span>الإشراف والعقوبات</span><span>🔨</span></span>
+            </button>
+            <button type="button" id="btnCatAdmin" onclick="window.switchCmdCategory('admin')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatAdmin" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">28/28</span>
+                <span class="flex items-center gap-1.5"><span>الإدارة والحماية</span><span>🛡️</span></span>
+            </button>
+            <button type="button" id="btnCatEconomy" onclick="window.switchCmdCategory('economy')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatEconomy" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">13/13</span>
+                <span class="flex items-center gap-1.5"><span>الاقتصاد والمستويات</span><span>🪙</span></span>
+            </button>
+            <button type="button" id="btnCatTickets" onclick="window.switchCmdCategory('tickets')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatTickets" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">10/10</span>
+                <span class="flex items-center gap-1.5"><span>نظام التذاكر</span><span>🎫</span></span>
+            </button>
+        </div>
+
+        <!-- Commands Display Area -->
+        <div class="lg:col-span-3 space-y-4">
+            <!-- Active Category Header -->
+            <div class="bg-[#12141f] border border-white/5 p-4 rounded-2xl flex items-center justify-between shadow-xl">
+                <div class="flex items-center gap-2">
+                    <span id="cmdSaveIndicator" class="text-xs font-bold text-emerald-400 bg-emerald-950/60 px-2 py-1 rounded-lg opacity-0 transition-opacity duration-300">✓ حُفظ</span>
+                    <button type="button" onclick="window.toggleAllCategoryCmds(false)" class="px-3.5 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 rounded-xl text-xs font-bold transition flex items-center gap-1">
+                        <span>✕</span><span>تعطيل الكل</span>
+                    </button>
+                    <button type="button" onclick="window.toggleAllCategoryCmds(true)" class="px-3.5 py-1.5 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-400 border border-emerald-800/40 rounded-xl text-xs font-bold transition flex items-center gap-1">
+                        <span>✓</span><span>تفعيل الكل</span>
+                    </button>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="text-right">
+                        <h5 id="catTitle" class="font-black text-white text-sm">الأوامر العامة</h5>
+                        <p id="catDesc" class="text-gray-400 text-[11px] mt-0.5">الأوامر الأساسية والتفاعلية للأعضاء والسيرفر</p>
+                    </div>
+                    <span id="catIcon" class="text-xl">⚙️</span>
+                </div>
+            </div>
+            <!-- Commands List -->
+            <div id="cmdsListContainer" class="space-y-3"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var DB = {
+        general: { title: '\u0627\u0644\u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0639\u0627\u0645\u0629', desc: '\u0627\u0644\u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629 \u0648\u0627\u0644\u062a\u0641\u0627\u0639\u0644\u064a\u0629 \u0644\u0644\u0623\u0639\u0636\u0627\u0621 \u0648\u0627\u0644\u0633\u064a\u0631\u0641\u0631', icon: '\u2699\ufe0f', items: [
+            { name: '/add-autoline-channel', desc: '\u0627\u0636\u0627\u0641\u0629 \u0631\u0648\u0645 \u062e\u0637 \u062a\u0644\u0642\u0627\u0626\u064a', badge: '', icon: '\ud83d\udce2' },
+            { name: '/add-nadeko-room', desc: '\u0627\u0636\u0627\u0641\u0629 \u0631\u0648\u0645 \u0644\u062a\u0641\u0639\u064a\u0644 \u062e\u0627\u0635\u064a\u0629 \u0646\u0627\u062f\u064a\u0643\u0648', badge: '', icon: '\ud83e\udd16' },
+            { name: '/ai', desc: '\u0627\u0644\u062a\u062d\u062f\u062b \u0645\u0639 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a (ZENO AI)', badge: '', icon: '\ud83e\udd16' },
+            { name: '/apply', desc: '\u0641\u062a\u062d \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u062a\u0642\u062f\u064a\u0645\u0627\u062a \u0623\u0648 \u0625\u0631\u0633\u0627\u0644 \u0631\u0633\u0627\u0644\u0629 \u0627\u0644\u062a\u0642\u062f\u064a\u0645\u0627\u062a \u0641\u064a \u0627\u0644\u0642\u0646\u0627\u0629', badge: '', icon: '\ud83d\udcdd' },
+            { name: '/ask', desc: '\u0627\u0633\u0623\u0644 \u0630\u0643\u0627\u0621 ZENO \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a \u0623\u064a \u0633\u0624\u0627\u0644!', badge: '', icon: '\ud83e\udd16' },
+            { name: '/avatar', desc: '\u0639\u0631\u0636 \u0635\u0648\u0631\u0629 \u062d\u0633\u0627\u0628\u0643 \u0623\u0648 \u062d\u0633\u0627\u0628 \u0639\u0636\u0648 \u0622\u062e\u0631', badge: '', icon: '\ud83d\uddbc\ufe0f' },
+            { name: '/banner', desc: '\u0639\u0631\u0636 \u0628\u0646\u0631 \u062d\u0633\u0627\u0628\u0643 \u0623\u0648 \u062d\u0633\u0627\u0628 \u0639\u0636\u0648 \u0622\u062e\u0631', badge: '', icon: '\ud83c\udfa8' },
+            { name: '/come', desc: '\u0637\u0644\u0628 \u0642\u062f\u0648\u0645 \u0639\u0636\u0648 \u0644\u0644\u0631\u0648\u0645 \u0627\u0644\u062d\u0627\u0644\u064a', badge: '', icon: '\ud83d\udc4b' },
+            { name: '/copy-emoji', desc: '\u0646\u0633\u062e \u0625\u064a\u0645\u0648\u062c\u064a \u0648\u0625\u0636\u0627\u0641\u062a\u0647 \u0644\u0644\u0633\u064a\u0631\u0641\u0631', badge: '', icon: '\ud83d\ude03' },
+            { name: '/embed', desc: '\u0625\u0631\u0633\u0627\u0644 \u0631\u0633\u0627\u0644\u0629 Embed \u0645\u0646\u0633\u0642\u0629', badge: '', icon: '\ud83d\udce6' },
+            { name: '/feedback-mode', desc: '\u062a\u062d\u062f\u064a\u062f \u0646\u0645\u0637 \u0627\u0644\u0622\u0631\u0627\u0621', badge: '', icon: '\ud83d\udca1' },
+            { name: '/giveaway', desc: '\u0625\u062f\u0627\u0631\u0629 \u0633\u062d\u0648\u0628\u0627\u062a \u0627\u0644\u0642\u064a\u0641 \u0623\u0648\u0627\u064a \u0627\u0644\u0645\u062a\u0642\u062f\u0645\u0629', badge: '', icon: '\ud83c\udf89' },
+            { name: '/help', desc: '\u0639\u0631\u0636 \u0642\u0627\u0626\u0645\u0629 \u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0628\u0648\u062a \u0627\u0644\u0643\u0627\u0645\u0644\u0629 \u0628\u0634\u0643\u0644 \u062a\u0641\u0627\u0639\u0644\u064a', badge: '', icon: '\ud83d\udcd6' },
+            { name: '/invites', desc: '\u0623\u0648\u0627\u0645\u0631 \u0646\u0638\u0627\u0645 \u0645\u062a\u062a\u0628\u0639 \u0627\u0644\u062f\u0639\u0648\u0627\u062a (Invite Tracker)', badge: '', icon: '\ud83d\udd17' },
+            { name: '/line-mode', desc: '\u062a\u062d\u062f\u064a\u062f \u0646\u0645\u0637 \u0627\u0644\u062e\u0637', badge: '', icon: '\ud83d\udcdd' },
+            { name: '/ping', desc: '\u0639\u0631\u0636 \u0633\u0631\u0639\u0629 \u0627\u0633\u062a\u062c\u0627\u0628\u0629 \u0627\u0644\u0628\u0648\u062a (Ping)', badge: '', icon: '\ud83d\udcf6' },
+            { name: '/remove-autoline-channel', desc: '\u0627\u0632\u0627\u0644\u0629 \u0631\u0648\u0645 \u062e\u0637 \u062a\u0644\u0642\u0627\u0626\u064a', badge: '', icon: '\ud83d\udce2' },
+            { name: '/remove-nadeko-room', desc: '\u0627\u0632\u0627\u0644\u0629 \u0631\u0648\u0645 \u0646\u0627\u062f\u064a\u0643\u0648', badge: '', icon: '\ud83e\udd16' },
+            { name: '/roles', desc: '\u0639\u0631\u0636 \u0631\u062a\u0628 \u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '', icon: '\ud83c\udf96\ufe0f' },
+            { name: '/say', desc: '\u0627\u0631\u0633\u0627\u0644 \u0631\u0633\u0627\u0644\u0629 \u0639\u0646 \u0637\u0631\u064a\u0642 \u0627\u0644\u0628\u0648\u062a', badge: '', icon: '\ud83d\udcac' },
+            { name: '/send', desc: '\u0627\u0631\u0633\u0627\u0644 \u0631\u0633\u0627\u0644\u0629 \u0644\u0631\u0648\u0645 \u0645\u062d\u062f\u062f', badge: '', icon: '\ud83d\udcec' },
+            { name: '/server', desc: '\u0639\u0631\u0636 \u0645\u0639\u0644\u0648\u0645\u0627\u062a \u0627\u0644\u0633\u064a\u0631\u0641\u0631 \u0648\u0625\u062d\u0635\u0627\u0626\u064a\u0627\u062a\u0647', badge: '', icon: '\ud83c\udfe0' },
+            { name: '/set-autoline-line', desc: '\u062a\u062d\u062f\u064a\u062f \u062e\u0637 \u0644\u0644\u0631\u0648\u0645', badge: '', icon: '\ud83d\udcdd' },
+            { name: '/set-feedback-line', desc: '\u062a\u062d\u062f\u064a\u062f \u062e\u0637 \u0644\u0631\u0648\u0645 \u0627\u0644\u0622\u0631\u0627\u0621', badge: '', icon: '\ud83d\udca1' },
+            { name: '/set-feedback-room', desc: '\u062a\u062d\u062f\u064a\u062f \u0631\u0648\u0645 \u0627\u0644\u0622\u0631\u0627\u0621', badge: '', icon: '\ud83d\udca1' },
+            { name: '/set-suggestions-line', desc: '\u062a\u062d\u062f\u064a\u062f \u062e\u0637 \u0644\u0631\u0648\u0645 \u0627\u0644\u0627\u0642\u062a\u0631\u0627\u062d\u0627\u062a', badge: '', icon: '\ud83d\udca1' },
+            { name: '/set-suggestions-room', desc: '\u062a\u062d\u062f\u064a\u062f \u0631\u0648\u0645 \u0627\u0644\u0627\u0642\u062a\u0631\u0627\u062d\u0627\u062a', badge: '', icon: '\ud83d\udca1' },
+            { name: '/suggest', desc: '\u062a\u0642\u062f\u064a\u0645 \u0627\u0642\u062a\u0631\u0627\u062d \u0623\u0648 \u0641\u0643\u0631\u0629 \u0644\u062a\u0637\u0648\u064a\u0631 \u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '', icon: '\ud83d\udca1' },
+            { name: '/suggestion-mode', desc: '\u062a\u062d\u062f\u064a\u062f \u0646\u0645\u0637 \u0627\u0644\u0627\u0642\u062a\u0631\u0627\u062d\u0627\u062a', badge: '', icon: '\ud83d\udca1' },
+            { name: '/user', desc: '\u0639\u0631\u0636 \u0645\u0639\u0644\u0648\u0645\u0627\u062a \u0627\u0644\u0639\u0636\u0648', badge: '', icon: '\ud83d\udc64' }
+        ]},
+        moderation: { title: '\u0627\u0644\u0625\u0634\u0631\u0627\u0641 \u0648\u0627\u0644\u0639\u0642\u0648\u0628\u0627\u062a', desc: '\u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0639\u0642\u0648\u0628\u0627\u062a \u0627\u0644\u0645\u0628\u0627\u0634\u0631\u0629 \u0648\u0627\u0644\u0625\u0634\u0631\u0627\u0641 \u0648\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0623\u0639\u0636\u0627\u0621', icon: '\ud83d\udd28', items: [
+            { name: '/ban', desc: '\u062d\u0638\u0631 \u0639\u0636\u0648 \u0645\u0646 \u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83e\ude93' },
+            { name: '/clear', desc: '\u062d\u0630\u0641 \u0631\u0633\u0627\u0626\u0644 \u0645\u0646 \u0627\u0644\u0642\u0646\u0627\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\uddd1\ufe0f' },
+            { name: '/hide', desc: '\u0625\u062e\u0641\u0627\u0621 \u0627\u0644\u0631\u0648\u0645 \u0627\u0644\u062d\u0627\u0644\u064a \u0639\u0646 \u0627\u0644\u0623\u0639\u0636\u0627\u0621', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udc41\ufe0f' },
+            { name: '/jail', desc: '\u0646\u0638\u0627\u0645 \u0633\u062c\u0646 \u0648\u0639\u0632\u0644 \u0627\u0644\u0623\u0639\u0636\u0627\u0621 \u0627\u0644\u0645\u062e\u0627\u0644\u0641\u064a\u0646', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u26d3\ufe0f' },
+            { name: '/kick', desc: '\u0637\u0631\u062f \u0639\u0636\u0648 \u0645\u0646 \u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83e\ude93' },
+            { name: '/lock', desc: '\u0642\u0641\u0644 \u0627\u0644\u0631\u0648\u0645 \u0627\u0644\u062d\u0627\u0644\u064a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udd12' },
+            { name: '/mute', desc: '\u0625\u0633\u0643\u0627\u062a \u0639\u0636\u0648 \u0643\u062a\u0627\u0628\u064a\u0627\u064b \u0648\u0635\u0648\u062a\u064a\u0627\u064b', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udd07' },
+            { name: '/nickname', desc: '\u062a\u063a\u064a\u064a\u0631 \u0644\u0642\u0628 \u0639\u0636\u0648', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u270f\ufe0f' },
+            { name: '/role', desc: '\u0625\u062f\u0627\u0631\u0629 \u0623\u062f\u0648\u0627\u0631 \u0627\u0644\u0623\u0639\u0636\u0627\u0621', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udf96\ufe0f' },
+            { name: '/role-all', desc: '\u0625\u0639\u0637\u0627\u0621 \u0631\u062a\u0628\u0629 \u0644\u062c\u0645\u064a\u0639 \u0627\u0644\u0623\u0639\u0636\u0627\u0621 \u0623\u0648 \u0625\u0632\u0627\u0644\u062a\u0647\u0627 \u0645\u0646\u0647\u0645', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udc65' },
+            { name: '/slowmode', desc: '\u062a\u062d\u062f\u064a\u062f \u0633\u0631\u0639\u0629 \u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u0631\u0633\u0627\u0626\u0644 \u0628\u0627\u0644\u062b\u0648\u0627\u0646\u064a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udc0c' },
+            { name: '/timeout', desc: '\u0639\u0632\u0644 / \u0625\u0633\u0643\u0627\u062a \u0639\u0636\u0648 \u0645\u0624\u0642\u062a\u0627\u064b \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u23f3' },
+            { name: '/unban', desc: '\u0625\u0644\u063a\u0627\u0621 \u062d\u0638\u0631 \u0639\u0636\u0648 \u0645\u0646 \u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
+            { name: '/unhide', desc: '\u0625\u0638\u0647\u0627\u0631 \u0627\u0644\u0631\u0648\u0645 \u0627\u0644\u062d\u0627\u0644\u064a \u0648\u0625\u0644\u063a\u0627\u0621 \u0625\u062e\u0641\u0627\u0626\u0647', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udc41\ufe0f' },
+            { name: '/unlock', desc: '\u0641\u062a\u062d \u0627\u0644\u0631\u0648\u0645 \u0627\u0644\u062d\u0627\u0644\u064a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udd13' },
+            { name: '/untimeout', desc: '\u0641\u0643 \u0627\u0644\u0639\u0632\u0644 \u0639\u0646 \u0639\u0636\u0648 \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
+            { name: '/warn', desc: '\u0625\u062f\u0627\u0631\u0629 \u062a\u062d\u0630\u064a\u0631\u0627\u062a \u0627\u0644\u0623\u0639\u0636\u0627\u0621', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u26a0\ufe0f' }
+        ]},
+        admin: { title: '\u0627\u0644\u0625\u062f\u0627\u0631\u0629 \u0648\u0627\u0644\u062d\u0645\u0627\u064a\u0629', desc: '\u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u062d\u0645\u0627\u064a\u0629\u060c \u0627\u0644\u0631\u062f\u0648\u062f \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629\u060c \u0648\u0627\u0644\u0633\u062c\u0644\u0627\u062a', icon: '\ud83d\udee1\ufe0f', items: [
+            { name: '/add-button', desc: '\u0625\u0636\u0627\u0641\u0629 \u0632\u0631 (\u0631\u062a\u0628\u0629 \u0623\u0648 \u0645\u0639\u0644\u0648\u0645\u0627\u062a) \u0644\u0631\u0633\u0627\u0644\u0629 \u0645\u062d\u062f\u062f\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udd18' },
+            { name: '/anti-ban', desc: '\u062a\u0633\u0637\u064a\u0628 \u0646\u0638\u0627\u0645 \u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0645\u0646 \u0627\u0644\u0628\u0627\u0646\u062f', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
+            { name: '/anti-bots', desc: '\u062a\u0633\u0637\u064a\u0628 \u0646\u0638\u0627\u0645 \u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0645\u0646 \u0627\u0644\u0628\u0648\u062a\u0627\u062a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83e\udd16' },
+            { name: '/anti-delete-roles', desc: '\u062a\u0633\u0637\u064a\u0628 \u0646\u0638\u0627\u0645 \u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0645\u0646 \u062d\u0630\u0641 \u0627\u0644\u0631\u062a\u0628', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
+            { name: '/anti-delete-rooms', desc: '\u062a\u0633\u0637\u064a\u0628 \u0646\u0638\u0627\u0645 \u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0645\u0646 \u062d\u0630\u0641 \u0627\u0644\u0631\u0648\u0645\u0627\u062a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
+            { name: '/applications', desc: '\u0625\u062f\u0627\u0631\u0629 \u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0642\u062f\u064a\u0645\u0627\u062a \u0648\u0645\u0631\u0627\u062c\u0639\u0629 \u0627\u0644\u0637\u0644\u0628\u0627\u062a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcdd' },
+            { name: '/automod', desc: '\u0625\u062f\u0627\u0631\u0629 \u0648\u062a\u062e\u0635\u064a\u0635 \u0645\u0646\u0638\u0648\u0645\u0629 \u0627\u0644\u0631\u0642\u0627\u0628\u0629 \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629 \u0627\u0644\u0630\u0643\u064a\u0629 (Auto-Mod)', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
+            { name: '/auto-responder', desc: '\u0625\u062f\u0627\u0631\u0629 \u0646\u0638\u0627\u0645 \u0627\u0644\u0631\u062f \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
+            { name: '/autoreply-add', desc: '\u0644\u0627\u0636\u0627\u0641\u0629 \u0631\u062f \u062a\u0644\u0642\u0627\u0626\u064a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
+            { name: '/autoreply-list', desc: '\u0644\u0631\u0624\u064a\u0629 \u062c\u0645\u064a\u0639 \u0627\u0644\u0631\u062f\u0648\u062f \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcdc' },
+            { name: '/autoreply-remove', desc: '\u0644\u0627\u0632\u0627\u0644\u0629 \u0631\u062f \u062a\u0644\u0642\u0627\u0626\u064a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062f\u064a\u0629', icon: '\u2699\ufe0f' },
+            { name: '/dm-mode', desc: '\u0625\u0634\u0639\u0627\u0631 \u0627\u0644\u062a\u0642\u062f\u064a\u0645 \u0628\u0627\u0644\u062e\u0627\u0635', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcec' },
+            { name: '/logs', desc: '\u0646\u0638\u0627\u0645 \u062a\u062a\u0628\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0623\u062d\u062f\u0627\u062b \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631 \u0645\u0639 \u0627\u0644\u0641\u0627\u0639\u0644 \u0648\u0627\u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u0641\u0648\u0631\u064a\u0627\u064b', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcdc' },
+            { name: '/new-panel', desc: '\u0625\u0646\u0634\u0627\u0621 \u0628\u0627\u0646\u0644 \u0631\u062a\u0628 \u062c\u062f\u064a\u062f', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udd18' },
+            { name: '/protection-status', desc: '\u0639\u0631\u0636 \u062d\u0627\u0644\u0629 \u0623\u0646\u0638\u0645\u0629 \u0627\u0644\u062d\u0645\u0627\u064a\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
+            { name: '/reaction-role', desc: '\u0625\u0646\u0634\u0627\u0621 \u0631\u0633\u0627\u0644\u0629 \u0625\u0639\u0637\u0627\u0621 \u0631\u062a\u0628\u0629 \u0628\u0632\u0631 \u062a\u0641\u0627\u0639\u0644\u064a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udf96\ufe0f' },
+            { name: '/set', desc: '\u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0648\u062a\u062e\u0635\u064a\u0635 \u0627\u0644\u0628\u0648\u062a \u0648\u0644\u0648\u062d\u0627\u062a \u0627\u0644\u0625\u062f\u0627\u0631\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
+            { name: '/set-autorole', desc: '\u062a\u0639\u064a\u064a\u0646 \u0627\u0644\u0631\u062a\u0628\u0629 \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629 \u0644\u0644\u0623\u0639\u0636\u0627\u0621 \u0627\u0644\u062c\u062f\u062f', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
+            { name: '/set-jail', desc: '\u0625\u0639\u062f\u0627\u062f \u0648\u062a\u062e\u0635\u064a\u0635 \u0631\u062a\u0628\u0629 \u0648\u0631\u0648\u0645 \u0627\u0644\u0633\u062c\u0646', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u26d3\ufe0f' },
+            { name: '/set-logs', desc: '\u062a\u062d\u062f\u064a\u062f \u0631\u0648\u0645 \u0627\u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0634\u0627\u0645\u0644\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcdc' },
+            { name: '/set-prefix', desc: '\u062a\u063a\u064a\u064a\u0631 \u0631\u0645\u0632 \u0627\u0644\u0628\u0631\u0641\u0643\u0633 \u0627\u0644\u062e\u0627\u0635 \u0628\u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
+            { name: '/set-protect-logs', desc: '\u062a\u0639\u064a\u064a\u0646 \u0631\u0648\u0645 \u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0648\u0627\u0644\u0646\u0648\u0643', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
+            { name: '/set-shortcut', desc: '\u0648\u0636\u0639 \u0627\u062e\u062a\u0635\u0627\u0631 \u0644\u0623\u0645\u0631 \u0645\u0639\u064a\u0646', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
+            { name: '/set-tempvoice', desc: '\u062a\u0639\u064a\u064a\u0646 \u0631\u0648\u0645 \u0627\u0644\u0631\u0648\u0645\u0627\u062a \u0627\u0644\u0635\u0648\u062a\u064a\u0629 \u0627\u0644\u0645\u0624\u0642\u062a\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udfa4' },
+            { name: '/set-verification', desc: '\u0625\u0639\u062f\u0627\u062f \u0648\u062a\u0641\u0639\u064a\u0644 \u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u062d\u0642\u0642 \u0627\u0644\u062a\u0641\u0627\u0639\u0644\u064a \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2705' },
+            { name: '/set-welcome', desc: '\u0625\u0639\u062f\u0627\u062f \u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0631\u062d\u064a\u0628', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udf89' },
+            { name: '/staff', desc: '\u0646\u0638\u0627\u0645 \u0645\u062a\u0627\u0628\u0639\u0629 \u0646\u0634\u0627\u0637 \u0637\u0627\u0642\u0645 \u0627\u0644\u0625\u062f\u0627\u0631\u0629 (Staff Activity)', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcca' },
+            { name: '/top-in', desc: '\u0644\u0648\u062d\u0629 \u0634\u0631\u0641 \u0648\u062a\u0631\u062a\u064a\u0628 \u0633\u0627\u0639\u0627\u062a \u0648\u0646\u0642\u0627\u0637 \u0637\u0627\u0642\u0645 \u0627\u0644\u0625\u062f\u0627\u0631\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udfc6' }
+        ]},
+        economy: { title: '\u0627\u0644\u0627\u0642\u062a\u0635\u0627\u062f \u0648\u0627\u0644\u0645\u0633\u062a\u0648\u064a\u0627\u062a', desc: '\u0646\u0638\u0627\u0645 \u0627\u0644\u0631\u0635\u064a\u062f\u060c \u0627\u0644\u0631\u0627\u0646\u0643\u060c \u0627\u0644\u062a\u062d\u0648\u064a\u0644 \u0648\u0627\u0644\u0636\u0631\u0627\u0626\u0628', icon: '\ud83e\ude99', items: [
+            { name: '/balance', desc: '\u0639\u0631\u0636 \u0631\u0635\u064a\u062f\u0643 \u0627\u0644\u062d\u0627\u0644\u064a \u0645\u0646 \u0627\u0644\u0639\u0645\u0644\u0627\u062a', badge: '', icon: '\ud83d\udcb0' },
+            { name: '/bank', desc: '\u0646\u0638\u0627\u0645 \u0627\u0644\u0628\u0646\u0643', badge: '', icon: '\ud83c\udfe6' },
+            { name: '/daily', desc: '\u0627\u062d\u0635\u0644 \u0639\u0644\u0649 \u0645\u0643\u0627\u0641\u0623\u062a\u0643 \u0627\u0644\u064a\u0648\u0645\u064a\u0629', badge: '', icon: '\ud83d\udcb5' },
+            { name: '/leaderboard', desc: '\u0639\u0631\u0636 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u062a\u0635\u062f\u0631\u064a\u0646', badge: '', icon: '\ud83c\udfc6' },
+            { name: '/pay', desc: '\u062a\u062d\u0648\u064a\u0644 \u0639\u0645\u0644\u0627\u062a \u0627\u0644\u0630\u0647\u0628 \u0625\u0644\u0649 \u0639\u0636\u0648 \u0622\u062e\u0631', badge: '', icon: '\ud83d\udcb8' },
+            { name: '/profile', desc: '\u0639\u0631\u0636 \u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064a\u0644 \u0648\u0627\u0644\u0647\u0648\u064a\u0629 \u0627\u0644\u0634\u062e\u0635\u064a\u0629', badge: '', icon: '\ud83d\udcb3' },
+            { name: '/rank', desc: '\u0639\u0631\u0636 \u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0645\u0633\u062a\u0648\u0649 \u0648\u0646\u0642\u0627\u0637 \u0627\u0644\u062e\u0628\u0631\u0629', badge: '', icon: '\u2b50' },
+            { name: '/set-tax-line', desc: '\u062a\u062d\u062f\u064a\u062f \u062e\u0637 \u0644\u0631\u0648\u0645 \u0627\u0644\u0636\u0631\u064a\u0628\u0629', badge: '', icon: '\ud83e\ude99' },
+            { name: '/set-tax-room', desc: '\u062a\u062d\u062f\u064a\u062f \u0631\u0648\u0645 \u062d\u0633\u0627\u0628 \u0627\u0644\u0636\u0631\u064a\u0628\u0629', badge: '', icon: '\ud83e\ude99' },
+            { name: '/setwallpaper', desc: '\u062a\u0639\u064a\u064a\u0646 \u062e\u0644\u0641\u064a\u0629 \u0645\u062e\u0635\u0635\u0629 \u0644\u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064a\u0644', badge: '', icon: '\ud83d\uddbc\ufe0f' },
+            { name: '/tax', desc: '\u062d\u0633\u0627\u0628 \u0636\u0631\u064a\u0628\u0629 \u0628\u0631\u0648\u0628\u0648\u062a', badge: '', icon: '\ud83e\ude99' },
+            { name: '/tax-mode', desc: '\u062a\u062d\u062f\u064a\u062f \u0646\u0645\u0637 \u0627\u0644\u0636\u0631\u064a\u0628\u0629', badge: '', icon: '\u2699\ufe0f' },
+            { name: '/work', desc: '\u0627\u0639\u0645\u0644 \u0644\u062a\u0643\u0633\u0628 Star Coin', badge: '', icon: '\ud83d\udcbc' }
+        ]},
+        tickets: { title: '\u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0630\u0627\u0643\u0631', desc: '\u0625\u0639\u062f\u0627\u062f \u0648\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062a\u0630\u0627\u0643\u0631 \u0648\u0627\u0644\u062f\u0639\u0645 \u0627\u0644\u0641\u0646\u064a', icon: '\ud83c\udfab', items: [
+            { name: '/add-ticket-button', desc: '\u0625\u0631\u0633\u0627\u0644 \u0632\u0631 \u0627\u0644\u062a\u0630\u0643\u0631\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udfab' },
+            { name: '/add-user', desc: '\u0625\u0636\u0627\u0641\u0629 \u0639\u0636\u0648 \u0644\u0644\u062a\u0630\u0643\u0631\u0629', badge: '', icon: '\u2795' },
+            { name: '/close', desc: '\u0627\u063a\u0644\u0627\u0642 \u0627\u0644\u062a\u0630\u0643\u0631\u0629 \u0627\u0644\u062d\u0627\u0644\u064a\u0629', badge: '', icon: '\ud83d\udd12' },
+            { name: '/delete', desc: '\u062d\u0630\u0641 \u0627\u0644\u062a\u0630\u0643\u0631\u0629 \u0641\u0648\u0631\u0627\u064b', badge: '', icon: '\ud83d\uddd1\ufe0f' },
+            { name: '/remove-user', desc: '\u0625\u0632\u0627\u0644\u0629 \u0639\u0636\u0648 \u0645\u0646 \u0627\u0644\u062a\u0630\u0643\u0631\u0629', badge: '', icon: '\u2796' },
+            { name: '/rename', desc: '\u0625\u0639\u0627\u062f\u0629 \u062a\u0633\u0645\u064a\u0629 \u0627\u0644\u062a\u0630\u0643\u0631\u0629', badge: '', icon: '\u270f\ufe0f' },
+            { name: '/set-ticket-log', desc: '\u062a\u062d\u062f\u064a\u062f \u0631\u0648\u0645 \u0633\u062c\u0644\u0627\u062a \u0627\u0644\u062a\u0630\u0627\u0643\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcdc' },
+            { name: '/setup-rating', desc: '\u062a\u0641\u0639\u064a\u0644 \u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0642\u064a\u064a\u0645 \u0641\u064a \u0627\u0644\u062a\u0630\u0627\u0643\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2b50' },
+            { name: '/ticket', desc: '\u0623\u0648\u0627\u0645\u0631 \u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062a\u0630\u0627\u0643\u0631 \u0627\u0644\u0645\u062a\u0642\u062f\u0645\u0629', badge: '', icon: '\ud83c\udfab' },
+            { name: '/ticket-setup', desc: '\u0625\u0639\u062f\u0627\u062f \u0644\u0648\u062d\u0629 \u062a\u0630\u0627\u0643\u0631 \u0645\u062e\u0635\u0635\u0629 \u0628\u0627\u0644\u0643\u0627\u0645\u0644', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' }
+        ]}
+    };
+
+    var catBtnMap = {
+        general:'btnCatGeneral', moderation:'btnCatModeration', admin:'btnCatAdmin',
+        economy:'btnCatEconomy', tickets:'btnCatTickets'
+    };
+    var catBadgeMap = {
+        general:'badgeCatGeneral', moderation:'badgeCatModeration', admin:'badgeCatAdmin',
+        economy:'badgeCatEconomy', tickets:'badgeCatTickets'
+    };
+
+    var currentCat = 'general';
+    var currentFilter = 'all';
+    var disabledCmds = ` + JSON.stringify((function() { try { var raw = settings.disabled_commands; if (!raw) return {}; var arr = typeof raw === "string" ? JSON.parse(raw) : raw; var m = {}; for (var i = 0; i < arr.length; i++) m[arr[i]] = true; return m; } catch(e) { return {}; } })()) + `;
+    var commandConfigs = ` + JSON.stringify((function() { try { var raw = settings.command_configs; if (!raw) return {}; return typeof raw === "string" ? JSON.parse(raw) : (raw || {}); } catch(e) { return {}; } })()) + `;
+    var guildRoles = ` + JSON.stringify((guildRoles || []).map(function(r) { return { id: r.id, name: r.name }; })) + `;
+    var guildChannels = ` + JSON.stringify((guildTextChannels || []).map(function(c) { return { id: c.id, name: c.name }; })) + `;
+
+    function isEn(name) { return !disabledCmds[name]; }
+
+    function render() {
+        var container = document.getElementById('cmdsListContainer');
+        if (!container) return;
+        var data = DB[currentCat] || DB.general;
+        var t = document.getElementById('catTitle');
+        var d = document.getElementById('catDesc');
+        var ic = document.getElementById('catIcon');
+        if (t) t.innerText = data.title;
+        if (d) d.innerText = data.desc;
+        if (ic) ic.innerText = data.icon;
+        var searchEl = document.getElementById('cmdSearchInput');
+        var sv = searchEl ? searchEl.value.toLowerCase().trim() : '';
+        var filtered = data.items.filter(function(item) {
+            if (currentFilter === 'enabled' && !isEn(item.name)) return false;
+            if (currentFilter === 'disabled' && isEn(item.name)) return false;
+            if (sv && item.name.toLowerCase().indexOf(sv) === -1 && item.desc.toLowerCase().indexOf(sv) === -1) return false;
+            return true;
+        });
+        if (!filtered.length) {
+            container.innerHTML = '<div class="py-12 bg-[#12141f] border border-white/5 rounded-2xl text-center text-xs text-gray-500">\u0644\u0627 \u062a\u0648\u062c\u062f \u0623\u0648\u0627\u0645\u0631 \u0645\u0637\u0627\u0628\u0642\u0629 \ud83d\udd0d</div>';
+            updateCounters(); return;
+        }
+        var html = '';
+        for (var i = 0; i < filtered.length; i++) {
+            var item = filtered[i];
+            var en = isEn(item.name);
+            var bh = item.badge ? '<span class="px-2.5 py-0.5 bg-purple-950/60 text-purple-300 border border-purple-800/40 rounded-lg text-[10px] font-bold flex items-center gap-1"><span>' + item.badge + '</span><span>&#128737;</span></span>' : '';
+            var cfg = commandConfigs[item.name] || {};
+            var alias = cfg.alias || '';
+            var aRoles = cfg.allowedRoles || [];
+            var aChs = cfg.allowedChannels || [];
+            html += '<div class="cmd-card-wrap border border-white/5 rounded-2xl bg-[#12141f] overflow-hidden transition hover:border-purple-500/40' + (en ? '' : ' opacity-50') + '" data-cmd="' + item.name + '">';
+            html += '<div class="p-4 flex items-center justify-between">';
+            html += '<div class="flex items-center gap-3">';
+            html += '<label class="toggle"><input type="checkbox" data-cmd="' + item.name + '"' + (en ? ' checked' : '') + '><span class="slider"></span></label>';
+            html += '<button type="button" class="cmd-expand-btn text-gray-500 hover:text-purple-400 p-1 text-xs transition cursor-pointer" data-cmd="' + item.name + '">&#9660;</button>';
+            html += '</div>';
+            html += '<div class="flex items-center gap-3">';
+            html += '<div class="text-right">';
+            html += '<div class="flex items-center justify-end gap-2">' + bh + '<span class="font-black text-white text-xs font-mono">' + item.name + '</span></div>';
+            html += '<p class="text-[11px] text-gray-400 mt-0.5">' + item.desc + '</p>';
+            html += '</div>';
+            html += '<div class="w-9 h-9 rounded-xl bg-[#0b0d14] border border-white/5 flex items-center justify-center text-sm shadow-inner">' + (item.icon || '&#9881;') + '</div>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div class="cmd-accordion border-t border-white/5 bg-[#0b0d14] p-4 space-y-4 text-right" data-cmd="' + item.name + '" style="display:none;">';
+            html += '<div class="flex items-center justify-between gap-4 flex-wrap">';
+            html += '<div class="flex-1 min-w-[200px]">';
+            html += '<label class="block text-[10px] text-gray-400 font-bold mb-1">\u0627\u062e\u062a\u0635\u0627\u0631 \u0645\u062e\u0635\u0635 \u0644\u0644\u0623\u0645\u0631 (Custom Alias)</label>';
+            html += '<input type="text" class="cmd-alias-input w-full bg-[#12141f] border border-white/10 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white outline-none text-right" placeholder="\u0645\u062b\u0627\u0644: !b \u0623\u0648 /b" data-cmd="' + item.name + '" value="' + alias.split('"').join('&quot;') + '">';
+            html += '</div>';
+            html += '</div>';
+            html += '<div>';
+            html += '<label class="block text-[10px] text-gray-400 font-bold mb-1.5">\u0627\u0644\u0631\u062a\u0628 \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0644\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Roles)</label>';
+            html += '<div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end">';
+            for (var ri = 0; ri < guildRoles.length; ri++) {
+                var role = guildRoles[ri];
+                var rChecked = aRoles.indexOf(role.id) !== -1;
+                html += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300">';
+                html += '<span>' + role.name + '</span>';
+                html += '<input type="checkbox" class="cmd-role-chk accent-purple-600" data-cmd="' + item.name + '" data-rid="' + role.id + '"' + (rChecked ? ' checked' : '') + '>';
+                html += '</label>';
+            }
+            html += '</div>';
+            html += '</div>';
+            html += '<div>';
+            html += '<label class="block text-[10px] text-gray-400 font-bold mb-1.5">\u0627\u0644\u0642\u0646\u0648\u0627\u062a \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0641\u064a\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Channels)</label>';
+            html += '<div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end">';
+            for (var ci = 0; ci < guildChannels.length; ci++) {
+                var ch = guildChannels[ci];
+                var cChecked = aChs.indexOf(ch.id) !== -1;
+                html += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300">';
+                html += '<span>#' + ch.name + '</span>';
+                html += '<input type="checkbox" class="cmd-ch-chk accent-purple-600" data-cmd="' + item.name + '" data-chid="' + ch.id + '"' + (cChecked ? ' checked' : '') + '>';
+                html += '</label>';
+            }
+            html += '</div>';
+            html += '</div>';
+            html += '<div class="flex items-center justify-between pt-2 border-t border-white/5">';
+            html += '<button type="button" class="cmd-reset-btn px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 rounded-xl text-xs font-bold transition cursor-pointer" data-cmd="' + item.name + '">\u0625\u0639\u0627\u062f\u0629 \u0636\u0628\u0637</button>';
+            html += '<button type="button" class="cmd-save-btn px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-lg cursor-pointer" data-cmd="' + item.name + '">\u062d\u0641\u0638 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0623\u0645\u0631</button>';
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+        }
+        container.innerHTML = html;
+        var checks = container.querySelectorAll('input[type="checkbox"][data-cmd]:not(.cmd-role-chk):not(.cmd-ch-chk)');
+        for (var j = 0; j < checks.length; j++) {
+            (function(cb) {
+                cb.addEventListener('change', function() {
+                    window.toggleSingleCmd(cb.getAttribute('data-cmd'), cb.checked);
+                    var card = cb.closest('div.cmd-card-wrap');
+                    if (card) { if (cb.checked) card.classList.remove('opacity-50'); else card.classList.add('opacity-50'); }
+                });
+            })(checks[j]);
+        }
+        var expBtns = container.querySelectorAll('.cmd-expand-btn');
+        for (var eb = 0; eb < expBtns.length; eb++) {
+            (function(btn) {
+                btn.addEventListener('click', function() {
+                    var cmdName = btn.getAttribute('data-cmd');
+                    var panel = container.querySelector('.cmd-accordion[data-cmd="' + cmdName + '"]');
+                    if (!panel) return;
+                    var open = panel.style.display !== 'none';
+                    panel.style.display = open ? 'none' : 'block';
+                    btn.innerHTML = open ? '&#9660;' : '&#9650;';
+                });
+            })(expBtns[eb]);
+        }
+        var saveBtns = container.querySelectorAll('.cmd-save-btn');
+        for (var sb = 0; sb < saveBtns.length; sb++) {
+            (function(btn) {
+                btn.addEventListener('click', function() {
+                    var cmdName = btn.getAttribute('data-cmd');
+                    var panel = container.querySelector('.cmd-accordion[data-cmd="' + cmdName + '"]');
+                    if (!panel) return;
+                    var aliasInput = panel.querySelector('.cmd-alias-input');
+                    var alias = aliasInput ? aliasInput.value.trim() : '';
+                    var roleChks = panel.querySelectorAll('.cmd-role-chk:checked');
+                    var chChks = panel.querySelectorAll('.cmd-ch-chk:checked');
+                    var roles = [], chs = [];
+                    for (var i = 0; i < roleChks.length; i++) roles.push(roleChks[i].getAttribute('data-rid'));
+                    for (var i = 0; i < chChks.length; i++) chs.push(chChks[i].getAttribute('data-chid'));
+                    if (!commandConfigs[cmdName]) commandConfigs[cmdName] = {};
+                    commandConfigs[cmdName].alias = alias;
+                    commandConfigs[cmdName].allowedRoles = roles;
+                    commandConfigs[cmdName].allowedChannels = chs;
+                    saveStates();
+                    updateCounters();
+                });
+            })(saveBtns[sb]);
+        }
+        var resetBtns = container.querySelectorAll('.cmd-reset-btn');
+        for (var rb = 0; rb < resetBtns.length; rb++) {
+            (function(btn) {
+                btn.addEventListener('click', function() {
+                    var cmdName = btn.getAttribute('data-cmd');
+                    delete commandConfigs[cmdName];
+                    render();
+                    saveStates();
+                    updateCounters();
+                });
+            })(resetBtns[rb]);
+        }
+        updateCounters();
+        if (window.zenoI18n && typeof window.zenoI18n.apply === "function") { try { window.zenoI18n.apply(); } catch(e) {} }
+    }
+
+    function updateCounters() {
+        var total = 0, enabled = 0;
+        var keys = Object.keys(DB);
+        for (var i = 0; i < keys.length; i++) {
+            var cat = keys[i];
+            var items = DB[cat].items;
+            total += items.length;
+            var catEn = 0;
+            for (var j = 0; j < items.length; j++) { if (isEn(items[j].name)) catEn++; }
+            enabled += catEn;
+            var bId = catBadgeMap[cat];
+            if (bId) {
+                var badge = document.getElementById(bId);
+                if (badge) {
+                    badge.textContent = catEn + '/' + items.length;
+                    badge.className = catEn === 0
+                        ? 'px-2 py-0.5 bg-rose-950/60 text-rose-400 rounded-lg text-[10px] font-mono'
+                        : catEn < items.length
+                            ? 'px-2 py-0.5 bg-amber-950/60 text-amber-400 rounded-lg text-[10px] font-mono'
+                            : 'px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono';
+                }
+            }
+        }
+        var aliasCount = Object.keys(commandConfigs).filter(function(k){ return commandConfigs[k] && commandConfigs[k].alias; }).length;
+        var acEl = document.getElementById('customAliasesCount');
+        if (acEl) acEl.textContent = aliasCount;
+        var te = document.getElementById('totalCmdsCount');
+        var ee = document.getElementById('enabledCmdsCount');
+        if (te) te.textContent = total;
+        if (ee) ee.textContent = enabled;
+    }
+
+    function showSaved() {
+        var el = document.getElementById('cmdSaveIndicator');
+        if (el) { el.classList.remove('opacity-0'); setTimeout(function() { el.classList.add('opacity-0'); }, 2000); }
+    }
+
+    function saveStates() {
+        try {
+            var gId = window.location.pathname.split('/')[2];
+            if (!gId) return;
+            var disArr = Object.keys(disabledCmds).filter(function(k) { return disabledCmds[k]; });
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/guild/' + gId + '/settings', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() { try { if (JSON.parse(xhr.responseText).success) showSaved(); } catch(e) {} };
+            xhr.send(JSON.stringify({ disabled_commands: JSON.stringify(disArr), command_configs: JSON.stringify(commandConfigs) }));
+        } catch(e) {}
+    }
+
+    window.switchCmdCategory = function(catKey) {
+        currentCat = catKey;
+        var bKeys = Object.keys(catBtnMap);
+        for (var i = 0; i < bKeys.length; i++) {
+            var btn = document.getElementById(catBtnMap[bKeys[i]]);
+            if (!btn) continue;
+            btn.className = bKeys[i] === catKey
+                ? 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg transition cursor-pointer'
+                : 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer';
+        }
+        render();
+    };
+
+    window.searchCommands = function() { render(); };
+
+    window.filterCmdStatus = function(status) {
+        currentFilter = status;
+        var statusList = ['all','enabled','disabled'];
+        for (var i = 0; i < statusList.length; i++) {
+            var s = statusList[i];
+            var label = s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1);
+            var btn = document.getElementById('btnFilter' + label);
+            if (btn) btn.className = s === status
+                ? 'px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 text-white transition shadow cursor-pointer'
+                : 'px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition cursor-pointer';
+        }
+        render();
+    };
+
+    window.toggleAllCategoryCmds = function(enable) {
+        var items = (DB[currentCat] || DB.general).items;
+        for (var i = 0; i < items.length; i++) { disabledCmds[items[i].name] = !enable; }
+        saveStates(); render();
+    };
+
+    window.toggleSingleCmd = function(cmdName, enabled) {
+        disabledCmds[cmdName] = !enabled;
+        saveStates(); updateCounters();
+    };
+
+    render();
+})();
+</script>`; class=\"space-y-6 text-right\" dir=\"rtl\" style=\"margin-top:0\">\n\n    <!-- Header Card -->\n    <div class=\"bg-[#12141f] border border-white/5 p-6 rounded-2xl flex items-center justify-between shadow-xl\">\n        <div class=\"flex items-center gap-6\">\n            <div class=\"text-center\">\n                <span id=\"customAliasesCount\" class=\"text-xl font-black text-purple-400 font-mono\">0</span>\n                <span class=\"text-[10px] text-gray-400 block font-bold\">اختصارات مخصصة</span>\n            </div>\n            <div class=\"text-center\">\n                <span id=\"enabledCmdsCount\" class=\"text-xl font-black text-emerald-400 font-mono\">177</span>\n                <span class=\"text-[10px] text-gray-400 block font-bold\">الأوامر المفعلة</span>\n            </div>\n            <div class=\"text-center\">\n                <span id=\"totalCmdsCount\" class=\"text-xl font-black text-white font-mono\">177</span>\n                <span class=\"text-[10px] text-gray-400 block font-bold\">إجمالي الأوامر</span>\n            </div>\n        </div>\n        <div class=\"flex items-center gap-3\">\n            <div class=\"text-right\">\n                <h4 class=\"font-black text-white text-base\">إدارة الأوامر</h4>\n                <p class=\"text-gray-400 text-xs mt-0.5\">تخصيص وإدارة جميع أوامر البوت والصلاحيات</p>\n            </div>\n            <div class=\"w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center text-lg border border-purple-500/30\">🎛️</div>\n        </div>\n    </div>\n\n    <!-- Search & Filter Bar -->\n    <div class=\"flex items-center justify-between gap-4\">\n        <div class=\"flex items-center gap-1.5 bg-[#12141f] border border-white/5 p-1 rounded-xl\">\n            <button type=\"button\" id=\"btnFilterDisabled\" onclick=\"window.filterCmdStatus('disabled')\" class=\"px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition cursor-pointer\">معطل</button>\n            <button type=\"button\" id=\"btnFilterEnabled\" onclick=\"window.filterCmdStatus('enabled')\" class=\"px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition cursor-pointer\">مفعل</button>\n            <button type=\"button\" id=\"btnFilterAll\" onclick=\"window.filterCmdStatus('all')\" class=\"px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 text-white transition shadow cursor-pointer\">الكل</button>\n        </div>\n        <div class=\"flex-1 relative\">\n            <input type=\"text\" id=\"cmdSearchInput\" placeholder=\"...ابحث عن أمر\" oninput=\"window.searchCommands()\" class=\"w-full bg-[#12141f] border border-white/5 focus:border-purple-500 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right pr-10\">\n            <span class=\"absolute right-3 top-2.5 text-gray-400\">🔍</span>\n        </div>\n    </div>\n\n    <!-- Main Grid -->\n    <div class=\"grid grid-cols-1 lg:grid-cols-4 gap-6\">\n\n        <!-- Sidebar: Categories -->\n        <div class=\"lg:col-span-1 space-y-1.5 bg-[#12141f] border border-white/5 p-3 rounded-2xl shadow-xl h-fit\">\n            <div class=\"flex items-center justify-end gap-1.5 text-xs font-black text-white px-2 py-1.5 border-b border-white/5 mb-1\">\n                <span>الأقسام</span><span>📁</span>\n            </div>\n            <button type=\"button\" id=\"btnCatBasic\" onclick=\"window.switchCmdCategory('basic')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatBasic\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">17/17</span>\n                <span class=\"flex items-center gap-1.5\"><span>الأوامر الأساسية</span><span>⚙️</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatPunishments\" onclick=\"window.switchCmdCategory('punishments')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg transition cursor-pointer\">\n                <span id=\"badgeCatPunishments\" class=\"px-2 py-0.5 bg-white/20 text-white rounded-lg text-[10px] font-mono\">22/22</span>\n                <span class=\"flex items-center gap-1.5\"><span>العقوبات</span><span>🔨</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatPunishmentLogs\" onclick=\"window.switchCmdCategory('punishment_logs')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatPunishmentLogs\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">17/17</span>\n                <span class=\"flex items-center gap-1.5\"><span>سجلات العقوبات</span><span>📜</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatChannels\" onclick=\"window.switchCmdCategory('channels')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatChannels\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">9/9</span>\n                <span class=\"flex items-center gap-1.5\"><span>إدارة القنوات</span><span>📌</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatChat\" onclick=\"window.switchCmdCategory('chat')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatChat\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">12/12</span>\n                <span class=\"flex items-center gap-1.5\"><span>أدوات الشات</span><span>💬</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatVoice\" onclick=\"window.switchCmdCategory('voice')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatVoice\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">19/19</span>\n                <span class=\"flex items-center gap-1.5\"><span>إدارة الصوت</span><span>🎙️</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatRoles\" onclick=\"window.switchCmdCategory('roles')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatRoles\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">10/10</span>\n                <span class=\"flex items-center gap-1.5\"><span>إدارة الرتب</span><span>🎖️</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatCustomRoles\" onclick=\"window.switchCmdCategory('custom_roles')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatCustomRoles\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">9/9</span>\n                <span class=\"flex items-center gap-1.5\"><span>الرتب الخاصة</span><span>👑</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatServerInfo\" onclick=\"window.switchCmdCategory('server_info')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatServerInfo\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">19/19</span>\n                <span class=\"flex items-center gap-1.5\"><span>معلومات السيرفر</span><span>📊</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatCustomBot\" onclick=\"window.switchCmdCategory('custom_bot')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatCustomBot\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">5/5</span>\n                <span class=\"flex items-center gap-1.5\"><span>أدوات البوت الخاص</span><span>🤖</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatSecurity\" onclick=\"window.switchCmdCategory('security')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatSecurity\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">15/15</span>\n                <span class=\"flex items-center gap-1.5\"><span>الحماية</span><span>🛡️</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatLevels\" onclick=\"window.switchCmdCategory('levels_cat')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatLevels\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">10/10</span>\n                <span class=\"flex items-center gap-1.5\"><span>المستويات والخبرة</span><span>⭐</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatServerStats\" onclick=\"window.switchCmdCategory('server_stats')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatServerStats\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">11/11</span>\n                <span class=\"flex items-center gap-1.5\"><span>إحصائيات السيرفر</span><span>📈</span></span>\n            </button>\n            <button type=\"button\" id=\"btnCatProfile\" onclick=\"window.switchCmdCategory('profile_cat')\" class=\"w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer\">\n                <span id=\"badgeCatProfile\" class=\"px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono\">10/10</span>\n                <span class=\"flex items-center gap-1.5\"><span>الملف الشخصي</span><span>👤</span></span>\n            </button>\n        </div>\n\n        <!-- Commands Display Area -->\n        <div class=\"lg:col-span-3 space-y-4\">\n            <!-- Active Category Header -->\n            <div class=\"bg-[#12141f] border border-white/5 p-4 rounded-2xl flex items-center justify-between shadow-xl\">\n                <div class=\"flex items-center gap-2\">\n                    <span id=\"cmdSaveIndicator\" class=\"text-xs font-bold text-emerald-400 bg-emerald-950/60 px-2 py-1 rounded-lg opacity-0 transition-opacity duration-300\">✓ حُفظ</span>\n                    <button type=\"button\" onclick=\"window.toggleAllCategoryCmds(false)\" class=\"px-3.5 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 rounded-xl text-xs font-bold transition flex items-center gap-1\">\n                        <span>✕</span><span>تعطيل الكل</span>\n                    </button>\n                    <button type=\"button\" onclick=\"window.toggleAllCategoryCmds(true)\" class=\"px-3.5 py-1.5 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-400 border border-emerald-800/40 rounded-xl text-xs font-bold transition flex items-center gap-1\">\n                        <span>✓</span><span>تفعيل الكل</span>\n                    </button>\n                </div>\n                <div class=\"flex items-center gap-3\">\n                    <div class=\"text-right\">\n                        <h5 id=\"catTitle\" class=\"font-black text-white text-sm\">العقوبات</h5>\n                        <p id=\"catDesc\" class=\"text-gray-400 text-[11px] mt-0.5\">أوامر تنفيذ العقوبات المباشرة على الأعضاء</p>\n                    </div>\n                    <span id=\"catIcon\" class=\"text-xl\">🔨</span>\n                </div>\n            </div>\n            <!-- Commands List -->\n            <div id=\"cmdsListContainer\" class=\"space-y-3\"></div>\n        </div>\n    </div>\n</div>\n\n<script>\n\n(function() {\n    var DB = {\n        basic: { title: 'الأوامر الأساسية', desc: 'الأوامر الرئيسية للبوت والاستخدام اليومي', icon: '⚙️', items: [\n            { name: '/help', desc: 'قائمة جميع الأوامر المتاحة', badge: '', icon: '📖' },\n            { name: '/ping', desc: 'سرعة استجابة البوت', badge: '', icon: '📶' },\n            { name: '/botinfo', desc: 'معلومات البوت الكاملة', badge: '', icon: '🤖' },\n            { name: '/serverinfo', desc: 'معلومات السيرفر الشاملة', badge: '', icon: '🏠' },\n            { name: '/userinfo', desc: 'معلومات عضو في السيرفر', badge: '', icon: '👤' },\n            { name: '/avatar', desc: 'عرض صورة عضو بدقة عالية', badge: '', icon: '🖼️' },\n            { name: '/banner', desc: 'عرض بنر عضو', badge: '', icon: '🎨' },\n            { name: '/invites', desc: 'عدد دعوات عضو في السيرفر', badge: '', icon: '🔗' },\n            { name: '/roles', desc: 'قائمة رتب السيرفر الكاملة', badge: '', icon: '🎖️' },\n            { name: '/channels', desc: 'قائمة قنوات السيرفر', badge: '', icon: '📁' },\n            { name: '/emojis', desc: 'قائمة إيموجيات السيرفر المخصصة', badge: '', icon: '😃' },\n            { name: '/apply', desc: 'تقديم طلب وظيفي بالسيرفر', badge: '', icon: '📝' },\n            { name: '/ticket', desc: 'فتح تذكرة دعم', badge: '', icon: '🎫' },\n            { name: '/daily', desc: 'استلام الراتب اليومي', badge: '', icon: '🪙' },\n            { name: '/profile', desc: 'عرض بطاقة البروفايل', badge: '', icon: '💳' },\n            { name: '/leaderboard', desc: 'قائمة المتصدرين', badge: '', icon: '🏆' },\n            { name: '/gold', desc: 'رصيد الذهب والعملات', badge: '', icon: '🪙' }\n        ]},\n        punishments: { title: 'العقوبات', desc: 'أوامر تنفيذ العقوبات المباشرة على الأعضاء', icon: '🔨', items: [\n            { name: '/ban', desc: 'حظر عضو', badge: 'صلاحيات ديسكورد', icon: '🪓' },\n            { name: '/unban', desc: 'فك حظر عضو', badge: 'صلاحيات ديسكورد', icon: '🛡️' },\n            { name: '/kick', desc: 'طرد عضو', badge: 'صلاحيات ديسكورد', icon: '🪓' },\n            { name: '/mute', desc: 'كتم عضو', badge: 'صلاحيات ديسكورد', icon: '🚨' },\n            { name: '/unmute', desc: 'فك كتم عضو', badge: 'صلاحيات ديسكورد', icon: '📢' },\n            { name: '/timeout', desc: 'عزل عضو', badge: 'صلاحيات ديسكورد', icon: '⏳' },\n            { name: '/untimeout', desc: 'فك عزل عضو', badge: 'صلاحيات ديسكورد', icon: '🛡️' },\n            { name: '/warn', desc: 'تحذير عضو', badge: 'صلاحيات ديسكورد', icon: '🚨' },\n            { name: '/delwarn', desc: 'حذف تحذير', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/clearwarns', desc: 'مسح جميع التحذيرات', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/clearallwarns', desc: 'مسح تحذيرات عضو كاملة', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/clearallpunishments', desc: 'حذف نهائي لكل سجلات العقوبات', badge: '', icon: '🗑️' },\n            { name: '/prison', desc: 'سجن عضو', badge: 'صلاحيات ديسكورد', icon: '🪓' },\n            { name: '/unprison', desc: 'إخراج من السجن', badge: 'صلاحيات ديسكورد', icon: '🛡️' },\n            { name: '/setnick', desc: 'تغيير الاسم المستعار', badge: 'صلاحيات ديسكورد', icon: '✏️' },\n            { name: '/blacklist', desc: 'بلاك لست عضو (دائم)', badge: 'صلاحيات ديسكورد', icon: '🪓' },\n            { name: '/unblacklist', desc: 'فك بلاك لست عضو', badge: 'صلاحيات ديسكورد', icon: '🛡️' },\n            { name: '/remove', desc: 'حذف عقوبة من عضو', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/down', desc: 'إزالة الرتب الإدارية لمدة محددة', badge: 'صلاحيات ديسكورد', icon: '🪓' },\n            { name: '/undown', desc: 'استعادة الرتب الإدارية المزالة', badge: '', icon: '🛡️' },\n            { name: '/block', desc: 'حظر عضو من رتبة', badge: 'صلاحيات ديسكورد', icon: '🛡️' },\n            { name: '/unblock', desc: 'فك حظر عضو من رتبة', badge: 'صلاحيات ديسكورد', icon: '🛡️' }\n        ]},\n        punishment_logs: { title: 'سجلات العقوبات', desc: 'استعلام وعرض سجلات العقوبات السابقة', icon: '📜', items: [\n            { name: '/allwarns', desc: 'عرض كل التحذيرات النشطة', badge: '', icon: '📋' },\n            { name: '/bans', desc: 'سجل باندات عضو', badge: '', icon: '📜' },\n            { name: '/blacklists', desc: 'سجل بلاك لست عضو', badge: '', icon: '📜' },\n            { name: '/blocks', desc: 'سجل بلوكات عضو', badge: '', icon: '📜' },\n            { name: '/case', desc: 'عرض تفاصيل عقوبة', badge: 'صلاحيات ديسكورد', icon: '📄' },\n            { name: '/crime', desc: 'سجل عقوبات العضو الكامل', badge: '', icon: '📜' },\n            { name: '/crimes', desc: 'عقوبات العضو النشطة حالياً', badge: '', icon: '📜' },\n            { name: '/downs', desc: 'سجل داونات عضو', badge: '', icon: '📜' },\n            { name: '/modlogs', desc: 'سجل إشراف المشرفين', badge: 'صلاحيات ديسكورد', icon: '📜' },\n            { name: '/kicks', desc: 'سجل طرديات عضو', badge: '', icon: '📜' },\n            { name: '/mutes', desc: 'سجل كتمات عضو', badge: '', icon: '📜' },\n            { name: '/prisons', desc: 'سجل سجنات عضو', badge: '', icon: '📜' },\n            { name: '/timeouts', desc: 'سجل عزلات عضو', badge: '', icon: '📜' },\n            { name: '/warns', desc: 'سجل تحذيرات عضو', badge: '', icon: '📜' },\n            { name: '/staffactivity', desc: 'تقرير نشاط فريق الإدارة', badge: 'صلاحيات ديسكورد', icon: '📊' },\n            { name: '/audit', desc: 'سجل التدقيق والعمليات', badge: 'صلاحيات ديسكورد', icon: '🔍' },\n            { name: '/punishments', desc: 'ملخص جميع العقوبات النشطة', badge: '', icon: '📋' }\n        ]},\n        channels: { title: 'إدارة القنوات', desc: 'أوامر قفل وإخفاء وإدارة القنوات', icon: '📌', items: [\n            { name: '/lock', desc: 'قفل قناة', badge: 'صلاحيات ديسكورد', icon: '🔒' },\n            { name: '/unlock', desc: 'فتح قناة مقفولة', badge: 'صلاحيات ديسكورد', icon: '🔓' },\n            { name: '/hide', desc: 'إخفاء قناة عن الأعضاء', badge: 'صلاحيات ديسكورد', icon: '👁️' },\n            { name: '/unhide', desc: 'إظهار قناة مخفية', badge: 'صلاحيات ديسكورد', icon: '👁️' },\n            { name: '/slowmode', desc: 'تفعيل السلو مود في القناة', badge: 'صلاحيات ديسكورد', icon: '🐌' },\n            { name: '/clone', desc: 'نسخ قناة بكامل إعداداتها', badge: 'صلاحيات ديسكورد', icon: '📋' },\n            { name: '/rename', desc: 'تغيير اسم القناة', badge: 'صلاحيات ديسكورد', icon: '✏️' },\n            { name: '/settopic', desc: 'تغيير وصف القناة', badge: 'صلاحيات ديسكورد', icon: '📝' },\n            { name: '/setnsfw', desc: 'تفعيل/تعطيل وضع NSFW', badge: 'صلاحيات ديسكورد', icon: '🔞' }\n        ]},\n        chat: { title: 'أدوات الشات', desc: 'أوامر حذف الرسائل والإعلانات والتفاعل', icon: '💬', items: [\n            { name: '/clear', desc: 'حذف عدد محدد من الرسائل', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/clearpinned', desc: 'حذف الرسائل المثبتة', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/clearbots', desc: 'حذف رسائل البوتات', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/clearuser', desc: 'حذف رسائل عضو معين', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/say', desc: 'إرسال رسالة عبر البوت', badge: 'صلاحيات ديسكورد', icon: '💬' },\n            { name: '/embed', desc: 'إنشاء Embed مخصص', badge: 'صلاحيات ديسكورد', icon: '📦' },\n            { name: '/poll', desc: 'إنشاء استطلاع رأي', badge: 'صلاحيات ديسكورد', icon: '📊' },\n            { name: '/remind', desc: 'تعيين تذكير مؤقت', badge: '', icon: '⏰' },\n            { name: '/announce', desc: 'إرسال إعلان رسمي', badge: 'صلاحيات ديسكورد', icon: '📢' },\n            { name: '/broadcast', desc: 'بث رسالة في جميع القنوات', badge: 'صلاحيات ديسكورد', icon: '📡' },\n            { name: '/translate', desc: 'ترجمة نص إلى لغة أخرى', badge: '', icon: '🌐' },\n            { name: '/quote', desc: 'اقتباس رسالة قديمة', badge: '', icon: '💬' }\n        ]},\n        voice: { title: 'إدارة الصوت', desc: 'أوامر التحكم في قنوات الصوت والأعضاء', icon: '🎙️', items: [\n            { name: '/vcmute', desc: 'كتم عضو في الصوت', badge: 'صلاحيات ديسكورد', icon: '🔇' },\n            { name: '/vcunmute', desc: 'فك كتم عضو في الصوت', badge: 'صلاحيات ديسكورد', icon: '🔊' },\n            { name: '/vcdeafen', desc: 'صمم عضو في الصوت', badge: 'صلاحيات ديسكورد', icon: '🔕' },\n            { name: '/vcundeafen', desc: 'فك تصميم عضو في الصوت', badge: 'صلاحيات ديسكورد', icon: '🔔' },\n            { name: '/vckick', desc: 'طرد عضو من قناة الصوت', badge: 'صلاحيات ديسكورد', icon: '👢' },\n            { name: '/vcmove', desc: 'نقل عضو بين قنوات الصوت', badge: 'صلاحيات ديسكورد', icon: '🔀' },\n            { name: '/vcmoveall', desc: 'نقل جميع الأعضاء لقناة أخرى', badge: 'صلاحيات ديسكورد', icon: '🔀' },\n            { name: '/vclimit', desc: 'تحديد الحد الأقصى للمستخدمين', badge: 'صلاحيات ديسكورد', icon: '🔢' },\n            { name: '/vclock', desc: 'قفل قناة الصوت', badge: 'صلاحيات ديسكورد', icon: '🔒' },\n            { name: '/vcunlock', desc: 'فتح قناة الصوت', badge: 'صلاحيات ديسكورد', icon: '🔓' },\n            { name: '/vchide', desc: 'إخفاء قناة الصوت', badge: 'صلاحيات ديسكورد', icon: '👁️' },\n            { name: '/vcunhide', desc: 'إظهار قناة الصوت', badge: 'صلاحيات ديسكورد', icon: '👁️' },\n            { name: '/vcbitrate', desc: 'تغيير جودة الصوت (Bitrate)', badge: 'صلاحيات ديسكورد', icon: '🎵' },\n            { name: '/tempvoice', desc: 'إنشاء قناة صوتية مؤقتة', badge: '', icon: '⏳' },\n            { name: '/vcinfo', desc: 'معلومات قناة الصوت الحالية', badge: '', icon: '📊' },\n            { name: '/vcactivity', desc: 'تشغيل نشاط جماعي بالصوت', badge: '', icon: '🎮' },\n            { name: '/vcrename', desc: 'تغيير اسم قناة الصوت', badge: 'صلاحيات ديسكورد', icon: '✏️' },\n            { name: '/vcpermit', desc: 'السماح لعضو بالدخول', badge: 'صلاحيات ديسكورد', icon: '✅' },\n            { name: '/vcreject', desc: 'منع عضو من الدخول', badge: 'صلاحيات ديسكورد', icon: '🚫' }\n        ]},\n        roles: { title: 'إدارة الرتب', desc: 'أوامر إعطاء وإزالة وإنشاء الرتب', icon: '🎖️', items: [\n            { name: '/giverole', desc: 'إعطاء رتبة لعضو', badge: 'صلاحيات ديسكورد', icon: '🎁' },\n            { name: '/removerole', desc: 'إزالة رتبة من عضو', badge: 'صلاحيات ديسكورد', icon: '❌' },\n            { name: '/roleall', desc: 'إعطاء رتبة لجميع الأعضاء', badge: 'صلاحيات ديسكورد', icon: '👥' },\n            { name: '/rolebots', desc: 'إعطاء رتبة لجميع البوتات', badge: 'صلاحيات ديسكورد', icon: '🤖' },\n            { name: '/rolehumans', desc: 'إعطاء رتبة لجميع البشر', badge: 'صلاحيات ديسكورد', icon: '👤' },\n            { name: '/createrole', desc: 'إنشاء رتبة جديدة', badge: 'صلاحيات ديسكورد', icon: '✨' },\n            { name: '/deleterole', desc: 'حذف رتبة من السيرفر', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/rolecolor', desc: 'تغيير لون رتبة', badge: 'صلاحيات ديسكورد', icon: '🎨' },\n            { name: '/roleinfo', desc: 'معلومات رتبة مفصلة', badge: '', icon: '📋' },\n            { name: '/inrole', desc: 'قائمة أعضاء رتبة معينة', badge: '', icon: '👥' }\n        ]},\n        custom_roles: { title: 'الرتب الخاصة', desc: 'أوامر الرتب الشخصية المخصصة لكل عضو', icon: '👑', items: [\n            { name: '/customrole', desc: 'إنشاء رتبة خاصة بك', badge: '', icon: '👑' },\n            { name: '/myrole', desc: 'عرض معلومات رتبتك الخاصة', badge: '', icon: '👤' },\n            { name: '/myrole-color', desc: 'تغيير لون رتبتك الخاصة', badge: '', icon: '🎨' },\n            { name: '/myrole-name', desc: 'تغيير اسم رتبتك الخاصة', badge: '', icon: '✏️' },\n            { name: '/myrole-icon', desc: 'تغيير أيقونة رتبتك الخاصة', badge: '', icon: '🖼️' },\n            { name: '/myrole-give', desc: 'مشاركة رتبتك الخاصة مع عضو', badge: '', icon: '🎁' },\n            { name: '/myrole-remove', desc: 'إلغاء مشاركة الرتبة مع عضو', badge: '', icon: '❌' },\n            { name: '/myrole-delete', desc: 'حذف رتبتك الخاصة نهائياً', badge: '', icon: '🗑️' },\n            { name: '/customroles-list', desc: 'قائمة جميع الرتب الخاصة', badge: 'صلاحيات ديسكورد', icon: '📋' }\n        ]},\n        server_info: { title: 'معلومات السيرفر', desc: 'أوامر عرض إحصائيات ومعلومات السيرفر', icon: '📊', items: [\n            { name: '/serverinfo', desc: 'معلومات السيرفر الشاملة', badge: '', icon: '🏠' },\n            { name: '/serverbanner', desc: 'بنر السيرفر الرسمي', badge: '', icon: '🎨' },\n            { name: '/servericon', desc: 'أيقونة السيرفر بدقة عالية', badge: '', icon: '🖼️' },\n            { name: '/serverstats', desc: 'إحصائيات السيرفر المفصلة', badge: '', icon: '📊' },\n            { name: '/boosts', desc: 'قائمة المبوستين وعدد البوستات', badge: '', icon: '💎' },\n            { name: '/invites-top', desc: 'أكثر الأعضاء دعوةً', badge: '', icon: '🔗' },\n            { name: '/channels-list', desc: 'قائمة كاملة بالقنوات', badge: '', icon: '📁' },\n            { name: '/roles-list', desc: 'قائمة وتوزيع الرتب', badge: '', icon: '🎖️' },\n            { name: '/emojis-list', desc: 'قائمة الإيموجيات المخصصة', badge: '', icon: '😃' },\n            { name: '/stickers-list', desc: 'قائمة الستيكرات', badge: '', icon: '🏷️' },\n            { name: '/bans-list', desc: 'قائمة المحظورين', badge: 'صلاحيات ديسكورد', icon: '🔨' },\n            { name: '/admins', desc: 'قائمة الإدارة والمشرفين', badge: '', icon: '👮' },\n            { name: '/bots', desc: 'قائمة بوتات السيرفر', badge: '', icon: '🤖' },\n            { name: '/vanity', desc: 'رابط السيرفر المخصص', badge: '', icon: '🌐' },\n            { name: '/features', desc: 'ميزات السيرفر المفعلة', badge: '', icon: '✨' },\n            { name: '/created', desc: 'تاريخ إنشاء السيرفر', badge: '', icon: '📅' },\n            { name: '/uptime', desc: 'مدة تشغيل البوت', badge: '', icon: '⏱️' },\n            { name: '/ping', desc: 'سرعة الاستجابة', badge: '', icon: '📶' },\n            { name: '/shards', desc: 'معلومات الشاردات', badge: '', icon: '🖧' }\n        ]},\n        custom_bot: { title: 'أدوات البوت الخاص', desc: 'أوامر تخصيص مظهر وحالة البوت الخاص', icon: '🤖', items: [\n            { name: '/bot-setnick', desc: 'تغيير اسم البوت في السيرفر', badge: 'صلاحيات ديسكورد', icon: '✏️' },\n            { name: '/bot-setavatar', desc: 'تغيير صورة البوت', badge: 'صلاحيات ديسكورد', icon: '🖼️' },\n            { name: '/bot-setbanner', desc: 'تغيير بنر البوت', badge: 'صلاحيات ديسكورد', icon: '🎨' },\n            { name: '/bot-setactivity', desc: 'تغيير نشاط وحالة البوت', badge: 'صلاحيات ديسكورد', icon: '🎮' },\n            { name: '/bot-setstatus', desc: 'تغيير حالة التواجد Online/DND/Idle', badge: 'صلاحيات ديسكورد', icon: '🟢' }\n        ]},\n        security: { title: 'الحماية', desc: 'أوامر الحماية من التخريب ومكافحة السبام', icon: '🛡️', items: [\n            { name: '/antiraid', desc: 'تفعيل/تعطيل مكافحة الغزو', badge: 'صلاحيات ديسكورد', icon: '🚨' },\n            { name: '/antinuke', desc: 'إعدادات جدار الحماية Anti-Nuke', badge: 'صلاحيات ديسكورد', icon: '🛡️' },\n            { name: '/whitelist-add', desc: 'إضافة عضو للقائمة البيضاء', badge: 'صلاحيات ديسكورد', icon: '⚪' },\n            { name: '/whitelist-remove', desc: 'إزالة عضو من القائمة البيضاء', badge: 'صلاحيات ديسكورد', icon: '⚫' },\n            { name: '/whitelist-list', desc: 'عرض القائمة البيضاء', badge: 'صلاحيات ديسكورد', icon: '📋' },\n            { name: '/antibot', desc: 'منع دخول البوتات غير الموثقة', badge: 'صلاحيات ديسكورد', icon: '🤖' },\n            { name: '/antispam', desc: 'مكافحة السبام والرسائل المتكررة', badge: 'صلاحيات ديسكورد', icon: '⚡' },\n            { name: '/antilink', desc: 'منع نشر الروابط', badge: 'صلاحيات ديسكورد', icon: '🔗' },\n            { name: '/backup-create', desc: 'إنشاء نسخة احتياطية للسيرفر', badge: 'صلاحيات ديسكورد', icon: '📦' },\n            { name: '/backup-load', desc: 'استعادة نسخة احتياطية', badge: 'صلاحيات ديسكورد', icon: '🔄' },\n            { name: '/backup-list', desc: 'قائمة النسخ الاحتياطية', badge: 'صلاحيات ديسكورد', icon: '📜' },\n            { name: '/lockdown', desc: 'إغلاق كامل قنوات السيرفر فوراً', badge: 'صلاحيات ديسكورد', icon: '🔒' },\n            { name: '/unlockdown', desc: 'إعادة فتح جميع القنوات المغلقة', badge: 'صلاحيات ديسكورد', icon: '🔓' },\n            { name: '/security-status', desc: 'تقرير حالة الحماية', badge: '', icon: '📊' },\n            { name: '/security-audit', desc: 'فحص ثغرات وصلاحيات السيرفر', badge: 'صلاحيات ديسكورد', icon: '🔍' }\n        ]},\n        levels_cat: { title: 'المستويات والخبرة', desc: 'أوامر المستويات وبطاقات الرانك', icon: '⭐', items: [\n            { name: '/rank', desc: 'عرض بطاقة مستواك الحالية', badge: '', icon: '💳' },\n            { name: '/levels-leaderboard', desc: 'المتصدرين في المستويات', badge: '', icon: '🏆' },\n            { name: '/setxp', desc: 'تعديل نقاط الخبرة لعضو', badge: 'صلاحيات ديسكورد', icon: '⚡' },\n            { name: '/setlevel', desc: 'تعديل مستوى عضو', badge: 'صلاحيات ديسكورد', icon: '🎖️' },\n            { name: '/resetlevels', desc: 'تصفير نظام المستويات', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/level-reward-add', desc: 'إضافة رتبة مكافأة عند مستوى', badge: 'صلاحيات ديسكورد', icon: '🎁' },\n            { name: '/level-reward-remove', desc: 'إزالة رتبة مكافأة', badge: 'صلاحيات ديسكورد', icon: '❌' },\n            { name: '/level-rewards-list', desc: 'قائمة جميع رتب المكافآت', badge: '', icon: '📜' },\n            { name: '/levelcard-bg', desc: 'تغيير خلفية بطاقة الرانك', badge: '', icon: '🎨' },\n            { name: '/doublexp', desc: 'تفعيل مضاعفة الخبرة 2x', badge: 'صلاحيات ديسكورد', icon: '🚀' }\n        ]},\n        server_stats: { title: 'إحصائيات السيرفر', desc: 'أوامر قنوات العدادات التلقائية', icon: '📈', items: [\n            { name: '/stats-setup', desc: 'إنشاء قنوات عدادات السيرفر', badge: 'صلاحيات ديسكورد', icon: '📊' },\n            { name: '/stats-members', desc: 'تفعيل عداد الأعضاء', badge: 'صلاحيات ديسكورد', icon: '👥' },\n            { name: '/stats-bots', desc: 'تفعيل عداد البوتات', badge: 'صلاحيات ديسكورد', icon: '🤖' },\n            { name: '/stats-channels', desc: 'تفعيل عداد القنوات', badge: 'صلاحيات ديسكورد', icon: '📁' },\n            { name: '/stats-roles', desc: 'تفعيل عداد الرتب', badge: 'صلاحيات ديسكورد', icon: '🎖️' },\n            { name: '/stats-boosts', desc: 'تفعيل عداد البوستات', badge: 'صلاحيات ديسكورد', icon: '💎' },\n            { name: '/stats-online', desc: 'تفعيل عداد المتواجدين أونلاين', badge: 'صلاحيات ديسكورد', icon: '🟢' },\n            { name: '/stats-voice', desc: 'تفعيل عداد المتواجدين في الصوت', badge: 'صلاحيات ديسكورد', icon: '🎙️' },\n            { name: '/stats-delete', desc: 'حذف جميع قنوات العدادات', badge: 'صلاحيات ديسكورد', icon: '🗑️' },\n            { name: '/stats-refresh', desc: 'تحديث فوري لأرقام العدادات', badge: 'صلاحيات ديسكورد', icon: '🔄' },\n            { name: '/stats-format', desc: 'تعديل شكل قنوات العدادات', badge: 'صلاحيات ديسكورد', icon: '✏️' }\n        ]},\n        profile_cat: { title: 'الملف الشخصي', desc: 'أوامر البروفايل والسمعة والعملات', icon: '👤', items: [\n            { name: '/profile', desc: 'عرض بطاقة بروفايلك الشاملة', badge: '', icon: '💳' },\n            { name: '/rep', desc: 'إعطاء نقطة سمعة لعضو (+rep)', badge: '', icon: '⭐' },\n            { name: '/daily', desc: 'استلام الراتب اليومي (Gold)', badge: '', icon: '🪙' },\n            { name: '/coins', desc: 'رصيدك من عملات Gold', badge: '', icon: '💰' },\n            { name: '/pay', desc: 'تحويل عملات Gold لعضو آخر', badge: '', icon: '💸' },\n            { name: '/setbio', desc: 'تعديل النبذة الشخصية', badge: '', icon: '📝' },\n            { name: '/settitle', desc: 'تعديل اللقب الشخصي', badge: '', icon: '🏷️' },\n            { name: '/setbadge', desc: 'تعديل الشارة المفضلة', badge: '', icon: '🎖️' },\n            { name: '/profile-bg', desc: 'تغيير خلفية بطاقة البروفايل', badge: '', icon: '🎨' },\n            { name: '/marry', desc: 'الزواج التفاعلي في السيرفر', badge: '', icon: '💍' }\n        ]}\n    };\n\n    var catBtnMap = {\n        basic:'btnCatBasic', punishments:'btnCatPunishments', punishment_logs:'btnCatPunishmentLogs',\n        channels:'btnCatChannels', chat:'btnCatChat', voice:'btnCatVoice',\n        roles:'btnCatRoles', custom_roles:'btnCatCustomRoles', server_info:'btnCatServerInfo',\n        custom_bot:'btnCatCustomBot', security:'btnCatSecurity', levels_cat:'btnCatLevels',\n        server_stats:'btnCatServerStats', profile_cat:'btnCatProfile'\n    };\n    var catBadgeMap = {\n        basic:'badgeCatBasic', punishments:'badgeCatPunishments', punishment_logs:'badgeCatPunishmentLogs',\n        channels:'badgeCatChannels', chat:'badgeCatChat', voice:'badgeCatVoice',\n        roles:'badgeCatRoles', custom_roles:'badgeCatCustomRoles', server_info:'badgeCatServerInfo',\n        custom_bot:'badgeCatCustomBot', security:'badgeCatSecurity', levels_cat:'badgeCatLevels',\n        server_stats:'badgeCatServerStats', profile_cat:'badgeCatProfile'\n    };\n\n    var currentCat = 'punishments';\n    var currentFilter = 'all';\n    var disabledCmds = " + JSON.stringify((function() { try { var raw = settings.disabled_commands; if (!raw) return {}; var arr = typeof raw === "string" ? JSON.parse(raw) : raw; var m = {}; for (var i = 0; i < arr.length; i++) m[arr[i]] = true; return m; } catch(e) { return {}; } })()) + ";\n    var commandConfigs = " + JSON.stringify((function() { try { var raw = settings.command_configs; if (!raw) return {}; return typeof raw === "string" ? JSON.parse(raw) : (raw || {}); } catch(e) { return {}; } })()) + ";\n    var guildRoles = " + JSON.stringify((guildRoles || []).map(function(r) { return { id: r.id, name: r.name }; })) + ";\n    var guildChannels = " + JSON.stringify((guildTextChannels || []).map(function(c) { return { id: c.id, name: c.name }; })) + ";\n\n    function isEn(name) { return !disabledCmds[name]; }\n\n    function render() {\n        var container = document.getElementById('cmdsListContainer');\n        if (!container) return;\n        var data = DB[currentCat] || DB.punishments;\n        var t = document.getElementById('catTitle');\n        var d = document.getElementById('catDesc');\n        var ic = document.getElementById('catIcon');\n        if (t) t.innerText = data.title;\n        if (d) d.innerText = data.desc;\n        if (ic) ic.innerText = data.icon;\n        var searchEl = document.getElementById('cmdSearchInput');\n        var sv = searchEl ? searchEl.value.toLowerCase().trim() : '';\n        var filtered = data.items.filter(function(item) {\n            if (currentFilter === 'enabled' && !isEn(item.name)) return false;\n            if (currentFilter === 'disabled' && isEn(item.name)) return false;\n            if (sv && item.name.toLowerCase().indexOf(sv) === -1 && item.desc.toLowerCase().indexOf(sv) === -1) return false;\n            return true;\n        });\n        if (!filtered.length) {\n            container.innerHTML = '<div class=\"py-12 bg-[#12141f] border border-white/5 rounded-2xl text-center text-xs text-gray-500\">لا توجد أوامر مطابقة 🔍</div>';\n            updateCounters(); return;\n        }\n        var html = '';\n        for (var i = 0; i < filtered.length; i++) {\n            var item = filtered[i];\n            var en = isEn(item.name);\n            var bh = item.badge ? '<span class=\"px-2.5 py-0.5 bg-purple-950/60 text-purple-300 border border-purple-800/40 rounded-lg text-[10px] font-bold flex items-center gap-1\"><span>' + item.badge + '</span><span>&#128737;</span></span>' : '';\n            var cfg = commandConfigs[item.name] || {};\n            var alias = cfg.alias || '';\n            var aRoles = cfg.allowedRoles || [];\n            var aChs = cfg.allowedChannels || [];\n            html += '<div class=\"cmd-card-wrap border border-white/5 rounded-2xl bg-[#12141f] overflow-hidden transition hover:border-purple-500/40' + (en ? '' : ' opacity-50') + '\" data-cmd=\"' + item.name + '\">';\n            html += '<div class=\"p-4 flex items-center justify-between\">';\n            html += '<div class=\"flex items-center gap-3\">';\n            html += '<label class=\"toggle\"><input type=\"checkbox\" data-cmd=\"' + item.name + '\"' + (en ? ' checked' : '') + '><span class=\"slider\"></span></label>';\n            html += '<button type=\"button\" class=\"cmd-expand-btn text-gray-500 hover:text-purple-400 p-1 text-xs transition cursor-pointer\" data-cmd=\"' + item.name + '\">&#9660;</button>';\n            html += '</div>';\n            html += '<div class=\"flex items-center gap-3\">';\n            html += '<div class=\"text-right\">';\n            html += '<div class=\"flex items-center justify-end gap-2\">' + bh + '<span class=\"font-black text-white text-xs font-mono\">' + item.name + '</span></div>';\n            html += '<p class=\"text-[11px] text-gray-400 mt-0.5\">' + item.desc + '</p>';\n            html += '</div>';\n            html += '<div class=\"w-9 h-9 rounded-xl bg-[#0b0d14] border border-white/5 flex items-center justify-center text-sm shadow-inner\">' + (item.icon || '&#9881;') + '</div>';\n            html += '</div>';\n            html += '</div>';\n            // Accordion Settings Details\n            html += '<div class=\"cmd-accordion border-t border-white/5 bg-[#0b0d14] p-4 space-y-4 text-right\" data-cmd=\"' + item.name + '\" style=\"display:none;\">';\n            html += '<div class=\"flex items-center justify-between gap-4 flex-wrap\">';\n            html += '<div class=\"flex-1 min-w-[200px]\">';\n            html += '<label class=\"block text-[10px] text-gray-400 font-bold mb-1\">اختصار مخصص للأمر (Custom Alias)</label>';\n            html += '<input type=\"text\" class=\"cmd-alias-input w-full bg-[#12141f] border border-white/10 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white outline-none text-right\" placeholder=\"مثال: !b أو /b\" data-cmd=\"' + item.name + '\" value=\"' + alias.split('\"').join('&quot;') + '\">';\n            html += '</div>';\n            html += '</div>';\n            html += '<div>';\n            html += '<label class=\"block text-[10px] text-gray-400 font-bold mb-1.5\">الرتب المسموح لها فقط بتشغيل الأمر (Allowed Roles)</label>';\n            html += '<div class=\"flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end\">';\n            for (var ri = 0; ri < guildRoles.length; ri++) {\n                var role = guildRoles[ri];\n                var rChecked = aRoles.indexOf(role.id) !== -1;\n                html += '<label class=\"flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300\">';\n                html += '<span>' + role.name + '</span>';\n                html += '<input type=\"checkbox\" class=\"cmd-role-chk accent-purple-600\" data-cmd=\"' + item.name + '\" data-rid=\"' + role.id + '\"' + (rChecked ? ' checked' : '') + '>';\n                html += '</label>';\n            }\n            html += '</div>';\n            html += '</div>';\n            html += '<div>';\n            html += '<label class=\"block text-[10px] text-gray-400 font-bold mb-1.5\">القنوات المسموح فيها فقط بتشغيل الأمر (Allowed Channels)</label>';\n            html += '<div class=\"flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end\">';\n            for (var ci = 0; ci < guildChannels.length; ci++) {\n                var ch = guildChannels[ci];\n                var cChecked = aChs.indexOf(ch.id) !== -1;\n                html += '<label class=\"flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300\">';\n                html += '<span>#' + ch.name + '</span>';\n                html += '<input type=\"checkbox\" class=\"cmd-ch-chk accent-purple-600\" data-cmd=\"' + item.name + '\" data-chid=\"' + ch.id + '\"' + (cChecked ? ' checked' : '') + '>';\n                html += '</label>';\n            }\n            html += '</div>';\n            html += '</div>';\n            html += '<div class=\"flex items-center justify-between pt-2 border-t border-white/5\">';\n            html += '<button type=\"button\" class=\"cmd-reset-btn px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 rounded-xl text-xs font-bold transition cursor-pointer\" data-cmd=\"' + item.name + '\">إعادة ضبط</button>';\n            html += '<button type=\"button\" class=\"cmd-save-btn px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-lg cursor-pointer\" data-cmd=\"' + item.name + '\">حفظ تفاصيل الأمر</button>';\n            html += '</div>';\n            html += '</div>';\n            html += '</div>';\n        }\n        container.innerHTML = html;\n        var checks = container.querySelectorAll('input[type=\"checkbox\"][data-cmd]:not(.cmd-role-chk):not(.cmd-ch-chk)');\n        for (var j = 0; j < checks.length; j++) {\n            (function(cb) {\n                cb.addEventListener('change', function() {\n                    window.toggleSingleCmd(cb.getAttribute('data-cmd'), cb.checked);\n                    var card = cb.closest('div.cmd-card-wrap');\n                    if (card) { if (cb.checked) card.classList.remove('opacity-50'); else card.classList.add('opacity-50'); }\n                });\n            })(checks[j]);\n        }\n        var expBtns = container.querySelectorAll('.cmd-expand-btn');\n        for (var eb = 0; eb < expBtns.length; eb++) {\n            (function(btn) {\n                btn.addEventListener('click', function() {\n                    var cmdName = btn.getAttribute('data-cmd');\n                    var panel = container.querySelector('.cmd-accordion[data-cmd=\"' + cmdName + '\"]');\n                    if (!panel) return;\n                    var open = panel.style.display !== 'none';\n                    panel.style.display = open ? 'none' : 'block';\n                    btn.innerHTML = open ? '&#9660;' : '&#9650;';\n                });\n            })(expBtns[eb]);\n        }\n        var saveBtns = container.querySelectorAll('.cmd-save-btn');\n        for (var sb = 0; sb < saveBtns.length; sb++) {\n            (function(btn) {\n                btn.addEventListener('click', function() {\n                    var cmdName = btn.getAttribute('data-cmd');\n                    var panel = container.querySelector('.cmd-accordion[data-cmd=\"' + cmdName + '\"]');\n                    if (!panel) return;\n                    var aliasInput = panel.querySelector('.cmd-alias-input');\n                    var alias = aliasInput ? aliasInput.value.trim() : '';\n                    var roleChks = panel.querySelectorAll('.cmd-role-chk:checked');\n                    var chChks = panel.querySelectorAll('.cmd-ch-chk:checked');\n                    var roles = [], chs = [];\n                    for (var i = 0; i < roleChks.length; i++) roles.push(roleChks[i].getAttribute('data-rid'));\n                    for (var i = 0; i < chChks.length; i++) chs.push(chChks[i].getAttribute('data-chid'));\n                    if (!commandConfigs[cmdName]) commandConfigs[cmdName] = {};\n                    commandConfigs[cmdName].alias = alias;\n                    commandConfigs[cmdName].allowedRoles = roles;\n                    commandConfigs[cmdName].allowedChannels = chs;\n                    saveStates();\n                    updateCounters();\n                });\n            })(saveBtns[sb]);\n        }\n        var resetBtns = container.querySelectorAll('.cmd-reset-btn');\n        for (var rb = 0; rb < resetBtns.length; rb++) {\n            (function(btn) {\n                btn.addEventListener('click', function() {\n                    var cmdName = btn.getAttribute('data-cmd');\n                    delete commandConfigs[cmdName];\n                    render();\n                    saveStates();\n                    updateCounters();\n                });\n            })(resetBtns[rb]);\n        }\n        updateCounters();\n        if (window.zenoI18n && typeof window.zenoI18n.apply === \"function\") { try { window.zenoI18n.apply(); } catch(e) {} }\n    }\n\n    function updateCounters() {\n        var total = 0, enabled = 0;\n        var keys = Object.keys(DB);\n        for (var i = 0; i < keys.length; i++) {\n            var cat = keys[i];\n            var items = DB[cat].items;\n            total += items.length;\n            var catEn = 0;\n            for (var j = 0; j < items.length; j++) { if (isEn(items[j].name)) catEn++; }\n            enabled += catEn;\n            var bId = catBadgeMap[cat];\n            if (bId) {\n                var badge = document.getElementById(bId);\n                if (badge) {\n                    badge.textContent = catEn + '/' + items.length;\n                    badge.className = catEn === 0\n                        ? 'px-2 py-0.5 bg-rose-950/60 text-rose-400 rounded-lg text-[10px] font-mono'\n                        : catEn < items.length\n                            ? 'px-2 py-0.5 bg-amber-950/60 text-amber-400 rounded-lg text-[10px] font-mono'\n                            : 'px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono';\n                }\n            }\n        }\n        var aliasCount = Object.keys(commandConfigs).filter(function(k){ return commandConfigs[k] && commandConfigs[k].alias; }).length;\n        var acEl = document.getElementById('customAliasesCount');\n        if (acEl) acEl.textContent = aliasCount;\n        var te = document.getElementById('totalCmdsCount');\n        var ee = document.getElementById('enabledCmdsCount');\n        if (te) te.textContent = total;\n        if (ee) ee.textContent = enabled;\n    }\n\n    function showSaved() {\n        var el = document.getElementById('cmdSaveIndicator');\n        if (el) { el.classList.remove('opacity-0'); setTimeout(function() { el.classList.add('opacity-0'); }, 2000); }\n    }\n\n    function saveStates() {\n        try {\n            var gId = window.location.pathname.split('/')[2];\n            if (!gId) return;\n            var disArr = Object.keys(disabledCmds).filter(function(k) { return disabledCmds[k]; });\n            var xhr = new XMLHttpRequest();\n            xhr.open('POST', '/api/guild/' + gId + '/settings', true);\n            xhr.setRequestHeader('Content-Type', 'application/json');\n            xhr.onload = function() { try { if (JSON.parse(xhr.responseText).success) showSaved(); } catch(e) {} };\n            xhr.send(JSON.stringify({ disabled_commands: JSON.stringify(disArr), command_configs: JSON.stringify(commandConfigs) }));\n        } catch(e) {}\n    }\n\n    window.switchCmdCategory = function(catKey) {\n        currentCat = catKey;\n        var bKeys = Object.keys(catBtnMap);\n        for (var i = 0; i < bKeys.length; i++) {\n            var btn = document.getElementById(catBtnMap[bKeys[i]]);\n            if (!btn) continue;\n            btn.className = bKeys[i] === catKey\n                ? 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg transition cursor-pointer'\n                : 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer';\n        }\n        render();\n    };\n\n    window.searchCommands = function() { render(); };\n\n    window.filterCmdStatus = function(status) {\n        currentFilter = status;\n        var statusList = ['all','enabled','disabled'];\n        for (var i = 0; i < statusList.length; i++) {\n            var s = statusList[i];\n            var label = s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1);\n            var btn = document.getElementById('btnFilter' + label);\n            if (btn) btn.className = s === status\n                ? 'px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 text-white transition shadow cursor-pointer'\n                : 'px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition cursor-pointer';\n        }\n        render();\n    };\n\n    window.toggleAllCategoryCmds = function(enable) {\n        var items = (DB[currentCat] || DB.punishments).items;\n        for (var i = 0; i < items.length; i++) { disabledCmds[items[i].name] = !enable; }\n        saveStates(); render();\n    };\n\n    window.toggleSingleCmd = function(cmdName, enabled) {\n        disabledCmds[cmdName] = !enabled;\n        saveStates(); updateCounters();\n    };\n\n    // Run render immediately\n    render();\n})();\n\n</script>";
             } else if (section === 'automod') {
 formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr">
 
@@ -2822,33 +2992,33 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 </script>
 `;
             } else if (section === 'protection') {
-formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr">
+formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
 
-                        <!-- 1. Banner Alert: Bot does not have critical permissions -->
+                        <!-- 1. Banner Alert: البوت لا يملك صلاحيات حرجة الآن -->
                         <div class="bg-[#1e0e11] border border-rose-900/50 p-4 rounded-2xl flex items-center justify-between shadow-lg">
                             <div class="flex items-center gap-3">
                                 <label class="toggle">
                                     <input type="checkbox" name="lock_dashboard" value="1" ${settings.lock_dashboard ? 'checked' : ''} onchange="saveProtectionSetting('lock_dashboard', this.checked)">
                                     <span class="slider"></span>
                                 </label>
-                                <span class="text-xs font-bold text-rose-300">Lock Dashboard</span>
+                                <span class="text-xs font-bold text-rose-300">قفل لوحة التحكم</span>
                             </div>
                             <div class="flex items-center gap-2 text-rose-400 font-bold text-xs">
-                                <span>Bot does not have critical permissions</span>
+                                <span>البوت لا يملك صلاحيات حرجة الآن</span>
                                 <span class="text-base">⚠️</span>
                             </div>
                         </div>
 
-                        <!-- 2. Master Toggle: Enable Protection System -->
+                        <!-- 2. Master Toggle: تفعيل نظام الحماية -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl flex items-center justify-between shadow-lg">
                             <label class="toggle">
                                 <input type="checkbox" name="anti_nuke_enabled" value="1" ${settings.anti_nuke_enabled !== 0 ? 'checked' : ''} onchange="saveProtectionSetting('anti_nuke_enabled', this.checked)">
                                 <span class="slider"></span>
                             </label>
                             <div class="flex items-center gap-3">
-                                <div class="text-left">
-                                    <h4 class="font-black text-white text-sm">Enable Protection System</h4>
-                                    <p class="text-gray-400 text-xs mt-0.5">Enable or disable the comprehensive protection system</p>
+                                <div class="text-right">
+                                    <h4 class="font-black text-white text-sm">تفعيل نظام الحماية</h4>
+                                    <p class="text-gray-400 text-xs mt-0.5">تفعيل أو تعطيل نظام الحماية الشامل</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center text-lg border border-purple-500/30">
                                     🛡️
@@ -2856,14 +3026,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             </div>
                         </div>
 
-                        <!-- 3. Browser Protection -->
+                        <!-- 3. حماية المتصفح (Browser Protection) -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl space-y-3 shadow-lg">
                             <div class="flex items-center justify-between">
                                 <span class="text-xs text-gray-500 font-mono">PRO ONLY</span>
                                 <div class="flex items-center gap-3">
-                                    <div class="text-left">
-                                        <h4 class="font-black text-white text-sm">Browser Protection</h4>
-                                        <p class="text-gray-400 text-xs mt-0.5">Temporarily removes protected member roles when joining from a browser — private bots only</p>
+                                    <div class="text-right">
+                                        <h4 class="font-black text-white text-sm">حماية المتصفح</h4>
+                                        <p class="text-gray-400 text-xs mt-0.5">يزيل رتب الأعضاء المحمية مؤقتاً عند الدخول من متصفح — بوتات خاصة فقط</p>
                                     </div>
                                     <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-lg border border-indigo-500/30">
                                         🌐
@@ -2871,74 +3041,74 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 </div>
                             </div>
                             <div class="bg-[#0b0d14] border border-white/5 p-3 rounded-xl flex items-center justify-end gap-2 text-gray-400 text-xs">
-                                <span>This feature only works with private bots — an active private-bot subscription is required for this server.</span>
+                                <span>هذه الميزة تعمل فقط مع البوتات الخاصة — يتطلب اشتراك بوت خاص نشط لهذا السيرفر.</span>
                                 <span>🔒</span>
                             </div>
                         </div>
 
-                        <!-- 4. Detection & Punishment -->
+                        <!-- 4. تحديد وعقوبة -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl space-y-6 shadow-xl">
                             <div class="flex items-center justify-between border-b border-white/5 pb-3">
-                                <span id="badge_limit_punish" class="px-3 py-1 bg-amber-950/60 text-amber-300 border border-amber-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_channel_delete, settings.anti_channel_create, settings.anti_channel_update, settings.anti_channel_permissions, settings.anti_role_delete, settings.anti_role_create, settings.anti_role_update, settings.anti_webhook_create, settings.anti_webhook_update, settings.anti_mass_ban, settings.anti_mass_kick, settings.anti_mass_mention].filter(Boolean).length}/12 Enabled</span>
+                                <span id="badge_limit_punish" class="px-3 py-1 bg-amber-950/60 text-amber-300 border border-amber-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_channel_delete, settings.anti_channel_create, settings.anti_channel_update, settings.anti_channel_permissions, settings.anti_role_delete, settings.anti_role_create, settings.anti_role_update, settings.anti_webhook_create, settings.anti_webhook_update, settings.anti_mass_ban, settings.anti_mass_kick, settings.anti_mass_mention].filter(Boolean).length}/12 مفعل</span>
                                 <div class="flex items-center gap-2">
-                                    <div class="text-left">
-                                        <h4 class="font-black text-white text-sm">Detection & Punishment</h4>
-                                        <p class="text-gray-400 text-[11px]">Set a threshold and punishment for each action</p>
+                                    <div class="text-right">
+                                        <h4 class="font-black text-white text-sm">تحديد وعقوبة</h4>
+                                        <p class="text-gray-400 text-[11px]">تعيين حد وعقوبة لكل إجراء</p>
                                     </div>
                                     <span class="text-base">🛡️</span>
                                 </div>
                             </div>
 
-                            <!-- Group 1: Channel Protection -->
+                            <!-- مجموعة 1: حماية الرومات / الشاتات -->
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
-                                    <span id="badge_grp_channels">${[settings.anti_channel_delete, settings.anti_channel_create, settings.anti_channel_update, settings.anti_channel_permissions].filter(Boolean).length}/4 Enabled</span>
-                                    <span class="text-white">Channel Protection</span>
+                                    <span id="badge_grp_channels">${[settings.anti_channel_delete, settings.anti_channel_create, settings.anti_channel_update, settings.anti_channel_permissions].filter(Boolean).length}/4 مفعل</span>
+                                    <span class="text-white">حماية الرومات / الشاتات</span>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <!-- Anti-Channel Deletion -->
+                                    <!-- مكافحة حذف القنوات -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_channel_delete" value="1" ${settings.anti_channel_delete ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_delete', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-left">
+                                        <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">Anti-Channel Deletion</h5>
-                                                <p class="text-[10px] text-gray-400">Prevent mass channel deletion</p>
+                                                <h5 class="text-xs font-bold text-white">مكافحة حذف القنوات</h5>
+                                                <p class="text-[10px] text-gray-400">منع حذف قنوات جماعي</p>
                                             </div>
                                             <span class="text-sm">🗑️</span>
                                         </div>
                                     </div>
 
-                                    <!-- Anti-Channel Creation -->
+                                    <!-- مكافحة إنشاء القنوات -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_channel_create" value="1" ${settings.anti_channel_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_create', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-left">
+                                        <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">Anti-Channel Creation</h5>
-                                                <p class="text-[10px] text-gray-400">Prevent mass channel creation</p>
+                                                <h5 class="text-xs font-bold text-white">مكافحة إنشاء القنوات</h5>
+                                                <p class="text-[10px] text-gray-400">منع إنشاء قنوات جماعي</p>
                                             </div>
                                             <span class="text-sm">📢</span>
                                         </div>
                                     </div>
 
-                                    <!-- Anti-Channel Modification -->
+                                    <!-- مكافحة تعديل القنوات -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_channel_update" value="1" ${settings.anti_channel_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_update', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-left">
+                                        <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">Anti-Channel Modification</h5>
-                                                <p class="text-[10px] text-gray-400">Prevent mass channel modification</p>
+                                                <h5 class="text-xs font-bold text-white">مكافحة تعديل القنوات</h5>
+                                                <p class="text-[10px] text-gray-400">منع تعديل قنوات جماعي</p>
                                             </div>
                                             <span class="text-sm">#️⃣</span>
                                         </div>
                                     </div>
 
-                                    <!-- Channel Permission Protection -->
+                                    <!-- حماية صلاحيات القنوات -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_channel_permissions" value="1" ${settings.anti_channel_permissions ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_permissions', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-left">
+                                        <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">Channel Permission Protection</h5>
-                                                <p class="text-[10px] text-gray-400">Prevent any changes to channel permissions (Allow/Deny/Overwrites)</p>
+                                                <h5 class="text-xs font-bold text-white">حماية صلاحيات القنوات</h5>
+                                                <p class="text-[10px] text-gray-400">منع أي تعديل على صلاحيات القنوات بأي شكل (Allow/Deny/Overwrites)</p>
                                             </div>
                                             <span class="text-sm">⚙️</span>
                                         </div>
@@ -2946,44 +3116,44 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 </div>
                             </div>
 
-                            <!-- Group 2: Role Protection -->
+                            <!-- مجموعة 2: حماية الرتب -->
                             <div class="space-y-3 pt-4 border-t border-white/5">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
-                                    <span id="badge_grp_roles">${[settings.anti_role_delete, settings.anti_role_create, settings.anti_role_update].filter(Boolean).length}/3 Enabled</span>
-                                    <span class="text-white">Role Protection</span>
+                                    <span id="badge_grp_roles">${[settings.anti_role_delete, settings.anti_role_create, settings.anti_role_update].filter(Boolean).length}/3 مفعل</span>
+                                    <span class="text-white">حماية الرتب</span>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <!-- Anti-Role Deletion -->
+                                    <!-- مكافحة حذف الرتب -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_role_delete" value="1" ${settings.anti_role_delete ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_delete', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-left">
+                                        <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">Anti-Role Deletion</h5>
-                                                <p class="text-[10px] text-gray-400">Prevent mass role deletion</p>
+                                                <h5 class="text-xs font-bold text-white">مكافحة حذف الرتب</h5>
+                                                <p class="text-[10px] text-gray-400">منع حذف رتب جماعي</p>
                                             </div>
                                             <span class="text-sm">🗑️</span>
                                         </div>
                                     </div>
 
-                                    <!-- Anti-Role Creation -->
+                                    <!-- مكافحة إنشاء الرتب -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_role_create" value="1" ${settings.anti_role_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_create', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-left">
+                                        <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">Anti-Role Creation</h5>
-                                                <p class="text-[10px] text-gray-400">Prevent mass role creation</p>
+                                                <h5 class="text-xs font-bold text-white">مكافحة إنشاء الرتب</h5>
+                                                <p class="text-[10px] text-gray-400">منع إنشاء رتب جماعي</p>
                                             </div>
                                             <span class="text-sm">🎖️</span>
                                         </div>
                                     </div>
 
-                                    <!-- Anti-Role Modification -->
+                                    <!-- مكافحة تعديل الرتب -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_role_update" value="1" ${settings.anti_role_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_update', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-left">
+                                        <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">Anti-Role Modification</h5>
-                                                <p class="text-[10px] text-gray-400">Prevent mass role modification</p>
+                                                <h5 class="text-xs font-bold text-white">مكافحة تعديل الرتب</h5>
+                                                <p class="text-[10px] text-gray-400">منع تعديل رتب جماعي</p>
                                             </div>
                                             <span class="text-sm">🏅</span>
                                         </div>
@@ -2991,32 +3161,32 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 </div>
                             </div>
 
-                            <!-- Group 3: Webhook Protection -->
+                            <!-- مجموعة 3: حماية الويب هوك -->
                             <div class="space-y-3 pt-4 border-t border-white/5">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
-                                    <span id="badge_grp_webhooks">${[settings.anti_webhook_create, settings.anti_webhook_update].filter(Boolean).length}/2 Enabled</span>
-                                    <span class="text-white">Webhook Protection</span>
+                                    <span id="badge_grp_webhooks">${[settings.anti_webhook_create, settings.anti_webhook_update].filter(Boolean).length}/2 مفعل</span>
+                                    <span class="text-white">حماية الويب هوك</span>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <!-- Anti-Webhook Creation -->
+                                    <!-- مكافحة إنشاء الويب هوك -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_webhook_create" value="1" ${settings.anti_webhook_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_webhook_create', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-left">
+                                        <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">Anti-Webhook Creation</h5>
-                                                <p class="text-[10px] text-gray-400">Prevent webhook creation and immediately remove it while punishing the responsible user</p>
+                                                <h5 class="text-xs font-bold text-white">مكافحة إنشاء الويب هوك</h5>
+                                                <p class="text-[10px] text-gray-400">منع إنشاء الويب هوك وحذفه فوراً مع معاقبة المسؤول</p>
                                             </div>
                                             <span class="text-sm">⚙️</span>
                                         </div>
                                     </div>
 
-                                    <!-- Anti-Webhook Modification -->
+                                    <!-- مكافحة تعديل الويب هوك -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_webhook_update" value="1" ${settings.anti_webhook_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_webhook_update', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-left">
+                                        <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">Anti-Webhook Modification</h5>
-                                                <p class="text-[10px] text-gray-400">Prevent mass modification of existing webhooks while punishing the responsible user</p>
+                                                <h5 class="text-xs font-bold text-white">مكافحة تعديل الويب هوك</h5>
+                                                <p class="text-[10px] text-gray-400">منع التعديل الجماعي على الويب هوكات الحالية مع معاقبة المسؤول</p>
                                             </div>
                                             <span class="text-sm">⚙️</span>
                                         </div>
@@ -3024,32 +3194,32 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 </div>
                             </div>
 
-                            <!-- Group 4: Member Protection -->
+                            <!-- مجموعة 4: حماية الأعضاء -->
                             <div class="space-y-3 pt-4 border-t border-white/5">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
-                                    <span id="badge_grp_members">${[settings.anti_mass_ban, settings.anti_mass_kick].filter(Boolean).length}/2 Enabled</span>
-                                    <span class="text-white">Member Protection</span>
+                                    <span id="badge_grp_members">${[settings.anti_mass_ban, settings.anti_mass_kick].filter(Boolean).length}/2 مفعل</span>
+                                    <span class="text-white">حماية الأعضاء</span>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <!-- Anti-Ban -->
+                                    <!-- مكافحة الحظر -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_mass_ban" value="1" ${settings.anti_mass_ban ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_ban', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-left">
+                                        <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">Anti-Ban</h5>
-                                                <p class="text-[10px] text-gray-400">Prevent mass bans</p>
+                                                <h5 class="text-xs font-bold text-white">مكافحة الحظر</h5>
+                                                <p class="text-[10px] text-gray-400">منع الحظر الجماعي</p>
                                             </div>
                                             <span class="text-sm">🔨</span>
                                         </div>
                                     </div>
 
-                                    <!-- Anti-Kick -->
+                                    <!-- مكافحة الطرد -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_mass_kick" value="1" ${settings.anti_mass_kick ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_kick', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-left">
+                                        <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">Anti-Kick</h5>
-                                                <p class="text-[10px] text-gray-400">Prevent mass kicks</p>
+                                                <h5 class="text-xs font-bold text-white">مكافحة الطرد</h5>
+                                                <p class="text-[10px] text-gray-400">منع الطرد الجماعي</p>
                                             </div>
                                             <span class="text-sm">👢</span>
                                         </div>
@@ -3057,20 +3227,20 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 </div>
                             </div>
 
-                            <!-- Group 5: Content Protection -->
+                            <!-- مجموعة 5: حماية المحتوى -->
                             <div class="space-y-3 pt-4 border-t border-white/5">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
-                                    <span id="badge_grp_content">${[settings.anti_mass_mention].filter(Boolean).length}/1 Enabled</span>
-                                    <span class="text-white">Content Protection</span>
+                                    <span id="badge_grp_content">${[settings.anti_mass_mention].filter(Boolean).length}/1 مفعل</span>
+                                    <span class="text-white">حماية المحتوى</span>
                                 </div>
                                 <div class="grid grid-cols-1 gap-3">
-                                    <!-- Anti-Mentions -->
+                                    <!-- مكافحة المنشنات -->
                                     <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                         <label class="toggle"><input type="checkbox" name="anti_mass_mention" value="1" ${settings.anti_mass_mention ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_mention', this.checked)"><span class="slider"></span></label>
-                                        <div class="flex items-center gap-2 text-left">
+                                        <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-white">Anti-Mentions</h5>
-                                                <p class="text-[10px] text-gray-400">Prevent excessive mentions</p>
+                                                <h5 class="text-xs font-bold text-white">مكافحة المنشنات</h5>
+                                                <p class="text-[10px] text-gray-400">منع المنشنات المفرطة</p>
                                             </div>
                                             <span class="text-sm">📢</span>
                                         </div>
@@ -3080,123 +3250,123 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
 
                         </div>
 
-                        <!-- 5. Instant Punishment -->
+                        <!-- 5. عقوبة فورية -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl space-y-4 shadow-xl">
                             <div class="flex items-center justify-between border-b border-white/5 pb-3">
-                                <span id="badge_instant_punish" class="px-3 py-1 bg-rose-950/60 text-rose-300 border border-rose-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_onboarding_danger, settings.anti_join_danger_roles, settings.anti_raid_fast, settings.anti_dangerous_perms, settings.anti_linked_roles, settings.anti_bot_add, settings.anti_prune, settings.anti_server_name_change, settings.anti_server_icon_change].filter(Boolean).length}/9 Enabled</span>
+                                <span id="badge_instant_punish" class="px-3 py-1 bg-rose-950/60 text-rose-300 border border-rose-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_onboarding_danger, settings.anti_join_danger_roles, settings.anti_raid_fast, settings.anti_dangerous_perms, settings.anti_linked_roles, settings.anti_bot_add, settings.anti_prune, settings.anti_server_name_change, settings.anti_server_icon_change].filter(Boolean).length}/9 مفعل</span>
                                 <div class="flex items-center gap-2">
-                                    <div class="text-left">
-                                        <h4 class="font-black text-white text-sm">Instant Punishment</h4>
-                                        <p class="text-gray-400 text-[11px]">Apply punishment immediately</p>
+                                    <div class="text-right">
+                                        <h4 class="font-black text-white text-sm">عقوبة فورية</h4>
+                                        <p class="text-gray-400 text-[11px]">تطبيق العقوبة فوراً</p>
                                     </div>
                                     <span class="text-base">🏏</span>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <!-- Dangerous Onboarding Roles -->
+                                <!-- رتب Onboarding الخطيرة -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_onboarding_danger" value="1" ${settings.anti_onboarding_danger ? 'checked' : ''} onchange="saveProtectionSetting('anti_onboarding_danger', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Dangerous Onboarding Roles</h5>
-                                            <p class="text-[10px] text-gray-400">Prevent automatically granting dangerous-permission roles to new members through Onboarding</p>
+                                            <h5 class="text-xs font-bold text-white">رتب Onboarding الخطيرة</h5>
+                                            <p class="text-[10px] text-gray-400">يمنع منح رتبة بصلاحيات خطيرة تلقائياً لأي عضو جديد عبر أسئلة الانضمام (Onboarding)</p>
                                         </div>
                                         <span class="text-sm">🚨</span>
                                     </div>
                                 </div>
 
-                                <!-- Dangerous Join Roles (Invite Protection) -->
+                                <!-- رتب خطيرة عند الانضمام (حماية الانفايت) -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_join_danger_roles" value="1" ${settings.anti_join_danger_roles ? 'checked' : ''} onchange="saveProtectionSetting('anti_join_danger_roles', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Dangerous Join Roles (Invite Protection)</h5>
-                                            <p class="text-[10px] text-gray-400">Automatically remove any role assigned to a new member through an invite or Onboarding unless it is the official auto-role</p>
+                                            <h5 class="text-xs font-bold text-white">رتب خطيرة عند الانضمام (حماية الانفايت)</h5>
+                                            <p class="text-[10px] text-gray-400">يزيل تلقائياً أي رتبة استقرت على عضو جديد عبر رابط دعوة أو Onboarding ولم تكن الرتبة التلقائية الرسمية</p>
                                         </div>
                                         <span class="text-sm">🚨</span>
                                     </div>
                                 </div>
 
-                                <!-- Anti-Raid -->
+                                <!-- مكافحة الريد -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_raid_fast" value="1" ${settings.anti_raid_fast ? 'checked' : ''} onchange="saveProtectionSetting('anti_raid_fast', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Anti-Raid</h5>
-                                            <p class="text-[10px] text-gray-400">Protection against mass joining</p>
+                                            <h5 class="text-xs font-bold text-white">مكافحة الريد</h5>
+                                            <p class="text-[10px] text-gray-400">حماية ضد الانضمام الجماعي</p>
                                         </div>
                                         <span class="text-sm">🛡️</span>
                                     </div>
                                 </div>
 
-                                <!-- Anti-Dangerous Permissions -->
+                                <!-- مكافحة الصلاحيات الخطيرة -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_dangerous_perms" value="1" ${settings.anti_dangerous_perms ? 'checked' : ''} onchange="saveProtectionSetting('anti_dangerous_perms', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Anti-Dangerous Permissions</h5>
-                                            <p class="text-[10px] text-gray-400">Prevent granting dangerous permissions</p>
+                                            <h5 class="text-xs font-bold text-white">مكافحة الصلاحيات الخطيرة</h5>
+                                            <p class="text-[10px] text-gray-400">منع منح صلاحيات خطيرة</p>
                                         </div>
                                         <span class="text-sm">🚨</span>
                                     </div>
                                 </div>
 
-                                <!-- Anti-Dangerous Linked Roles -->
+                                <!-- مكافحة الرتب الخطيرة القابلة للربط -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_linked_roles" value="1" ${settings.anti_linked_roles ? 'checked' : ''} onchange="saveProtectionSetting('anti_linked_roles', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Anti-Dangerous Linked Roles</h5>
-                                            <p class="text-[10px] text-gray-400">Prevent roles with dangerous permissions from becoming self-assignable through external account linking (Linked Roles)</p>
+                                            <h5 class="text-xs font-bold text-white">مكافحة الرتب الخطيرة القابلة للربط</h5>
+                                            <p class="text-[10px] text-gray-400">يمنع أي رتبة تحمل صلاحية خطيرة من أن تصبح قابلة للحصول عليها ذاتياً عبر ربط حساب خارجي (Linked Roles)</p>
                                         </div>
                                         <span class="text-sm">🚨</span>
                                     </div>
                                 </div>
 
-                                <!-- Anti-Bot Addition -->
+                                <!-- مكافحة إضافة البوتات -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_bot_add" value="1" ${settings.anti_bot_add ? 'checked' : ''} onchange="saveProtectionSetting('anti_bot_add', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Anti-Bot Addition</h5>
-                                            <p class="text-[10px] text-gray-400">Prevent adding bots without authorization</p>
+                                            <h5 class="text-xs font-bold text-white">مكافحة إضافة البوتات</h5>
+                                            <p class="text-[10px] text-gray-400">منع إضافة بوتات بدون إذن</p>
                                         </div>
                                         <span class="text-sm">🤖</span>
                                     </div>
                                 </div>
 
-                                <!-- Anti-Mass Purge -->
+                                <!-- مكافحة التطهير -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_prune" value="1" ${settings.anti_prune ? 'checked' : ''} onchange="saveProtectionSetting('anti_prune', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Anti-Mass Purge</h5>
-                                            <p class="text-[10px] text-gray-400">Prevent mass member purging</p>
+                                            <h5 class="text-xs font-bold text-white">مكافحة التطهير</h5>
+                                            <p class="text-[10px] text-gray-400">منع تطهير الأعضاء</p>
                                         </div>
                                         <span class="text-sm">🧹</span>
                                     </div>
                                 </div>
 
-                                <!-- Anti-Server Name Change -->
+                                <!-- مكافحة تغيير اسم السيرفر -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_server_name_change" value="1" ${settings.anti_server_name_change ? 'checked' : ''} onchange="saveProtectionSetting('anti_server_name_change', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Anti-Server Name Change</h5>
-                                            <p class="text-[10px] text-gray-400">Prevent server name changes</p>
+                                            <h5 class="text-xs font-bold text-white">مكافحة تغيير اسم السيرفر</h5>
+                                            <p class="text-[10px] text-gray-400">منع تغيير اسم السيرفر</p>
                                         </div>
                                         <span class="text-sm">✏️</span>
                                     </div>
                                 </div>
 
-                                <!-- Anti-Server Icon Change -->
+                                <!-- مكافحة تغيير أيقونة السيرفر -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_server_icon_change" value="1" ${settings.anti_server_icon_change ? 'checked' : ''} onchange="saveProtectionSetting('anti_server_icon_change', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Anti-Server Icon Change</h5>
-                                            <p class="text-[10px] text-gray-400">Prevent server icon changes</p>
+                                            <h5 class="text-xs font-bold text-white">مكافحة تغيير أيقونة السيرفر</h5>
+                                            <p class="text-[10px] text-gray-400">منع تغيير أيقونة السيرفر</p>
                                         </div>
                                         <span class="text-sm">🖼️</span>
                                     </div>
@@ -3204,87 +3374,87 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             </div>
                         </div>
 
-                        <!-- 6. Detection Only -->
+                        <!-- 6. كشف فقط -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl space-y-4 shadow-xl">
                             <div class="flex items-center justify-between border-b border-white/5 pb-3">
-                                <span id="badge_detect_only" class="px-3 py-1 bg-cyan-950/60 text-cyan-300 border border-cyan-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_scam, settings.anti_invite_links, settings.anti_nsfw_content, settings.anti_ghost_ping, settings.anti_channel_move, (settings.anti_webhook_spam !== 0 ? 1 : 0)].filter(Boolean).length}/6 Enabled</span>
+                                <span id="badge_detect_only" class="px-3 py-1 bg-cyan-950/60 text-cyan-300 border border-cyan-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_scam, settings.anti_invite_links, settings.anti_nsfw_content, settings.anti_ghost_ping, settings.anti_channel_move, (settings.anti_webhook_spam !== 0 ? 1 : 0)].filter(Boolean).length}/6 مفعل</span>
                                 <div class="flex items-center gap-2">
-                                    <div class="text-left">
-                                        <h4 class="font-black text-white text-sm">Detection Only</h4>
-                                        <p class="text-gray-400 text-[11px]">Log only without punishment</p>
+                                    <div class="text-right">
+                                        <h4 class="font-black text-white text-sm">كشف فقط</h4>
+                                        <p class="text-gray-400 text-[11px]">تسجيل فقط بدون عقوبة</p>
                                     </div>
                                     <span class="text-base">🔭</span>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <!-- Anti-Phishing -->
+                                <!-- مكافحة الاحتيال -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_scam" value="1" ${settings.anti_scam ? 'checked' : ''} onchange="saveProtectionSetting('anti_scam', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Anti-Phishing</h5>
-                                            <p class="text-[10px] text-gray-400">Detect and remove phishing links</p>
+                                            <h5 class="text-xs font-bold text-white">مكافحة الاحتيال</h5>
+                                            <p class="text-[10px] text-gray-400">كشف وحذف روابط الاحتيال</p>
                                         </div>
                                         <span class="text-sm">🦅</span>
                                     </div>
                                 </div>
 
-                                <!-- Anti-Invite Links -->
+                                <!-- مكافحة روابط الدعوة -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_invite_links" value="1" ${settings.anti_invite_links ? 'checked' : ''} onchange="saveProtectionSetting('anti_invite_links', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Anti-Invite Links</h5>
-                                            <p class="text-[10px] text-gray-400">Remove invite links</p>
+                                            <h5 class="text-xs font-bold text-white">مكافحة روابط الدعوة</h5>
+                                            <p class="text-[10px] text-gray-400">حذف روابط الدعوة</p>
                                         </div>
                                         <span class="text-sm">🪵</span>
                                     </div>
                                 </div>
 
-                                <!-- Anti-Inappropriate Content -->
+                                <!-- مكافحة المحتوى الغير لائق -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_nsfw_content" value="1" ${settings.anti_nsfw_content ? 'checked' : ''} onchange="saveProtectionSetting('anti_nsfw_content', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Anti-Inappropriate Content</h5>
-                                            <p class="text-[10px] text-gray-400">Remove inappropriate content</p>
+                                            <h5 class="text-xs font-bold text-white">مكافحة المحتوى الغير لائق</h5>
+                                            <p class="text-[10px] text-gray-400">حذف المحتوى الغير لائق</p>
                                         </div>
                                         <span class="text-sm">🛡️</span>
                                     </div>
                                 </div>
 
-                                <!-- Anti-Ghost Ping -->
+                                <!-- مكافحة الغوست بينغ -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_ghost_ping" value="1" ${settings.anti_ghost_ping ? 'checked' : ''} onchange="saveProtectionSetting('anti_ghost_ping', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Anti-Ghost Ping</h5>
-                                            <p class="text-[10px] text-gray-400">Detect deleted mentions</p>
+                                            <h5 class="text-xs font-bold text-white">مكافحة الغوست بينغ</h5>
+                                            <p class="text-[10px] text-gray-400">كشف حذف المنشنات</p>
                                         </div>
                                         <span class="text-sm">👻</span>
                                     </div>
                                 </div>
 
-                                <!-- Channel Move Detection -->
+                                <!-- كشف نقل القنوات -->
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/30 transition">
                                     <label class="toggle"><input type="checkbox" name="anti_channel_move" value="1" ${settings.anti_channel_move ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_move', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Channel Move Detection</h5>
-                                            <p class="text-[10px] text-gray-400">Detect channels moved to other categories (alert only)</p>
+                                            <h5 class="text-xs font-bold text-white">كشف نقل القنوات</h5>
+                                            <p class="text-[10px] text-gray-400">كشف نقل القنوات إلى تصنيفات أخرى (تنبيه فقط)</p>
                                         </div>
                                         <span class="text-sm">📍</span>
                                     </div>
                                 </div>
 
-                                <!-- Anti-Webhook Spam -->
+                                <!-- مكافحة سبام الويب هوك -->
                                 <div class="bg-[#0b0d14] border border-purple-500/40 p-4 rounded-xl flex items-center justify-between hover:border-purple-500/60 transition shadow-inner">
                                     <label class="toggle"><input type="checkbox" name="anti_webhook_spam" value="1" checked onchange="saveProtectionSetting('anti_webhook_spam', this.checked)"><span class="slider"></span></label>
-                                    <div class="flex items-center gap-2 text-left">
+                                    <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-white">Anti-Webhook Spam</h5>
-                                            <p class="text-[10px] text-gray-400">Automatically delete spam messages sent through any webhook and remove the webhook itself — runs continuously in the background</p>
+                                            <h5 class="text-xs font-bold text-white">مكافحة سبام الويب هوك</h5>
+                                            <p class="text-[10px] text-gray-400">يحذف تلقائياً رسائل السبام المرسلة عبر أي ويبهوك ويزيل الويب هوك نفسه — يعمل باستمرار بالخلفية</p>
                                         </div>
                                         <span class="text-sm">⚙️</span>
                                     </div>
@@ -3292,13 +3462,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             </div>
                         </div>
 
-                        <!-- 7. Bot Self-Defense (Always Locked) -->
+                        <!-- 7. الدفاع الذاتي للبوت (Self Defense - مقفلة دائماً) -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-2xl space-y-4 shadow-xl">
                             <div class="flex items-center justify-between border-b border-white/5 pb-3">
-                                <span class="text-[11px] text-gray-400">Always locked — protects the bot itself and cannot be disabled</span>
+                                <span class="text-[11px] text-gray-400">مقفلة دائماً — تحمي البوت نفسه، لا يمكن إيقافها</span>
                                 <div class="flex items-center gap-2">
-                                    <div class="text-left">
-                                        <h4 class="font-black text-white text-sm">Bot Self-Defense</h4>
+                                    <div class="text-right">
+                                        <h4 class="font-black text-white text-sm">الدفاع الذاتي للبوت</h4>
                                     </div>
                                     <span class="text-base">🛡️</span>
                                 </div>
@@ -3306,18 +3476,18 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between">
-                                    <span class="px-2.5 py-1 bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[10px] font-bold rounded-lg">Always Locked</span>
-                                    <div class="text-left">
-                                        <h5 class="text-xs font-bold text-white">Anti-Bot Permission Removal</h5>
-                                        <p class="text-[10px] text-gray-400">Notifies you via DM if the bot's own role loses critical permissions — for example, when its invite link is reused with permissions unchecked</p>
+                                    <span class="px-2.5 py-1 bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[10px] font-bold rounded-lg">مقفلة دائماً</span>
+                                    <div class="text-right">
+                                        <h5 class="text-xs font-bold text-white">مكافحة نزع صلاحيات البوت</h5>
+                                        <p class="text-[10px] text-gray-400">ينبهك (عبر رسالة خاصة) لو فقدت رتبة البوت نفسها صلاحيات حرجة — مثلاً عند إعادة استخدام رابط دعوته وإلغاء تحديد الصلاحيات</p>
                                     </div>
                                 </div>
 
                                 <div class="bg-[#0b0d14] border border-white/5 p-4 rounded-xl flex items-center justify-between">
-                                    <span class="px-2.5 py-1 bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[10px] font-bold rounded-lg">Always Locked</span>
-                                    <div class="text-left">
-                                        <h5 class="text-xs font-bold text-white">Anti-Bot Role Removal</h5>
-                                        <p class="text-[10px] text-gray-400">Notifies you via DM if a role granting the bot critical permissions is removed directly from the bot</p>
+                                    <span class="px-2.5 py-1 bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[10px] font-bold rounded-lg">مقفلة دائماً</span>
+                                    <div class="text-right">
+                                        <h5 class="text-xs font-bold text-white">مكافحة إزالة رتبة البوت</h5>
+                                        <p class="text-[10px] text-gray-400">ينبهك (عبر رسالة خاصة) لو أزيلت من البوت مباشرة رتبة تمنحه صلاحيات حرجة</p>
                                     </div>
                                 </div>
                             </div>
@@ -3341,29 +3511,29 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                         const detNames = ['anti_scam', 'anti_invite_links', 'anti_nsfw_content', 'anti_ghost_ping', 'anti_channel_move', 'anti_webhook_spam'];
 
                         const bCh = document.getElementById('badge_grp_channels');
-                        if (bCh) bCh.innerText = countChecked(chNames) + '/4 Enabled';
+                        if (bCh) bCh.innerText = countChecked(chNames) + '/4 مفعل';
 
                         const bRoles = document.getElementById('badge_grp_roles');
-                        if (bRoles) bRoles.innerText = countChecked(roleNames) + '/3 Enabled';
+                        if (bRoles) bRoles.innerText = countChecked(roleNames) + '/3 مفعل';
 
                         const bWh = document.getElementById('badge_grp_webhooks');
-                        if (bWh) bWh.innerText = countChecked(whNames) + '/2 Enabled';
+                        if (bWh) bWh.innerText = countChecked(whNames) + '/2 مفعل';
 
                         const bMem = document.getElementById('badge_grp_members');
-                        if (bMem) bMem.innerText = countChecked(memNames) + '/2 Enabled';
+                        if (bMem) bMem.innerText = countChecked(memNames) + '/2 مفعل';
 
                         const bCnt = document.getElementById('badge_grp_content');
-                        if (bCnt) bCnt.innerText = countChecked(cntNames) + '/1 Enabled';
+                        if (bCnt) bCnt.innerText = countChecked(cntNames) + '/1 مفعل';
 
                         const allPunishNames = chNames.concat(roleNames, whNames, memNames, cntNames);
                         const bPunish = document.getElementById('badge_limit_punish');
-                        if (bPunish) bPunish.innerText = countChecked(allPunishNames) + '/12 Enabled';
+                        if (bPunish) bPunish.innerText = countChecked(allPunishNames) + '/12 مفعل';
 
                         const bInst = document.getElementById('badge_instant_punish');
-                        if (bInst) bInst.innerText = countChecked(instNames) + '/9 Enabled';
+                        if (bInst) bInst.innerText = countChecked(instNames) + '/9 مفعل';
 
                         const bDet = document.getElementById('badge_detect_only');
-                        if (bDet) bDet.innerText = countChecked(detNames) + '/6 Enabled';
+                        if (bDet) bDet.innerText = countChecked(detNames) + '/6 مفعل';
                     }
 
                     async function saveProtectionSetting(key, value) {
@@ -8151,31 +8321,18 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
                     statChannelsRows = rawDb.prepare('SELECT * FROM stat_channels WHERE guild_id = ?').all(guildId);
                 } catch(e) {}
 
-                const STAT_COMBINED_DEF = {
-                    combined_boosts: {
-                        label: 'البوستات ومستوى البوست',
-                        icon: '💎🚀',
-                        desc: 'عرض عدد بوستات السيرفر والمستوى الحالي معاً في قناة واحدة',
-                        example: '💎 3 بوست │ 🚀 مستوى 1'
-                    },
-                    combined_roles_channels: {
-                        label: 'الرتب والقنوات الكلية',
-                        icon: '🏷️📂',
-                        desc: 'عرض إجمالي عدد الرتب وإجمالي القنوات في قناة واحدة',
-                        example: '🏷️ 60 رتبة │ 📂 64 قناة'
-                    },
-                    combined_channel_types: {
-                        label: 'القنوات الصوتية والنصية والمتصلين',
-                        icon: '📝🔊🎙️',
-                        desc: 'عرض عدد القنوات النصية والصوتية والمتصلين بالصوت معاً في قناة واحدة',
-                        example: '📝 40 │ 🔊 24 │ 🎙️ 5'
-                    },
-                    combined_members: {
-                        label: 'إجمالي الأعضاء والبشر والبوتات والمتصلين',
-                        icon: '👥🟢🤖',
-                        desc: 'عرض إجمالي الأعضاء، المتصلين أونلاين، البشر، والبوتات في قناة واحدة شاملة',
-                        example: '👥 250 │ 🟢 37 │ 👤 237 │ 🤖 13'
-                    }
+                const STAT_TYPES_DEF = {
+                    total_members:  { label: 'إجمالي الأعضاء', icon: '👥', desc: 'عدد جميع الأعضاء في السيرفر' },
+                    humans:         { label: 'البشر', icon: '👤', desc: 'عدد الأعضاء البشريين فقط' },
+                    bots:           { label: 'البوتات', icon: '🤖', desc: 'عدد البوتات في السيرفر' },
+                    online:         { label: 'الأعضاء الأونلاين', icon: '🟢', desc: 'عدد الأعضاء المتصلين حالياً' },
+                    voice:          { label: 'المتصلين صوتياً', icon: '🎙️', desc: 'عدد الأعضاء في القنوات الصوتية' },
+                    text_channels:  { label: 'القنوات النصية', icon: '#️⃣', desc: 'عدد القنوات النصية' },
+                    voice_channels: { label: 'القنوات الصوتية', icon: '🔊', desc: 'عدد القنوات الصوتية' },
+                    total_channels: { label: 'عدد القنوات الكلي', icon: '📂', desc: 'إجمالي عدد جميع القنوات' },
+                    roles:          { label: 'الرتب الكلية', icon: '🏷️', desc: 'عدد الرتب في السيرفر' },
+                    boosts:         { label: 'عدد البوستات', icon: '💎', desc: 'إجمالي عدد بوستات السيرفر الفعلية' },
+                    boost_level:    { label: 'مستوى البوست', icon: '🚀', desc: 'مستوى تعزيز السيرفر الحالي (Tier)' },
                 };
 
                 const configuredMap = {};
@@ -8183,36 +8340,31 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
                     configuredMap[row.stat_type] = row;
                 }
 
-                function renderStatRow(type, def, isCombined = false) {
+                const statRowsHtml = Object.entries(STAT_TYPES_DEF).map(([type, def]) => {
                     const configured = configuredMap[type];
                     const hasChannel = !!configured;
                     return `
-                    <div class="bg-[#12141f] border ${hasChannel ? 'border-purple-500/40 bg-purple-950/10' : 'border-white/5'} rounded-2xl p-4 flex items-center justify-between gap-4 hover:border-purple-500/30 transition" id="stat-row-${type}">
+                    <div class="bg-[#12141f] border ${hasChannel ? 'border-purple-500/40' : 'border-white/5'} rounded-2xl p-4 flex items-center justify-between gap-4 hover:border-purple-500/30 transition" id="stat-row-${type}">
                         <div class="flex items-center gap-3">
                             ${hasChannel ? `
                             <form method="POST" action="/api/guild/${guildId}/stat-channels/${configured.id}/delete" class="inline">
                                 <button type="submit" class="px-3 py-2 bg-rose-900/40 hover:bg-rose-700/50 text-rose-300 rounded-xl text-xs font-bold border border-rose-800/30 transition" title="حذف هذه القناة">🗑️</button>
                             </form>
                             ` : `
-                            <button onclick="openAddStatChannel('${type}', '${def.label}')" class="px-4 py-2 ${isCombined ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500' : 'bg-purple-600 hover:bg-purple-700'} text-white rounded-xl text-xs font-bold shadow transition cursor-pointer">إنشاء</button>
+                            <button onclick="openAddStatChannel('${type}', '${def.label}')" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow transition">إنشاء</button>
                             `}
                         </div>
                         <div class="flex-1 text-right">
                             <div class="flex items-center justify-end gap-2">
-                                ${isCombined ? '<span class="text-[10px] font-black text-purple-300 bg-purple-900/50 border border-purple-500/30 px-2 py-0.5 rounded-lg">قناة مجمّعة</span>' : ''}
                                 <span class="text-sm font-black text-white">${def.label}</span>
                                 <div class="w-8 h-8 rounded-xl bg-purple-600/20 border border-purple-500/30 text-base flex items-center justify-center">${def.icon}</div>
                             </div>
                             <p class="text-[11px] text-gray-400 mt-0.5">${def.desc}</p>
-                            ${def.example ? `<p class="text-[10px] text-emerald-400 font-mono mt-1">✨ الشكل: <span class="bg-black/40 px-2 py-0.5 rounded border border-white/5">${def.example}</span></p>` : ''}
                             ${hasChannel ? `<p class="text-[10px] text-purple-400 font-mono mt-1">📡 مربوطة بـ: <code class="bg-purple-950/40 px-1.5 py-0.5 rounded">${configured.channel_id}</code></p>` : ''}
                         </div>
                     </div>
                     `;
-                }
-
-                const combinedRowsHtml = Object.entries(STAT_COMBINED_DEF).map(([type, def]) => renderStatRow(type, def, true)).join('');
-                const totalAvailableTypes = Object.keys(STAT_COMBINED_DEF).length;
+                }).join('');
 
 formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
 
@@ -8226,7 +8378,7 @@ formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
         </div>
         <div class="text-right">
             <h3 class="font-black text-white text-xl">قنوات الإحصائيات</h3>
-            <p class="text-gray-400 text-xs mt-0.5">اعرض إحصائيات سيرفرك المجمّعة في قنوات صوتية مقفلة في الشريط الجانبي.</p>
+            <p class="text-gray-400 text-xs mt-0.5">اعرض إحصائيات سيرفرك في قنوات صوتية مقفلة في الشريط الجانبي.</p>
             <p class="text-gray-500 text-[10px] mt-0.5">⚠️ تأكد أن البوت لديه صلاحية إدارة القنوات (Manage Channels)</p>
         </div>
     </div>
@@ -8238,7 +8390,7 @@ formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
             <div class="text-xs text-gray-400 font-bold mt-1">قناة مُفعّلة</div>
         </div>
         <div class="bg-[#12141f] border border-white/5 p-4 rounded-2xl text-center">
-            <div class="text-2xl font-black text-purple-400">${totalAvailableTypes}</div>
+            <div class="text-2xl font-black text-purple-400">${Object.keys(STAT_TYPES_DEF).length}</div>
             <div class="text-xs text-gray-400 font-bold mt-1">نوع متاح</div>
         </div>
         <div class="bg-[#12141f] border border-white/5 p-4 rounded-2xl text-center">
@@ -8247,16 +8399,13 @@ formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
         </div>
     </div>
 
-    <!-- Combined Channels List (العدادات المجمّعة في قناة واحدة) -->
-    <div class="bg-gradient-to-br from-[#15102a] to-[#12141f] border border-purple-500/30 rounded-3xl p-6 shadow-2xl space-y-3">
-        <div class="flex items-center justify-between pb-3 border-b border-purple-500/20">
-            <span class="text-xs text-purple-300 font-bold font-mono">🌟 قنوات ذكية موفرة للقنوات</span>
-            <div class="flex items-center gap-2">
-                <h4 class="text-sm font-black text-white">العدادات المجمّعة</h4>
-                <span>⚡</span>
-            </div>
+    <!-- Stat Channels List -->
+    <div class="bg-[#12141f] border border-white/5 rounded-3xl p-6 shadow-xl space-y-3">
+        <div class="flex items-center justify-between pb-3 border-b border-white/5">
+            <span class="text-xs text-purple-400 font-bold">${statChannelsRows.length}/9 قنوات</span>
+            <h4 class="text-sm font-black text-white">العدادات الأساسية</h4>
         </div>
-        ${combinedRowsHtml}
+        ${statRowsHtml}
     </div>
 
     <!-- Add Modal -->
@@ -8350,6 +8499,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 ${!settings.bot_banner ? `
                                     <div class="text-center">
                                         <h2 class="text-2xl font-black text-amber-100 tracking-wider shadow-sm">Best System Bot</h2>
+                                        <p class="text-xs text-amber-200/80 font-mono mt-0.5">discord.gg/zeno</p>
                                     </div>
                                 ` : ''}
                                 <!-- Avatar Overlap -->
@@ -8412,17 +8562,16 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
 
                                 <div class="flex items-center justify-between p-4 bg-[#0b0d14] border border-white/5 rounded-2xl">
-                                    <input type="file" id="fileAvatar" accept="image/*" class="hidden" onchange="uploadAppearanceFile(this, 'bot_avatar')">
-                                    <button type="button" onclick="document.getElementById('fileAvatar').click()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5 cursor-pointer">
-                                        <span>📁</span>
-                                        <span id="btnText_bot_avatar">اختر من الصور</span>
+                                    <button type="button" onclick="document.getElementById('inpAvatarUrl').focus()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5">
+                                        <span>🖼️</span>
+                                        <span>اختر صورة</span>
                                     </button>
                                     <div class="flex items-center gap-3">
-                                        <span class="text-[11px] text-gray-400">اختر صورة من جهازك أو الصق رابطاً</span>
+                                        <span class="text-[11px] text-gray-400">اضغط أو الصق رابط صورة جديدة</span>
                                         <img id="cardAvatarPreview" src="${settings.bot_avatar || (botGuild?.members?.me?.user?.displayAvatarURL() || userAvatar)}" class="w-10 h-10 rounded-xl object-cover ring-2 ring-purple-600/50">
                                     </div>
                                 </div>
-                                <input type="url" name="bot_avatar" id="inpAvatarUrl" value="${settings.bot_avatar || ''}" placeholder="https://... (أو سيظهر الرابط تلقائياً عند اختيار صورة من جهازك)" oninput="updateAvatarPreview(this.value)" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono">
+                                <input type="url" name="bot_avatar" id="inpAvatarUrl" value="${settings.bot_avatar || ''}" placeholder="https://i.imgur.com/... (رابط الصورة المباشر)" oninput="updateAvatarPreview(this.value)" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono">
                             </div>
 
                             <!-- بنر البوت في السيرفر -->
@@ -8436,41 +8585,28 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
 
                                 <div class="flex items-center justify-between p-4 bg-[#0b0d14] border border-white/5 rounded-2xl">
-                                    <input type="file" id="fileBanner" accept="image/*" class="hidden" onchange="uploadAppearanceFile(this, 'bot_banner')">
-                                    <button type="button" onclick="document.getElementById('fileBanner').click()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5 cursor-pointer">
-                                        <span>📁</span>
-                                        <span id="btnText_bot_banner">اختر من الصور</span>
+                                    <button type="button" onclick="document.getElementById('inpBannerUrl').focus()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5">
+                                        <span>🖼️</span>
+                                        <span>اختر بنر</span>
                                     </button>
-                                    <span class="text-[11px] text-gray-400">اختر صورة بنر من جهازك أو الصق رابطاً</span>
+                                    <span class="text-[11px] text-gray-400">الصق رابط صورة البنر المباشر</span>
                                 </div>
-                                <input type="url" name="bot_banner" id="inpBannerUrl" value="${settings.bot_banner || ''}" placeholder="https://... (أو سيظهر الرابط تلقائياً عند اختيار صورة من جهازك)" oninput="updateBannerPreview(this.value)" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono">
+                                <input type="url" name="bot_banner" id="inpBannerUrl" value="${settings.bot_banner || ''}" placeholder="https://i.imgur.com/... (رابط البنر المباشر)" oninput="updateBannerPreview(this.value)" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono">
                             </div>
 
                         </div>
 
-                        <!-- Important Notes Alert -->
+                        <!-- Important Notes Alert (Exact to Image 2) -->
                         <div class="bg-[#12141f] border border-white/5 p-5 rounded-3xl space-y-2 text-right shadow-lg">
                             <div class="flex items-center justify-end gap-2 text-amber-400 font-bold text-xs">
                                 <span>ملاحظات مهمة</span>
                                 <span>💬</span>
                             </div>
                             <ul class="text-[11px] text-gray-400 space-y-1 pr-2 list-none">
-                                <li>• يمكنك اختيار الصور المحفوظة في جهازك مباشرة أو وضع رابط مباشر.</li>
                                 <li>• تغيير الاسم والصورة والبنر يؤثر فقط على السيرفر المحدد.</li>
                                 <li>• قد يستغرق ظهور التغييرات بضع ثوانٍ في ديسكورد فور الضغط على حفظ.</li>
-                                <li>• الصيغ المدعومة: PNG أو JPG أو WEBP أو GIF (الحد الأقصى 15 ميجابايت).</li>
+                                <li>• الصور يجب أن تكون بروابط مباشرة بصيغة PNG أو JPG أو WEBP أو GIF.</li>
                             </ul>
-                        </div>
-
-                        <!-- Restore Global Avatar Button -->
-                        <div class="bg-[#12141f] border border-rose-500/20 p-5 rounded-3xl text-right shadow-lg flex items-center justify-between gap-4">
-                            <button type="button" id="resetAvatarBtn" onclick="resetGlobalAvatar()" class="px-5 py-2.5 bg-rose-600/80 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer">
-                                <span>🔄</span><span>استعادة الصورة العالمية الأصلية</span>
-                            </button>
-                            <div class="text-right">
-                                <p class="text-xs font-bold text-rose-400">استعادة صورة البوت العالمية</p>
-                                <p class="text-[11px] text-gray-500 mt-0.5">يُعيد صورة البوت العالمية لتطابق الـ App Icon في Developer Portal</p>
-                            </div>
                         </div>
 
                     </div>
@@ -8478,99 +8614,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <script>
                     function updateAvatarPreview(url) {
                         if (url) {
-                            var p1 = document.getElementById('prevAvatarImg');
-                            var p2 = document.getElementById('cardAvatarPreview');
-                            if (p1) p1.src = url;
-                            if (p2) p2.src = url;
+                            document.getElementById('prevAvatarImg').src = url;
+                            document.getElementById('cardAvatarPreview').src = url;
                         }
                     }
                     function updateBannerPreview(url) {
-                        var box = document.getElementById('prevBannerBox');
-                        if (box && url) {
+                        const box = document.getElementById('prevBannerBox');
+                        if (url) {
                             box.style.backgroundImage = 'url(' + url + ')';
                         }
-                    }
-
-                    async function resetGlobalAvatar() {
-                        var btn = document.getElementById('resetAvatarBtn');
-                        if (btn) { btn.disabled = true; btn.innerText = '⏳ جاري الاستعادة...'; }
-                        try {
-                            var res = await fetch('/api/bot/reset-avatar', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' }
-                            });
-                            var data = await res.json();
-                            if (data.success) {
-                                if (btn) { btn.innerText = '✅ تم استعادة الصورة الأصلية!'; }
-                                setTimeout(function() {
-                                    if (btn) { btn.disabled = false; btn.innerHTML = '<span>🔄</span><span>استعادة الصورة العالمية الأصلية</span>'; }
-                                }, 3000);
-                            } else {
-                                alert('❌ فشلت الاستعادة: ' + (data.error || 'خطأ غير معروف'));
-                                if (btn) { btn.disabled = false; btn.innerHTML = '<span>🔄</span><span>استعادة الصورة العالمية الأصلية</span>'; }
-                            }
-                        } catch(e) {
-                            alert('❌ خطأ في الاتصال: ' + e.message);
-                            if (btn) { btn.disabled = false; btn.innerHTML = '<span>🔄</span><span>استعادة الصورة العالمية الأصلية</span>'; }
-                        }
-                    }
-
-                    async function uploadAppearanceFile(inputEl, fieldName) {
-                        var file = inputEl.files && inputEl.files[0];
-                        if (!file) return;
-
-                        if (file.size > 15 * 1024 * 1024) {
-                            alert('❌ حجم الصورة يتجاوز 15 ميجابايت. يرجى اختيار صورة أصغر.');
-                            return;
-                        }
-
-                        var btnText = document.getElementById('btnText_' + fieldName);
-                        var origText = btnText ? btnText.innerText : 'اختر من الصور';
-                        if (btnText) btnText.innerText = 'جاري الرفع... ⏳';
-
-                        var reader = new FileReader();
-                        reader.onload = async function(e) {
-                            var base64Data = e.target.result;
-                            // Immediate local preview
-                            if (fieldName === 'bot_avatar') updateAvatarPreview(base64Data);
-                            if (fieldName === 'bot_banner') updateBannerPreview(base64Data);
-
-                            try {
-                                var targetGuildId = '${guildId}';
-                                var res = await fetch('/api/guild/' + targetGuildId + '/upload-image', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        imageBase64: base64Data,
-                                        fieldName: fieldName
-                                    })
-                                });
-                                var data = await res.json();
-                                if (data.success && data.url) {
-                                    if (fieldName === 'bot_avatar') {
-                                        var inp = document.getElementById('inpAvatarUrl');
-                                        if (inp) inp.value = data.url;
-                                        updateAvatarPreview(data.url);
-                                    } else if (fieldName === 'bot_banner') {
-                                        var inp = document.getElementById('inpBannerUrl');
-                                        if (inp) inp.value = data.url;
-                                        updateBannerPreview(data.url);
-                                    }
-                                    if (btnText) btnText.innerText = 'تم الرفع بنجاح ✅';
-                                    setTimeout(function() {
-                                        if (btnText) btnText.innerText = origText;
-                                    }, 2500);
-                                } else {
-                                    alert('❌ فشل رفع الصورة: ' + (data.error || 'خطأ غير معروف'));
-                                    if (btnText) btnText.innerText = origText;
-                                }
-                            } catch (err) {
-                                console.error('Upload error:', err);
-                                alert('❌ حدث خطأ أثناء رفع الصورة');
-                                if (btnText) btnText.innerText = origText;
-                            }
-                        };
-                        reader.readAsDataURL(file);
                     }
                     </script>`;
             } else if (section === 'settings') {
@@ -10322,9 +10374,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             <body class="min-h-screen flex flex-col bg-[#0b0d14] text-gray-200">
                 <header class="h-16 bg-[#10121b]/95 backdrop-blur-md border-b border-white/5 px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-3">
-                        <button type="button" data-lang-toggle="true" class="zeno-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
+                        <button type="button" onclick="window.zenoI18n.toggleLang()" class="zeno-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
                             <span class="text-sm">🌐</span>
-                            <span data-lang-label class="font-black text-xs uppercase tracking-wider">EN</span>
+                            <span class="font-black text-xs uppercase tracking-wider">EN</span>
                         </button>
                         <span class="text-gray-700">|</span>
                         <a href="/dashboard/manage" data-i18n="back_to_dashboard" class="text-xs text-purple-400 font-bold hover:text-purple-300 transition">الرجوع للوحة التحكم</a>
@@ -10693,9 +10745,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         const data = await res.json();
                         if (data.success) {
                             showSaveStatus();
-                            if (data.message) {
-                                alert('⚠️ ' + data.message);
-                            }
                         } else {
                             alert('❌ خطأ أثناء الحفظ: ' + (data.error || 'حدث خطأ غير متوقع'));
                         }
@@ -10913,7 +10962,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/settings', express.json(), validate(settingsSchema), async (req, res) => {
+    app.post('/api/guild/:guildId/settings', express.json(), validate(settingsSchema), (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -10921,116 +10970,18 @@ ${embedScriptHtml}
             if (database.updateGuildSettings) {
                 database.updateGuildSettings(guildId, settings);
             }
-
-            // --- تطبيق الإعدادات على Discord فوراً ---
-            const discordPatchBody = {};
-
-            // 1. اسم البوت في السيرفر (Nickname)
-            if (settings.bot_nickname !== undefined) {
-                discordPatchBody.nick = settings.bot_nickname || null;
-                // أيضاً عبر discord.js كـ fallback
-                try {
-                    const targetGuild = client?.guilds?.cache?.get(guildId);
-                    if (targetGuild?.members?.me) {
-                        targetGuild.members.me.setNickname(settings.bot_nickname || null).catch(() => {});
-                    }
-                } catch(e) {}
-            }
-
-            // helper: تحويل URL إلى base64 data URI
-            async function urlToBase64DataUri(url) {
-                const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
-                if (!response.ok) throw new Error('Failed to fetch image: ' + response.status);
-                const buffer = await response.arrayBuffer();
-                const base64 = Buffer.from(buffer).toString('base64');
-                const contentType = response.headers.get('content-type') || 'image/png';
-                return `data:${contentType};base64,${base64}`;
-            }
-
-            // 2. صورة البوت per-guild (Per-Server Avatar)
-            if (settings.bot_avatar) {
-                try {
-                    let avatarData = settings.bot_avatar;
-                    // إذا كان URL (مو base64)، نحوّله
-                    if (avatarData.startsWith('http')) {
-                        avatarData = await urlToBase64DataUri(avatarData);
-                    }
-                    discordPatchBody.avatar = avatarData;
-                } catch(e) {
-                    console.error('[SETTINGS] Failed to prepare per-guild avatar:', e.message);
+            // تطبيق اسم البوت في السيرفر في ديسكورد فوراً
+            if (settings.bot_nickname !== undefined && client?.guilds?.cache) {
+                const targetGuild = client.guilds.cache.get(guildId);
+                if (targetGuild?.members?.me) {
+                    targetGuild.members.me.setNickname(settings.bot_nickname || null).catch(() => {});
                 }
             }
-
-            // 3. بنر البوت per-guild (Per-Server Banner)
-            if (settings.bot_banner) {
-                try {
-                    let bannerData = settings.bot_banner;
-                    if (bannerData.startsWith('http')) {
-                        bannerData = await urlToBase64DataUri(bannerData);
-                    }
-                    discordPatchBody.banner = bannerData;
-                } catch(e) {
-                    console.error('[SETTINGS] Failed to prepare per-guild banner:', e.message);
-                }
-            }
-
-            // إرسال PATCH /guilds/{guildId}/members/@me لتطبيق التغييرات per-guild
-            if (Object.keys(discordPatchBody).length > 0 && client?.rest) {
-                try {
-                    const { Routes } = require('discord.js');
-                    await client.rest.patch(Routes.guildMember(guildId, '@me'), {
-                        body: discordPatchBody
-                    });
-                } catch(patchErr) {
-                    console.error('[SETTINGS] Discord PATCH guild member failed:', patchErr.message);
-                    // لا نوقف العملية — الإعدادات محفوظة في DB حتى لو Discord رد بخطأ
-                }
-            }
-
             res.json({ success: true });
         } catch (e) {
             res.status(500).json({ success: false, error: e.message });
         }
     });
-
-    // =============================================
-    // Reset Global Bot Avatar to App Icon
-    // =============================================
-    app.post('/api/bot/reset-avatar', express.json(), async (req, res) => {
-        try {
-            if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-
-            if (!client?.user || !client?.rest) {
-                return res.status(503).json({ success: false, error: 'Discord client not ready' });
-            }
-
-            // جلب معلومات التطبيق من Discord للحصول على App Icon الأصلي
-            const appInfo = await client.rest.get('/applications/@me');
-            if (!appInfo?.icon || !appInfo?.id) {
-                return res.status(404).json({ success: false, error: 'No App Icon found in Developer Portal' });
-            }
-
-            // بناء رابط صورة التطبيق
-            const iconUrl = `https://cdn.discordapp.com/app-icons/${appInfo.id}/${appInfo.icon}.png?size=512`;
-
-            // جلب الصورة وتحويلها لـ base64
-            const imgResponse = await fetch(iconUrl, { signal: AbortSignal.timeout(10000) });
-            if (!imgResponse.ok) throw new Error('Failed to fetch app icon');
-            const buffer = await imgResponse.arrayBuffer();
-            const base64 = Buffer.from(buffer).toString('base64');
-            const dataUri = `data:image/png;base64,${base64}`;
-
-            // تطبيق الصورة على البوت عالمياً
-            await client.user.setAvatar(dataUri);
-
-            res.json({ success: true, message: 'تم استعادة صورة البوت الأصلية بنجاح ✅', iconUrl });
-        } catch (e) {
-            console.error('[RESET AVATAR]', e.message);
-            res.status(500).json({ success: false, error: e.message });
-        }
-    });
-
-
 
     // =============================================
     // Logs Auto-Setup & Delete-Channels API
@@ -11370,33 +11321,30 @@ ${embedScriptHtml}
             if (channelId) {
                 const channel = client.channels.cache.get(channelId) || await client.channels.fetch(channelId).catch(() => null);
                 if (channel && channel.isTextBased()) {
-                    const { buildSuggestionEmbed, buildSuggestionComponents } = require('../utils/suggestionBuilder');
+                    const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
                     const avatarURL = req.session.user.avatar
                         ? `https://cdn.discordapp.com/avatars/${req.session.user.id}/${req.session.user.avatar}.png`
                         : `https://cdn.discordapp.com/embed/avatars/0.png`;
 
-                    const suggCode = Math.random().toString(36).substring(2, 11);
-                    const userObj = {
-                        tag: req.session.user.username + '#0000',
-                        username: req.session.user.username,
-                        id: req.session.user.id,
-                        displayAvatarURL: () => avatarURL
-                    };
+                    const suggEmbed = new EmbedBuilder()
+                        .setColor(0x9333ea)
+                        .setAuthor({ name: req.session.user.username + ' • اقتراح جديد', iconURL: avatarURL })
+                        .setTitle(title ? ('💡 ' + title) : '💡 اقتراح جديد')
+                        .setDescription(content)
+                        .addFields(
+                            { name: '📂 التصنيف', value: category || 'عام', inline: true },
+                            { name: '⏳ الحالة', value: 'قيد المراجعة', inline: true },
+                            { name: '📊 التصويت | 0%', value: '░░░░░░░░░░\n👍 0  |  👎 0', inline: false }
+                        )
+                        .setFooter({ text: 'صاحب الاقتراح: ' + req.session.user.username + ' • من الداشبورد' })
+                        .setTimestamp();
 
-                    const suggEmbed = buildSuggestionEmbed({
-                        user: userObj,
-                        content: content,
-                        title: title || null,
-                        code: suggCode,
-                        status: 'pending',
-                        upvotes: 0,
-                        downvotes: 0,
-                        createdAt: Date.now()
-                    });
+                    const row = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder().setCustomId('sugg_upvote').setLabel('0').setEmoji('👍').setStyle(ButtonStyle.Success),
+                        new ButtonBuilder().setCustomId('sugg_downvote').setLabel('0').setEmoji('👎').setStyle(ButtonStyle.Danger)
+                    );
 
-                    const components = buildSuggestionComponents({ upvotes: 0, downvotes: 0 });
-
-                    const sentMsg = await channel.send({ embeds: [suggEmbed], components });
+                    const sentMsg = await channel.send({ embeds: [suggEmbed], components: [row] });
                     msgId = sentMsg.id;
 
                     if (settings.suggestions_auto_thread !== 0) {
@@ -11432,43 +11380,49 @@ ${embedScriptHtml}
 
             const updated = database.updateSuggestionStatus(id, status, reason, req.session.user.id);
 
-            // ✅ تحديث embed ديسكورد بالفورمات الجديد إذا كانت الرسالة موجودة
+            // ✅ تحديث embed ديسكورد إذا كانت الرسالة موجودة
             if (updated && updated.message_id && updated.channel_id) {
                 try {
-                    const { buildSuggestionEmbed, buildSuggestionComponents } = require('../utils/suggestionBuilder');
+                    const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
                     const ch = client.channels.cache.get(updated.channel_id) || await client.channels.fetch(updated.channel_id).catch(() => null);
                     if (ch && ch.isTextBased()) {
                         const msg = await ch.messages.fetch(updated.message_id).catch(() => null);
                         if (msg) {
-                            let upvotesList = [], downvotesList = [];
-                            try { upvotesList = JSON.parse(updated.upvotes || '[]'); } catch(e) {}
-                            try { downvotesList = JSON.parse(updated.downvotes || '[]'); } catch(e) {}
+                            let upCount = 0, downCount = 0;
+                            try { upCount = JSON.parse(updated.upvotes || '[]').length; } catch(e) {}
+                            try { downCount = JSON.parse(updated.downvotes || '[]').length; } catch(e) {}
+                            const total = upCount + downCount || 1;
+                            const pct = Math.round((upCount / total) * 100);
+                            const bar = '█'.repeat(Math.round(pct / 10)) + '░'.repeat(10 - Math.round(pct / 10));
 
-                            // جلب بيانات صاحب الاقتراح
-                            const suggAuthor = await client.users.fetch(updated.user_id).catch(() => null);
-                            const userObj = suggAuthor || { tag: 'عضو', username: 'عضو', displayAvatarURL: () => null };
+                            const statusMap = {
+                                pending: { label: '⏳ قيد المراجعة', color: 0xf59e0b },
+                                accepted: { label: '✅ مقبول', color: 0x22c55e },
+                                rejected: { label: '❌ مرفوض', color: 0xef4444 },
+                                implemented: { label: '🚀 تم التنفيذ', color: 0x6366f1 }
+                            };
+                            const sm = statusMap[status] || statusMap.pending;
 
-                            const newEmbed = buildSuggestionEmbed({
-                                user: userObj,
-                                content: updated.content,
-                                title: updated.title || null,
-                                code: updated.id ? updated.id.toString(36) : id,
-                                status: status,
-                                upvotes: upvotesList.length,
-                                downvotes: downvotesList.length,
-                                createdAt: updated.created_at ? updated.created_at * 1000 : Date.now(),
-                                reviewerId: req.session.user.id,
-                                reason: reason || null
-                            });
+                            const newEmbed = new EmbedBuilder()
+                                .setColor(sm.color)
+                                .setTitle(updated.title ? ('💡 ' + updated.title) : '💡 اقتراح')
+                                .setDescription(updated.content)
+                                .addFields(
+                                    { name: '📂 التصنيف', value: updated.category || 'عام', inline: true },
+                                    { name: '📊 الحالة', value: sm.label, inline: true },
+                                    { name: `📊 التصويت | ${pct}%`, value: `${bar}\n👍 ${upCount}  |  👎 ${downCount}`, inline: false }
+                                )
+                                .setFooter({ text: `صاحب الاقتراح: ${updated.user_id} • راجعه: ${req.session.user.username}` })
+                                .setTimestamp();
 
-                            const isFinal = status === 'accepted' || status === 'rejected';
-                            const newComponents = buildSuggestionComponents({
-                                upvotes: upvotesList.length,
-                                downvotes: downvotesList.length,
-                                disabled: isFinal
-                            });
+                            if (reason) newEmbed.addFields({ name: '💬 رد الإدارة', value: reason });
 
-                            await msg.edit({ embeds: [newEmbed], components: newComponents });
+                            const row = new ActionRowBuilder().addComponents(
+                                new ButtonBuilder().setCustomId('sugg_upvote').setLabel(String(upCount)).setEmoji('👍').setStyle(ButtonStyle.Success),
+                                new ButtonBuilder().setCustomId('sugg_downvote').setLabel(String(downCount)).setEmoji('👎').setStyle(ButtonStyle.Danger)
+                            );
+
+                            await msg.edit({ embeds: [newEmbed], components: [row] });
                         }
                     }
                 } catch(embedErr) {
@@ -11648,10 +11602,7 @@ ${embedScriptHtml}
 
             if (!stat_type || !channel_id) return res.status(400).json({ success: false, error: 'stat_type and channel_id are required' });
 
-            const VALID_TYPES = [
-                'total_members','humans','bots','online','voice','text_channels','voice_channels','total_channels','roles','boosts','boost_level',
-                'combined_boosts','combined_roles_channels','combined_channel_types','combined_members'
-            ];
+            const VALID_TYPES = ['total_members','humans','bots','online','voice','text_channels','voice_channels','total_channels','roles','boosts','boost_level'];
             if (!VALID_TYPES.includes(stat_type)) return res.status(400).json({ success: false, error: 'Invalid stat_type' });
 
             rawDb.exec(`CREATE TABLE IF NOT EXISTS stat_channels (
@@ -11717,29 +11668,13 @@ ${embedScriptHtml}
         }
     });
 
-    // Real-time Stats API (online members, bots, giveaways, channels, roles, emojis, boosts)
+    // Real-time Stats API (online members, bots, giveaways)
     app.get('/api/guild/:guildId/online-count', async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
-            let botGuild = client.guilds.cache.get(guildId);
-            if (!botGuild) {
-                try {
-                    botGuild = await client.guilds.fetch(guildId);
-                } catch(e) {}
-            }
-            if (!botGuild) return res.json({ success: true, online: 0, bots: 0, giveaways: 0, channels: 0, roles: 0, emojis: 0, boosts: 0 });
-
-            // --- Ensure Channels, Roles, and Emojis are populated ---
-            if (!botGuild.channels.cache.size || !botGuild.roles.cache.size || !botGuild.emojis.cache.size) {
-                try {
-                    await Promise.allSettled([
-                        botGuild.channels.fetch().catch(() => {}),
-                        botGuild.roles.fetch().catch(() => {}),
-                        botGuild.emojis.fetch().catch(() => {})
-                    ]);
-                } catch(e) {}
-            }
+            const botGuild = client.guilds.cache.get(guildId);
+            if (!botGuild) return res.json({ success: true, online: 0, bots: 0, giveaways: 0 });
 
             // --- Online Members: use presences.cache directly (most accurate) ---
             let onlineCount = botGuild.presences.cache.filter(p =>
@@ -11758,17 +11693,17 @@ ${embedScriptHtml}
                 }
             }
 
-            // --- Bots count: exclude system bots & integration-only accounts ---
-            // Ensure full member list is fetched
+            // --- Bots count: use REST to get accurate count ---
+            let botsCount = botGuild.members.cache.filter(m => m.user.bot).size;
+            // If members cache is not fully populated, fetch all members
             if (botGuild.members.cache.size < botGuild.memberCount) {
-                try { await botGuild.members.fetch(); } catch(e) {}
+                try {
+                    await botGuild.members.fetch();
+                    botsCount = botGuild.members.cache.filter(m => m.user.bot).size;
+                } catch(e) {
+                    // keep whatever we have
+                }
             }
-            // Count only real bot accounts that are actual Discord app bots
-            // system: true = Discord system accounts (not real bots)
-            const botsCount = botGuild.members.cache.filter(m =>
-                m.user.bot === true && m.user.system !== true
-            ).size;
-
 
             // --- Giveaways count: query DB directly ---
             let giveawaysCount = 0;
@@ -11786,14 +11721,10 @@ ${embedScriptHtml}
                 online: onlineCount,
                 bots: botsCount,
                 giveaways: giveawaysCount,
-                channels: botGuild.channels.cache.size || 0,
-                roles: botGuild.roles.cache.size || 0,
-                emojis: botGuild.emojis.cache.size || 0,
-                boosts: botGuild.premiumSubscriptionCount || 0,
                 total: botGuild.memberCount || 0
             });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message, online: 0, bots: 0, giveaways: 0, channels: 0, roles: 0, emojis: 0, boosts: 0 });
+            res.status(500).json({ success: false, error: e.message, online: 0, bots: 0, giveaways: 0 });
         }
     });
 
