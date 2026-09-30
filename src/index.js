@@ -66,9 +66,17 @@ const client = new Client({
     partials: [Partials.GuildMember, Partials.User, Partials.Channel]
 });
 
+const aiAutoHealer = require('./services/aiAutoHealer');
+
+// Initialize AI Auto-Healer immediately (hooks process errors before client is ready)
+aiAutoHealer.init(null);
+
 client.once('ready', async () => {
     console.log('[Dashboard Discord] Connected as ' + client.user.tag);
     console.log('[Dashboard Discord] Guilds: ' + client.guilds.cache.size);
+
+    // Attach Discord client to Auto-Healer so it can send owner DMs
+    aiAutoHealer.init(client);
 
     // استعادة صورة البوت الأصلية من App Icon في Developer Portal
     try {
