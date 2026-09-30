@@ -11638,17 +11638,17 @@ ${embedScriptHtml}
                 }
             }
 
-            // --- Bots count: use REST to get accurate count ---
-            let botsCount = botGuild.members.cache.filter(m => m.user.bot).size;
-            // If members cache is not fully populated, fetch all members
+            // --- Bots count: exclude system bots & integration-only accounts ---
+            // Ensure full member list is fetched
             if (botGuild.members.cache.size < botGuild.memberCount) {
-                try {
-                    await botGuild.members.fetch();
-                    botsCount = botGuild.members.cache.filter(m => m.user.bot).size;
-                } catch(e) {
-                    // keep whatever we have
-                }
+                try { await botGuild.members.fetch(); } catch(e) {}
             }
+            // Count only real bot accounts that are actual Discord app bots
+            // system: true = Discord system accounts (not real bots)
+            const botsCount = botGuild.members.cache.filter(m =>
+                m.user.bot === true && m.user.system !== true
+            ).size;
+
 
             // --- Giveaways count: query DB directly ---
             let giveawaysCount = 0;
