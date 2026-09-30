@@ -68,19 +68,22 @@ const client = new Client({
 
 const aiAutoHealer = require('./services/aiAutoHealer');
 const commandHandler = require('./handlers/commandHandler');
-const eventHandler = require('./handlers/eventHandler');
+// NOTE: eventHandler is intentionally NOT loaded here.
+// Render's dashboard client only registers slash commands.
+// All Discord interaction handling (buttons, slash commands, modals)
+// is handled exclusively by the bot-hosting.net process to prevent
+// DiscordAPIError 40060 (interaction already acknowledged) double-handling.
 
 // Initialize AI Auto-Healer immediately (hooks process errors before client is ready)
 aiAutoHealer.init(null);
 
-// Initialize Command and Event Handlers (slash commands, interaction buttons, modals, auto-suggestions)
+// Load commandHandler only — to register slash commands to Discord API on ready
 (async () => {
     try {
         await commandHandler(client);
-        eventHandler(client);
-        console.log('[Dashboard Discord] Commands and Event handlers loaded successfully ✅');
+        console.log('[Dashboard Discord] Slash commands loaded for registration ✅ (interactions handled by bot-hosting.net)');
     } catch(err) {
-        console.error('[Dashboard Discord] Failed to load handlers:', err);
+        console.error('[Dashboard Discord] Failed to load commandHandler:', err);
     }
 })();
 
