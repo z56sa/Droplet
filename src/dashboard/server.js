@@ -77,6 +77,40 @@ module.exports = function (app, client) {
     // Apply API rate limiter to all API endpoints
     app.use('/api/', apiLimiter);
 
+    // ═══════════════════════════════════════════════════
+    // 🧪 TEST: AI Auto-Healer endpoint (owner-only, temp)
+    // Hit: GET /api/test-ai-healer?secret=ZENO_TEST
+    // ═══════════════════════════════════════════════════
+    app.get('/api/test-ai-healer', (req, res) => {
+        const secret = req.query.secret;
+        if (secret !== 'ZENO_TEST') {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+        const type = req.query.type || 'unhandledRejection';
+
+        res.json({ ok: true, message: `Test error (${type}) triggered! Check your Discord DMs in 5-10 seconds.` });
+
+        // Trigger the error AFTER responding so it doesn't affect the response
+        setTimeout(() => {
+            if (type === 'uncaught') {
+                // Simulate uncaughtException via process.emit
+                process.emit('uncaughtException', Object.assign(new Error('[AI Healer Test] Simulated uncaughtException — نظام الاختبار يعمل بنجاح'), { code: 'TEST_ERROR' }));
+            } else if (type === 'rejection') {
+                // Simulate unhandledRejection
+                process.emit('unhandledRejection', Object.assign(new Error('[AI Healer Test] Simulated unhandledRejection — اختبار الرفض غير المعالج'), { code: 'TEST_REJECTION' }));
+            } else if (type === 'db') {
+                process.emit('uncaughtException', Object.assign(new Error('SQLITE_BUSY: database is locked'), { code: 'SQLITE_BUSY' }));
+            } else if (type === 'ratelimit') {
+                const err = new Error('You are being rate limited.');
+                err.status = 429;
+                process.emit('uncaughtException', err);
+            } else {
+                process.emit('unhandledRejection', new Error('[AI Healer Test] Default test error — التقرير الذكي الفوري قيد الإرسال إلى مالك البوت'));
+            }
+        }, 500);
+    });
+
+
     // Discord OAuth helper.
     // A 429 is shared across the process so concurrent requests do not keep
     // hammering Discord while the global rate limit is active.
