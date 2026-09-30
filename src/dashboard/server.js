@@ -1607,7 +1607,9 @@ module.exports = function (app, client) {
             let guildLeaderboardUsers = [];
             const currentTab = req.query?.tab || 'settings';
             try {
-                if (database.getLeaderboard) {
+                if (database.getLeaderboardFromTurso) {
+                    guildLeaderboardUsers = await database.getLeaderboardFromTurso(guildId, 20) || [];
+                } else if (database.getLeaderboard) {
                     guildLeaderboardUsers = database.getLeaderboard(guildId, 20) || [];
                 }
             } catch(e) {}

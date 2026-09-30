@@ -1016,6 +1016,45 @@ function getLeaderboard(guildId, limit = 10) {
   `).all(guildId, limit);
 }
 
+// قراءة الـ leaderboard مباشرة من Turso (للداشبورد على Render)
+async function getLeaderboardFromTurso(guildId, limit = 20) {
+  if (!tursoSync?.client || !tursoSync?.enabled) {
+    // fallback للـ local SQLite إذا ما كان Turso متاح
+    return getLeaderboard(guildId, limit);
+  }
+  try {
+    const result = await tursoSync.client.execute({
+      sql: `
+        SELECT u.user_id, u.xp, u.level, u.coins, u.reputation,
+               p.username, p.display_name, p.avatar, p.avatar_url
+        FROM users u
+        LEFT JOIN user_profiles p ON u.user_id = p.user_id
+        WHERE u.guild_id = ?
+        ORDER BY u.xp DESC, u.level DESC
+        LIMIT ?
+      `,
+      args: [guildId, limit]
+    });
+    if (!result?.rows?.length) return getLeaderboard(guildId, limit);
+    return result.rows.map(r => ({
+      user_id: String(r.user_id || ''),
+      xp: Number(r.xp || 0),
+      total_xp: Number(r.xp || 0),
+      level: Number(r.level || 1),
+      coins: Number(r.coins || 0),
+      reputation: Number(r.reputation || 0),
+      username: r.username ? String(r.username) : null,
+      display_name: r.display_name ? String(r.display_name) : null,
+      avatar: r.avatar ? String(r.avatar) : null,
+      avatar_url: r.avatar_url ? String(r.avatar_url) : null,
+    }));
+  } catch(e) {
+    console.error('[TURSO] getLeaderboardFromTurso error:', e.message);
+    return getLeaderboard(guildId, limit);
+  }
+}
+
+
 function getCoinsLeaderboard(guildId, limit = 10) {
   return db.prepare(`
     SELECT u.*, p.username, p.display_name, p.avatar, p.avatar_url
@@ -1950,6 +1989,7 @@ module.exports = {
   setLastDaily,
   setWallpaper,
   getLeaderboard,
+  getLeaderboardFromTurso,
   getCoinsLeaderboard,
   addWarning,
   getWarnings,
