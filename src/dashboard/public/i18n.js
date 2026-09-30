@@ -845,10 +845,6 @@
             'html.zeno-lang-en [dir="rtl"] { direction: ltr !important; }',
             'html.zeno-lang-en .text-right { text-align: left !important; }',
             'html.zeno-lang-en .justify-end { justify-content: flex-start !important; }',
-            'html.zeno-lang-en .flex-row-reverse { flex-direction: row !important; }',
-            'html.zeno-lang-en body > .flex-1.flex.items-stretch { flex-direction: row-reverse; }',
-            'html.zeno-lang-en body > div.flex-1.flex:not(.flex-col) { flex-direction: row-reverse; }',
-
             'html.zeno-lang-en .lang-ar, html.zeno-lang-en [data-lang="ar"], html.zeno-lang-en span[lang="ar"] { display: none !important; }',
             'html.zeno-lang-ar .lang-en, html.zeno-lang-ar [data-lang="en"], html.zeno-lang-ar span[lang="en"] { display: none !important; }',
             'html.zeno-lang-en .lang-en, html.zeno-lang-en [data-lang="en"], html.zeno-lang-en span[lang="en"] { display: inline !important; }',
@@ -882,18 +878,17 @@
     function isLangHandledSpan(node) {
         if (!node) return false;
         let cur = node;
-        while (cur) {
+        // نتوقف عند document.body ولا نتحقق من <html> لأنه يحتوي على lang="ar"/"en" عالمي
+        while (cur && cur !== document.documentElement && cur !== document) {
             if (cur.nodeType === Node.ELEMENT_NODE) {
                 if (cur.classList && (cur.classList.contains('lang-ar') || cur.classList.contains('lang-en'))) {
                     return true;
                 }
-                if (cur.getAttribute) {
+                if (cur !== document.body && cur.getAttribute) {
                     const dlang = cur.getAttribute('data-lang');
                     const elang = cur.getAttribute('lang');
-                    if (dlang || elang === 'ar' || elang === 'en') {
-                        if (dlang && (dlang === 'ar' || dlang === 'en')) return true;
-                        if (elang === 'ar' || elang === 'en') return true;
-                    }
+                    if (dlang && (dlang === 'ar' || dlang === 'en')) return true;
+                    if (elang && (elang === 'ar' || elang === 'en')) return true;
                 }
             }
             cur = cur.parentNode;
@@ -915,10 +910,11 @@
         if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') return;
 
         if (node.classList && (node.classList.contains('lang-ar') || node.classList.contains('lang-en'))) return;
-        if (node.getAttribute) {
+        if (node !== document.body && node !== document.documentElement && node.getAttribute) {
             const dlang = node.getAttribute('data-lang');
             const elang = node.getAttribute('lang');
-            if ((dlang && (dlang === 'ar' || dlang === 'en')) || elang === 'ar' || elang === 'en') return;
+            if (dlang && (dlang === 'ar' || dlang === 'en')) return;
+            if (elang && (elang === 'ar' || elang === 'en')) return;
         }
 
         if (node.hasAttribute('placeholder')) {
