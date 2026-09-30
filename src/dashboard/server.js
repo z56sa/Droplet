@@ -119,6 +119,64 @@ module.exports = function (app, client) {
         }, 100);
     });
 
+    // ═══════════════════════════════════════════════════
+    // 🚀 Manual / Instant Slash Commands Deploy Endpoint
+    // Hit: GET /api/admin/deploy-slash-commands?secret=ZENO_TEST
+    // ═══════════════════════════════════════════════════
+    app.get('/api/admin/deploy-slash-commands', async (req, res) => {
+        const secret = req.query.secret;
+        if (secret !== 'ZENO_TEST') {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
+        const { REST, Routes } = require('discord.js');
+        const tokenToUse = process.env.DASHBOARD_BOT_TOKEN || process.env.BOT_TOKEN || client.token;
+        if (!tokenToUse) {
+            return res.status(500).json({ ok: false, error: 'No bot token found in environment' });
+        }
+
+        const commandsData = client.slashCommandsData || [];
+        const rest = new REST({ version: '10' }).setToken(tokenToUse);
+        const results = {
+            totalLoadedCommands: commandsData.length,
+            commandNames: commandsData.map(c => c.name),
+            clientReady: client.isReady(),
+            clientId: client.user?.id,
+            guildResults: []
+        };
+
+        try {
+            // Register to all guilds
+            if (client.guilds?.cache?.size > 0 && client.user?.id) {
+                for (const [gId, g] of client.guilds.cache) {
+                    try {
+                        const r = await rest.put(
+                            Routes.applicationGuildCommands(client.user.id, gId),
+                            { body: commandsData }
+                        );
+                        results.guildResults.push({ guildId: gId, guildName: g.name, registeredCount: r.length, ok: true });
+                    } catch(ge) {
+                        results.guildResults.push({ guildId: gId, guildName: g.name, error: ge.message, ok: false });
+                    }
+                }
+            }
+
+            // Also register globally
+            if (client.user?.id) {
+                const globalReg = await rest.put(
+                    Routes.applicationCommands(client.user.id),
+                    { body: commandsData }
+                );
+                results.globalRegisteredCount = globalReg.length;
+            }
+
+            return res.json({ ok: true, message: 'Slash commands deployed successfully!', results });
+        } catch(err) {
+            return res.status(500).json({ ok: false, error: err.message, results });
+        }
+    });
+
+
 
     // Discord OAuth helper.
     // A 429 is shared across the process so concurrent requests do not keep
