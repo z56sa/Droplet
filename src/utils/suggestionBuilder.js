@@ -108,11 +108,14 @@ function buildSuggestionEmbed({
     statusLine += ` · بواسطة <@${reviewerId}>`;
   }
 
+  // استخدام علامات LTR (\u200E) لعزل الأرقام والإيموجيات حتى لا يعكسها ديسكورد العربي من اليمين لليسار
+  const votesDisplay = `\u200E👍 **${upvotes}** \u200E· \u200E👎 **${downvotes}**\u200E`;
+
   const footerBlock = [
     '──────────────────────────────',
     statusLine,
-    `👍 **${upvotes}** · 👎 **${downvotes}**`,
-    `${progressBar}`
+    votesDisplay,
+    `\u200E${progressBar}\u200E`
   ];
 
   if (reason) {
