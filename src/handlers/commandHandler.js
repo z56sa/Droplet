@@ -56,19 +56,22 @@ module.exports = async (client) => {
     try {
       logger.info(`جاري تسجيل ${slashCommandsArray.length} أمر سلاش للبوت (${client.user.id})...`);
       
-      // مسح أي أوامر مسجلة على مستوى السيرفرات لمنع ظهور الأمر مكرراً (Duplicate)
+      // 1. تسجيل الأوامر فورياً لكل السيرفرات المتصل بها البوت (تظهر في ثانية واحدة بدون انتظار)
       if (client.guilds?.cache?.size > 0) {
         for (const [guildId, guild] of client.guilds.cache) {
           try {
             await rest.put(
               Routes.applicationGuildCommands(client.user.id, guildId),
-              { body: [] }
+              { body: slashCommandsArray }
             );
-          } catch(e) {}
+            console.log(`[Slash Commands] Registered ${slashCommandsArray.length} commands to guild: ${guild.name} (${guildId}) ⚡`);
+          } catch(e) {
+            console.error(`[Slash Commands] Failed to register to guild ${guildId}:`, e.message);
+          }
         }
       }
 
-      // تسجيل الأوامر العامة الرسمية الموحدة (Global Commands)
+      // 2. تسجيل الأوامر العامة الرسمية الموحدة (Global Commands)
       const registered = await rest.put(
         Routes.applicationCommands(client.user.id),
         { body: slashCommandsArray }
