@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module server
  * @description Handles the web server setup for the zeno dashboard, managing sessions and routing.
  */
@@ -2161,9 +2161,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
     function saveStates() {
         try {
-            var gId = window.location.pathname.split('/')[2];
+            var gId = '${guildId}' || window.location.pathname.split('/')[2];
             if (!gId) return;
-            var disArr = Object.keys(disabledCmds).filter(function(k) { return disabledCmds[k]; });
+            var disArr = Object.keys(disabledCmds).filter(function(k) { return disabledCmds[k] === true; });
             var xhr = new XMLHttpRequest();
             xhr.open('POST', '/api/guild/' + gId + '/settings', true);
             xhr.setRequestHeader('Content-Type', 'application/json');
@@ -2203,13 +2203,26 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
     window.toggleAllCategoryCmds = function(enable) {
         var items = (DB[currentCat] || DB.general).items;
-        for (var i = 0; i < items.length; i++) { disabledCmds[items[i].name] = !enable; }
-        saveStates(); render();
+        for (var i = 0; i < items.length; i++) {
+            if (enable) {
+                delete disabledCmds[items[i].name];
+            } else {
+                disabledCmds[items[i].name] = true;
+            }
+        }
+        saveStates();
+        render();
+        updateCounters();
     };
 
     window.toggleSingleCmd = function(cmdName, enabled) {
-        disabledCmds[cmdName] = !enabled;
-        saveStates(); updateCounters();
+        if (enabled) {
+            delete disabledCmds[cmdName];
+        } else {
+            disabledCmds[cmdName] = true;
+        }
+        saveStates();
+        updateCounters();
     };
 
     render();
