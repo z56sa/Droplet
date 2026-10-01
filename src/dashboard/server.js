@@ -8018,126 +8018,142 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
                 title = 'قائمة الأوامر الكاملة 📚';
                 // All commands data for the help page
                 const helpCommands = [
-                    // 🛡️ الإشراف
-                    { name: 'ban',              cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'اعطاء بان لشخص او ازالته' },
-                    { name: 'unban',            cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'فك حظر عضو' },
-                    { name: 'unbanall',         cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'فك حظر جميع الأعضاء المحظورين في السيرفر' },
-                    { name: 'kick',             cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'اعطاء طرد لشخص او ازالته' },
-                    { name: 'mute',             cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'اعطاء ميوت لشخص او ازالته' },
-                    { name: 'timeout',          cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'اعطاء تايم اوت لشخص او ازالته' },
-                    { name: 'untimeout',        cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'إزالة التايم أوت من عضو' },
-                    { name: 'untimeall',        cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'إزالة التايم أوت من جميع الأعضاء' },
-                    { name: 'warn',             cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'تحذير عضو' },
-                    { name: 'unwarn',           cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'إزالة تحذير من عضو' },
-                    { name: 'warns',            cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'عرض تحذيرات عضو' },
-                    { name: 'clear',            cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'حذف عدد من الرسائل' },
-                    { name: 'lock',             cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'قفل الروم' },
-                    { name: 'unlock',           cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'فتح الروم' },
-                    { name: 'hide',             cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'اخفاء الروم' },
-                    { name: 'show',             cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'إظهار الروم الذي تم إخفاؤه' },
-                    { name: 'unhide',           cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'اظهار الروم' },
-                    { name: 'nickname',         cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'اعطاء اسم مستعار لشخص او ازالته' },
-                    { name: 'demote',           cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'تخفيض عضو عن طريق إزالة أعلى رتبة يمتلكها' },
-                    { name: 'promote',          cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'ترقية عضو تلقائياً لأعلى رتبة (فوق رتبته الحالية)' },
-                    { name: 'role',             cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'اعطاء رتبة لشخص او ازالتها' },
-                    { name: 'xroles',           cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'إعطاء أو إزالة رتبة لعدة أعضاء' },
-                    { name: 'come',             cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'استدعاء شخص' },
-                    { name: 'snipe',            cat: 'mod',        catLabel: '🛡️ الإشراف',          desc: 'عرض آخر رسالة محذوفة في القناة' },
-                    // 🔐 الحماية
-                    { name: 'anti-ban',             cat: 'protection', catLabel: '🔐 الحماية',           desc: 'تسطيب نظام الحماية من الباند' },
-                    { name: 'anti-bots',            cat: 'protection', catLabel: '🔐 الحماية',           desc: 'تسطيب نظام الحماية من البوتات' },
-                    { name: 'anti-delete-roles',    cat: 'protection', catLabel: '🔐 الحماية',           desc: 'تسطيب نظام الحماية من حظر الرتب' },
-                    { name: 'anti-delete-rooms',    cat: 'protection', catLabel: '🔐 الحماية',           desc: 'تسطيب نظام الحماية من حذف الرومات' },
-                    { name: 'antilink',             cat: 'protection', catLabel: '🔐 الحماية',           desc: 'إدارة الحماية من الروابط' },
-                    { name: 'antispam',             cat: 'protection', catLabel: '🔐 الحماية',           desc: 'إدارة الحماية من السبام' },
-                    { name: 'badwords',             cat: 'protection', catLabel: '🔐 الحماية',           desc: 'إدارة الكلمات الممنوعة' },
-                    { name: 'protection-status',    cat: 'protection', catLabel: '🔐 الحماية',           desc: 'للاستعلام عن حالة نظام الحماية' },
-                    { name: 'set-protect-logs',     cat: 'protection', catLabel: '🔐 الحماية',           desc: 'لتحديد روم لوج الحماية' },
-                    // 🎫 التذاكر
-                    { name: 'setup-ticket',         cat: 'tickets',    catLabel: '🎫 التذاكر',           desc: 'تثبيت التذكرة' },
-                    { name: 'add-ticket-button',    cat: 'tickets',    catLabel: '🎫 التذاكر',           desc: 'تثبيت التذكرة (زر إضافي)' },
-                    { name: 'add-button',           cat: 'tickets',    catLabel: '🎫 التذاكر',           desc: 'اضافة زر للرتبة أخرى' },
-                    { name: 'close',                cat: 'tickets',    catLabel: '🎫 التذاكر',           desc: 'إغلاق التذكرة الحالية' },
-                    { name: 'delete',               cat: 'tickets',    catLabel: '🎫 التذاكر',           desc: 'حذف التذكرة الحالية' },
-                    { name: 'rename',               cat: 'tickets',    catLabel: '🎫 التذاكر',           desc: 'إعادة تسمية التذكرة الحالية' },
-                    { name: 'add-user',             cat: 'tickets',    catLabel: '🎫 التذاكر',           desc: 'إضافة مستخدم للتذكرة' },
-                    { name: 'remove-user',          cat: 'tickets',    catLabel: '🎫 التذاكر',           desc: 'إزالة مستخدم من التذكرة' },
-                    { name: 'to-select',            cat: 'tickets',    catLabel: '🎫 التذاكر',           desc: 'تحويل التكت الى سلكت منيو' },
-                    { name: 'set-ticket-log',       cat: 'tickets',    catLabel: '🎫 التذاكر',           desc: 'تحديد روم اللوغ للتذاكر' },
-                    { name: 'setup-apply',          cat: 'tickets',    catLabel: '🎫 التذاكر',           desc: 'تسطيب نظام التقديم' },
-                    { name: 'new-apply',            cat: 'tickets',    catLabel: '🎫 التذاكر',           desc: 'انشاء تقديم جديد' },
-                    { name: 'close-apply',          cat: 'tickets',    catLabel: '🎫 التذاكر',           desc: 'انهاء التقديم المفتوح' },
-                    // 🎉 الجيف أواي
-                    { name: 'gstart',   cat: 'giveaway', catLabel: '🎉 الجيف أواي', desc: 'بدأ جيف اواي' },
-                    { name: 'gend',     cat: 'giveaway', catLabel: '🎉 الجيف أواي', desc: 'انهاء جيف اواي' },
-                    { name: 'greroll',  cat: 'giveaway', catLabel: '🎉 الجيف أواي', desc: 'اعادة فائزين جيف اواي' },
-                    // 💰 الاقتصاد
-                    { name: 'daily',    cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'استلام الراتب اليومي' },
-                    { name: 'rovex',    cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'تحويل رصيد أو عرض رصيدك' },
-                    { name: 'tax',      cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'معرفة ضريبة رقم' },
-                    { name: 'profile',  cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'عرض معلومات حسابك أو حساب شخص آخر' },
-                    { name: 'rank',     cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'عرض رانكك في السيرفر' },
-                    { name: 'top',      cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'عرض توب السيرفر (رصيد أو مستوى)' },
-                    // 📢 البرودكاست
-                    { name: 'add-autoline-channel',    cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'اضافة روم خط تلقائي' },
-                    { name: 'remove-autoline-channel', cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'ازالة روم خط تلقائي' },
-                    { name: 'set-autoline-line',       cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'تحديد الخط التلقائي' },
-                    { name: 'line-mode',               cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'اختر بين إرسال صورة أو رابط' },
-                    { name: 'add-nadeko-room',         cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'اضافة روم يتم تفعيل الخاصية فيها' },
-                    { name: 'remove-nadeko-room',      cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'ازالة روم مفعل الخاصية فيها' },
-                    { name: 'send-broadcast-panel',    cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'ارسال بانل التحكم في البرودكاست' },
-                    { name: 'remove-all-tokens',       cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'إزالة جميع بوتات البرودكاست' },
-                    { name: 'remove-token',            cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'إزالة توكن برودكاست' },
-                    { name: 'set-feedback-line',       cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'تحديد خط الاراء' },
-                    { name: 'set-feedback-room',       cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'تحديد روم الاراء' },
-                    { name: 'set-suggestions-line',    cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'تحديد خط الاقتراحات' },
-                    { name: 'set-suggestions-room',    cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'تحديد روم الاقتراحات' },
-                    { name: 'suggestion-mode',         cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'أزرار أو رياكشنات للاقتراحات' },
-                    { name: 'set-tax-line',            cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'تحديد خط الضريبة' },
-                    { name: 'set-tax-room',            cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'تحديد روم الضريبة التلقائية' },
-                    { name: 'tax-mode',                cat: 'broadcast', catLabel: '📢 البرودكاست', desc: 'اختيار بين استخدام امبد أو رسالة عادية' },
-                    // ⚙️ الإعدادات والعامة
-                    { name: 'greet',            cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'إعدادات الترحيب' },
-                    { name: 'setup-welcome',    cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'إعدادات الترحيب التفصيلية' },
-                    { name: 'set-message',      cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'تحديد الرسالة عند الدخول' },
-                    { name: 'autorole',         cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'إدارة الرتب التلقائية عند دخول الأعضاء' },
-                    { name: 'settempvoice',     cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'إدارة إنشاء القنوات الصوتية المؤقتة' },
-                    { name: 'setup-rating',     cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'تسطيب اعدادات التقييم' },
-                    { name: 'setcommandrole',   cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'ربط رتبة معينة بأمر معين' },
-                    { name: 'setup-logs',       cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'تسطيب نظام اللوج' },
-                    { name: 'logs-info',        cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'معلومات نظام اللوج في السيرفر' },
-                    { name: 'alias',            cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'إدارة اختصارات الأوامر' },
-                    { name: 'set-shortcut',     cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'تحديد اختصار لأمر معين' },
-                    { name: 'autoreply-add',    cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'لاضافة رد تلقائي' },
-                    { name: 'autoreply-list',   cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'لرؤية جميع الردود التلقائية' },
-                    { name: 'autoreply-remove', cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'لازالة رد تلقائي' },
-                    { name: 'avatar',           cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'رؤية افاتارك او شخص اخر' },
-                    { name: 'banner',           cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'رؤية بانرك او شخص اخر' },
-                    { name: 'user',             cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'رؤية معلومات حسابك او شخص اخر' },
-                    { name: 'server',           cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'رؤية معلومات السيرفر' },
-                    { name: 'inrole',           cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'عرض جميع الأعضاء الذين يمتلكون رتبة معينة' },
-                    { name: 'roles',            cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'للاستعلام عن رتب السيرفر' },
-                    { name: 'embed',            cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'قول كلام في ايمبد' },
-                    { name: 'say',              cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'قول كلام' },
-                    { name: 'send',             cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'لارسال رسالة لشخص ما' },
-                    { name: 'ai',               cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'التحدث مع الذكاء الاصطناعي (ZENO)' },
-                    { name: 'ask',              cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'اسأل ذكاء ZENO الاصطناعي أي سؤال!' },
-                    { name: 'ping',             cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'لتجربة سرعة البوت' },
-                    { name: 'help',             cat: 'settings', catLabel: '⚙️ الإعدادات', desc: 'قائمة اوامر البوت' },
+                    // 🛡️ الإشراف والعقوبات
+                    { name: 'ban',           cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'حظر عضو من السيرفر' },
+                    { name: 'clear',         cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'حذف رسائل من القناة' },
+                    { name: 'hide',          cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'إخفاء الروم الحالي عن الأعضاء' },
+                    { name: 'jail',          cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'نظام سجن وعزل الأعضاء المخالفين' },
+                    { name: 'kick',          cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'طرد عضو من السيرفر' },
+                    { name: 'lock',          cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'قفل الروم الحالي' },
+                    { name: 'mute',          cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'إسكات عضو كتابياً وصوتياً' },
+                    { name: 'nickname',      cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'تغيير لقب عضو' },
+                    { name: 'role',          cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'إدارة أدوار الأعضاء' },
+                    { name: 'role-all',      cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'إعطاء رتبة لجميع الأعضاء أو إزالتها منهم' },
+                    { name: 'slowmode',      cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'تحديد سرعة إرسال الرسائل بالثواني' },
+                    { name: 'timeout',       cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'عزل / إسكات عضو مؤقتاً في السيرفر' },
+                    { name: 'unban',         cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'إلغاء حظر عضو من السيرفر' },
+                    { name: 'unhide',        cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'إظهار الروم الحالي وإلغاء إخفائه' },
+                    { name: 'unlock',        cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'فتح الروم الحالي' },
+                    { name: 'untimeout',     cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'فك العزل عن عضو في السيرفر' },
+                    { name: 'warn',          cat: 'moderation', catLabel: '🔨 الإشراف',          desc: 'إدارة تحذيرات الأعضاء' },
+                    // 🔐 الحماية والأمان
+                    { name: 'anti-ban',          cat: 'protection', catLabel: '🔐 الحماية',   desc: 'تسطيب نظام الحماية من الباند' },
+                    { name: 'anti-bots',         cat: 'protection', catLabel: '🔐 الحماية',   desc: 'تسطيب نظام الحماية من البوتات' },
+                    { name: 'anti-delete-roles', cat: 'protection', catLabel: '🔐 الحماية',   desc: 'تسطيب نظام الحماية من حذف الرتب' },
+                    { name: 'anti-delete-rooms', cat: 'protection', catLabel: '🔐 الحماية',   desc: 'تسطيب نظام الحماية من حذف الرومات' },
+                    { name: 'protection-status', cat: 'protection', catLabel: '🔐 الحماية',   desc: 'عرض حالة أنظمة الحماية' },
+                    { name: 'set-protect-logs',  cat: 'protection', catLabel: '🔐 الحماية',   desc: 'تعيين روم لسجلات الحماية والنوك' },
+                    // 👋 الترحيب والمغادرة
+                    { name: 'set-welcome', cat: 'welcome', catLabel: '👋 الترحيب', desc: 'إعداد نظام الترحيب' },
+                    // 💬 الرد التلقائي
+                    { name: 'auto-responder',   cat: 'autoresponder', catLabel: '💬 الرد التلقائي', desc: 'إدارة نظام الرد التلقائي' },
+                    { name: 'autoreply-add',    cat: 'autoresponder', catLabel: '💬 الرد التلقائي', desc: 'لاضافة رد تلقائي' },
+                    { name: 'autoreply-list',   cat: 'autoresponder', catLabel: '💬 الرد التلقائي', desc: 'لرؤية جميع الردود التلقائية' },
+                    { name: 'autoreply-remove', cat: 'autoresponder', catLabel: '💬 الرد التلقائي', desc: 'لازالة رد تلقائي' },
+                    // 🎫 نظام التذاكر
+                    { name: 'add-ticket-button', cat: 'tickets', catLabel: '🎫 التذاكر', desc: 'إرسال زر التذكرة' },
+                    { name: 'add-user',          cat: 'tickets', catLabel: '🎫 التذاكر', desc: 'إضافة عضو للتذكرة' },
+                    { name: 'close',             cat: 'tickets', catLabel: '🎫 التذاكر', desc: 'اغلاق التذكرة الحالية' },
+                    { name: 'delete',            cat: 'tickets', catLabel: '🎫 التذاكر', desc: 'حذف التذكرة فوراً' },
+                    { name: 'remove-user',       cat: 'tickets', catLabel: '🎫 التذاكر', desc: 'إزالة عضو من التذكرة' },
+                    { name: 'rename',            cat: 'tickets', catLabel: '🎫 التذاكر', desc: 'إعادة تسمية التذكرة' },
+                    { name: 'set-ticket-log',    cat: 'tickets', catLabel: '🎫 التذاكر', desc: 'تحديد روم سجلات التذاكر' },
+                    { name: 'setup-rating',      cat: 'tickets', catLabel: '🎫 التذاكر', desc: 'تفعيل نظام التقييم في التذاكر' },
+                    { name: 'ticket',            cat: 'tickets', catLabel: '🎫 التذاكر', desc: 'أوامر إدارة التذاكر المتقدمة' },
+                    { name: 'ticket-setup',      cat: 'tickets', catLabel: '🎫 التذاكر', desc: 'إعداد لوحة تذاكر مخصصة بالكامل' },
+                    // 🏆 المستويات & XP
+                    { name: 'leaderboard',  cat: 'levels', catLabel: '🏆 المستويات', desc: 'عرض قائمة المتصدرين' },
+                    { name: 'profile',      cat: 'levels', catLabel: '🏆 المستويات', desc: 'عرض بطاقة البروفايل والهوية الشخصية' },
+                    { name: 'rank',         cat: 'levels', catLabel: '🏆 المستويات', desc: 'عرض بطاقة المستوى ونقاط الخبرة' },
+                    { name: 'setwallpaper', cat: 'levels', catLabel: '🏆 المستويات', desc: 'تعيين خلفية مخصصة لبطاقة البروفايل' },
+                    // 💰 الاقتصاد والمال
+                    { name: 'balance',      cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'عرض رصيدك الحالي من العملات' },
+                    { name: 'bank',         cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'نظام البنك' },
+                    { name: 'daily',        cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'احصل على مكافأتك اليومية' },
+                    { name: 'pay',          cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'تحويل عملات الذهب إلى عضو آخر' },
+                    { name: 'set-tax-line', cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'تحديد خط لروم الضريبة' },
+                    { name: 'set-tax-room', cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'تحديد روم حساب الضريبة' },
+                    { name: 'tax',          cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'حساب ضريبة بروبوت' },
+                    { name: 'tax-mode',     cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'تحديد نمط الضريبة' },
+                    { name: 'work',         cat: 'economy', catLabel: '💰 الاقتصاد', desc: 'اعمل لتكسب Star Coin' },
+                    // 🎖️ الرتب التلقائية
+                    { name: 'set-autorole',  cat: 'autoroles', catLabel: '🎖️ الرتب التلقائية', desc: 'تعيين الرتبة التلقائية للأعضاء الجدد' },
+                    { name: 'reaction-role', cat: 'autoroles', catLabel: '🎖️ الرتب التلقائية', desc: 'إنشاء رسالة إعطاء رتبة بزر تفاعلي' },
+                    { name: 'new-panel',     cat: 'autoroles', catLabel: '🎖️ الرتب التلقائية', desc: 'إنشاء بانل رتب جديد' },
+                    { name: 'add-button',    cat: 'autoroles', catLabel: '🎖️ الرتب التلقائية', desc: 'إضافة زر (رتبة أو معلومات) لرسالة محددة' },
+                    // 🎁 قيف اواي
+                    { name: 'giveaway', cat: 'giveaways', catLabel: '🎁 قيف اواي', desc: 'إدارة سحوبات القيف أواي المتقدمة' },
+                    // 🔗 Invite Tracker
+                    { name: 'invites', cat: 'invites', catLabel: '🔗 Invite Tracker', desc: 'أوامر نظام متتبع الدعوات (Invite Tracker)' },
+                    // 📝 التقديمات
+                    { name: 'apply',        cat: 'applications', catLabel: '📝 التقديمات', desc: 'فتح قائمة التقديمات أو إرسال رسالة التقديمات في القناة' },
+                    { name: 'applications', cat: 'applications', catLabel: '📝 التقديمات', desc: 'إدارة نظام التقديمات ومراجعة الطلبات' },
+                    { name: 'dm-mode',      cat: 'applications', catLabel: '📝 التقديمات', desc: 'إشعار التقديم بالخاص' },
+                    // 💡 الاقتراحات والشكاوي
+                    { name: 'feedback-mode',        cat: 'suggestions', catLabel: '💡 الاقتراحات', desc: 'تحديد نمط الآراء' },
+                    { name: 'set-feedback-line',    cat: 'suggestions', catLabel: '💡 الاقتراحات', desc: 'تحديد خط لروم الآراء' },
+                    { name: 'set-feedback-room',    cat: 'suggestions', catLabel: '💡 الاقتراحات', desc: 'تحديد روم الآراء' },
+                    { name: 'set-suggestions-line', cat: 'suggestions', catLabel: '💡 الاقتراحات', desc: 'تحديد خط لروم الاقتراحات' },
+                    { name: 'set-suggestions-room', cat: 'suggestions', catLabel: '💡 الاقتراحات', desc: 'تحديد روم الاقتراحات' },
+                    { name: 'suggest',              cat: 'suggestions', catLabel: '💡 الاقتراحات', desc: 'تقديم اقتراح أو فكرة لتطوير السيرفر' },
+                    { name: 'suggestion-mode',      cat: 'suggestions', catLabel: '💡 الاقتراحات', desc: 'تحديد نمط الاقتراحات' },
+                    // 🤖 الرقابة التلقائية
+                    { name: 'automod', cat: 'automod', catLabel: '🤖 الرقابة التلقائية', desc: 'إدارة وتخصيص منظومة الرقابة التلقائية الذكية (Auto-Mod)' },
+                    // 🕒 الرومات المؤقتة
+                    { name: 'set-tempvoice', cat: 'tempvoice', catLabel: '🕒 الرومات المؤقتة', desc: 'تعيين روم الرومات الصوتية المؤقتة' },
+                    // ⚙️ الإدارة والسجلات
+                    { name: 'set',              cat: 'admin', catLabel: '⚙️ الإدارة', desc: 'إعدادات وتخصيص البوت ولوحات الإدارة' },
+                    { name: 'set-jail',         cat: 'admin', catLabel: '⚙️ الإدارة', desc: 'إعداد وتخصيص رتبة وروم السجن' },
+                    { name: 'set-logs',         cat: 'admin', catLabel: '⚙️ الإدارة', desc: 'تحديد روم السجلات الشتملة' },
+                    { name: 'set-prefix',       cat: 'admin', catLabel: '⚙️ الإدارة', desc: 'تغيير رمز البرفكس الخاص بالسيرفر' },
+                    { name: 'set-shortcut',     cat: 'admin', catLabel: '⚙️ الإدارة', desc: 'وضع اختصار لأمر معين' },
+                    { name: 'set-verification', cat: 'admin', catLabel: '⚙️ الإدارة', desc: 'إعداد وتفعيل نظام التحقق التفاعلي في السيرفر' },
+                    { name: 'logs',             cat: 'admin', catLabel: '⚙️ الإدارة', desc: 'نظام تتبع جميع الأحداث في السيرفر مع الفاعل والتفاصيل فورياً' },
+                    { name: 'staff',            cat: 'admin', catLabel: '⚙️ الإدارة', desc: 'نظام متابعة نشاط طاقم الإدارة (Staff Activity)' },
+                    { name: 'top-in',           cat: 'admin', catLabel: '⚙️ الإدارة', desc: 'لوحة شرف وترتيب ساعات ونقاط طاقم الإدارة' },
+                    // ⚙️ الأوامر العامة
+                    { name: 'add-autoline-channel',    cat: 'general', catLabel: '⚙️ عام', desc: 'اضافة روم خط تلقائي' },
+                    { name: 'add-nadeko-room',         cat: 'general', catLabel: '⚙️ عام', desc: 'اضافة روم لتفعيل خاصية ناديكو' },
+                    { name: 'ai',                      cat: 'general', catLabel: '⚙️ عام', desc: 'التحدث مع الذكاء الاصطناعي (ZENO AI)' },
+                    { name: 'ask',                     cat: 'general', catLabel: '⚙️ عام', desc: 'اسأل ذكاء ZENO الاصطناعي أي سؤال!' },
+                    { name: 'avatar',                  cat: 'general', catLabel: '⚙️ عام', desc: 'عرض صورة حسابك أو حساب عضو آخر' },
+                    { name: 'banner',                  cat: 'general', catLabel: '⚙️ عام', desc: 'عرض بنر حسابك أو حساب عضو آخر' },
+                    { name: 'copy-emoji',              cat: 'general', catLabel: '⚙️ عام', desc: 'نسخ إيموجي وإضافته للسيرفر' },
+                    { name: 'embed',                   cat: 'general', catLabel: '⚙️ عام', desc: 'إرسال رسالة Embed منسقة' },
+                    { name: 'help',                    cat: 'general', catLabel: '⚙️ عام', desc: 'عرض قائمة أوامر البوت الكاملة بشكل تفاعلي' },
+                    { name: 'line-mode',               cat: 'general', catLabel: '⚙️ عام', desc: 'تحديد نمط الخط' },
+                    { name: 'ping',                    cat: 'general', catLabel: '⚙️ عام', desc: 'عرض سرعة استجابة البوت (Ping)' },
+                    { name: 'remove-autoline-channel', cat: 'general', catLabel: '⚙️ عام', desc: 'ازالة روم خط تلقائي' },
+                    { name: 'remove-nadeko-room',      cat: 'general', catLabel: '⚙️ عام', desc: 'ازالة روم ناديكو' },
+                    { name: 'roles',                   cat: 'general', catLabel: '⚙️ عام', desc: 'عرض رتب السيرفر' },
+                    { name: 'say',                     cat: 'general', catLabel: '⚙️ عام', desc: 'ارسال رسالة عن طريق البوت' },
+                    { name: 'send',                    cat: 'general', catLabel: '⚙️ عام', desc: 'ارسال رسالة لروم محدد' },
+                    { name: 'server',                  cat: 'general', catLabel: '⚙️ عام', desc: 'عرض معلومات السيرفر وإحصائياته' },
+                    { name: 'set-autoline-line',       cat: 'general', catLabel: '⚙️ عام', desc: 'تحديد خط لروم' },
+                    { name: 'user',                    cat: 'general', catLabel: '⚙️ عام', desc: 'عرض معلومات العضو' },
                 ];
 
                 const catColors = {
-                    mod:        { bg: 'bg-red-950/40',    border: 'border-red-500/30',    text: 'text-red-400',    badge: 'bg-red-950/60 text-red-400' },
-                    protection: { bg: 'bg-orange-950/40', border: 'border-orange-500/30', text: 'text-orange-400', badge: 'bg-orange-950/60 text-orange-400' },
-                    tickets:    { bg: 'bg-violet-950/40', border: 'border-violet-500/30', text: 'text-violet-400', badge: 'bg-violet-950/60 text-violet-400' },
-                    giveaway:   { bg: 'bg-pink-950/40',   border: 'border-pink-500/30',   text: 'text-pink-400',   badge: 'bg-pink-950/60 text-pink-400' },
-                    economy:    { bg: 'bg-yellow-950/40', border: 'border-yellow-500/30', text: 'text-yellow-400', badge: 'bg-yellow-950/60 text-yellow-400' },
-                    broadcast:  { bg: 'bg-cyan-950/40',   border: 'border-cyan-500/30',   text: 'text-cyan-400',   badge: 'bg-cyan-950/60 text-cyan-400' },
-                    settings:   { bg: 'bg-emerald-950/40',border: 'border-emerald-500/30',text: 'text-emerald-400',badge: 'bg-emerald-950/60 text-emerald-400' },
+                    moderation:    { bg: 'bg-red-950/40',     border: 'border-red-500/30',     text: 'text-red-400',     badge: 'bg-red-950/60 text-red-400' },
+                    protection:    { bg: 'bg-orange-950/40',  border: 'border-orange-500/30',  text: 'text-orange-400',  badge: 'bg-orange-950/60 text-orange-400' },
+                    welcome:       { bg: 'bg-green-950/40',   border: 'border-green-500/30',   text: 'text-green-400',   badge: 'bg-green-950/60 text-green-400' },
+                    autoresponder: { bg: 'bg-cyan-950/40',    border: 'border-cyan-500/30',    text: 'text-cyan-400',    badge: 'bg-cyan-950/60 text-cyan-400' },
+                    tickets:       { bg: 'bg-violet-950/40',  border: 'border-violet-500/30',  text: 'text-violet-400',  badge: 'bg-violet-950/60 text-violet-400' },
+                    levels:        { bg: 'bg-yellow-950/40',  border: 'border-yellow-500/30',  text: 'text-yellow-400',  badge: 'bg-yellow-950/60 text-yellow-400' },
+                    economy:       { bg: 'bg-amber-950/40',   border: 'border-amber-500/30',   text: 'text-amber-400',   badge: 'bg-amber-950/60 text-amber-400' },
+                    autoroles:     { bg: 'bg-blue-950/40',    border: 'border-blue-500/30',    text: 'text-blue-400',    badge: 'bg-blue-950/60 text-blue-400' },
+                    giveaways:     { bg: 'bg-pink-950/40',    border: 'border-pink-500/30',    text: 'text-pink-400',    badge: 'bg-pink-950/60 text-pink-400' },
+                    invites:       { bg: 'bg-teal-950/40',    border: 'border-teal-500/30',    text: 'text-teal-400',    badge: 'bg-teal-950/60 text-teal-400' },
+                    applications:  { bg: 'bg-emerald-950/40', border: 'border-emerald-500/30', text: 'text-emerald-400', badge: 'bg-emerald-950/60 text-emerald-400' },
+                    suggestions:   { bg: 'bg-lime-950/40',    border: 'border-lime-500/30',    text: 'text-lime-400',    badge: 'bg-lime-950/60 text-lime-400' },
+                    automod:       { bg: 'bg-rose-950/40',    border: 'border-rose-500/30',    text: 'text-rose-400',    badge: 'bg-rose-950/60 text-rose-400' },
+                    tempvoice:     { bg: 'bg-sky-950/40',     border: 'border-sky-500/30',     text: 'text-sky-400',     badge: 'bg-sky-950/60 text-sky-400' },
+                    admin:         { bg: 'bg-slate-950/40',   border: 'border-slate-500/30',   text: 'text-slate-300',   badge: 'bg-slate-800/60 text-slate-300' },
+                    general:       { bg: 'bg-indigo-950/40',  border: 'border-indigo-500/30',  text: 'text-indigo-400',  badge: 'bg-indigo-950/60 text-indigo-400' },
                 };
 
                 const cmdCards = helpCommands.map(cmd => {
-                    const c = catColors[cmd.cat] || catColors.settings;
+                    const c = catColors[cmd.cat] || catColors.general;
                     return '<div class="help-card border ' + c.border + ' ' + c.bg + ' rounded-2xl p-4 flex flex-col gap-2 hover:scale-[1.02] transition-transform cursor-default" data-cat="' + cmd.cat + '" data-name="' + cmd.name + '" data-desc="' + cmd.desc.replace(/"/g, '&quot;') + '">'
                         + '<div class="flex items-center justify-between gap-2">'
                         + '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ' + c.badge + '">' + cmd.catLabel + '</span>'
@@ -8156,7 +8172,7 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
                     + '<div class="flex items-center justify-between flex-wrap gap-4">'
                     + '<div class="flex items-center gap-3 flex-wrap">'
                     + '<span class="bg-purple-950/60 text-purple-300 text-xs font-bold px-3 py-1.5 rounded-full border border-purple-500/30">' + totalCount + ' أمر</span>'
-                    + '<span class="bg-slate-900/60 text-gray-300 text-xs px-3 py-1.5 rounded-full border border-white/10">7 فئات</span>'
+                    + '<span class="bg-slate-900/60 text-gray-300 text-xs px-3 py-1.5 rounded-full border border-white/10">16 قسم</span>'
                     + '</div><div>'
                     + '<h1 class="text-2xl font-black text-white">📚 قائمة الأوامر الكاملة</h1>'
                     + '<p class="text-gray-400 text-xs mt-1">جميع أوامر بوت ZENO مصنفة بالتفصيل</p>'
@@ -8164,20 +8180,29 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
                     + '<div class="flex flex-col sm:flex-row gap-3">'
                     + '<input id="help-search" type="text" placeholder="🔍 ابحث عن أمر..." dir="rtl" class="flex-1 bg-[#0e1420] border border-[#1e2638] rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-purple-500 transition" />'
                     + '<select id="help-filter" dir="rtl" class="bg-[#0e1420] border border-[#1e2638] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500 transition">'
-                    + '<option value="all">جميع الفئات (' + totalCount + ')</option>'
-                    + '<option value="mod">🛡️ الإشراف (' + (catCounts.mod || 0) + ')</option>'
-                    + '<option value="protection">🔐 الحماية (' + (catCounts.protection || 0) + ')</option>'
-                    + '<option value="tickets">🎫 التذاكر (' + (catCounts.tickets || 0) + ')</option>'
-                    + '<option value="giveaway">🎉 الجيف أواي (' + (catCounts.giveaway || 0) + ')</option>'
-                    + '<option value="economy">💰 الاقتصاد (' + (catCounts.economy || 0) + ')</option>'
-                    + '<option value="broadcast">📢 البرودكاست (' + (catCounts.broadcast || 0) + ')</option>'
-                    + '<option value="settings">⚙️ الإعدادات (' + (catCounts.settings || 0) + ')</option>'
+                    + '<option value="all">جميع الأقسام (' + totalCount + ')</option>'
+                    + '<option value="moderation">🔨 الإشراف والعقوبات (' + (catCounts.moderation || 0) + ')</option>'
+                    + '<option value="protection">🔐 الحماية والأمان (' + (catCounts.protection || 0) + ')</option>'
+                    + '<option value="welcome">👋 الترحيب والمغادرة (' + (catCounts.welcome || 0) + ')</option>'
+                    + '<option value="autoresponder">💬 الرد التلقائي (' + (catCounts.autoresponder || 0) + ')</option>'
+                    + '<option value="tickets">🎫 نظام التذاكر (' + (catCounts.tickets || 0) + ')</option>'
+                    + '<option value="levels">🏆 المستويات & XP (' + (catCounts.levels || 0) + ')</option>'
+                    + '<option value="economy">💰 الاقتصاد والمال (' + (catCounts.economy || 0) + ')</option>'
+                    + '<option value="autoroles">🎖️ الرتب التلقائية (' + (catCounts.autoroles || 0) + ')</option>'
+                    + '<option value="giveaways">🎁 قيف اواي (' + (catCounts.giveaways || 0) + ')</option>'
+                    + '<option value="invites">🔗 Invite Tracker (' + (catCounts.invites || 0) + ')</option>'
+                    + '<option value="applications">📝 التقديمات (' + (catCounts.applications || 0) + ')</option>'
+                    + '<option value="suggestions">💡 الاقتراحات والشكاوي (' + (catCounts.suggestions || 0) + ')</option>'
+                    + '<option value="automod">🤖 الرقابة التلقائية (' + (catCounts.automod || 0) + ')</option>'
+                    + '<option value="tempvoice">🕒 الرومات المؤقتة (' + (catCounts.tempvoice || 0) + ')</option>'
+                    + '<option value="admin">⚙️ الإدارة والسجلات (' + (catCounts.admin || 0) + ')</option>'
+                    + '<option value="general">⚙️ الأوامر العامة (' + (catCounts.general || 0) + ')</option>'
                     + '</select></div>'
                     + '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">'
                     + '<div class="bg-[#121620] border border-[#1e2638] rounded-2xl p-3 text-center"><div class="text-2xl font-black text-white">' + totalCount + '</div><div class="text-gray-400 text-xs mt-0.5">أمر إجمالي</div></div>'
-                    + '<div class="bg-red-950/30 border border-red-500/20 rounded-2xl p-3 text-center"><div class="text-2xl font-black text-red-400">' + (catCounts.mod || 0) + '</div><div class="text-gray-400 text-xs mt-0.5">إشراف</div></div>'
+                    + '<div class="bg-red-950/30 border border-red-500/20 rounded-2xl p-3 text-center"><div class="text-2xl font-black text-red-400">' + (catCounts.moderation || 0) + '</div><div class="text-gray-400 text-xs mt-0.5">إشراف</div></div>'
                     + '<div class="bg-violet-950/30 border border-violet-500/20 rounded-2xl p-3 text-center"><div class="text-2xl font-black text-violet-400">' + (catCounts.tickets || 0) + '</div><div class="text-gray-400 text-xs mt-0.5">تذاكر</div></div>'
-                    + '<div class="bg-cyan-950/30 border border-cyan-500/20 rounded-2xl p-3 text-center"><div class="text-2xl font-black text-cyan-400">' + (catCounts.broadcast || 0) + '</div><div class="text-gray-400 text-xs mt-0.5">برودكاست</div></div>'
+                    + '<div class="bg-slate-950/30 border border-slate-500/20 rounded-2xl p-3 text-center"><div class="text-2xl font-black text-slate-300">' + (catCounts.admin || 0) + '</div><div class="text-gray-400 text-xs mt-0.5">إدارة</div></div>'
                     + '</div>'
                     + '<div id="help-results-info" class="text-gray-400 text-xs text-right hidden"></div>'
                     + '<div id="help-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">' + cmdCards + '</div>'
