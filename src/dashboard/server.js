@@ -1794,6 +1794,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             <div class="flex items-center justify-end gap-1.5 text-xs font-black text-white px-2 py-1.5 border-b border-white/5 mb-1">
                 <span>الأقسام</span><span>📁</span>
             </div>
+            <button type="button" id="btnCatAll" onclick="window.switchCmdCategory('all')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatAll" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">98/98</span>
+                <span class="flex items-center gap-1.5"><span>جميع الأوامر</span><span>🌐</span></span>
+            </button>
             <button type="button" id="btnCatGeneral" onclick="window.switchCmdCategory('general')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg transition cursor-pointer">
                 <span id="badgeCatGeneral" class="px-2 py-0.5 bg-white/20 text-white rounded-lg text-[10px] font-mono">30/30</span>
                 <span class="flex items-center gap-1.5"><span>الأوامر العامة</span><span>⚙️</span></span>
@@ -1956,12 +1960,24 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         ]}
     };
 
+    var allItems = [];
+    var baseCats = ['general', 'moderation', 'admin', 'economy', 'tickets'];
+    for (var ck = 0; ck < baseCats.length; ck++) {
+        allItems = allItems.concat(DB[baseCats[ck]].items);
+    }
+    DB['all'] = {
+        title: '\u062c\u0645\u064a\u0639 \u0627\u0644\u0623\u0648\u0627\u0645\u0631 \u0648\u0627\u0644\u062e\u062f\u0645\u0627\u062a',
+        desc: '\u0639\u0631\u0636 \u0648\u0625\u062f\u0627\u0631\u0629 \u0643\u0627\u0641\u0629 \u0623\u0646\u0638\u0645\u0629 \u0648\u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0628\u0648\u062a \u0641\u064a \u0645\u0643\u0627\u0646 \u0648\u0627\u062d\u062f',
+        icon: '\ud83c\udf10',
+        items: allItems
+    };
+
     var catBtnMap = {
-        general:'btnCatGeneral', moderation:'btnCatModeration', admin:'btnCatAdmin',
+        all:'btnCatAll', general:'btnCatGeneral', moderation:'btnCatModeration', admin:'btnCatAdmin',
         economy:'btnCatEconomy', tickets:'btnCatTickets'
     };
     var catBadgeMap = {
-        general:'badgeCatGeneral', moderation:'badgeCatModeration', admin:'badgeCatAdmin',
+        all:'badgeCatAll', general:'badgeCatGeneral', moderation:'badgeCatModeration', admin:'badgeCatAdmin',
         economy:'badgeCatEconomy', tickets:'badgeCatTickets'
     };
 
@@ -2110,14 +2126,17 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
     function updateCounters() {
         var total = 0, enabled = 0;
-        var keys = Object.keys(DB);
+        var keys = ['all', 'general', 'moderation', 'admin', 'economy', 'tickets'];
         for (var i = 0; i < keys.length; i++) {
             var cat = keys[i];
+            if (!DB[cat]) continue;
             var items = DB[cat].items;
-            total += items.length;
             var catEn = 0;
             for (var j = 0; j < items.length; j++) { if (isEn(items[j].name)) catEn++; }
-            enabled += catEn;
+            if (cat !== 'all') {
+                total += items.length;
+                enabled += catEn;
+            }
             var bId = catBadgeMap[cat];
             if (bId) {
                 var badge = document.getElementById(bId);
