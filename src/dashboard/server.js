@@ -2046,7 +2046,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             })(expBtns[eb]);
         }
         updateCounters();
-        if (window.zenoI18n && typeof window.zenoI18n.apply === 'function') { try { window.zenoI18n.apply(); } catch(e) {} }
     }
 
     function loadAccordion(panel, cmdName) {
