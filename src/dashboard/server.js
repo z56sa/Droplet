@@ -2141,12 +2141,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         panel.style.display = 'none';
                         btn.innerHTML = '&#9660;';
                     } else {
-                        if (!panel._loaded) {
-                            loadAccordion(panel, cmdName);
-                            panel._loaded = true;
-                        }
-                        panel.style.display = 'block';
-                        btn.innerHTML = '&#9650;';
+                        setTimeout(function() {
+                            if (!panel._loaded) {
+                                loadAccordion(panel, cmdName);
+                                panel._loaded = true;
+                            }
+                            panel.style.display = 'block';
+                            btn.innerHTML = '&#9650;';
+                        }, 0);
                     }
                 });
             })(expBtns[eb]);
