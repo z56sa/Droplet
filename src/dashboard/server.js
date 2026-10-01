@@ -2106,7 +2106,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                   '</div>' +
                   '<div class="flex items-center gap-3">' +
                     '<div class="text-right">' +
-                      '<div class="flex items-center justify-end gap-2">' + bh + '<span class="font-black text-white text-xs font-mono">' + escH(item.name) + '</span></div>' +
+                      '<div class="flex items-center justify-end gap-2">' + bh + '<span class="font-black text-white text-xs font-mono inline-block" dir="ltr">' + escH(item.name) + '</span></div>' +
                       '<p class="text-[11px] text-gray-400 mt-0.5">' + escH(item.desc) + '</p>' +
                     '</div>' +
                     '<div class="w-9 h-9 rounded-xl bg-[#0b0d14] border border-white/5 flex items-center justify-center text-sm shadow-inner">' + (item.icon || '&#9881;') + '</div>' +
@@ -2126,7 +2126,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
     function loadAccordion(panel, cmdName) {
         var cfg = commandConfigs[cmdName] || {};
-        var alias = cfg.alias || '';
+        var alias = (cfg.alias || '').replace(/^[\/!]+|[\/!]+$/g, '');
         var aRoles = [];
         if (Array.isArray(cfg.allowedRoles)) {
             aRoles = cfg.allowedRoles;
@@ -2183,7 +2183,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         var h = '<div class="p-4 space-y-4">' +
             '<div class="flex items-center justify-between gap-4 flex-wrap"><div class="flex-1 min-w-[200px]">' +
                 '<label class="block text-[10px] text-gray-400 font-bold mb-1">\u0627\u062e\u062a\u0635\u0627\u0631 \u0645\u062e\u0635\u0635 \u0644\u0644\u0623\u0645\u0631 (Custom Alias)</label>' +
-                '<input type="text" class="cmd-alias-input w-full bg-[#12141f] border border-white/10 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white outline-none text-right" placeholder="\u0645\u062b\u0627\u0644: !b \u0623\u0648 /b" data-cmd="' + escH(cmdName) + '" value="' + escH(alias) + '">' +
+                '<input type="text" dir="ltr" class="cmd-alias-input w-full bg-[#12141f] border border-white/10 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white outline-none text-left" placeholder="H \u0623\u0648 b \u0623\u0648 !help" data-cmd="' + escH(cmdName) + '" value="' + escH(alias) + '">' +
             '</div></div>' +
             '<div>' +
                 '<label class="block text-[10px] text-gray-400 font-bold mb-1.5">\u0627\u0644\u0631\u062a\u0628 \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0644\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Roles)</label>' +
@@ -2367,7 +2367,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 var panel = saveBtn.closest('.cmd-accordion');
                 if (!panel) return;
                 var aliasInput = panel.querySelector('.cmd-alias-input');
-                var a = aliasInput ? aliasInput.value.trim() : '';
+                var a = aliasInput ? aliasInput.value.trim().replace(/^[\/!]+|[\/!]+$/g, '') : '';
                 var roleChks = panel.querySelectorAll('.cmd-role-chk:checked');
                 var chChks = panel.querySelectorAll('.cmd-ch-chk:checked');
                 var roles = [], chs = [];

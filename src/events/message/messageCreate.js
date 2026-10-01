@@ -668,37 +668,51 @@ module.exports = {
     } catch(e) {}
     // تمكين تفاعل الأعضاء بحرية أو توجيهات داخل الروم المخصص
 
-    // --- 5. معالجة الأوامر بالبرفكس (Prefix Commands) ---
+    // --- 5. معالجة الأوامر بالبرفكس واختصارات الداشبورد (Prefix & Custom Aliases) ---
     const prefix = settings.prefix || config.defaultPrefix || '#';
-    if (!message.content.startsWith(prefix)) return;
-
-    const args = message.content.slice(prefix.length).trim().split(/ +/);
-    const commandName = args.shift().toLowerCase();
-
-    let command = client.prefixCommands.get(commandName) ||
-                    client.prefixCommands.get(client.aliases.get(commandName));
-
-    // فحص اختصارات الأوامر المخصصة (Custom Aliases) من الداشبورد
     let cmdConfigs = {};
     try {
       cmdConfigs = typeof settings.command_configs === 'string' ? JSON.parse(settings.command_configs) : (settings.command_configs || {});
     } catch(e) {}
 
+    const trimmedContent = message.content.trim();
+    let command = null;
+    let commandName = '';
+    let args = [];
     let matchedCmdKey = null;
-    if (!command) {
-      for (const [cmdKey, cfg] of Object.entries(cmdConfigs)) {
-        if (cfg && cfg.alias) {
-          const cleanAlias = cfg.alias.replace(/^[/#!.]+/, '').toLowerCase();
-          if (cleanAlias === commandName || cfg.alias.toLowerCase() === (prefix + commandName).toLowerCase()) {
-            const rawName = cmdKey.replace(/^\//, '');
-            command = client.prefixCommands.get(rawName) || client.prefixCommands.get(client.aliases.get(rawName));
-            if (command) {
-              matchedCmdKey = cmdKey;
-              break;
-            }
+
+    // 1. أولاً: فحص إذا كانت الرسالة تبدأ باختصار مخصص (بدون الحاجة لبرفكس أو مع / أو أي بادئة)
+    for (const [cmdKey, cfg] of Object.entries(cmdConfigs)) {
+      if (cfg && cfg.alias) {
+        const rawAlias = cfg.alias.trim();
+        const cleanAlias = rawAlias.replace(/^[/#!.]+/, '').toLowerCase();
+        const messageParts = trimmedContent.split(/ +/);
+        const firstWord = (messageParts[0] || '').toLowerCase();
+        const firstWordClean = firstWord.replace(/^[/#!.]+/, '');
+
+        // يطابق لو كتب المستخدم "H" أو "h" أو "/h" أو "#h" أو "!h"
+        if (firstWord.toLowerCase() === rawAlias.toLowerCase() ||
+            firstWordClean === cleanAlias ||
+            firstWord === (prefix + cleanAlias).toLowerCase() ||
+            firstWord === ('/' + cleanAlias).toLowerCase()) {
+          const rawName = cmdKey.replace(/^\//, '');
+          command = client.prefixCommands.get(rawName) || client.prefixCommands.get(client.aliases.get(rawName));
+          if (command) {
+            commandName = rawName;
+            matchedCmdKey = cmdKey;
+            args = messageParts.slice(1);
+            break;
           }
         }
       }
+    }
+
+    // 2. ثانياً: إذا لم يطابق اختصار مخصص، نفحص كأمر برفكس عادي
+    if (!command) {
+      if (!message.content.startsWith(prefix)) return;
+      args = message.content.slice(prefix.length).trim().split(/ +/);
+      commandName = args.shift().toLowerCase();
+      command = client.prefixCommands.get(commandName) || client.prefixCommands.get(client.aliases.get(commandName));
     }
 
     if (!command) return;
