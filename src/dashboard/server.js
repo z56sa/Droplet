@@ -2019,45 +2019,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             html += '<div class="w-9 h-9 rounded-xl bg-[#0b0d14] border border-white/5 flex items-center justify-center text-sm shadow-inner">' + (item.icon || '&#9881;') + '</div>';
             html += '</div>';
             html += '</div>';
-            html += '<div class="cmd-accordion border-t border-white/5 bg-[#0b0d14] p-4 space-y-4 text-right" data-cmd="' + item.name + '" style="display:none;">';
-            html += '<div class="flex items-center justify-between gap-4 flex-wrap">';
-            html += '<div class="flex-1 min-w-[200px]">';
-            html += '<label class="block text-[10px] text-gray-400 font-bold mb-1">\u0627\u062e\u062a\u0635\u0627\u0631 \u0645\u062e\u0635\u0635 \u0644\u0644\u0623\u0645\u0631 (Custom Alias)</label>';
-            html += '<input type="text" class="cmd-alias-input w-full bg-[#12141f] border border-white/10 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white outline-none text-right" placeholder="\u0645\u062b\u0627\u0644: !b \u0623\u0648 /b" data-cmd="' + item.name + '" value="' + alias.split('"').join('&quot;') + '">';
-            html += '</div>';
-            html += '</div>';
-            html += '<div>';
-            html += '<label class="block text-[10px] text-gray-400 font-bold mb-1.5">\u0627\u0644\u0631\u062a\u0628 \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0644\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Roles)</label>';
-            html += '<div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end">';
-            for (var ri = 0; ri < guildRoles.length; ri++) {
-                var role = guildRoles[ri];
-                var rChecked = aRoles.indexOf(role.id) !== -1;
-                html += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300">';
-                html += '<span>' + role.name + '</span>';
-                html += '<input type="checkbox" class="cmd-role-chk accent-purple-600" data-cmd="' + item.name + '" data-rid="' + role.id + '"' + (rChecked ? ' checked' : '') + '>';
-                html += '</label>';
-            }
-            html += '</div>';
-            html += '</div>';
-            html += '<div>';
-            html += '<label class="block text-[10px] text-gray-400 font-bold mb-1.5">\u0627\u0644\u0642\u0646\u0648\u0627\u062a \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0641\u064a\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Channels)</label>';
-            html += '<div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end">';
-            for (var ci = 0; ci < guildChannels.length; ci++) {
-                var ch = guildChannels[ci];
-                var cChecked = aChs.indexOf(ch.id) !== -1;
-                html += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300">';
-                html += '<span>#' + ch.name + '</span>';
-                html += '<input type="checkbox" class="cmd-ch-chk accent-purple-600" data-cmd="' + item.name + '" data-chid="' + ch.id + '"' + (cChecked ? ' checked' : '') + '>';
-                html += '</label>';
-            }
-            html += '</div>';
-            html += '</div>';
-            html += '<div class="flex items-center justify-between pt-2 border-t border-white/5">';
-            html += '<button type="button" class="cmd-reset-btn px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 rounded-xl text-xs font-bold transition cursor-pointer" data-cmd="' + item.name + '">\u0625\u0639\u0627\u062f\u0629 \u0636\u0628\u0637</button>';
-            html += '<button type="button" class="cmd-save-btn px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-lg cursor-pointer" data-cmd="' + item.name + '">\u062d\u0641\u0638 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0623\u0645\u0631</button>';
-            html += '</div>';
-            html += '</div>';
-            html += '</div>';
+            html += '<div class="cmd-accordion border-t border-white/5 bg-[#0b0d14] rounded-b-2xl text-right" data-cmd="' + item.name + '" style="display:none;"></div>';
         }
         container.innerHTML = html;
         var checks = container.querySelectorAll('input[type="checkbox"][data-cmd]:not(.cmd-role-chk):not(.cmd-ch-chk)');
@@ -2078,48 +2040,73 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     var panel = container.querySelector('.cmd-accordion[data-cmd="' + cmdName + '"]');
                     if (!panel) return;
                     var open = panel.style.display !== 'none';
-                    panel.style.display = open ? 'none' : 'block';
-                    btn.innerHTML = open ? '&#9660;' : '&#9650;';
+                    if (open) { panel.style.display = 'none'; btn.innerHTML = '&#9660;'; }
+                    else { if (!panel._loaded) { loadAccordion(panel, cmdName); panel._loaded = true; } panel.style.display = 'block'; btn.innerHTML = '&#9650;'; }
                 });
             })(expBtns[eb]);
         }
-        var saveBtns = container.querySelectorAll('.cmd-save-btn');
-        for (var sb = 0; sb < saveBtns.length; sb++) {
-            (function(btn) {
-                btn.addEventListener('click', function() {
-                    var cmdName = btn.getAttribute('data-cmd');
-                    var panel = container.querySelector('.cmd-accordion[data-cmd="' + cmdName + '"]');
-                    if (!panel) return;
-                    var aliasInput = panel.querySelector('.cmd-alias-input');
-                    var alias = aliasInput ? aliasInput.value.trim() : '';
-                    var roleChks = panel.querySelectorAll('.cmd-role-chk:checked');
-                    var chChks = panel.querySelectorAll('.cmd-ch-chk:checked');
-                    var roles = [], chs = [];
-                    for (var i = 0; i < roleChks.length; i++) roles.push(roleChks[i].getAttribute('data-rid'));
-                    for (var i = 0; i < chChks.length; i++) chs.push(chChks[i].getAttribute('data-chid'));
-                    if (!commandConfigs[cmdName]) commandConfigs[cmdName] = {};
-                    commandConfigs[cmdName].alias = alias;
-                    commandConfigs[cmdName].allowedRoles = roles;
-                    commandConfigs[cmdName].allowedChannels = chs;
-                    saveStates();
-                    updateCounters();
-                });
-            })(saveBtns[sb]);
-        }
-        var resetBtns = container.querySelectorAll('.cmd-reset-btn');
-        for (var rb = 0; rb < resetBtns.length; rb++) {
-            (function(btn) {
-                btn.addEventListener('click', function() {
-                    var cmdName = btn.getAttribute('data-cmd');
-                    delete commandConfigs[cmdName];
-                    render();
-                    saveStates();
-                    updateCounters();
-                });
-            })(resetBtns[rb]);
-        }
         updateCounters();
-        if (window.zenoI18n && typeof window.zenoI18n.apply === "function") { try { window.zenoI18n.apply(); } catch(e) {} }
+        if (window.zenoI18n && typeof window.zenoI18n.apply === 'function') { try { window.zenoI18n.apply(); } catch(e) {} }
+    }
+
+    function loadAccordion(panel, cmdName) {
+        var cfg = commandConfigs[cmdName] || {};
+        var alias = cfg.alias || '';
+        var aRoles = cfg.allowedRoles || [];
+        var aChs = cfg.allowedChannels || [];
+        var h = '<div class="p-4 space-y-4">';
+        h += '<div class="flex items-center justify-between gap-4 flex-wrap"><div class="flex-1 min-w-[200px]">';
+        h += '<label class="block text-[10px] text-gray-400 font-bold mb-1">\u0627\u062e\u062a\u0635\u0627\u0631 \u0645\u062e\u0635\u0635 \u0644\u0644\u0623\u0645\u0631 (Custom Alias)</label>';
+        h += '<input type="text" class="cmd-alias-input w-full bg-[#12141f] border border-white/10 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white outline-none text-right" placeholder="\u0645\u062b\u0627\u0644: !b \u0623\u0648 /b" data-cmd="' + cmdName + '" value="' + alias.split('"').join('&quot;') + '">';
+        h += '</div></div>';
+        h += '<div><label class="block text-[10px] text-gray-400 font-bold mb-1.5">\u0627\u0644\u0631\u062a\u0628 \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0644\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Roles)</label>';
+        h += '<div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end">';
+        for (var ri = 0; ri < guildRoles.length; ri++) {
+            var role = guildRoles[ri];
+            var rChecked = aRoles.indexOf(role.id) !== -1;
+            h += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300"><span>' + role.name + '</span><input type="checkbox" class="cmd-role-chk accent-purple-600" data-cmd="' + cmdName + '" data-rid="' + role.id + '"' + (rChecked ? ' checked' : '') + '></label>';
+        }
+        h += '</div></div>';
+        h += '<div><label class="block text-[10px] text-gray-400 font-bold mb-1.5">\u0627\u0644\u0642\u0646\u0648\u0627\u062a \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0641\u064a\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Channels)</label>';
+        h += '<div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end">';
+        for (var ci = 0; ci < guildChannels.length; ci++) {
+            var ch = guildChannels[ci];
+            var cChecked = aChs.indexOf(ch.id) !== -1;
+            h += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300"><span>#' + ch.name + '</span><input type="checkbox" class="cmd-ch-chk accent-purple-600" data-cmd="' + cmdName + '" data-chid="' + ch.id + '"' + (cChecked ? ' checked' : '') + '></label>';
+        }
+        h += '</div></div>';
+        h += '<div class="flex items-center justify-between pt-2 border-t border-white/5">';
+        h += '<button type="button" class="cmd-reset-btn px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 rounded-xl text-xs font-bold transition cursor-pointer" data-cmd="' + cmdName + '">\u0625\u0639\u0627\u062f\u0629 \u0636\u0628\u0637</button>';
+        h += '<button type="button" class="cmd-save-btn px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-lg cursor-pointer" data-cmd="' + cmdName + '">\u062d\u0641\u0638 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0623\u0645\u0631</button>';
+        h += '</div></div>';
+        panel.innerHTML = h;
+        var saveBtn = panel.querySelector('.cmd-save-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function() {
+                var aliasInput = panel.querySelector('.cmd-alias-input');
+                var a = aliasInput ? aliasInput.value.trim() : '';
+                var roleChks = panel.querySelectorAll('.cmd-role-chk:checked');
+                var chChks = panel.querySelectorAll('.cmd-ch-chk:checked');
+                var roles = [], chs = [];
+                for (var i = 0; i < roleChks.length; i++) roles.push(roleChks[i].getAttribute('data-rid'));
+                for (var i = 0; i < chChks.length; i++) chs.push(chChks[i].getAttribute('data-chid'));
+                if (!commandConfigs[cmdName]) commandConfigs[cmdName] = {};
+                commandConfigs[cmdName].alias = a;
+                commandConfigs[cmdName].allowedRoles = roles;
+                commandConfigs[cmdName].allowedChannels = chs;
+                saveStates();
+                updateCounters();
+            });
+        }
+        var resetBtn = panel.querySelector('.cmd-reset-btn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function() {
+                delete commandConfigs[cmdName];
+                panel._loaded = false;
+                render();
+                saveStates();
+            });
+        }
     }
 
     function updateCounters() {
