@@ -2117,42 +2117,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             html += '<div class="cmd-accordion border-t border-white/5 bg-[#0b0d14] rounded-b-2xl text-right" data-cmd="' + item.name + '" style="display:none;"></div>';
         }
         container.innerHTML = html;
-        var checks = container.querySelectorAll('input[type="checkbox"][data-cmd]:not(.cmd-role-chk):not(.cmd-ch-chk)');
-        for (var j = 0; j < checks.length; j++) {
-            (function(cb) {
-                cb.addEventListener('change', function() {
-                    window.toggleSingleCmd(cb.getAttribute('data-cmd'), cb.checked);
-                    var card = cb.closest('div.cmd-card-wrap');
-                    if (card) { if (cb.checked) card.classList.remove('opacity-50'); else card.classList.add('opacity-50'); }
-                });
-            })(checks[j]);
-        }
-        var expBtns = container.querySelectorAll('.cmd-expand-btn');
-        for (var eb = 0; eb < expBtns.length; eb++) {
-            (function(btn) {
-                btn.addEventListener('click', function(e) {
-                    if (e) { e.preventDefault(); e.stopPropagation(); }
-                    var cmdName = btn.getAttribute('data-cmd');
-                    var cardWrap = btn.closest('.cmd-card-wrap');
-                    var panel = cardWrap ? cardWrap.querySelector('.cmd-accordion') : container.querySelector('.cmd-accordion[data-cmd="' + cmdName + '"]');
-                    if (!panel) return;
-                    var isOpen = panel.style.display !== 'none' && panel.style.display !== '';
-                    if (isOpen) {
-                        panel.style.display = 'none';
-                        btn.innerHTML = '&#9660;';
-                    } else {
-                        setTimeout(function() {
-                            if (!panel._loaded) {
-                                loadAccordion(panel, cmdName);
-                                panel._loaded = true;
-                            }
-                            panel.style.display = 'block';
-                            btn.innerHTML = '&#9650;';
-                        }, 0);
-                    }
-                });
-            })(expBtns[eb]);
-        }
         updateCounters();
     }
 
@@ -2363,6 +2327,54 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         updateCounters();
         saveStates();
     };
+
+    // Event delegation — set up once, works for all dynamically rendered cards
+    (function() {
+        var container = document.getElementById('cmdsListContainer');
+        if (!container) return;
+
+        // Checkbox toggle (main enable/disable toggle only, not role/channel checkboxes)
+        container.addEventListener('change', function(e) {
+            var cb = e.target;
+            if (cb.tagName !== 'INPUT' || cb.type !== 'checkbox') return;
+            if (cb.classList.contains('cmd-role-chk') || cb.classList.contains('cmd-ch-chk')) return;
+            if (!cb.hasAttribute('data-cmd')) return;
+            window.toggleSingleCmd(cb.getAttribute('data-cmd'), cb.checked);
+            var card = cb.closest('.cmd-card-wrap');
+            if (card) {
+                if (cb.checked) card.classList.remove('opacity-50');
+                else card.classList.add('opacity-50');
+            }
+        });
+
+        // Expand button click
+        container.addEventListener('click', function(e) {
+            var btn = e.target.closest('.cmd-expand-btn');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var cmdName = btn.getAttribute('data-cmd');
+            var cardWrap = btn.closest('.cmd-card-wrap');
+            var panel = cardWrap
+                ? cardWrap.querySelector('.cmd-accordion')
+                : container.querySelector('.cmd-accordion[data-cmd="' + cmdName + '"]');
+            if (!panel) return;
+            var isOpen = panel.style.display !== 'none' && panel.style.display !== '';
+            if (isOpen) {
+                panel.style.display = 'none';
+                btn.innerHTML = '&#9660;';
+            } else {
+                setTimeout(function() {
+                    if (!panel._loaded) {
+                        loadAccordion(panel, cmdName);
+                        panel._loaded = true;
+                    }
+                    panel.style.display = 'block';
+                    btn.innerHTML = '&#9650;';
+                }, 0);
+            }
+        });
+    })();
 
     render();
 })();
