@@ -1746,7 +1746,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 </script>
 `;
             } else if (section === 'general' || section === 'commands') {
-              formFieldsHtml = `<div id="cmdsMgmtRoot" class="space-y-6 text-right" dir="rtl" style="margin-top:0">
+              formFieldsHtml = `<div id="cmdsMgmtRoot" data-no-i18n="true" data-zeno-manual-lang="true" class="space-y-6 text-right" dir="rtl" style="margin-top:0">
 
     <!-- Header Card -->
     <div class="bg-[#12141f] border border-white/5 p-6 rounded-2xl flex items-center justify-between shadow-xl">
@@ -1886,7 +1886,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 </div>
             </div>
             <!-- Commands List -->
-            <div id="cmdsListContainer" class="space-y-3"></div>
+            <div id="cmdsListContainer" data-no-i18n="true" data-zeno-manual-lang="true" class="space-y-3"></div>
         </div>
     </div>
 </div>

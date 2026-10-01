@@ -953,7 +953,10 @@
         // نتوقف عند document.body ولا نتحقق من <html> لأنه يحتوي على lang="ar"/"en" عالمي
         while (cur && cur !== document.documentElement && cur !== document) {
             if (cur.nodeType === Node.ELEMENT_NODE) {
-                if (cur.classList && (cur.classList.contains('lang-ar') || cur.classList.contains('lang-en'))) {
+                if (cur.hasAttribute && (cur.hasAttribute('data-no-i18n') || cur.id === 'cmdsMgmtRoot' || cur.id === 'cmdsListContainer')) {
+                    return true;
+                }
+                if (cur.classList && (cur.classList.contains('lang-ar') || cur.classList.contains('lang-en') || cur.classList.contains('cmd-accordion') || cur.classList.contains('cmd-card-wrap'))) {
                     return true;
                 }
                 if (cur !== document.body && cur.getAttribute) {
@@ -1099,7 +1102,11 @@
             const keys = lang === 'en' ? arKeysByLength : enKeysByLength;
             isTranslating = true;
             try {
-                mutations.forEach(function(m) {
+                for (let j = 0; j < mutations.length; j++) {
+                    const m = mutations[j];
+                    if (m.target && m.target.closest && m.target.closest('[data-no-i18n], #cmdsMgmtRoot, #cmdsListContainer, .cmd-accordion')) {
+                        continue;
+                    }
                     if (m.addedNodes && m.addedNodes.length) {
                         for (let i = 0; i < m.addedNodes.length; i++) {
                             const node = m.addedNodes[i];
@@ -1108,12 +1115,9 @@
                             }
                         }
                     }
-                    if (m.type === 'characterData' && m.target.nodeType === Node.TEXT_NODE) {
-                        const next = translateString(m.target.nodeValue, dict, keys);
-                        if (next !== m.target.nodeValue) m.target.nodeValue = next;
-                    }
                     if (m.type === 'attributes' && m.target.nodeType === Node.ELEMENT_NODE) {
                         const el = m.target;
+                        if (el.closest && el.closest('[data-no-i18n], #cmdsMgmtRoot, #cmdsListContainer, .cmd-accordion')) continue;
                         if (m.attributeName === 'placeholder' && el.hasAttribute('placeholder')) {
                             el.setAttribute('placeholder', translateString(el.getAttribute('placeholder'), dict, keys));
                         }
@@ -1121,7 +1125,7 @@
                             el.setAttribute('title', translateString(el.getAttribute('title'), dict, keys));
                         }
                     }
-                });
+                }
             } finally {
                 isTranslating = false;
             }
@@ -1130,7 +1134,6 @@
             observer.observe(document.body, {
                 childList: true,
                 subtree: true,
-                characterData: true,
                 attributes: true,
                 attributeFilter: ['placeholder', 'title']
             });
@@ -1139,7 +1142,6 @@
                 if (document.body) observer.observe(document.body, {
                     childList: true,
                     subtree: true,
-                    characterData: true,
                     attributes: true,
                     attributeFilter: ['placeholder', 'title']
                 });
