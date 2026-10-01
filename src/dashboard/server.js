@@ -2089,32 +2089,31 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         });
         if (!filtered.length) {
             container.innerHTML = '<div class="py-12 bg-[#12141f] border border-white/5 rounded-2xl text-center text-xs text-gray-500">\u0644\u0627 \u062a\u0648\u062c\u062f \u0623\u0648\u0627\u0645\u0631 \u0645\u0637\u0627\u0628\u0642\u0629 \ud83d\udd0d</div>';
-            updateCounters(); return;
+            updateCounters();
+            return;
         }
+
         var html = '';
         for (var i = 0; i < filtered.length; i++) {
             var item = filtered[i];
             var en = isEn(item.name);
-            var bh = item.badge ? '<span class="px-2.5 py-0.5 bg-purple-950/60 text-purple-300 border border-purple-800/40 rounded-lg text-[10px] font-bold flex items-center gap-1"><span>' + item.badge + '</span><span>&#128737;</span></span>' : '';
-            var cfg = commandConfigs[item.name] || {};
-            var alias = cfg.alias || '';
-            var aRoles = cfg.allowedRoles || [];
-            var aChs = cfg.allowedChannels || [];
-            html += '<div class="cmd-card-wrap border border-white/5 rounded-2xl bg-[#12141f] overflow-hidden transition hover:border-purple-500/40' + (en ? '' : ' opacity-50') + '" data-cmd="' + item.name + '">';
-            html += '<div class="p-4 flex items-center justify-between">';
-            html += '<div class="flex items-center gap-3">';
-            html += '<label class="toggle"><input type="checkbox" data-cmd="' + item.name + '"' + (en ? ' checked' : '') + '><span class="slider"></span></label>';
-            html += '<button type="button" class="cmd-expand-btn text-gray-500 hover:text-purple-400 p-1 text-xs transition cursor-pointer" data-cmd="' + item.name + '">&#9660;</button>';
-            html += '</div>';
-            html += '<div class="flex items-center gap-3">';
-            html += '<div class="text-right">';
-            html += '<div class="flex items-center justify-end gap-2">' + bh + '<span class="font-black text-white text-xs font-mono">' + item.name + '</span></div>';
-            html += '<p class="text-[11px] text-gray-400 mt-0.5">' + item.desc + '</p>';
-            html += '</div>';
-            html += '<div class="w-9 h-9 rounded-xl bg-[#0b0d14] border border-white/5 flex items-center justify-center text-sm shadow-inner">' + (item.icon || '&#9881;') + '</div>';
-            html += '</div>';
-            html += '</div>';
-            html += '<div class="cmd-accordion border-t border-white/5 bg-[#0b0d14] rounded-b-2xl text-right" data-cmd="' + item.name + '" style="display:none;"></div>';
+            var bh = item.badge ? '<span class="px-2.5 py-0.5 bg-purple-950/60 text-purple-300 border border-purple-800/40 rounded-lg text-[10px] font-bold flex items-center gap-1"><span>' + escH(item.badge) + '</span><span>&#128737;</span></span>' : '';
+            html += '<div class="cmd-card-wrap border border-white/5 rounded-2xl bg-[#12141f] overflow-hidden transition hover:border-purple-500/40' + (en ? '' : ' opacity-50') + '" data-cmd="' + escH(item.name) + '">' +
+                '<div class="p-4 flex items-center justify-between">' +
+                  '<div class="flex items-center gap-3">' +
+                    '<label class="toggle"><input type="checkbox" data-cmd="' + escH(item.name) + '"' + (en ? ' checked' : '') + '><span class="slider"></span></label>' +
+                    '<button type="button" class="cmd-expand-btn text-gray-500 hover:text-purple-400 p-1 text-xs transition cursor-pointer select-none" data-cmd="' + escH(item.name) + '">&#9660;</button>' +
+                  '</div>' +
+                  '<div class="flex items-center gap-3">' +
+                    '<div class="text-right">' +
+                      '<div class="flex items-center justify-end gap-2">' + bh + '<span class="font-black text-white text-xs font-mono">' + escH(item.name) + '</span></div>' +
+                      '<p class="text-[11px] text-gray-400 mt-0.5">' + escH(item.desc) + '</p>' +
+                    '</div>' +
+                    '<div class="w-9 h-9 rounded-xl bg-[#0b0d14] border border-white/5 flex items-center justify-center text-sm shadow-inner">' + (item.icon || '&#9881;') + '</div>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="cmd-accordion border-t border-white/5 bg-[#0b0d14] rounded-b-2xl text-right" data-cmd="' + escH(item.name) + '" style="display:none;"></div>' +
+            '</div>';
         }
         container.innerHTML = html;
         updateCounters();
@@ -2128,93 +2127,79 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
     function loadAccordion(panel, cmdName) {
         var cfg = commandConfigs[cmdName] || {};
         var alias = cfg.alias || '';
-        var aRoles = cfg.allowedRoles || [];
-        var aChs = cfg.allowedChannels || [];
-        var h = '<div class="p-4 space-y-4">';
-        h += '<div class="flex items-center justify-between gap-4 flex-wrap"><div class="flex-1 min-w-[200px]">';
-        h += '<label class="block text-[10px] text-gray-400 font-bold mb-1">\u0627\u062e\u062a\u0635\u0627\u0631 \u0645\u062e\u0635\u0635 \u0644\u0644\u0623\u0645\u0631 (Custom Alias)</label>';
-        h += '<input type="text" class="cmd-alias-input w-full bg-[#12141f] border border-white/10 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white outline-none text-right" placeholder="\u0645\u062b\u0627\u0644: !b \u0623\u0648 /b" data-cmd="' + escH(cmdName) + '" value="' + escH(alias) + '">';
-        h += '</div></div>';
-        h += '<div><label class="block text-[10px] text-gray-400 font-bold mb-1.5">\u0627\u0644\u0631\u062a\u0628 \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0644\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Roles)</label>';
-        h += '<div class="cmd-roles-box flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end"></div></div>';
-        h += '<div><label class="block text-[10px] text-gray-400 font-bold mb-1.5">\u0627\u0644\u0642\u0646\u0648\u0627\u062a \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0641\u064a\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Channels)</label>';
-        h += '<div class="cmd-chs-box flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end"></div></div>';
-        h += '<div class="flex items-center justify-between pt-2 border-t border-white/5">';
-        h += '<button type="button" class="cmd-reset-btn px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 rounded-xl text-xs font-bold transition cursor-pointer" data-cmd="' + escH(cmdName) + '">\u0625\u0639\u0627\u062f\u0629 \u0636\u0628\u0637</button>';
-        h += '<button type="button" class="cmd-save-btn px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-lg cursor-pointer" data-cmd="' + escH(cmdName) + '">\u062d\u0641\u0638 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0623\u0645\u0631</button>';
-        h += '</div></div>';
+        var aRoles = [];
+        if (Array.isArray(cfg.allowedRoles)) {
+            aRoles = cfg.allowedRoles;
+        } else if (typeof cfg.allowedRoles === 'string') {
+            try { aRoles = JSON.parse(cfg.allowedRoles); } catch(e) { aRoles = [cfg.allowedRoles]; }
+            if (!Array.isArray(aRoles)) aRoles = [];
+        }
+        var aChs = [];
+        if (Array.isArray(cfg.allowedChannels)) {
+            aChs = cfg.allowedChannels;
+        } else if (typeof cfg.allowedChannels === 'string') {
+            try { aChs = JSON.parse(cfg.allowedChannels); } catch(e) { aChs = [cfg.allowedChannels]; }
+            if (!Array.isArray(aChs)) aChs = [];
+        }
+
+        var rolesHtml = '';
+        var safeRoles = Array.isArray(guildRoles) ? guildRoles : [];
+        if (safeRoles.length === 0) {
+            rolesHtml = '<span class="text-[10px] text-gray-500 py-1 px-2">\u0644\u0627 \u062a\u0648\u062c\u062f \u0631\u062a\u0628 \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631</span>';
+        } else {
+            var rLimit = Math.min(safeRoles.length, 100);
+            for (var ri = 0; ri < rLimit; ri++) {
+                var r = safeRoles[ri];
+                var rChecked = aRoles.indexOf(r.id) !== -1;
+                rolesHtml += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300">' +
+                    '<span>' + escH(r.name) + '</span>' +
+                    '<input type="checkbox" class="cmd-role-chk accent-purple-600" data-cmd="' + escH(cmdName) + '" data-rid="' + escH(r.id) + '"' + (rChecked ? ' checked' : '') + '>' +
+                '</label>';
+            }
+            if (safeRoles.length > 100) {
+                rolesHtml += '<span class="text-[10px] text-gray-500 py-1 px-2">+' + (safeRoles.length - 100) + ' \u0631\u062a\u0628\u0629 \u0625\u0636\u0627\u0641\u064a\u0629</span>';
+            }
+        }
+
+        var chsHtml = '';
+        var safeChs = Array.isArray(guildChannels) ? guildChannels : [];
+        if (safeChs.length === 0) {
+            chsHtml = '<span class="text-[10px] text-gray-500 py-1 px-2">\u0644\u0627 \u062a\u0648\u062c\u062f \u0642\u0646\u0648\u0627\u062a \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631</span>';
+        } else {
+            var cLimit = Math.min(safeChs.length, 100);
+            for (var ci = 0; ci < cLimit; ci++) {
+                var ch = safeChs[ci];
+                var chChecked = aChs.indexOf(ch.id) !== -1;
+                chsHtml += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300">' +
+                    '<span>#' + escH(ch.name) + '</span>' +
+                    '<input type="checkbox" class="cmd-ch-chk accent-purple-600" data-cmd="' + escH(cmdName) + '" data-chid="' + escH(ch.id) + '"' + (chChecked ? ' checked' : '') + '>' +
+                '</label>';
+            }
+            if (safeChs.length > 100) {
+                chsHtml += '<span class="text-[10px] text-gray-500 py-1 px-2">+' + (safeChs.length - 100) + ' \u0642\u0646\u0627\u0629 \u0625\u0636\u0627\u0641\u064a\u0629</span>';
+            }
+        }
+
+        var h = '<div class="p-4 space-y-4">' +
+            '<div class="flex items-center justify-between gap-4 flex-wrap"><div class="flex-1 min-w-[200px]">' +
+                '<label class="block text-[10px] text-gray-400 font-bold mb-1">\u0627\u062e\u062a\u0635\u0627\u0631 \u0645\u062e\u0635\u0635 \u0644\u0644\u0623\u0645\u0631 (Custom Alias)</label>' +
+                '<input type="text" class="cmd-alias-input w-full bg-[#12141f] border border-white/10 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white outline-none text-right" placeholder="\u0645\u062b\u0627\u0644: !b \u0623\u0648 /b" data-cmd="' + escH(cmdName) + '" value="' + escH(alias) + '">' +
+            '</div></div>' +
+            '<div>' +
+                '<label class="block text-[10px] text-gray-400 font-bold mb-1.5">\u0627\u0644\u0631\u062a\u0628 \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0644\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Roles)</label>' +
+                '<div class="cmd-roles-box flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end">' + rolesHtml + '</div>' +
+            '</div>' +
+            '<div>' +
+                '<label class="block text-[10px] text-gray-400 font-bold mb-1.5">\u0627\u0644\u0642\u0646\u0648\u0627\u062a \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0641\u064a\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Channels)</label>' +
+                '<div class="cmd-chs-box flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#12141f]/50 border border-white/5 rounded-xl justify-end">' + chsHtml + '</div>' +
+            '</div>' +
+            '<div class="flex items-center justify-between pt-2 border-t border-white/5">' +
+                '<button type="button" class="cmd-reset-btn px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 rounded-xl text-xs font-bold transition cursor-pointer" data-cmd="' + escH(cmdName) + '">\u0625\u0639\u0627\u062f\u0629 \u0636\u0628\u0637</button>' +
+                '<button type="button" class="cmd-save-btn px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-lg cursor-pointer" data-cmd="' + escH(cmdName) + '">\u062d\u0641\u0638 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0623\u0645\u0631</button>' +
+            '</div>' +
+        '</div>';
+
         panel.innerHTML = h;
-
-        var rolesBox = panel.querySelector('.cmd-roles-box');
-        if (rolesBox) {
-            if (!guildRoles.length) {
-                rolesBox.innerHTML = '<span class="text-[10px] text-gray-500 py-1 px-2">\u0644\u0627 \u062a\u0648\u062c\u062f \u0631\u062a\u0628 \u0645\u062a\u0627\u062d\u0629</span>';
-            } else {
-                var rHtml = '';
-                var maxR = Math.min(guildRoles.length, 120);
-                for (var ri = 0; ri < maxR; ri++) {
-                    var role = guildRoles[ri];
-                    var rChecked = aRoles.indexOf(role.id) !== -1;
-                    rHtml += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300"><span>' + escH(role.name) + '</span><input type="checkbox" class="cmd-role-chk accent-purple-600" data-cmd="' + escH(cmdName) + '" data-rid="' + escH(role.id) + '"' + (rChecked ? ' checked' : '') + '></label>';
-                }
-                if (guildRoles.length > 120) {
-                    rHtml += '<span class="text-[10px] text-gray-500 py-1 px-2">+\u0627\u0644\u0645\u0632\u064a\u062f (' + (guildRoles.length - 120) + ')</span>';
-                }
-                rolesBox.innerHTML = rHtml;
-            }
-        }
-
-        var chsBox = panel.querySelector('.cmd-chs-box');
-        if (chsBox) {
-            if (!guildChannels.length) {
-                chsBox.innerHTML = '<span class="text-[10px] text-gray-500 py-1 px-2">\u0644\u0627 \u062a\u0648\u062c\u062f \u0642\u0646\u0648\u0627\u062a \u0645\u062a\u0627\u062d\u0629</span>';
-            } else {
-                var cHtml = '';
-                var maxC = Math.min(guildChannels.length, 120);
-                for (var ci = 0; ci < maxC; ci++) {
-                    var ch = guildChannels[ci];
-                    var cChecked = aChs.indexOf(ch.id) !== -1;
-                    cHtml += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/5 bg-[#12141f] hover:border-purple-500/30 cursor-pointer text-[10px] text-gray-300"><span>#' + escH(ch.name) + '</span><input type="checkbox" class="cmd-ch-chk accent-purple-600" data-cmd="' + escH(cmdName) + '" data-chid="' + escH(ch.id) + '"' + (cChecked ? ' checked' : '') + '></label>';
-                }
-                if (guildChannels.length > 120) {
-                    cHtml += '<span class="text-[10px] text-gray-500 py-1 px-2">+\u0627\u0644\u0645\u0632\u064a\u062f (' + (guildChannels.length - 120) + ')</span>';
-                }
-                chsBox.innerHTML = cHtml;
-            }
-        }
-
-        var saveBtn = panel.querySelector('.cmd-save-btn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', function(e) {
-                if (e) { e.preventDefault(); e.stopPropagation(); }
-                var aliasInput = panel.querySelector('.cmd-alias-input');
-                var a = aliasInput ? aliasInput.value.trim() : '';
-                var roleChks = panel.querySelectorAll('.cmd-role-chk:checked');
-                var chChks = panel.querySelectorAll('.cmd-ch-chk:checked');
-                var roles = [], chs = [];
-                for (var i = 0; i < roleChks.length; i++) roles.push(roleChks[i].getAttribute('data-rid'));
-                for (var i = 0; i < chChks.length; i++) chs.push(chChks[i].getAttribute('data-chid'));
-                if (!commandConfigs[cmdName]) commandConfigs[cmdName] = {};
-                commandConfigs[cmdName].alias = a;
-                commandConfigs[cmdName].allowedRoles = roles;
-                commandConfigs[cmdName].allowedChannels = chs;
-                saveStates();
-                updateCounters();
-            });
-        }
-        var resetBtn = panel.querySelector('.cmd-reset-btn');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', function(e) {
-                if (e) { e.preventDefault(); e.stopPropagation(); }
-                delete commandConfigs[cmdName];
-                panel._loaded = false;
-                panel.style.display = 'none';
-                var btn = panel.closest('.cmd-card-wrap') ? panel.closest('.cmd-card-wrap').querySelector('.cmd-expand-btn') : null;
-                if (btn) btn.innerHTML = '&#9660;';
-                saveStates();
-                updateCounters();
-            });
-        }
     }
 
     function updateCounters() {
@@ -2347,31 +2332,83 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             }
         });
 
-        // Expand button click
+        // Click delegation: Expand/collapse, Save details, Reset command
         container.addEventListener('click', function(e) {
-            var btn = e.target.closest('.cmd-expand-btn');
-            if (!btn) return;
-            e.preventDefault();
-            e.stopPropagation();
-            var cmdName = btn.getAttribute('data-cmd');
-            var cardWrap = btn.closest('.cmd-card-wrap');
-            var panel = cardWrap
-                ? cardWrap.querySelector('.cmd-accordion')
-                : container.querySelector('.cmd-accordion[data-cmd="' + cmdName + '"]');
-            if (!panel) return;
-            var isOpen = panel.style.display !== 'none' && panel.style.display !== '';
-            if (isOpen) {
-                panel.style.display = 'none';
-                btn.innerHTML = '&#9660;';
-            } else {
-                setTimeout(function() {
-                    if (!panel._loaded) {
-                        loadAccordion(panel, cmdName);
-                        panel._loaded = true;
-                    }
+            // 1. Expand / Collapse Arrow
+            var expBtn = e.target.closest('.cmd-expand-btn');
+            if (expBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                var cmdName = expBtn.getAttribute('data-cmd');
+                var cardWrap = expBtn.closest('.cmd-card-wrap');
+                var panel = cardWrap ? cardWrap.querySelector('.cmd-accordion') : null;
+                if (!panel) return;
+                var isOpen = panel.style.display === 'block';
+                if (isOpen) {
+                    panel.style.display = 'none';
+                    expBtn.innerHTML = '&#9660;';
+                } else {
                     panel.style.display = 'block';
-                    btn.innerHTML = '&#9650;';
-                }, 0);
+                    expBtn.innerHTML = '&#9650;';
+                    if (!panel.getAttribute('data-loaded')) {
+                        loadAccordion(panel, cmdName);
+                        panel.setAttribute('data-loaded', '1');
+                    }
+                }
+                return;
+            }
+
+            // 2. Save details button
+            var saveBtn = e.target.closest('.cmd-save-btn');
+            if (saveBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                var cmdName = saveBtn.getAttribute('data-cmd');
+                var panel = saveBtn.closest('.cmd-accordion');
+                if (!panel) return;
+                var aliasInput = panel.querySelector('.cmd-alias-input');
+                var a = aliasInput ? aliasInput.value.trim() : '';
+                var roleChks = panel.querySelectorAll('.cmd-role-chk:checked');
+                var chChks = panel.querySelectorAll('.cmd-ch-chk:checked');
+                var roles = [], chs = [];
+                for (var i = 0; i < roleChks.length; i++) roles.push(roleChks[i].getAttribute('data-rid'));
+                for (var i = 0; i < chChks.length; i++) chs.push(chChks[i].getAttribute('data-chid'));
+                if (!commandConfigs[cmdName]) commandConfigs[cmdName] = {};
+                commandConfigs[cmdName].alias = a;
+                commandConfigs[cmdName].allowedRoles = roles;
+                commandConfigs[cmdName].allowedChannels = chs;
+                var originalText = saveBtn.textContent;
+                saveBtn.textContent = '✓ \u062a\u0645 \u0627\u0644\u062d\u0641\u0638';
+                saveBtn.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+                saveBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+                setTimeout(function() {
+                    saveBtn.textContent = originalText;
+                    saveBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                    saveBtn.classList.add('bg-purple-600', 'hover:bg-purple-700');
+                }, 1500);
+                saveStates();
+                updateCounters();
+                return;
+            }
+
+            // 3. Reset button
+            var resetBtn = e.target.closest('.cmd-reset-btn');
+            if (resetBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                var cmdName = resetBtn.getAttribute('data-cmd');
+                var panel = resetBtn.closest('.cmd-accordion');
+                delete commandConfigs[cmdName];
+                if (panel) {
+                    panel.removeAttribute('data-loaded');
+                    panel.style.display = 'none';
+                }
+                var cardWrap = resetBtn.closest('.cmd-card-wrap');
+                var exp = cardWrap ? cardWrap.querySelector('.cmd-expand-btn') : null;
+                if (exp) exp.innerHTML = '&#9660;';
+                saveStates();
+                updateCounters();
+                return;
             }
         });
     })();
