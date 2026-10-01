@@ -1790,33 +1790,77 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
         <!-- Sidebar: Categories -->
-        <div class="lg:col-span-1 space-y-1.5 bg-[#12141f] border border-white/5 p-3 rounded-2xl shadow-xl h-fit">
-            <div class="flex items-center justify-end gap-1.5 text-xs font-black text-white px-2 py-1.5 border-b border-white/5 mb-1">
-                <span>الأقسام</span><span>📁</span>
+        <div class="lg:col-span-1 space-y-1.5 bg-[#12141f] border border-white/5 p-3 rounded-2xl shadow-xl h-fit max-h-[750px] overflow-y-auto">
+            <div class="flex items-center justify-end gap-1.5 text-xs font-black text-white px-2 py-1.5 border-b border-white/5 mb-1 sticky top-0 bg-[#12141f] z-10">
+                <span>الأقسام والأنظمة</span><span>📁</span>
             </div>
             <button type="button" id="btnCatAll" onclick="window.switchCmdCategory('all')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg transition cursor-pointer">
                 <span id="badgeCatAll" class="px-2 py-0.5 bg-white/20 text-white rounded-lg text-[10px] font-mono">98/98</span>
                 <span class="flex items-center gap-1.5"><span>جميع الأوامر</span><span>🌐</span></span>
             </button>
             <button type="button" id="btnCatGeneral" onclick="window.switchCmdCategory('general')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
-                <span id="badgeCatGeneral" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">30/30</span>
+                <span id="badgeCatGeneral" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">20/20</span>
                 <span class="flex items-center gap-1.5"><span>الأوامر العامة</span><span>⚙️</span></span>
             </button>
             <button type="button" id="btnCatModeration" onclick="window.switchCmdCategory('moderation')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
                 <span id="badgeCatModeration" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">17/17</span>
                 <span class="flex items-center gap-1.5"><span>الإشراف والعقوبات</span><span>🔨</span></span>
             </button>
-            <button type="button" id="btnCatAdmin" onclick="window.switchCmdCategory('admin')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
-                <span id="badgeCatAdmin" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">28/28</span>
-                <span class="flex items-center gap-1.5"><span>الإدارة والحماية</span><span>🛡️</span></span>
+            <button type="button" id="btnCatProtection" onclick="window.switchCmdCategory('protection')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatProtection" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">6/6</span>
+                <span class="flex items-center gap-1.5"><span>الحماية والأمان</span><span>🛡️</span></span>
             </button>
-            <button type="button" id="btnCatEconomy" onclick="window.switchCmdCategory('economy')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
-                <span id="badgeCatEconomy" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">13/13</span>
-                <span class="flex items-center gap-1.5"><span>الاقتصاد والمستويات</span><span>🪙</span></span>
+            <button type="button" id="btnCatWelcome" onclick="window.switchCmdCategory('welcome')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatWelcome" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">1/1</span>
+                <span class="flex items-center gap-1.5"><span>الترحيب والمغادرة</span><span>👋</span></span>
+            </button>
+            <button type="button" id="btnCatAutoresponder" onclick="window.switchCmdCategory('autoresponder')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatAutoresponder" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">4/4</span>
+                <span class="flex items-center gap-1.5"><span>الرد التلقائي</span><span>💬</span></span>
             </button>
             <button type="button" id="btnCatTickets" onclick="window.switchCmdCategory('tickets')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
                 <span id="badgeCatTickets" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">10/10</span>
                 <span class="flex items-center gap-1.5"><span>نظام التذاكر</span><span>🎫</span></span>
+            </button>
+            <button type="button" id="btnCatLevels" onclick="window.switchCmdCategory('levels')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatLevels" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">4/4</span>
+                <span class="flex items-center gap-1.5"><span>المستويات & XP</span><span>🏆</span></span>
+            </button>
+            <button type="button" id="btnCatEconomy" onclick="window.switchCmdCategory('economy')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatEconomy" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">9/9</span>
+                <span class="flex items-center gap-1.5"><span>الاقتصاد والمال</span><span>🪙</span></span>
+            </button>
+            <button type="button" id="btnCatAutoroles" onclick="window.switchCmdCategory('autoroles')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatAutoroles" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">4/4</span>
+                <span class="flex items-center gap-1.5"><span>الرتب التلقائية</span><span>🎖️</span></span>
+            </button>
+            <button type="button" id="btnCatGiveaways" onclick="window.switchCmdCategory('giveaways')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatGiveaways" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">1/1</span>
+                <span class="flex items-center gap-1.5"><span>قيف اواي</span><span>🎁</span></span>
+            </button>
+            <button type="button" id="btnCatInvites" onclick="window.switchCmdCategory('invites')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatInvites" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">1/1</span>
+                <span class="flex items-center gap-1.5"><span>Invite Tracker</span><span>🔗</span></span>
+            </button>
+            <button type="button" id="btnCatApplications" onclick="window.switchCmdCategory('applications')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatApplications" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">3/3</span>
+                <span class="flex items-center gap-1.5"><span>التقديمات</span><span>📝</span></span>
+            </button>
+            <button type="button" id="btnCatSuggestions" onclick="window.switchCmdCategory('suggestions')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatSuggestions" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">7/7</span>
+                <span class="flex items-center gap-1.5"><span>الاقتراحات والشكاوي</span><span>💡</span></span>
+            </button>
+            <button type="button" id="btnCatAutomod" onclick="window.switchCmdCategory('automod')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatAutomod" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">1/1</span>
+                <span class="flex items-center gap-1.5"><span>الرقابة التلقائية</span><span>🤖</span></span>
+            </button>
+            <button type="button" id="btnCatTempvoice" onclick="window.switchCmdCategory('tempvoice')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatTempvoice" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">1/1</span>
+                <span class="flex items-center gap-1.5"><span>الرومات المؤقتة</span><span>🕒</span></span>
+            </button>
+            <button type="button" id="btnCatAdmin" onclick="window.switchCmdCategory('admin')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatAdmin" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">9/9</span>
+                <span class="flex items-center gap-1.5"><span>الإدارة والسجلات</span><span>⚙️</span></span>
             </button>
         </div>
 
@@ -1854,17 +1898,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             { name: '/add-autoline-channel', desc: '\u0627\u0636\u0627\u0641\u0629 \u0631\u0648\u0645 \u062e\u0637 \u062a\u0644\u0642\u0627\u0626\u064a', badge: '', icon: '\ud83d\udce2' },
             { name: '/add-nadeko-room', desc: '\u0627\u0636\u0627\u0641\u0629 \u0631\u0648\u0645 \u0644\u062a\u0641\u0639\u064a\u0644 \u062e\u0627\u0635\u064a\u0629 \u0646\u0627\u062f\u064a\u0643\u0648', badge: '', icon: '\ud83e\udd16' },
             { name: '/ai', desc: '\u0627\u0644\u062a\u062d\u062f\u062b \u0645\u0639 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a (ZENO AI)', badge: '', icon: '\ud83e\udd16' },
-            { name: '/apply', desc: '\u0641\u062a\u062d \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u062a\u0642\u062f\u064a\u0645\u0627\u062a \u0623\u0648 \u0625\u0631\u0633\u0627\u0644 \u0631\u0633\u0627\u0644\u0629 \u0627\u0644\u062a\u0642\u062f\u064a\u0645\u0627\u062a \u0641\u064a \u0627\u0644\u0642\u0646\u0627\u0629', badge: '', icon: '\ud83d\udcdd' },
             { name: '/ask', desc: '\u0627\u0633\u0623\u0644 \u0630\u0643\u0627\u0621 ZENO \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a \u0623\u064a \u0633\u0624\u0627\u0644!', badge: '', icon: '\ud83e\udd16' },
             { name: '/avatar', desc: '\u0639\u0631\u0636 \u0635\u0648\u0631\u0629 \u062d\u0633\u0627\u0628\u0643 \u0623\u0648 \u062d\u0633\u0627\u0628 \u0639\u0636\u0648 \u0622\u062e\u0631', badge: '', icon: '\ud83d\uddbc\ufe0f' },
             { name: '/banner', desc: '\u0639\u0631\u0636 \u0628\u0646\u0631 \u062d\u0633\u0627\u0628\u0643 \u0623\u0648 \u062d\u0633\u0627\u0628 \u0639\u0636\u0648 \u0622\u062e\u0631', badge: '', icon: '\ud83c\udfa8' },
             { name: '/come', desc: '\u0637\u0644\u0628 \u0642\u062f\u0648\u0645 \u0639\u0636\u0648 \u0644\u0644\u0631\u0648\u0645 \u0627\u0644\u062d\u0627\u0644\u064a', badge: '', icon: '\ud83d\udc4b' },
             { name: '/copy-emoji', desc: '\u0646\u0633\u062e \u0625\u064a\u0645\u0648\u062c\u064a \u0648\u0625\u0636\u0627\u0641\u062a\u0647 \u0644\u0644\u0633\u064a\u0631\u0641\u0631', badge: '', icon: '\ud83d\ude03' },
             { name: '/embed', desc: '\u0625\u0631\u0633\u0627\u0644 \u0631\u0633\u0627\u0644\u0629 Embed \u0645\u0646\u0633\u0642\u0629', badge: '', icon: '\ud83d\udce6' },
-            { name: '/feedback-mode', desc: '\u062a\u062d\u062f\u064a\u062f \u0646\u0645\u0637 \u0627\u0644\u0622\u0631\u0627\u0621', badge: '', icon: '\ud83d\udca1' },
-            { name: '/giveaway', desc: '\u0625\u062f\u0627\u0631\u0629 \u0633\u062d\u0648\u0628\u0627\u062a \u0627\u0644\u0642\u064a\u0641 \u0623\u0648\u0627\u064a \u0627\u0644\u0645\u062a\u0642\u062f\u0645\u0629', badge: '', icon: '\ud83c\udf89' },
             { name: '/help', desc: '\u0639\u0631\u0636 \u0642\u0627\u0626\u0645\u0629 \u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0628\u0648\u062a \u0627\u0644\u0643\u0627\u0645\u0644\u0629 \u0628\u0634\u0643\u0644 \u062a\u0641\u0627\u0639\u0644\u064a', badge: '', icon: '\ud83d\udcd6' },
-            { name: '/invites', desc: '\u0623\u0648\u0627\u0645\u0631 \u0646\u0638\u0627\u0645 \u0645\u062a\u062a\u0628\u0639 \u0627\u0644\u062f\u0639\u0648\u0627\u062a (Invite Tracker)', badge: '', icon: '\ud83d\udd17' },
             { name: '/line-mode', desc: '\u062a\u062d\u062f\u064a\u062f \u0646\u0645\u0637 \u0627\u0644\u062e\u0637', badge: '', icon: '\ud83d\udcdd' },
             { name: '/ping', desc: '\u0639\u0631\u0636 \u0633\u0631\u0639\u0629 \u0627\u0633\u062a\u062c\u0627\u0628\u0629 \u0627\u0644\u0628\u0648\u062a (Ping)', badge: '', icon: '\ud83d\udcf6' },
             { name: '/remove-autoline-channel', desc: '\u0627\u0632\u0627\u0644\u0629 \u0631\u0648\u0645 \u062e\u0637 \u062a\u0644\u0642\u0627\u0626\u064a', badge: '', icon: '\ud83d\udce2' },
@@ -1873,13 +1913,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             { name: '/say', desc: '\u0627\u0631\u0633\u0627\u0644 \u0631\u0633\u0627\u0644\u0629 \u0639\u0646 \u0637\u0631\u064a\u0642 \u0627\u0644\u0628\u0648\u062a', badge: '', icon: '\ud83d\udcac' },
             { name: '/send', desc: '\u0627\u0631\u0633\u0627\u0644 \u0631\u0633\u0627\u0644\u0629 \u0644\u0631\u0648\u0645 \u0645\u062d\u062f\u062f', badge: '', icon: '\ud83d\udcec' },
             { name: '/server', desc: '\u0639\u0631\u0636 \u0645\u0639\u0644\u0648\u0645\u0627\u062a \u0627\u0644\u0633\u064a\u0631\u0641\u0631 \u0648\u0625\u062d\u0635\u0627\u0626\u064a\u0627\u062a\u0647', badge: '', icon: '\ud83c\udfe0' },
-            { name: '/set-autoline-line', desc: '\u062a\u062d\u062f\u064a\u062f \u062e\u0637 \u0644\u0644\u0631\u0648\u0645', badge: '', icon: '\ud83d\udcdd' },
-            { name: '/set-feedback-line', desc: '\u062a\u062d\u062f\u064a\u062f \u062e\u0637 \u0644\u0631\u0648\u0645 \u0627\u0644\u0622\u0631\u0627\u0621', badge: '', icon: '\ud83d\udca1' },
-            { name: '/set-feedback-room', desc: '\u062a\u062d\u062f\u064a\u062f \u0631\u0648\u0645 \u0627\u0644\u0622\u0631\u0627\u0621', badge: '', icon: '\ud83d\udca1' },
-            { name: '/set-suggestions-line', desc: '\u062a\u062d\u062f\u064a\u062f \u062e\u0637 \u0644\u0631\u0648\u0645 \u0627\u0644\u0627\u0642\u062a\u0631\u0627\u062d\u0627\u062a', badge: '', icon: '\ud83d\udca1' },
-            { name: '/set-suggestions-room', desc: '\u062a\u062d\u062f\u064a\u062f \u0631\u0648\u0645 \u0627\u0644\u0627\u0642\u062a\u0631\u0627\u062d\u0627\u062a', badge: '', icon: '\ud83d\udca1' },
-            { name: '/suggest', desc: '\u062a\u0642\u062f\u064a\u0645 \u0627\u0642\u062a\u0631\u0627\u062d \u0623\u0648 \u0641\u0643\u0631\u0629 \u0644\u062a\u0637\u0648\u064a\u0631 \u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '', icon: '\ud83d\udca1' },
-            { name: '/suggestion-mode', desc: '\u062a\u062d\u062f\u064a\u062f \u0646\u0645\u0637 \u0627\u0644\u0627\u0642\u062a\u0631\u0627\u062d\u0627\u062a', badge: '', icon: '\ud83d\udca1' },
+            { name: '/set-autoline-line', desc: '\u062a\u062d\u062f\u064a\u062f \u062e\u0637 \u0644\u0631\u0648\u0645', badge: '', icon: '\ud83d\udcdd' },
             { name: '/user', desc: '\u0639\u0631\u0636 \u0645\u0639\u0644\u0648\u0645\u0627\u062a \u0627\u0644\u0639\u0636\u0648', badge: '', icon: '\ud83d\udc64' }
         ]},
         moderation: { title: '\u0627\u0644\u0625\u0634\u0631\u0627\u0641 \u0648\u0627\u0644\u0639\u0642\u0648\u0628\u0627\u062a', desc: '\u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0639\u0642\u0648\u0628\u0627\u062a \u0627\u0644\u0645\u0628\u0627\u0634\u0631\u0629 \u0648\u0627\u0644\u0625\u0634\u0631\u0627\u0641 \u0648\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0623\u0639\u0636\u0627\u0621', icon: '\ud83d\udd28', items: [
@@ -1901,50 +1935,22 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             { name: '/untimeout', desc: '\u0641\u0643 \u0627\u0644\u0639\u0632\u0644 \u0639\u0646 \u0639\u0636\u0648 \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
             { name: '/warn', desc: '\u0625\u062f\u0627\u0631\u0629 \u062a\u062d\u0630\u064a\u0631\u0627\u062a \u0627\u0644\u0623\u0639\u0636\u0627\u0621', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u26a0\ufe0f' }
         ]},
-        admin: { title: '\u0627\u0644\u0625\u062f\u0627\u0631\u0629 \u0648\u0627\u0644\u062d\u0645\u0627\u064a\u0629', desc: '\u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u062d\u0645\u0627\u064a\u0629\u060c \u0627\u0644\u0631\u062f\u0648\u062f \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629\u060c \u0648\u0627\u0644\u0633\u062c\u0644\u0627\u062a', icon: '\ud83d\udee1\ufe0f', items: [
-            { name: '/add-button', desc: '\u0625\u0636\u0627\u0641\u0629 \u0632\u0631 (\u0631\u062a\u0628\u0629 \u0623\u0648 \u0645\u0639\u0644\u0648\u0645\u0627\u062a) \u0644\u0631\u0633\u0627\u0644\u0629 \u0645\u062d\u062f\u062f\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udd18' },
+        protection: { title: '\u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0648\u0627\u0644\u0623\u0645\u0627\u0646', desc: '\u0645\u0646\u0638\u0648\u0645\u0629 \u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0645\u0646 \u0627\u0644\u062a\u062e\u0631\u064a\u0628 \u0648\u0627\u0644\u0628\u0648\u062a\u0627\u062a \u0648\u0627\u0644\u0646\u0648\u0643', icon: '\ud83d\udee1\ufe0f', items: [
             { name: '/anti-ban', desc: '\u062a\u0633\u0637\u064a\u0628 \u0646\u0638\u0627\u0645 \u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0645\u0646 \u0627\u0644\u0628\u0627\u0646\u062f', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
             { name: '/anti-bots', desc: '\u062a\u0633\u0637\u064a\u0628 \u0646\u0638\u0627\u0645 \u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0645\u0646 \u0627\u0644\u0628\u0648\u062a\u0627\u062a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83e\udd16' },
             { name: '/anti-delete-roles', desc: '\u062a\u0633\u0637\u064a\u0628 \u0646\u0638\u0627\u0645 \u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0645\u0646 \u062d\u0630\u0641 \u0627\u0644\u0631\u062a\u0628', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
             { name: '/anti-delete-rooms', desc: '\u062a\u0633\u0637\u064a\u0628 \u0646\u0638\u0627\u0645 \u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0645\u0646 \u062d\u0630\u0641 \u0627\u0644\u0631\u0648\u0645\u0627\u062a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
-            { name: '/applications', desc: '\u0625\u062f\u0627\u0631\u0629 \u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0642\u062f\u064a\u0645\u0627\u062a \u0648\u0645\u0631\u0627\u062c\u0639\u0629 \u0627\u0644\u0637\u0644\u0628\u0627\u062a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcdd' },
-            { name: '/automod', desc: '\u0625\u062f\u0627\u0631\u0629 \u0648\u062a\u062e\u0635\u064a\u0635 \u0645\u0646\u0638\u0648\u0645\u0629 \u0627\u0644\u0631\u0642\u0627\u0628\u0629 \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629 \u0627\u0644\u0630\u0643\u064a\u0629 (Auto-Mod)', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
+            { name: '/protection-status', desc: '\u0639\u0631\u0636 \u062d\u0627\u0644\u0629 \u0623\u0646\u0638\u0645\u0629 \u0627\u0644\u062d\u0645\u0627\u064a\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
+            { name: '/set-protect-logs', desc: '\u062a\u0639\u064a\u064a\u0646 \u0631\u0648\u0645 \u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0648\u0627\u0644\u0646\u0648\u0643', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' }
+        ]},
+        welcome: { title: '\u0627\u0644\u062a\u0631\u062d\u064a\u0628 \u0648\u0627\u0644\u0645\u063a\u0627\u062f\u0631\u0629', desc: '\u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0631\u0633\u0627\u0626\u0644 \u0648\u0628\u0637\u0627\u0642\u0627\u062a \u0627\u0644\u062a\u0631\u062d\u064a\u0628 \u0648\u0627\u0644\u0645\u063a\u0627\u062f\u0631\u0629', icon: '\ud83d\udc4b', items: [
+            { name: '/set-welcome', desc: '\u0625\u0639\u062f\u0627\u062f \u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0631\u062d\u064a\u0628', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udf89' }
+        ]},
+        autoresponder: { title: '\u0627\u0644\u0631\u062f \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a', desc: '\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0631\u062f\u0648\u062f \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629 \u0639\u0644\u0649 \u0627\u0644\u0643\u0644\u0645\u0627\u062a \u0648\u0627\u0644\u062c\u0645\u0644', icon: '\ud83d\udcac', items: [
             { name: '/auto-responder', desc: '\u0625\u062f\u0627\u0631\u0629 \u0646\u0638\u0627\u0645 \u0627\u0644\u0631\u062f \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
             { name: '/autoreply-add', desc: '\u0644\u0627\u0636\u0627\u0641\u0629 \u0631\u062f \u062a\u0644\u0642\u0627\u0626\u064a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
             { name: '/autoreply-list', desc: '\u0644\u0631\u0624\u064a\u0629 \u062c\u0645\u064a\u0639 \u0627\u0644\u0631\u062f\u0648\u062f \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcdc' },
-            { name: '/autoreply-remove', desc: '\u0644\u0627\u0632\u0627\u0644\u0629 \u0631\u062f \u062a\u0644\u0642\u0627\u0626\u064a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062f\u064a\u0629', icon: '\u2699\ufe0f' },
-            { name: '/dm-mode', desc: '\u0625\u0634\u0639\u0627\u0631 \u0627\u0644\u062a\u0642\u062f\u064a\u0645 \u0628\u0627\u0644\u062e\u0627\u0635', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcec' },
-            { name: '/logs', desc: '\u0646\u0638\u0627\u0645 \u062a\u062a\u0628\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0623\u062d\u062f\u0627\u062b \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631 \u0645\u0639 \u0627\u0644\u0641\u0627\u0639\u0644 \u0648\u0627\u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u0641\u0648\u0631\u064a\u0627\u064b', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcdc' },
-            { name: '/new-panel', desc: '\u0625\u0646\u0634\u0627\u0621 \u0628\u0627\u0646\u0644 \u0631\u062a\u0628 \u062c\u062f\u064a\u062f', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udd18' },
-            { name: '/protection-status', desc: '\u0639\u0631\u0636 \u062d\u0627\u0644\u0629 \u0623\u0646\u0638\u0645\u0629 \u0627\u0644\u062d\u0645\u0627\u064a\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
-            { name: '/reaction-role', desc: '\u0625\u0646\u0634\u0627\u0621 \u0631\u0633\u0627\u0644\u0629 \u0625\u0639\u0637\u0627\u0621 \u0631\u062a\u0628\u0629 \u0628\u0632\u0631 \u062a\u0641\u0627\u0639\u0644\u064a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udf96\ufe0f' },
-            { name: '/set', desc: '\u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0648\u062a\u062e\u0635\u064a\u0635 \u0627\u0644\u0628\u0648\u062a \u0648\u0644\u0648\u062d\u0627\u062a \u0627\u0644\u0625\u062f\u0627\u0631\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
-            { name: '/set-autorole', desc: '\u062a\u0639\u064a\u064a\u0646 \u0627\u0644\u0631\u062a\u0628\u0629 \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629 \u0644\u0644\u0623\u0639\u0636\u0627\u0621 \u0627\u0644\u062c\u062f\u062f', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
-            { name: '/set-jail', desc: '\u0625\u0639\u062f\u0627\u062f \u0648\u062a\u062e\u0635\u064a\u0635 \u0631\u062a\u0628\u0629 \u0648\u0631\u0648\u0645 \u0627\u0644\u0633\u062c\u0646', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u26d3\ufe0f' },
-            { name: '/set-logs', desc: '\u062a\u062d\u062f\u064a\u062f \u0631\u0648\u0645 \u0627\u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0634\u0627\u0645\u0644\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcdc' },
-            { name: '/set-prefix', desc: '\u062a\u063a\u064a\u064a\u0631 \u0631\u0645\u0632 \u0627\u0644\u0628\u0631\u0641\u0643\u0633 \u0627\u0644\u062e\u0627\u0635 \u0628\u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
-            { name: '/set-protect-logs', desc: '\u062a\u0639\u064a\u064a\u0646 \u0631\u0648\u0645 \u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u062d\u0645\u0627\u064a\u0629 \u0648\u0627\u0644\u0646\u0648\u0643', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udee1\ufe0f' },
-            { name: '/set-shortcut', desc: '\u0648\u0636\u0639 \u0627\u062e\u062a\u0635\u0627\u0631 \u0644\u0623\u0645\u0631 \u0645\u0639\u064a\u0646', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
-            { name: '/set-tempvoice', desc: '\u062a\u0639\u064a\u064a\u0646 \u0631\u0648\u0645 \u0627\u0644\u0631\u0648\u0645\u0627\u062a \u0627\u0644\u0635\u0648\u062a\u064a\u0629 \u0627\u0644\u0645\u0624\u0642\u062a\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udfa4' },
-            { name: '/set-verification', desc: '\u0625\u0639\u062f\u0627\u062f \u0648\u062a\u0641\u0639\u064a\u0644 \u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u062d\u0642\u0642 \u0627\u0644\u062a\u0641\u0627\u0639\u0644\u064a \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2705' },
-            { name: '/set-welcome', desc: '\u0625\u0639\u062f\u0627\u062f \u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0631\u062d\u064a\u0628', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udf89' },
-            { name: '/staff', desc: '\u0646\u0638\u0627\u0645 \u0645\u062a\u0627\u0628\u0639\u0629 \u0646\u0634\u0627\u0637 \u0637\u0627\u0642\u0645 \u0627\u0644\u0625\u062f\u0627\u0631\u0629 (Staff Activity)', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcca' },
-            { name: '/top-in', desc: '\u0644\u0648\u062d\u0629 \u0634\u0631\u0641 \u0648\u062a\u0631\u062a\u064a\u0628 \u0633\u0627\u0639\u0627\u062a \u0648\u0646\u0642\u0627\u0637 \u0637\u0627\u0642\u0645 \u0627\u0644\u0625\u062f\u0627\u0631\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udfc6' }
-        ]},
-        economy: { title: '\u0627\u0644\u0627\u0642\u062a\u0635\u0627\u062f \u0648\u0627\u0644\u0645\u0633\u062a\u0648\u064a\u0627\u062a', desc: '\u0646\u0638\u0627\u0645 \u0627\u0644\u0631\u0635\u064a\u062f\u060c \u0627\u0644\u0631\u0627\u0646\u0643\u060c \u0627\u0644\u062a\u062d\u0648\u064a\u0644 \u0648\u0627\u0644\u0636\u0631\u0627\u0626\u0628', icon: '\ud83e\ude99', items: [
-            { name: '/balance', desc: '\u0639\u0631\u0636 \u0631\u0635\u064a\u062f\u0643 \u0627\u0644\u062d\u0627\u0644\u064a \u0645\u0646 \u0627\u0644\u0639\u0645\u0644\u0627\u062a', badge: '', icon: '\ud83d\udcb0' },
-            { name: '/bank', desc: '\u0646\u0638\u0627\u0645 \u0627\u0644\u0628\u0646\u0643', badge: '', icon: '\ud83c\udfe6' },
-            { name: '/daily', desc: '\u0627\u062d\u0635\u0644 \u0639\u0644\u0649 \u0645\u0643\u0627\u0641\u0623\u062a\u0643 \u0627\u0644\u064a\u0648\u0645\u064a\u0629', badge: '', icon: '\ud83d\udcb5' },
-            { name: '/leaderboard', desc: '\u0639\u0631\u0636 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u062a\u0635\u062f\u0631\u064a\u0646', badge: '', icon: '\ud83c\udfc6' },
-            { name: '/pay', desc: '\u062a\u062d\u0648\u064a\u0644 \u0639\u0645\u0644\u0627\u062a \u0627\u0644\u0630\u0647\u0628 \u0625\u0644\u0649 \u0639\u0636\u0648 \u0622\u062e\u0631', badge: '', icon: '\ud83d\udcb8' },
-            { name: '/profile', desc: '\u0639\u0631\u0636 \u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064a\u0644 \u0648\u0627\u0644\u0647\u0648\u064a\u0629 \u0627\u0644\u0634\u062e\u0635\u064a\u0629', badge: '', icon: '\ud83d\udcb3' },
-            { name: '/rank', desc: '\u0639\u0631\u0636 \u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0645\u0633\u062a\u0648\u0649 \u0648\u0646\u0642\u0627\u0637 \u0627\u0644\u062e\u0628\u0631\u0629', badge: '', icon: '\u2b50' },
-            { name: '/set-tax-line', desc: '\u062a\u062d\u062f\u064a\u062f \u062e\u0637 \u0644\u0631\u0648\u0645 \u0627\u0644\u0636\u0631\u064a\u0628\u0629', badge: '', icon: '\ud83e\ude99' },
-            { name: '/set-tax-room', desc: '\u062a\u062d\u062f\u064a\u062f \u0631\u0648\u0645 \u062d\u0633\u0627\u0628 \u0627\u0644\u0636\u0631\u064a\u0628\u0629', badge: '', icon: '\ud83e\ude99' },
-            { name: '/setwallpaper', desc: '\u062a\u0639\u064a\u064a\u0646 \u062e\u0644\u0641\u064a\u0629 \u0645\u062e\u0635\u0635\u0629 \u0644\u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064a\u0644', badge: '', icon: '\ud83d\uddbc\ufe0f' },
-            { name: '/tax', desc: '\u062d\u0633\u0627\u0628 \u0636\u0631\u064a\u0628\u0629 \u0628\u0631\u0648\u0628\u0648\u062a', badge: '', icon: '\ud83e\ude99' },
-            { name: '/tax-mode', desc: '\u062a\u062d\u062f\u064a\u062f \u0646\u0645\u0637 \u0627\u0644\u0636\u0631\u064a\u0628\u0629', badge: '', icon: '\u2699\ufe0f' },
-            { name: '/work', desc: '\u0627\u0639\u0645\u0644 \u0644\u062a\u0643\u0633\u0628 Star Coin', badge: '', icon: '\ud83d\udcbc' }
+            { name: '/autoreply-remove', desc: '\u0644\u0627\u0632\u0627\u0644\u0629 \u0631\u062f \u062a\u0644\u0642\u0627\u0626\u064a', badge: '\u0635\u0644\u0627\u062d\u064a\u062f\u064a\u0629', icon: '\u2699\ufe0f' }
         ]},
         tickets: { title: '\u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0630\u0627\u0643\u0631', desc: '\u0625\u0639\u062f\u0627\u062f \u0648\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062a\u0630\u0627\u0643\u0631 \u0648\u0627\u0644\u062f\u0639\u0645 \u0627\u0644\u0641\u0646\u064a', icon: '\ud83c\udfab', items: [
             { name: '/add-ticket-button', desc: '\u0625\u0631\u0633\u0627\u0644 \u0632\u0631 \u0627\u0644\u062a\u0630\u0643\u0631\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udfab' },
@@ -1957,13 +1963,80 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             { name: '/setup-rating', desc: '\u062a\u0641\u0639\u064a\u0644 \u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0642\u064a\u064a\u0645 \u0641\u064a \u0627\u0644\u062a\u0630\u0627\u0643\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2b50' },
             { name: '/ticket', desc: '\u0623\u0648\u0627\u0645\u0631 \u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062a\u0630\u0627\u0643\u0631 \u0627\u0644\u0645\u062a\u0642\u062f\u0645\u0629', badge: '', icon: '\ud83c\udfab' },
             { name: '/ticket-setup', desc: '\u0625\u0639\u062f\u0627\u062f \u0644\u0648\u062d\u0629 \u062a\u0630\u0627\u0643\u0631 \u0645\u062e\u0635\u0635\u0629 \u0628\u0627\u0644\u0643\u0627\u0645\u0644', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' }
+        ]},
+        levels: { title: '\u0627\u0644\u0645\u0633\u062a\u0648\u064a\u0627\u062a & XP', desc: '\u0646\u0638\u0627\u0645 \u0646\u0642\u0627\u0637 \u0627\u0644\u062e\u0628\u0631\u0629 \u0648\u0627\u0644\u0645\u0633\u062a\u0648\u064a\u0627\u062a \u0648\u0627\u0644\u062a\u0631\u062a\u064a\u0628', icon: '\ud83c\udfc6', items: [
+            { name: '/leaderboard', desc: '\u0639\u0631\u0636 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u062a\u0635\u062f\u0631\u064a\u0646', badge: '', icon: '\ud83c\udfc6' },
+            { name: '/profile', desc: '\u0639\u0631\u0636 \u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064a\u0644 \u0648\u0627\u0644\u0647\u0648\u064a\u0629 \u0627\u0644\u0634\u062e\u0635\u064a\u0629', badge: '', icon: '\ud83d\udcb3' },
+            { name: '/rank', desc: '\u0639\u0631\u0636 \u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0645\u0633\u062a\u0648\u0649 \u0648\u0646\u0642\u0627\u0637 \u0627\u0644\u062e\u0628\u0631\u0629', badge: '', icon: '\u2b50' },
+            { name: '/setwallpaper', desc: '\u062a\u0639\u064a\u064a\u0646 \u062e\u0644\u0641\u064a\u0629 \u0645\u062e\u0635\u0635\u0629 \u0644\u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0628\u0631\u0648\u0641\u0627\u064a\u0644', badge: '', icon: '\ud83d\uddbc\ufe0f' }
+        ]},
+        economy: { title: '\u0627\u0644\u0627\u0642\u062a\u0635\u0627\u062f \u0648\u0627\u0644\u0645\u0627\u0644', desc: '\u0646\u0638\u0627\u0645 \u0627\u0644\u0631\u0635\u064a\u062f\u060c \u0627\u0644\u0628\u0646\u0643\u060c \u0627\u0644\u062a\u062d\u0648\u064a\u0644 \u0648\u0627\u0644\u0636\u0631\u0627\u0626\u0628', icon: '\ud83e\ude99', items: [
+            { name: '/balance', desc: '\u0639\u0631\u0636 \u0631\u0635\u064a\u062f\u0643 \u0627\u0644\u062d\u0627\u0644\u064a \u0645\u0646 \u0627\u0644\u0639\u0645\u0644\u0627\u062a', badge: '', icon: '\ud83d\udcb0' },
+            { name: '/bank', desc: '\u0646\u0638\u0627\u0645 \u0627\u0644\u0628\u0646\u0643', badge: '', icon: '\ud83c\udfe6' },
+            { name: '/daily', desc: '\u0627\u062d\u0635\u0644 \u0639\u0644\u0649 \u0645\u0643\u0627\u0641\u0623\u062a\u0643 \u0627\u0644\u064a\u0648\u0645\u064a\u0629', badge: '', icon: '\ud83d\udcb5' },
+            { name: '/pay', desc: '\u062a\u062d\u0648\u064a\u0644 \u0639\u0645\u0644\u0627\u062a \u0627\u0644\u0630\u0647\u0628 \u0625\u0644\u0649 \u0639\u0636\u0648 \u0622\u062e\u0631', badge: '', icon: '\ud83d\udcb8' },
+            { name: '/set-tax-line', desc: '\u062a\u062d\u062f\u064a\u062f \u062e\u0637 \u0644\u0631\u0648\u0645 \u0627\u0644\u0636\u0631\u064a\u0628\u0629', badge: '', icon: '\ud83e\ude99' },
+            { name: '/set-tax-room', desc: '\u062a\u062d\u062f\u064a\u062f \u0631\u0648\u0645 \u062d\u0633\u0627\u0628 \u0627\u0644\u0636\u0631\u064a\u0628\u0629', badge: '', icon: '\ud83e\ude99' },
+            { name: '/tax', desc: '\u062d\u0633\u0627\u0628 \u0636\u0631\u064a\u0628\u0629 \u0628\u0631\u0648\u0628\u0648\u062a', badge: '', icon: '\ud83e\ude99' },
+            { name: '/tax-mode', desc: '\u062a\u062d\u062f\u064a\u062f \u0646\u0645\u0637 \u0627\u0644\u0636\u0631\u064a\u0628\u0629', badge: '', icon: '\u2699\ufe0f' },
+            { name: '/work', desc: '\u0627\u0639\u0645\u0644 \u0644\u062a\u0643\u0633\u0628 Star Coin', badge: '', icon: '\ud83d\udcbc' }
+        ]},
+        autoroles: { title: '\u0627\u0644\u0631\u062a\u0628 \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629', desc: '\u0625\u0639\u0637\u0627\u0621 \u0627\u0644\u0631\u062a\u0628 \u062a\u0644\u0642\u0627\u0626\u064a\u0627\u064b \u0639\u0646\u062f \u0627\u0644\u0627\u0646\u0636\u0645\u0627\u0645 \u0623\u0648 \u0627\u0644\u062a\u0641\u0627\u0639\u0644', icon: '\ud83c\udf96\ufe0f', items: [
+            { name: '/set-autorole', desc: '\u062a\u0639\u064a\u064a\u0646 \u0627\u0644\u0631\u062a\u0628\u0629 \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629 \u0644\u0644\u0623\u0639\u0636\u0627\u0621 \u0627\u0644\u062c\u062f\u062f', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
+            { name: '/reaction-role', desc: '\u0625\u0646\u0634\u0627\u0621 \u0631\u0633\u0627\u0644\u0629 \u0625\u0639\u0637\u0627\u0621 \u0631\u062a\u0628\u0629 \u0628\u0632\u0631 \u062a\u0641\u0627\u0639\u0644\u064a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udf96\ufe0f' },
+            { name: '/new-panel', desc: '\u0625\u0646\u0634\u0627\u0621 \u0628\u0627\u0646\u0644 \u0631\u062a\u0628 \u062c\u062f\u064a\u062f', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udd18' },
+            { name: '/add-button', desc: '\u0625\u0636\u0627\u0641\u0629 \u0632\u0631 (\u0631\u062a\u0628\u0629 \u0623\u0648 \u0645\u0639\u0644\u0648\u0645\u0627\u062a) \u0644\u0631\u0633\u0627\u0644\u0629 \u0645\u062d\u062f\u062f\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udd18' }
+        ]},
+        giveaways: { title: '\u0642\u064a\u0641 \u0627\u0648\u0627\u064a', desc: '\u0625\u062f\u0627\u0631\u0629 \u0645\u0633\u0627\u0628\u0642\u0627\u062a \u0648\u0633\u062d\u0648\u0628\u0627\u062a \u0627\u0644\u0642\u064a\u0641 \u0623\u0648\u0627\u064a', icon: '\ud83c\udf89', items: [
+            { name: '/giveaway', desc: '\u0625\u062f\u0627\u0631\u0629 \u0633\u062d\u0648\u0628\u0627\u062a \u0627\u0644\u0642\u064a\u0641 \u0623\u0648\u0627\u064a \u0627\u0644\u0645\u062a\u0642\u062f\u0645\u0629', badge: '', icon: '\ud83c\udf89' }
+        ]},
+        invites: { title: 'Invite Tracker', desc: '\u0645\u062a\u062a\u0628\u0639 \u062f\u0639\u0648\u0627\u062a \u0627\u0644\u0623\u0639\u0636\u0627\u0621 \u0648\u0625\u062d\u0635\u0627\u0626\u064a\u0627\u062a \u0627\u0644\u062f\u0639\u0648\u0627\u062a', icon: '\ud83d\udd17', items: [
+            { name: '/invites', desc: '\u0623\u0648\u0627\u0645\u0631 \u0646\u0638\u0627\u0645 \u0645\u062a\u062a\u0628\u0639 \u0627\u0644\u062f\u0639\u0648\u0627\u062a (Invite Tracker)', badge: '', icon: '\ud83d\udd17' }
+        ]},
+        applications: { title: '\u0627\u0644\u062a\u0642\u062f\u064a\u0645\u0627\u062a', desc: '\u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0642\u062f\u064a\u0645 \u0639\u0644\u0649 \u0627\u0644\u0625\u062f\u0627\u0631\u0629 \u0648\u0645\u0631\u0627\u062c\u0639\u0629 \u0627\u0644\u0637\u0644\u0628\u0627\u062a', icon: '\ud83d\udcdd', items: [
+            { name: '/apply', desc: '\u0641\u062a\u062d \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u062a\u0642\u062f\u064a\u0645\u0627\u062a \u0623\u0648 \u0625\u0631\u0633\u0627\u0644 \u0631\u0633\u0627\u0644\u0629 \u0627\u0644\u062a\u0642\u062f\u064a\u0645\u0627\u062a \u0641\u064a \u0627\u0644\u0642\u0646\u0627\u0629', badge: '', icon: '\ud83d\udcdd' },
+            { name: '/applications', desc: '\u0625\u062f\u0627\u0631\u0629 \u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0642\u062f\u064a\u0645\u0627\u062a \u0648\u0645\u0631\u0627\u062c\u0639\u0629 \u0627\u0644\u0637\u0644\u0628\u0627\u062a', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcdd' },
+            { name: '/dm-mode', desc: '\u0625\u0634\u0639\u0627\u0631 \u0627\u0644\u062a\u0642\u062f\u064a\u0645 \u0628\u0627\u0644\u062e\u0627\u0635', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcec' }
+        ]},
+        suggestions: { title: '\u0627\u0644\u0627\u0642\u062a\u0631\u0627\u062d\u0627\u062a \u0648\u0627\u0644\u0634\u0643\u0627\u0648\u064a', desc: '\u0646\u0638\u0627\u0645 \u0627\u0633\u062a\u0642\u0628\u0627\u0644 \u0648\u062a\u0646\u0633\u064a\u0642 \u0627\u0644\u0627\u0642\u062a\u0631\u0627\u062d\u0627\u062a \u0648\u0627\u0644\u0622\u0631\u0627\u0621', icon: '\ud83d\udca1', items: [
+            { name: '/feedback-mode', desc: '\u062a\u062d\u062f\u064a\u062f \u0646\u0645\u0637 \u0627\u0644\u0622\u0631\u0627\u0621', badge: '', icon: '\ud83d\udca1' },
+            { name: '/set-feedback-line', desc: '\u062a\u062d\u062f\u064a\u062f \u062e\u0637 \u0644\u0631\u0648\u0645 \u0627\u0644\u0622\u0631\u0627\u0621', badge: '', icon: '\ud83d\udca1' },
+            { name: '/set-feedback-room', desc: '\u062a\u062d\u062f\u064a\u062f \u0631\u0648\u0645 \u0627\u0644\u0622\u0631\u0627\u0621', badge: '', icon: '\ud83d\udca1' },
+            { name: '/set-suggestions-line', desc: '\u062a\u062d\u062f\u064a\u062f \u062e\u0637 \u0644\u0631\u0648\u0645 \u0627\u0644\u0627\u0642\u062a\u0631\u0627\u062d\u0627\u062a', badge: '', icon: '\ud83d\udca1' },
+            { name: '/set-suggestions-room', desc: '\u062a\u062d\u062f\u064a\u062f \u0631\u0648\u0645 \u0627\u0644\u0627\u0642\u062a\u0631\u0627\u062d\u0627\u062a', badge: '', icon: '\ud83d\udca1' },
+            { name: '/suggest', desc: '\u062a\u0642\u062f\u064a\u0645 \u0627\u0642\u062a\u0631\u0627\u062d \u0623\u0648 \u0641\u0643\u0631\u0629 \u0644\u062a\u0637\u0648\u064a\u0631 \u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '', icon: '\ud83d\udca1' },
+            { name: '/suggestion-mode', desc: '\u062a\u062d\u062f\u064a\u062f \u0646\u0645\u0637 \u0627\u0644\u0627\u0642\u062a\u0631\u0627\u062d\u0627\u062a', badge: '', icon: '\ud83d\udca1' }
+        ]},
+        automod: { title: '\u0627\u0644\u0631\u0642\u0627\u0628\u0629 \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629', desc: '\u0645\u0646\u0638\u0648\u0645\u0629 AutoMod \u0644\u0645\u0646\u0639 \u0627\u0644\u0633\u0628 \u0648\u0627\u0644\u0625\u0639\u0644\u0627\u0646\u0627\u062a \u0648\u0627\u0644\u0633\u0628\u0627\u0645', icon: '\ud83e\udd16', items: [
+            { name: '/automod', desc: '\u0625\u062f\u0627\u0631\u0629 \u0648\u062a\u062e\u0635\u064a\u0635 \u0645\u0646\u0638\u0648\u0645\u0629 \u0627\u0644\u0631\u0642\u0627\u0628\u0629 \u0627\u0644\u062a\u0644\u0642\u0627\u0626\u064a\u0629 \u0627\u0644\u0630\u0643\u064a\u0629 (Auto-Mod)', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' }
+        ]},
+        tempvoice: { title: '\u0627\u0644\u0631\u0648\u0645\u0627\u062a \u0627\u0644\u0645\u0624\u0642\u062a\u0629', desc: '\u0625\u0646\u0634\u0627\u0621 \u0648\u062a\u062e\u0635\u064a\u0635 \u0631\u0648\u0645\u0627\u062a \u0635\u0648\u062a\u064a\u0629 \u0645\u0624\u0642\u062a\u0629 \u0644\u0644\u0623\u0639\u0636\u0627\u0621', icon: '\ud83d\udd52', items: [
+            { name: '/set-tempvoice', desc: '\u062a\u0639\u064a\u064a\u0646 \u0631\u0648\u0645 \u0627\u0644\u0631\u0648\u0645\u0627\u062a \u0627\u0644\u0635\u0648\u062a\u064a\u0629 \u0627\u0644\u0645\u0624\u0642\u062a\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udfa4' }
+        ]},
+        admin: { title: '\u0627\u0644\u0625\u062f\u0627\u0631\u0629 \u0648\u0627\u0644\u0633\u062c\u0644\u0627\u062a', desc: '\u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u0633\u064a\u0631\u0641\u0631 \u0648\u0627\u0644\u0633\u062c\u0644\u0627\u062a \u0648\u0645\u062a\u0627\u0628\u0639\u0629 \u0637\u0627\u0642\u0645 \u0627\u0644\u0625\u062f\u0627\u0631\u0629', icon: '\u2699\ufe0f', items: [
+            { name: '/set', desc: '\u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0648\u062a\u062e\u0635\u064a\u0635 \u0627\u0644\u0628\u0648\u062a \u0648\u0644\u0648\u062d\u0627\u062a \u0627\u0644\u0625\u062f\u0627\u0631\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
+            { name: '/set-jail', desc: '\u0625\u0639\u062f\u0627\u062f \u0648\u062a\u062e\u0635\u064a\u0635 \u0631\u062a\u0628\u0629 \u0648\u0631\u0648\u0645 \u0627\u0644\u0633\u062c\u0646', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u26d3\ufe0f' },
+            { name: '/set-logs', desc: '\u062a\u062d\u062f\u064a\u062f \u0631\u0648\u0645 \u0627\u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0634\u062a\u0645\u0644\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcdc' },
+            { name: '/set-prefix', desc: '\u062a\u063a\u064a\u064a\u0631 \u0631\u0645\u0632 \u0627\u0644\u0628\u0631\u0641\u0643\u0633 \u0627\u0644\u062e\u0627\u0635 \u0628\u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
+            { name: '/set-shortcut', desc: '\u0648\u0636\u0639 \u0627\u062e\u062a\u0635\u0627\u0631 \u0644\u0623\u0645\u0631 \u0645\u0639\u064a\u0646', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2699\ufe0f' },
+            { name: '/set-verification', desc: '\u0625\u0639\u062f\u0627\u062f \u0648\u062a\u0641\u0639\u064a\u0644 \u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u062d\u0642\u0642 \u0627\u0644\u062a\u0641\u0627\u0639\u0644\u064a \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\u2705' },
+            { name: '/logs', desc: '\u0646\u0638\u0627\u0645 \u062a\u062a\u0628\u0639 \u062c\u0645\u064a\u0639 \u0627\u0644\u0623\u062d\u062f\u0627\u062b \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631 \u0645\u0639 \u0627\u0644\u0641\u0627\u0639\u0644 \u0648\u0627\u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u0641\u0648\u0631\u064a\u0627\u064b', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcdc' },
+            { name: '/staff', desc: '\u0646\u0638\u0627\u0645 \u0645\u062a\u0627\u0628\u0639\u0629 \u0646\u0634\u0627\u0637 \u0637\u0627\u0642\u0645 \u0627\u0644\u0625\u062f\u0627\u0631\u0629 (Staff Activity)', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83d\udcca' },
+            { name: '/top-in', desc: '\u0644\u0648\u062d\u0629 \u0634\u0631\u0641 \u0648\u062a\u0631\u062a\u064a\u0628 \u0633\u0627\u0639\u0627\u062a \u0648\u0646\u0642\u0627\u0637 \u0637\u0627\u0642\u0645 \u0627\u0644\u0625\u062f\u0627\u0631\u0629', badge: '\u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0625\u062f\u0627\u0631\u064a\u0629', icon: '\ud83c\udfc6' }
         ]}
     };
 
+    var baseCats = ['general', 'moderation', 'protection', 'welcome', 'autoresponder', 'tickets', 'levels', 'economy', 'autoroles', 'giveaways', 'invites', 'applications', 'suggestions', 'automod', 'tempvoice', 'admin'];
+    var seenCmds = {};
     var allItems = [];
-    var baseCats = ['general', 'moderation', 'admin', 'economy', 'tickets'];
     for (var ck = 0; ck < baseCats.length; ck++) {
-        allItems = allItems.concat(DB[baseCats[ck]].items);
+        var cItems = DB[baseCats[ck]].items;
+        for (var ci = 0; ci < cItems.length; ci++) {
+            if (!seenCmds[cItems[ci].name]) {
+                seenCmds[cItems[ci].name] = true;
+                allItems.push(cItems[ci]);
+            }
+        }
     }
     DB['all'] = {
         title: '\u062c\u0645\u064a\u0639 \u0627\u0644\u0623\u0648\u0627\u0645\u0631 \u0648\u0627\u0644\u062e\u062f\u0645\u0627\u062a',
@@ -1973,12 +2046,18 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
     };
 
     var catBtnMap = {
-        all:'btnCatAll', general:'btnCatGeneral', moderation:'btnCatModeration', admin:'btnCatAdmin',
-        economy:'btnCatEconomy', tickets:'btnCatTickets'
+        all:'btnCatAll', general:'btnCatGeneral', moderation:'btnCatModeration', protection:'btnCatProtection',
+        welcome:'btnCatWelcome', autoresponder:'btnCatAutoresponder', tickets:'btnCatTickets', levels:'btnCatLevels',
+        economy:'btnCatEconomy', autoroles:'btnCatAutoroles', giveaways:'btnCatGiveaways', invites:'btnCatInvites',
+        applications:'btnCatApplications', suggestions:'btnCatSuggestions', automod:'btnCatAutomod', tempvoice:'btnCatTempvoice',
+        admin:'btnCatAdmin'
     };
     var catBadgeMap = {
-        all:'badgeCatAll', general:'badgeCatGeneral', moderation:'badgeCatModeration', admin:'badgeCatAdmin',
-        economy:'badgeCatEconomy', tickets:'badgeCatTickets'
+        all:'badgeCatAll', general:'badgeCatGeneral', moderation:'badgeCatModeration', protection:'badgeCatProtection',
+        welcome:'badgeCatWelcome', autoresponder:'badgeCatAutoresponder', tickets:'badgeCatTickets', levels:'badgeCatLevels',
+        economy:'badgeCatEconomy', autoroles:'badgeCatAutoroles', giveaways:'badgeCatGiveaways', invites:'badgeCatInvites',
+        applications:'badgeCatApplications', suggestions:'badgeCatSuggestions', automod:'badgeCatAutomod', tempvoice:'badgeCatTempvoice',
+        admin:'badgeCatAdmin'
     };
 
     var currentCat = 'all';
@@ -2125,18 +2204,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
     }
 
     function updateCounters() {
-        var total = 0, enabled = 0;
-        var keys = ['all', 'general', 'moderation', 'admin', 'economy', 'tickets'];
+        var keys = ['all'].concat(baseCats);
         for (var i = 0; i < keys.length; i++) {
             var cat = keys[i];
             if (!DB[cat]) continue;
             var items = DB[cat].items;
             var catEn = 0;
             for (var j = 0; j < items.length; j++) { if (isEn(items[j].name)) catEn++; }
-            if (cat !== 'all') {
-                total += items.length;
-                enabled += catEn;
-            }
             var bId = catBadgeMap[cat];
             if (bId) {
                 var badge = document.getElementById(bId);
@@ -2148,6 +2222,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             ? 'px-2 py-0.5 bg-amber-950/60 text-amber-400 rounded-lg text-[10px] font-mono'
                             : 'px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono';
                 }
+            }
+        }
+        var total = DB['all'] ? DB['all'].items.length : 0;
+        var enabled = 0;
+        if (DB['all']) {
+            for (var ai = 0; ai < DB['all'].items.length; ai++) {
+                if (isEn(DB['all'].items[ai].name)) enabled++;
             }
         }
         var aliasCount = Object.keys(commandConfigs).filter(function(k){ return commandConfigs[k] && commandConfigs[k].alias; }).length;
