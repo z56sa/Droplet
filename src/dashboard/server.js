@@ -1794,12 +1794,12 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             <div class="flex items-center justify-end gap-1.5 text-xs font-black text-white px-2 py-1.5 border-b border-white/5 mb-1">
                 <span>الأقسام</span><span>📁</span>
             </div>
-            <button type="button" id="btnCatAll" onclick="window.switchCmdCategory('all')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
-                <span id="badgeCatAll" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">98/98</span>
+            <button type="button" id="btnCatAll" onclick="window.switchCmdCategory('all')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg transition cursor-pointer">
+                <span id="badgeCatAll" class="px-2 py-0.5 bg-white/20 text-white rounded-lg text-[10px] font-mono">98/98</span>
                 <span class="flex items-center gap-1.5"><span>جميع الأوامر</span><span>🌐</span></span>
             </button>
-            <button type="button" id="btnCatGeneral" onclick="window.switchCmdCategory('general')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg transition cursor-pointer">
-                <span id="badgeCatGeneral" class="px-2 py-0.5 bg-white/20 text-white rounded-lg text-[10px] font-mono">30/30</span>
+            <button type="button" id="btnCatGeneral" onclick="window.switchCmdCategory('general')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatGeneral" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">30/30</span>
                 <span class="flex items-center gap-1.5"><span>الأوامر العامة</span><span>⚙️</span></span>
             </button>
             <button type="button" id="btnCatModeration" onclick="window.switchCmdCategory('moderation')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer">
@@ -1835,10 +1835,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="text-right">
-                        <h5 id="catTitle" class="font-black text-white text-sm">الأوامر العامة</h5>
-                        <p id="catDesc" class="text-gray-400 text-[11px] mt-0.5">الأوامر الأساسية والتفاعلية للأعضاء والسيرفر</p>
+                        <h5 id="catTitle" class="font-black text-white text-sm">جميع الأوامر والخدمات</h5>
+                        <p id="catDesc" class="text-gray-400 text-[11px] mt-0.5">عرض وإدارة كافة أنظمة وأوامر البوت في مكان واحد</p>
                     </div>
-                    <span id="catIcon" class="text-xl">⚙️</span>
+                    <span id="catIcon" class="text-xl">🌐</span>
                 </div>
             </div>
             <!-- Commands List -->
@@ -1981,7 +1981,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         economy:'badgeCatEconomy', tickets:'badgeCatTickets'
     };
 
-    var currentCat = 'general';
+    var currentCat = 'all';
     var currentFilter = 'all';
     var disabledCmds = ` + JSON.stringify((function() { try { var raw = settings.disabled_commands; if (!raw) return {}; var arr = typeof raw === "string" ? JSON.parse(raw) : raw; var m = {}; for (var i = 0; i < arr.length; i++) m[arr[i]] = true; return m; } catch(e) { return {}; } })()) + `;
     var commandConfigs = ` + JSON.stringify((function() { try { var raw = settings.command_configs; if (!raw) return {}; return typeof raw === "string" ? JSON.parse(raw) : (raw || {}); } catch(e) { return {}; } })()) + `;
