@@ -4,43 +4,159 @@ const embedUtil = require('../../utils/embed');
 const config = require('../../config.json');
 const { askAI } = require('../../utils/ai');
 
-// مخزن مؤقت لكشف السبام (Spam Protection)
 const spamMap = new Map();
+
+const DEBUG = true;
+const dlog = (...a) => { if (DEBUG) console.log(...a); };
+
+function normalizePayload(payload) {
+  const data = typeof payload === 'string' ? { content: payload } : { ...(payload || {}) };
+  delete data.ephemeral;
+  delete data.flags;
+  delete data.fetchReply;
+  delete data.withResponse;
+  return data;
+}
+
+function createInteractionShim(message, args, client, commandName) {
+  let replyMsg = null;
+
+  const send = async (payload) => {
+    const data = normalizePayload(payload);
+    if (replyMsg) {
+      return replyMsg.edit(data).catch(() => message.channel.send(data).catch(() => null));
+    }
+    replyMsg = await message.reply(data).catch(() => message.channel.send(data).catch(() => null));
+    return replyMsg;
+  };
+
+  const firstNumber = () => {
+    const n = args.find(a => !isNaN(Number(a)));
+    return n !== undefined ? Number(n) : null;
+  };
+
+  const shim = {
+    isPrefixShim: true,
+    client,
+    commandName,
+    guild: message.guild,
+    guildId: message.guild.id,
+    channel: message.channel,
+    channelId: message.channelId,
+    member: message.member,
+    user: message.author,
+    locale: 'ar',
+    guildLocale: message.guild.preferredLocale,
+    createdTimestamp: message.createdTimestamp,
+    replied: false,
+    deferred: false,
+    isChatInputCommand: () => true,
+    isCommand: () => true,
+    isRepliable: () => true,
+    isButton: () => false,
+    isStringSelectMenu: () => false,
+    isModalSubmit: () => false,
+    inGuild: () => true,
+    reply: async (p) => { shim.replied = true; return send(p); },
+    deferReply: async () => { shim.deferred = true; message.channel.sendTyping().catch(() => {}); },
+    editReply: async (p) => { shim.replied = true; return send(p); },
+    followUp: async (p) => message.channel.send(normalizePayload(p)).catch(() => null),
+    deleteReply: async () => { if (replyMsg) await replyMsg.delete().catch(() => {}); },
+    fetchReply: async () => replyMsg,
+    showModal: async () => {
+      await message.reply({ content: '⚠️ هذا الأمر يحتاج نافذة، استخدمه كـ / بدل الاختصار.' }).catch(() => {});
+    },
+    options: {
+      getString: () => (args.length ? args.join(' ') : null),
+      getInteger: () => { const n = firstNumber(); return n === null ? null : Math.trunc(n); },
+      getNumber: () => firstNumber(),
+      getBoolean: () => null,
+      getUser: () => message.mentions.users.first() || null,
+      getMember: () => message.mentions.members?.first() || null,
+      getChannel: () => message.mentions.channels.first() || null,
+      getRole: () => message.mentions.roles.first() || null,
+      getMentionable: () => message.mentions.members?.first() || message.mentions.roles.first() || null,
+      getAttachment: () => message.attachments.first() || null,
+      getSubcommand: () => null,
+      getSubcommandGroup: () => null,
+      getFocused: () => '',
+      get: () => null,
+      data: []
+    }
+  };
+  return shim;
+}
+
+function resolveCommand(client, name) {
+  if (!name) return null;
+  const n = name.toLowerCase();
+  const prefixCmd = client.prefixCommands?.get(n) || client.prefixCommands?.get(client.aliases?.get(n));
+  const slashCmd = client.commands?.get(n) || client.slashCommands?.get(n);
+  return prefixCmd || slashCmd || null;
+}
+
+function matchCustomAlias(trimmedContent, cmdConfigs, prefix, client) {
+  const messageParts = trimmedContent.split(/ +/);
+  const firstWord = (messageParts[0] || '').toLowerCase();
+  const firstWordClean = firstWord.replace(/^[/#!.]+/, '');
+
+  for (const [cmdKey, cfg] of Object.entries(cmdConfigs)) {
+    if (!cfg || !cfg.alias) continue;
+    const rawAlias = String(cfg.alias).trim().toLowerCase();
+    if (!rawAlias) continue;
+    const cleanAlias = rawAlias.replace(/^[/#!.]+/, '');
+
+    const matched =
+      firstWord === rawAlias ||
+      firstWordClean === cleanAlias ||
+      firstWord === (prefix + cleanAlias).toLowerCase() ||
+      firstWord === ('/' + cleanAlias);
+
+    if (!matched) continue;
+
+    const rawName = cmdKey.replace(/^\//, '');
+    const command = resolveCommand(client, rawName);
+    dlog('[ALIAS DEBUG] MATCHED', cmdKey, '| command found:', !!command);
+    if (!command) {
+      console.warn(`[ALIAS] الاختصار "${rawAlias}" مربوط بـ "${rawName}" بس الأمر مو موجود`);
+      continue;
+    }
+    return { command, commandName: rawName, matchedCmdKey: cmdKey, args: messageParts.slice(1) };
+  }
+  return null;
+}
 
 module.exports = {
   name: 'messageCreate',
   async execute(message, client) {
     if (!message.guild || message.author.bot) return;
 
+    dlog(`[MSG DEBUG] content="${message.content}" | channel=${message.channel.id} | author=${message.author.tag}`);
+
     const guildId = message.guild.id;
     const userId = message.author.id;
-    const settings = db.getGuildSettings(guildId);
+    const settings = db.getGuildSettings(guildId) || {};
 
-    // =========================================================================
-    // 🛡️ ZENO Security Guardian: secrets + dangerous files
-    // Runs before AI/Auto-Mod so sensitive data never reaches the AI layer.
-    // =========================================================================
+    // 🛡️ Security Guardian
     if (client.securityGuardian) {
       try {
         const securityScan = await client.securityGuardian.scanMessage(message);
-        const sensitiveFindings = securityScan.findings.filter(f => !f.startsWith('Dangerous attachment:'));
-        const dangerousFiles = securityScan.findings.filter(f => f.startsWith('Dangerous attachment:'));
+        const findings = securityScan?.findings || [];
+        const sensitiveFindings = findings.filter(f => !f.startsWith('Dangerous attachment:'));
+        const dangerousFiles = findings.filter(f => f.startsWith('Dangerous attachment:'));
 
         if (sensitiveFindings.length || dangerousFiles.length) {
           await message.delete().catch(() => {});
-
           const reasons = [
             ...sensitiveFindings.map(f => `Sensitive information: ${f}`),
             ...dangerousFiles
           ];
-
           await client.securityGuardian.report(
             message.guild,
             'Blocked security incident',
             `User ${message.author.id} in guild ${guildId}. Findings: ${reasons.join(', ')}`,
             'critical'
           );
-
           const warning = await message.channel.send({
             content: `⚠️ ${message.author} تم حظر المحتوى تلقائياً لحماية السيرفر والبيانات.`
           }).catch(() => null);
@@ -48,7 +164,6 @@ module.exports = {
           return;
         }
       } catch (securityError) {
-        // Security scanner failure is reported, but does not crash the message handler.
         await client.securityGuardian.report(
           message.guild,
           'Security scanner error',
@@ -58,13 +173,11 @@ module.exports = {
       }
     }
 
-    // تحديث كاش السيرفر إذا لم يكن متوفراً
     const serverTracker = require('../../utils/serverTracker');
     if (!serverTracker.memoryGuilds.has(guildId)) {
       serverTracker.trackGuild(message.guild).catch(() => {});
     }
 
-    // حفظ وتحديث بيانات العضو (الاسم والصورة) في كاش قاعدة البيانات و Turso
     if (db.trackUserProfile) {
       db.trackUserProfile({
         userId: message.author.id,
@@ -78,15 +191,13 @@ module.exports = {
     const isAdmin = message.member?.permissions.has(PermissionFlagsBits.Administrator) ||
                     message.member?.permissions.has(PermissionFlagsBits.ManageGuild);
 
-    // الأدمنية غير معفيين من الرقابة التلقائية بأي حال — يجب إضافتهم يدوياً في الداشبورد
     const isAutoModWhitelisted =
       (settings.automod_whitelist_role && message.member?.roles.cache.has(settings.automod_whitelist_role)) ||
       (settings.automod_whitelist_channel && message.channel.id === settings.automod_whitelist_channel) ||
       (settings.automod_exempt_users && settings.automod_exempt_users.split(',').map(u => u.trim()).includes(userId)) ||
       (db.isUserWhitelisted && db.isUserWhitelisted(guildId, userId, 'whitelist'));
 
-    // 👮 Staff Activity: تسجيل رسائل الإدارة تلقائياً
-    const isStaff = isAdmin || 
+    const isStaff = isAdmin ||
       (settings.staff_role && message.member?.roles.cache.has(settings.staff_role)) ||
       (settings.support_role && message.member?.roles.cache.has(settings.support_role)) ||
       message.member?.permissions.has(PermissionFlagsBits.ModerateMembers);
@@ -96,15 +207,13 @@ module.exports = {
       if (db.touchStaffShiftAction) db.touchStaffShiftAction(guildId, userId);
     }
 
-    // =========================================================================
-    // 🤖 التحدث التلقائي المباشر مع ZENO بالذكاء الاصطناعي (أولوية قصوى)
-    // =========================================================================
+    // 🤖 ZENO AI
     const cleanContent = message.content ? message.content.trim() : '';
     const botMentionRegex = new RegExp(`^<@!?${client.user?.id}>`);
-    const isBotMentioned = botMentionRegex.test(cleanContent) || (message.mentions && message.mentions.has(client.user?.id) && !message.mentions.everyone);
+    const isBotMentioned = botMentionRegex.test(cleanContent) ||
+      (message.mentions && message.mentions.has(client.user?.id) && !message.mentions.everyone);
 
-    // كشف مناداة ZENO أو زينو في بداية الرسالة أو كلمة ZENO منفردة
-    const zenoCallRegex = /^(?:zeno|زينو)(?:[\s,:!\?؟-]+(.+)|$)/i;
+    const zenoCallRegex = /^(?:zeno|زينو)(?:[\s,:!?؟-]+(.+)|$)/i;
     const matchZeno = cleanContent.match(zenoCallRegex);
 
     if (isBotMentioned || matchZeno) {
@@ -114,42 +223,33 @@ module.exports = {
       } else if (matchZeno) {
         userPrompt = (matchZeno[1] || '').trim();
       }
-
-      if (!userPrompt) {
-        userPrompt = 'أهلاً وسهلاً! أنا ZENO، كيف يمكنني مساعدتك اليوم؟';
-      }
+      if (!userPrompt) userPrompt = 'أهلاً وسهلاً! أنا ZENO، كيف يمكنني مساعدتك اليوم؟';
 
       try {
         await message.channel.sendTyping().catch(() => {});
         const aiResponse = await askAI(userPrompt);
-
         if (aiResponse) {
-          if (aiResponse.length <= 2000) {
-            await message.reply({ content: aiResponse }).catch(async () => {
-              await message.channel.send({ content: aiResponse }).catch(() => {});
-            });
-          } else {
-            const chunks = aiResponse.match(/[\s\S]{1,1950}/g) || [aiResponse];
-            await message.reply({ content: chunks[0] }).catch(async () => {
-              await message.channel.send({ content: chunks[0] }).catch(() => {});
-            });
-            for (let i = 1; i < chunks.length; i++) {
-              await message.channel.send({ content: chunks[i] }).catch(() => {});
-            }
+          const chunks = aiResponse.length <= 2000 ? [aiResponse] : (aiResponse.match(/[\s\S]{1,1950}/g) || [aiResponse]);
+          await message.reply({ content: chunks[0] }).catch(async () => {
+            await message.channel.send({ content: chunks[0] }).catch(() => {});
+          });
+          for (let i = 1; i < chunks.length; i++) {
+            await message.channel.send({ content: chunks[i] }).catch(() => {});
           }
         }
-        return; // تم التفاعل بنجاح
+        return;
       } catch (err) {
         console.error('[Auto ZENO AI Error]:', err);
       }
     }
 
-    // ==========================================
-    // 🛡️ درع الرقابة التلقائية المتقدم (Auto-Mod)
-    // ==========================================
+    // 🛡️ Auto-Mod
+    const tempWarn = async (content, ms = 4000) => {
+      const w = await message.channel.send({ content }).catch(() => null);
+      if (w) setTimeout(() => w.delete().catch(() => {}), ms);
+    };
 
     if (!isAutoModWhitelisted) {
-      // 1. فلتر الكلمات المحظورة والشتم (Blacklist Words Filter)
       if (settings.bad_words_enabled && settings.bad_words_list) {
         const rawList = settings.bad_words_list.split(/[\n,]+/).map(w => w.trim().toLowerCase()).filter(w => w.length > 0);
         const lowerMsg = message.content.toLowerCase();
@@ -158,8 +258,6 @@ module.exports = {
         if (foundBadWord) {
           try {
             await message.delete().catch(() => {});
-
-            // تطبيق الإجراء المحدد
             const action = settings.automod_action || 'warn';
             let actionText = 'تحذير';
 
@@ -174,24 +272,20 @@ module.exports = {
               actionText = 'طرد من السيرفر';
             }
 
-            const alert = await message.channel.send({
-              content: `⚠️ **الرقابة التلقائية | Auto-Mod:** يا ${message.author}، تم حذف رسالتك لاحتوائها على كلمات غير مسموح بها! (${actionText})`
-            });
-            setTimeout(() => alert.delete().catch(() => {}), 5000);
+            await tempWarn(`⚠️ **الرقابة التلقائية | Auto-Mod:** يا ${message.author}، تم حذف رسالتك لاحتوائها على كلمات غير مسموح بها! (${actionText})`, 5000);
 
-            // إرسال تقرير اللوق
             if (settings.log_channel) {
               const logCh = message.guild.channels.cache.get(settings.log_channel);
               if (logCh) {
                 logCh.send({
-                  embeds: [new (require('discord.js').EmbedBuilder)()
+                  embeds: [new EmbedBuilder()
                     .setColor('#E74C3C')
                     .setTitle('🛡️ Auto-Mod | رصد كلمة محظورة')
                     .addFields(
                       { name: '👤 العضو', value: `${message.author.tag} (${message.author.id})`, inline: true },
                       { name: '💬 الروم', value: `<#${message.channel.id}>`, inline: true },
                       { name: '⚖️ الإجراء المتخذ', value: actionText, inline: true },
-                      { name: '📄 نص الرسالة', value: `\`\`\`${message.content.substring(0, 1000)}\`\`\``, inline: false }
+                      { name: '📄 نص الرسالة', value: '```' + message.content.substring(0, 1000) + '```', inline: false }
                     )
                     .setTimestamp()
                   ]
@@ -205,195 +299,120 @@ module.exports = {
         }
       }
 
-      // 2. منع المنشن الجماعي (Anti-Mass-Mention)
       if (settings.anti_mass_mention) {
         const mentionLimit = settings.max_mentions || 4;
         const totalMentions = message.mentions.users.size + message.mentions.roles.size;
         if (totalMentions >= mentionLimit) {
-          try {
-            await message.delete().catch(() => {});
-            await message.member?.timeout(5 * 60 * 1000, 'Auto-Mod: منشن جماعي مفرط').catch(() => {});
-            const warn = await message.channel.send({
-              content: `⚠️ **Auto-Mod:** تم حذف رسالة ${message.author} وعزله 5 دقائق لتجاوز حد المنشن المسموح (${totalMentions}/${mentionLimit})!`
-            });
-            setTimeout(() => warn.delete().catch(() => {}), 6000);
-            return;
-          } catch (err) {
-            console.error('فشل معالجة المنشن الجماعي:', err);
-          }
+          await message.delete().catch(() => {});
+          await message.member?.timeout(5 * 60 * 1000, 'Auto-Mod: منشن جماعي مفرط').catch(() => {});
+          await tempWarn(`⚠️ **Auto-Mod:** تم حذف رسالة ${message.author} وعزله 5 دقائق لتجاوز حد المنشن المسموح (${totalMentions}/${mentionLimit})!`, 6000);
+          return;
         }
       }
 
-      // 3. منع الحروف الكبيرة الصارخة (Anti-Caps)
       if (settings.anti_caps && message.content.length >= 8) {
         const letters = message.content.replace(/[^a-zA-Z]/g, '');
         if (letters.length >= 6) {
           const upperCount = letters.replace(/[^A-Z]/g, '').length;
-          const capsRatio = upperCount / letters.length;
-          if (capsRatio > 0.7) {
-            try {
-              await message.delete().catch(() => {});
-              const warn = await message.channel.send({
-                content: `⚠️ **Auto-Mod:** يا ${message.author}، يرجى عدم الكتابة بالحروف الكبيرة (Caps Lock) بشكل مفرط!`
-              });
-              setTimeout(() => warn.delete().catch(() => {}), 4000);
-              return;
-            } catch (err) {}
+          if (upperCount / letters.length > 0.7) {
+            await message.delete().catch(() => {});
+            await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، يرجى عدم الكتابة بالحروف الكبيرة (Caps Lock) بشكل مفرط!`);
+            return;
           }
         }
       }
 
-      // 4. منع سبام الإيموجيات (Anti-Emoji-Spam)
       if (settings.anti_emoji_spam || settings.anti_emoji) {
         const maxEmojis = settings.max_emojis || 5;
         const customEmojis = (message.content.match(/<a?:.+?:\d+>/g) || []).length;
         const unicodeEmojis = (message.content.match(/\p{Extended_Pictographic}/gu) || []).length;
         const totalEmojis = customEmojis + unicodeEmojis;
-
         if (totalEmojis > maxEmojis) {
-          try {
-            await message.delete().catch(() => {});
-            const warn = await message.channel.send({
-              content: `⚠️ **Auto-Mod:** يا ${message.author}، تم حذف رسالتك لتجاوز حد الإيموجيات المسموح (${totalEmojis}/${maxEmojis})!`
-            });
-            setTimeout(() => warn.delete().catch(() => {}), 4000);
-            return;
-          } catch (err) {}
+          await message.delete().catch(() => {});
+          await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، تم حذف رسالتك لتجاوز حد الإيموجيات المسموح (${totalEmojis}/${maxEmojis})!`);
+          return;
         }
       }
 
-      // 5. منع تكرار الأسطر الفارغة والنصوص الطويلة (Anti-Line-Spam)
       if (settings.anti_line_spam) {
         const maxLines = settings.max_lines || 8;
-        const linesCount = message.content.split('\n').length;
-        if (linesCount > maxLines) {
-          try {
-            await message.delete().catch(() => {});
-            const warn = await message.channel.send({
-              content: `⚠️ **Auto-Mod:** يا ${message.author}، يرجى عدم النزول بأسطر متعددة في رسالة واحدة!`
-            });
-            setTimeout(() => warn.delete().catch(() => {}), 4000);
-            return;
-          } catch (err) {}
+        if (message.content.split('\n').length > maxLines) {
+          await message.delete().catch(() => {});
+          await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، يرجى عدم النزول بأسطر متعددة في رسالة واحدة!`);
+          return;
         }
       }
 
-      // 6. منع إزعاج السبويلر (Anti-Spoilers)
       if (settings.anti_spoilers) {
         const spoilerMatches = (message.content.match(/\|\|.*?\|\|/g) || []).length;
         if (spoilerMatches >= 3) {
-          try {
-            await message.delete().catch(() => {});
-            const warn = await message.channel.send({
-              content: `⚠️ **Auto-Mod:** يا ${message.author}، يمنع الاستخدام المفرط لعلامات السبويلر (Spoilers)!`
-            });
-            setTimeout(() => warn.delete().catch(() => {}), 4000);
-            return;
-          } catch (err) {}
+          await message.delete().catch(() => {});
+          await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، يمنع الاستخدام المفرط لعلامات السبويلر (Spoilers)!`);
+          return;
         }
       }
 
-      // 7. منع نصوص زالجو المشوهة (Anti-Zalgo Text)
       if (settings.anti_zalgo) {
-        const zalgoRegex = /[\u0300-\u036F\u0489\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F]{3,}/g;
+        const zalgoRegex = /[̀-ͯ҉᷀-᷿⃐-⃿︠-︯]{3,}/;
         if (zalgoRegex.test(message.content)) {
-          try {
-            await message.delete().catch(() => {});
-            const warn = await message.channel.send({
-              content: `⚠️ **Auto-Mod:** يا ${message.author}، يمنع إرسال النصوص المشوهة والرموز الغريبة (Zalgo Text)!`
-            });
-            setTimeout(() => warn.delete().catch(() => {}), 4000);
-            return;
-          } catch (err) {}
+          await message.delete().catch(() => {});
+          await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، يمنع إرسال النصوص المشوهة والرموز الغريبة (Zalgo Text)!`);
+          return;
         }
       }
 
-      // 8. منع تكرار نفس الحرف أو الكلمة (Anti-Text-Repeat)
       if (settings.anti_text_repeat) {
         const charRepeatRegex = /(.)\1{7,}/i;
         const wordRepeatRegex = /\b(\w+)\s+\1\s+\1\s+\1\b/i;
         if (charRepeatRegex.test(message.content) || wordRepeatRegex.test(message.content)) {
-          try {
-            await message.delete().catch(() => {});
-            const warn = await message.channel.send({
-              content: `⚠️ **Auto-Mod:** يا ${message.author}، يمنع تكرار نفس الحروف أو الكلمات بشكل مفرط!`
-            });
-            setTimeout(() => warn.delete().catch(() => {}), 4000);
-            return;
-          } catch (err) {}
+          await message.delete().catch(() => {});
+          await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، يمنع تكرار نفس الحروف أو الكلمات بشكل مفرط!`);
+          return;
         }
       }
 
-      // 9. منع سبام الملصقات (Anti-Stickers)
       if (settings.anti_stickers && message.stickers && message.stickers.size > 0) {
-        try {
-          await message.delete().catch(() => {});
-          const warn = await message.channel.send({
-            content: `⚠️ **Auto-Mod:** يا ${message.author}، إرسال الملصقات غير مسموح به حالياً!`
-          });
-          setTimeout(() => warn.delete().catch(() => {}), 4000);
-          return;
-        } catch (err) {}
+        await message.delete().catch(() => {});
+        await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، إرسال الملصقات غير مسموح به حالياً!`);
+        return;
       }
 
-      // 10. منع الرسائل الطويلة المفرطة (Anti-Long-Messages)
       if (settings.anti_long_messages && message.content.length > 1000) {
-        try {
-          await message.delete().catch(() => {});
-          const warn = await message.channel.send({
-            content: `⚠️ **Auto-Mod:** يا ${message.author}، تم حذف رسالتك لتجاوزها الحد الأقصى للأحرف!`
-          });
-          setTimeout(() => warn.delete().catch(() => {}), 4000);
-          return;
-        } catch (err) {}
+        await message.delete().catch(() => {});
+        await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، تم حذف رسالتك لتجاوزها الحد الأقصى للأحرف!`);
+        return;
       }
     }
 
-    // --- 1. نظام الحماية من الروابط (Anti-Link) ---
+    // Anti-Link
     if ((settings.anti_link || settings.anti_links) && !isAutoModWhitelisted) {
-      const linkRegex = /(https?:\/\/[^\s]+)|(discord\.(gg|io|me|li)\/[^\s]+)|(discord\.com\/invite\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9-]+\.(com|net|org|xyz|gg|tk|ml|ga|cf|gq)\b)/gi;
+      const linkRegex = /(https?:\/\/[^\s]+)|(discord\.(gg|io|me|li)\/[^\s]+)|(discord\.com\/invite\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9-]+\.(com|net|org|xyz|gg|tk|ml|ga|cf|gq)\b)/i;
       if (linkRegex.test(message.content)) {
-        try {
-          await message.delete().catch(() => {});
-          const warnMsg = await message.channel.send({
-            content: `🚫 **تم حذف الرابط تلقائياً!** يمنع نشر الروابط في السيرفر يا ${message.author}!`
-          }).catch(() => {});
-          if (warnMsg) setTimeout(() => warnMsg.delete().catch(() => {}), 5000);
-          return;
-        } catch (err) {
-          console.error('فشل حذف الرابط (تأكد من صلاحيات البوت Manage Messages):', err);
-        }
+        await message.delete().catch(err => console.error('فشل حذف الرابط (تأكد من صلاحية Manage Messages):', err));
+        await tempWarn(`🚫 **تم حذف الرابط تلقائياً!** يمنع نشر الروابط في السيرفر يا ${message.author}!`, 5000);
+        return;
       }
     }
 
-    // --- 1.5 نظام الحماية من دعوات الديسكورد (Anti-Invites) ---
+    // Anti-Invites
     if ((settings.anti_invites || settings.anti_invite_links) && !isAutoModWhitelisted) {
-      const inviteRegex = /(https?:\/\/)?(www\.)?(discord\.(gg|io|me|li)|discordapp\.com\/invite|discord\.com\/invite)\/[a-zA-Z0-9\-._]+/gi;
+      const inviteRegex = /(https?:\/\/)?(www\.)?(discord\.(gg|io|me|li)|discordapp\.com\/invite|discord\.com\/invite)\/[a-zA-Z0-9\-._]+/i;
       if (inviteRegex.test(message.content)) {
-        try {
-          await message.delete().catch(() => {});
-          const warnMsg = await message.channel.send({
-            content: `🔗 **تم حذف الدعوة!** ممنوع نشر دعوات السيرفرات الأخرى يا ${message.author}!`
-          }).catch(() => {});
-          if (warnMsg) setTimeout(() => warnMsg.delete().catch(() => {}), 5000);
-          return;
-        } catch (err) {
-          console.error('فشل حذف دعوة الديسكورد:', err);
-        }
+        await message.delete().catch(err => console.error('فشل حذف دعوة الديسكورد:', err));
+        await tempWarn(`🔗 **تم حذف الدعوة!** ممنوع نشر دعوات السيرفرات الأخرى يا ${message.author}!`, 5000);
+        return;
       }
     }
 
-    // --- 1.6 تتبع الرسائل لكشف الغوست بينج (Anti-Ghost-Ping Tracker) ---
-    if (settings.anti_ghost_ping && message.mentions.users.size > 0 && !message.author.bot) {
-      // حفظ معرفات المذكورين مؤقتاً في الرسالة (سيتم الكشف في messageDelete)
+    // Anti-Ghost-Ping
+    if (settings.anti_ghost_ping && message.mentions.users.size > 0) {
       message.mentionedUserIds = [...message.mentions.users.keys()];
     }
 
-    // --- 2. نظام الحماية من السبام (Anti-Spam) ---
+    // Anti-Spam
     if (settings.anti_spam) {
       const now = Date.now();
       const userSpam = spamMap.get(userId) || { count: 0, lastMessage: now, messages: [] };
-
       if (now - userSpam.lastMessage < 2500) {
         userSpam.count += 1;
         userSpam.messages.push(message);
@@ -405,179 +424,155 @@ module.exports = {
       spamMap.set(userId, userSpam);
 
       if (userSpam.count >= 4) {
-        try {
-          // حذف رسائل السبام السريعة
-          for (const msg of userSpam.messages) {
-            await msg.delete().catch(() => {});
-          }
-          await message.member?.timeout(60 * 1000, 'Anti-Spam Protection').catch(() => {});
-          const spamWarn = await message.channel.send({
-            content: `⚠️ تم إسكات ${message.author} لمدة دقيقة وحذف الرسائل المتكررة (Anti-Spam).`
-          });
-          setTimeout(() => spamWarn.delete().catch(() => {}), 6000);
-          spamMap.delete(userId);
-          return;
-        } catch (err) {
-          console.error('فشل في معالجة السبام:', err);
-        }
+        for (const msg of userSpam.messages) await msg.delete().catch(() => {});
+        await message.member?.timeout(60 * 1000, 'Anti-Spam Protection').catch(() => {});
+        await tempWarn(`⚠️ تم إسكات ${message.author} لمدة دقيقة وحذف الرسائل المتكررة (Anti-Spam).`, 6000);
+        spamMap.delete(userId);
+        return;
       }
     }
 
-    // --- 3. نظام نقاط الخبرة والمستويات (XP & Leveling) ---
+    // XP & Leveling
     if (settings.leveling_enabled !== 0) {
-      const userDb = db.getUser(userId, guildId);
-      const now = Date.now();
-      const economy = config.economy || { xpCooldownMs: 60000, xpPerMessage: 5 };
-      if (now - userDb.last_message_xp >= economy.xpCooldownMs) {
-        const baseXP = Math.floor(Math.random() * 10) + economy.xpPerMessage;
-        const multiplier = settings.level_multiplier || 1;
-        const xpGained = baseXP * multiplier;
+      try {
+        const userDb = db.getUser(userId, guildId) || {};
+        const now = Date.now();
+        const economy = config.economy || { xpCooldownMs: 60000, xpPerMessage: 5 };
+        if (now - (userDb.last_message_xp || 0) >= economy.xpCooldownMs) {
+          const baseXP = Math.floor(Math.random() * 10) + economy.xpPerMessage;
+          const xpGained = baseXP * (settings.level_multiplier || 1);
+          const { level, leveledUp } = db.addXp(userId, guildId, xpGained);
 
-        const { level, leveledUp } = db.addXp(userId, guildId, xpGained);
-
-        if (leveledUp) {
-          // فحص مكافآت الرتب للمستوى الجديد وإعطاؤها للعضو
-          try {
-            const rewards = db.getLevelRewards ? db.getLevelRewards(guildId).filter(r => r.level <= level) : [];
-            for (const rew of rewards) {
-              const roleObj = message.guild.roles.cache.get(rew.role_id) || await message.guild.roles.fetch(rew.role_id).catch(() => null);
-              if (roleObj && !message.member.roles.cache.has(roleObj.id)) {
-                await message.member.roles.add(roleObj).catch(() => {});
+          if (leveledUp) {
+            try {
+              const rewards = db.getLevelRewards ? db.getLevelRewards(guildId).filter(r => r.level <= level) : [];
+              for (const rew of rewards) {
+                const roleObj = message.guild.roles.cache.get(rew.role_id) || await message.guild.roles.fetch(rew.role_id).catch(() => null);
+                if (roleObj && message.member && !message.member.roles.cache.has(roleObj.id)) {
+                  await message.member.roles.add(roleObj).catch(() => {});
+                }
               }
-            }
-          } catch (e) {}
+            } catch (e) {}
 
-          // تجهيز رسالة رفع المستوى (إن كانت مفعّلة)
-          if (settings.level_up_msg_enabled !== 0) {
-            let rawMsg = settings.level_message || '🎉 مبروك يا [user]! لقد ارتفع مستواك إلى **المستوى [level]**! 🚀';
-            const formattedMsg = rawMsg
-              .replace(/\[user\]/gi, `<@${message.author.id}>`)
-              .replace(/\{user\}/gi, `<@${message.author.id}>`)
-              .replace(/\[mention\]/gi, `<@${message.author.id}>`)
-              .replace(/\{mention\}/gi, `<@${message.author.id}>`)
-              .replace(/\[userName\]/gi, message.author.username)
-              .replace(/\{userName\}/gi, message.author.username)
-              .replace(/\[level\]/gi, level.toString())
-              .replace(/\{level\}/gi, level.toString())
-              .replace(/\[server\]/gi, message.guild.name)
-              .replace(/\{server\}/gi, message.guild.name);
+            if (settings.level_up_msg_enabled !== 0) {
+              const rawMsg = settings.level_message || '🎉 مبروك يا [user]! لقد ارتفع مستواك إلى **المستوى [level]**! 🚀';
+              const mention = `<@${message.author.id}>`;
+              const formattedMsg = rawMsg
+                .replace(/[\[{](user|mention)[\]}]/gi, mention)
+                .replace(/[\[{]userName[\]}]/gi, message.author.username)
+                .replace(/[\[{]level[\]}]/gi, level.toString())
+                .replace(/[\[{]server[\]}]/gi, message.guild.name);
 
-            const levelEmbed = new EmbedBuilder()
-              .setColor(config.colors.primary || '#9333ea')
-              .setAuthor({ name: `ترقية مستوى جديد! (Level Up) 🎉`, iconURL: message.guild.iconURL() || undefined })
-              .setDescription(formattedMsg)
-              .setThumbnail(message.author.displayAvatarURL({ dynamic: true, size: 256 }))
-              .addFields(
-                { name: '🎖️ المستوى الجديد', value: `\`Level ${level}\``, inline: true },
-                { name: '👤 العضو', value: `<@${message.author.id}>`, inline: true }
-              )
-              .setFooter({ text: `${message.guild.name} • Leveling System` })
-              .setTimestamp();
+              const levelEmbed = new EmbedBuilder()
+                .setColor(config.colors?.primary || '#9333ea')
+                .setAuthor({ name: 'ترقية مستوى جديد! (Level Up) 🎉', iconURL: message.guild.iconURL() || undefined })
+                .setDescription(formattedMsg)
+                .setThumbnail(message.author.displayAvatarURL({ dynamic: true, size: 256 }))
+                .addFields(
+                  { name: '🎖️ المستوى الجديد', value: '`Level ' + level + '`', inline: true },
+                  { name: '👤 العضو', value: mention, inline: true }
+                )
+                .setFooter({ text: `${message.guild.name} • Leveling System` })
+                .setTimestamp();
 
-            const channelMode = settings.level_channel || 'current';
-            if (channelMode === 'disabled') {
-              // معطلة بدون إرسال رسالة
-            } else if (channelMode === 'dm') {
-              message.author.send({ embeds: [levelEmbed] }).catch(() => {});
-            } else if (channelMode === 'current') {
-              await message.channel.send({ embeds: [levelEmbed] }).catch(() => {});
-            } else {
-              // روم مخصص
-              const targetChan = message.guild.channels.cache.get(channelMode) || await message.guild.channels.fetch(channelMode).catch(() => null);
-              if (targetChan && targetChan.isTextBased()) {
-                targetChan.send({ embeds: [levelEmbed] }).catch(() => {});
+              const channelMode = settings.level_channel || 'current';
+              if (channelMode === 'disabled') {
+              } else if (channelMode === 'dm') {
+                message.author.send({ embeds: [levelEmbed] }).catch(() => {});
+              } else if (channelMode === 'current') {
+                await message.channel.send({ embeds: [levelEmbed] }).catch(() => {});
+              } else {
+                const targetChan = message.guild.channels.cache.get(channelMode) || await message.guild.channels.fetch(channelMode).catch(() => null);
+                if (targetChan && targetChan.isTextBased()) targetChan.send({ embeds: [levelEmbed] }).catch(() => {});
               }
             }
           }
         }
+      } catch (e) {
+        console.error('[Leveling Error]:', e);
       }
     }
 
-    // --- 4. نظام الرد التلقائي المتقدم (Versa Advanced Auto Responder) ---
-    const autoResponders = db.getAutoResponders(guildId);
-    if (autoResponders && autoResponders.length > 0) {
-      const rawContent = message.content.trim();
+    // 🎯 فحص الأوامر والاختصارات مبكراً
+    const prefix = settings.prefix || config.defaultPrefix || '#';
+    let cmdConfigs = {};
+    try {
+      cmdConfigs = typeof settings.command_configs === 'string'
+        ? JSON.parse(settings.command_configs)
+        : (settings.command_configs || {});
+    } catch (e) {
+      console.error('[CMD CONFIG] command_configs مو JSON صحيح:', e.message);
+    }
+
+    const trimmedContent = message.content.trim();
+    dlog('[ALIAS DEBUG] content:', trimmedContent, '| cmdConfigs keys:', Object.keys(cmdConfigs));
+
+    let resolved = matchCustomAlias(trimmedContent, cmdConfigs, prefix, client);
+    if (!resolved && trimmedContent.startsWith(prefix)) {
+      const pArgs = trimmedContent.slice(prefix.length).trim().split(/ +/);
+      const name = (pArgs.shift() || '').toLowerCase();
+      const cmd = resolveCommand(client, name);
+      if (cmd) resolved = { command: cmd, commandName: name, matchedCmdKey: null, args: pArgs };
+    }
+    const isCommandMessage = !!resolved;
+
+    // Auto Responder
+    const autoResponders = isCommandMessage ? [] : (db.getAutoResponders(guildId) || []);
+    if (autoResponders.length > 0) {
+      const rawContent = trimmedContent;
       const lowerContent = rawContent.toLowerCase();
 
       for (const r of autoResponders) {
-        if (r.is_active === 0) continue;
-
-        // فحص القنوات والرتب المستثناة والمسموحة
+        if (r.is_active === 0 || !r.trigger_word) continue;
         if (r.exempt_channels && r.exempt_channels.split(',').includes(message.channel.id)) continue;
         if (r.allowed_channels && !r.allowed_channels.split(',').includes(message.channel.id)) continue;
-        if (r.exempt_roles && message.member && r.exempt_roles.split(',').some(roleId => message.member.roles.cache.has(roleId))) continue;
-        if (r.allowed_roles && message.member && !r.allowed_roles.split(',').some(roleId => message.member.roles.cache.has(roleId))) continue;
+        if (r.exempt_roles && message.member && r.exempt_roles.split(',').some(id => message.member.roles.cache.has(id))) continue;
+        if (r.allowed_roles && message.member && !r.allowed_roles.split(',').some(id => message.member.roles.cache.has(id))) continue;
 
         const trig = r.case_sensitive ? r.trigger_word : r.trigger_word.toLowerCase();
         const testContent = r.case_sensitive ? rawContent : lowerContent;
         let isMatch = false;
-
         const mode = r.match_mode || 'contains';
-        if (mode === 'exact') {
-          isMatch = (testContent === trig);
-        } else if (mode === 'starts') {
-          isMatch = testContent.startsWith(trig);
-        } else if (mode === 'ends') {
-          isMatch = testContent.endsWith(trig);
-        } else if (mode === 'regex') {
-          try {
-            const re = new RegExp(r.trigger_word, r.case_sensitive ? '' : 'i');
-            isMatch = re.test(rawContent);
-          } catch(e) {}
-        } else {
-          // 'contains' / يحتوي على
-          isMatch = testContent.includes(trig);
+
+        if (mode === 'exact') isMatch = testContent === trig;
+        else if (mode === 'starts') isMatch = testContent.startsWith(trig);
+        else if (mode === 'ends') isMatch = testContent.endsWith(trig);
+        else if (mode === 'regex') {
+          try { isMatch = new RegExp(r.trigger_word, r.case_sensitive ? '' : 'i').test(rawContent); } catch (e) {}
+        } else isMatch = testContent.includes(trig);
+
+        if (!isMatch) continue;
+
+        if (r.delete_trigger) message.delete().catch(() => {});
+
+        const replyContent = (r.reply_text || '')
+          .replace(/\{user\}/gi, `<@${message.author.id}>`)
+          .replace(/\{username\}/gi, message.author.username)
+          .replace(/\{server\}/gi, message.guild.name)
+          .replace(/\{channel\}/gi, `<#${message.channel.id}>`)
+          .replace(/\{memberCount\}/gi, message.guild.memberCount.toString());
+
+        if (r.reply_type === 'reaction') {
+          message.react((r.reply_text || '').trim()).catch(() => {});
+        } else if (r.reply_type === 'embed') {
+          const autoEmbed = new EmbedBuilder().setColor('#EF5700').setDescription(replyContent || '​').setTimestamp();
+          message.channel.send({ embeds: [autoEmbed] }).catch(() => {});
+        } else if (replyContent) {
+          message.reply({ content: replyContent }).catch(() => {
+            message.channel.send({ content: replyContent }).catch(() => {});
+          });
         }
 
-        if (isMatch) {
-          // حذف رسالة المحفز إذا كان الخيار مفعل
-          if (r.delete_trigger) {
-            message.delete().catch(() => {});
-          }
-
-          // تجهيز المتغيرات
-          let replyContent = r.reply_text || '';
-          replyContent = replyContent
-            .replace(/\{user\}/gi, `<@${message.author.id}>`)
-            .replace(/\{username\}/gi, message.author.username)
-            .replace(/\{server\}/gi, message.guild.name)
-            .replace(/\{channel\}/gi, `<#${message.channel.id}>`)
-            .replace(/\{memberCount\}/gi, message.guild.memberCount.toString());
-
-          if (r.reply_type === 'reaction') {
-            // تفاعل إيموجي
-            try {
-              message.react(r.reply_text.trim()).catch(() => {});
-            } catch(e) {}
-          } else if (r.reply_type === 'embed') {
-            // رسالة إيمبد
-            const autoEmbed = new EmbedBuilder()
-              .setColor('#EF5700')
-              .setDescription(replyContent)
-              .setTimestamp();
-            message.channel.send({ embeds: [autoEmbed] }).catch(() => {});
-          } else {
-            // رد نصي عادي
-            message.reply({ content: replyContent }).catch(() => {
-              message.channel.send({ content: replyContent }).catch(() => {});
-            });
-          }
-
-          if (db.incrementAutoResponderUse) {
-            db.incrementAutoResponderUse(r.id);
-          }
-          break; // تم تنفيذ الرد المطابق
-        }
+        if (db.incrementAutoResponderUse) db.incrementAutoResponderUse(r.id);
+        break;
       }
     }
 
-    // --- 4.5. نظام الخط التلقائي (Auto-Line) ---
+    // Auto-Line
     let autolineChannels = [];
-    try {
-      autolineChannels = JSON.parse(settings.autoline_channels || '[]');
-    } catch(e) {}
+    try { autolineChannels = JSON.parse(settings.autoline_channels || '[]'); } catch (e) {}
 
-    if (autolineChannels.includes(message.channel.id)) {
+    if (!isCommandMessage && autolineChannels.includes(message.channel.id)) {
       const lineUrl = settings.autoline_line || 'https://cdn.discordapp.com/attachments/1083818318856237128/1148721611180638318/line.png';
       const mode = settings.autoline_mode || 'line';
       if (mode === 'line') {
@@ -588,53 +583,41 @@ module.exports = {
       }
     }
 
-    // --- 4.6. روم الملاحظات والآراء (Feedback Channel) ---
-    if (settings.feedback_channel && message.channel.id === settings.feedback_channel && !message.content.startsWith(settings.prefix || '#')) {
+    // Feedback Channel
+    if (!isCommandMessage && settings.feedback_channel && message.channel.id === settings.feedback_channel) {
       const feedbackLine = settings.feedback_line || settings.autoline_line;
       const feedbackMode = settings.feedback_mode || 'embed';
       if (feedbackMode === 'embed') {
         const fbEmbed = new EmbedBuilder()
           .setColor(config.colors?.primary || '#5865F2')
           .setAuthor({ name: message.author.tag, iconURL: message.author.displayAvatarURL({ dynamic: true }) })
-          .setDescription(message.content)
+          .setDescription(message.content || '​')
           .setTimestamp();
-        if (message.attachments.size > 0) {
-          fbEmbed.setImage(message.attachments.first().url);
-        }
+        if (message.attachments.size > 0) fbEmbed.setImage(message.attachments.first().url);
         await message.delete().catch(() => {});
         const sent = await message.channel.send({ embeds: [fbEmbed] }).catch(() => null);
         if (sent) {
           sent.react('❤️').catch(() => {});
           sent.react('⭐').catch(() => {});
         }
-        if (feedbackLine) {
-          message.channel.send({ content: feedbackLine }).catch(() => {});
-        }
+        if (feedbackLine) message.channel.send({ content: feedbackLine }).catch(() => {});
       }
+      return;
     }
 
-    // --- 4.6.1. روم الاقتراحات التلقائي (Auto Suggestions Channel) ---
-    if (settings.suggestions_enabled !== 0 && settings.suggestions_channel && message.channel.id === settings.suggestions_channel && !message.content.startsWith(settings.prefix || '#')) {
-      const content = message.content.trim();
+    // Suggestions Channel
+    if (!isCommandMessage && settings.suggestions_enabled !== 0 && settings.suggestions_channel &&
+        message.channel.id === settings.suggestions_channel) {
+      const content = trimmedContent;
       if (content.length > 0) {
         const { buildSuggestionEmbed, buildSuggestionComponents } = require('../../utils/suggestionBuilder');
         const suggCode = Math.random().toString(36).substring(2, 11);
 
         const suggEmbed = buildSuggestionEmbed({
-          user: message.author,
-          content: content,
-          title: null,
-          code: suggCode,
-          status: 'pending',
-          upvotes: 0,
-          downvotes: 0,
-          createdAt: Date.now()
+          user: message.author, content, title: null, code: suggCode,
+          status: 'pending', upvotes: 0, downvotes: 0, createdAt: Date.now()
         });
-
-        const components = buildSuggestionComponents({
-          upvotes: 0,
-          downvotes: 0
-        });
+        const components = buildSuggestionComponents({ upvotes: 0, downvotes: 0 });
 
         await message.delete().catch(() => {});
         const sentMsg = await message.channel.send({ embeds: [suggEmbed], components }).catch(() => null);
@@ -646,112 +629,54 @@ module.exports = {
               autoArchiveDuration: 1440
             }).catch(() => {});
           }
-
           db.createSuggestion({
-            guild_id: guildId,
-            channel_id: message.channel.id,
-            message_id: sentMsg.id,
-            user_id: message.author.id,
-            title: null,
-            content: content,
-            category: 'عام'
+            guild_id: guildId, channel_id: message.channel.id, message_id: sentMsg.id,
+            user_id: message.author.id, title: null, content, category: 'عام'
           });
         }
+      }
+      return;
+    }
+
+    // ⚙️ تنفيذ الأوامر
+    if (!resolved) return;
+    const { command, commandName, matchedCmdKey, args } = resolved;
+
+    try {
+      let disabledCmdsList = [];
+      try { disabledCmdsList = JSON.parse(settings.disabled_commands || '[]'); } catch (e) {}
+      const prefixCmdSlash = '/' + commandName;
+      if (disabledCmdsList.includes(prefixCmdSlash) ||
+          disabledCmdsList.includes(commandName) ||
+          (matchedCmdKey && disabledCmdsList.includes(matchedCmdKey))) {
+        dlog('[CMD DEBUG] الأمر معطل:', commandName);
         return;
       }
-    }
 
-    // --- 4.7. روم ناديكو (Nadeko Room Protection / Whitelist) ---
-    let nadekoChannels = [];
-    try {
-      nadekoChannels = JSON.parse(settings.nadeko_channels || '[]');
-    } catch(e) {}
-    // تمكين تفاعل الأعضاء بحرية أو توجيهات داخل الروم المخصص
-
-    // --- 5. معالجة الأوامر بالبرفكس واختصارات الداشبورد (Prefix & Custom Aliases) ---
-    const prefix = settings.prefix || config.defaultPrefix || '#';
-    let cmdConfigs = {};
-    try {
-      cmdConfigs = typeof settings.command_configs === 'string' ? JSON.parse(settings.command_configs) : (settings.command_configs || {});
-    } catch(e) {}
-
-    const trimmedContent = message.content.trim();
-    let command = null;
-    let commandName = '';
-    let args = [];
-    let matchedCmdKey = null;
-
-    // 1. أولاً: فحص إذا كانت الرسالة تبدأ باختصار مخصص (بدون الحاجة لبرفكس أو مع / أو أي بادئة)
-    console.log('[ALIAS DEBUG] trimmedContent:', trimmedContent, '| cmdConfigs keys:', Object.keys(cmdConfigs));
-    for (const [cmdKey, cfg] of Object.entries(cmdConfigs)) {
-      if (cfg && cfg.alias) {
-        const rawAlias = cfg.alias.trim();
-        const cleanAlias = rawAlias.replace(/^[/#!.]+/, '').toLowerCase();
-        const messageParts = trimmedContent.split(/ +/);
-        const firstWord = (messageParts[0] || '').toLowerCase();
-        const firstWordClean = firstWord.replace(/^[/#!.]+/, '');
-
-        console.log('[ALIAS DEBUG] checking cmdKey:', cmdKey, '| alias:', rawAlias, '| cleanAlias:', cleanAlias, '| firstWord:', firstWord, '| firstWordClean:', firstWordClean);
-
-        // يطابق لو كتب المستخدم "H" أو "h" أو "/h" أو "#h" أو "!h"
-        if (firstWord.toLowerCase() === rawAlias.toLowerCase() ||
-            firstWordClean === cleanAlias ||
-            firstWord === (prefix + cleanAlias).toLowerCase() ||
-            firstWord === ('/' + cleanAlias).toLowerCase()) {
-          const rawName = cmdKey.replace(/^\//, '');
-          command = client.prefixCommands.get(rawName) || client.prefixCommands.get(client.aliases.get(rawName));
-          console.log('[ALIAS DEBUG] MATCHED! cmdKey:', cmdKey, '| rawName:', rawName, '| command found:', !!command);
-          if (command) {
-            commandName = rawName;
-            matchedCmdKey = cmdKey;
-            args = messageParts.slice(1);
-            break;
-          }
-        }
-      }
-    }
-
-    // 2. ثانياً: إذا لم يطابق اختصار مخصص، نفحص كأمر برفكس عادي
-    if (!command) {
-      if (!message.content.startsWith(prefix)) return;
-      args = message.content.slice(prefix.length).trim().split(/ +/);
-      commandName = args.shift().toLowerCase();
-      command = client.prefixCommands.get(commandName) || client.prefixCommands.get(client.aliases.get(commandName));
-    }
-
-    if (!command) return;
-
-    try {
-      // فحص الأوامر المعطلة من الداشبورد
-      const disabledCmdsRaw = settings.disabled_commands || '[]';
-      let disabledCmdsList = [];
-      try { disabledCmdsList = JSON.parse(disabledCmdsRaw); } catch(e) {}
-      const prefixCmdSlash = '/' + commandName;
-      if (disabledCmdsList.includes(prefixCmdSlash) || disabledCmdsList.includes(commandName) || (matchedCmdKey && disabledCmdsList.includes(matchedCmdKey))) return;
-
-      // فحص قيود الرتب والقنوات
       const activeCfg = (matchedCmdKey && cmdConfigs[matchedCmdKey]) || cmdConfigs[prefixCmdSlash] || cmdConfigs[commandName];
-      console.log('[CMD DEBUG] activeCfg:', JSON.stringify(activeCfg), '| channelId:', message.channelId, '| matchedCmdKey:', matchedCmdKey);
-      if (activeCfg) {
-        if (activeCfg.allowedRoles && Array.isArray(activeCfg.allowedRoles) && activeCfg.allowedRoles.length > 0) {
+      const adminBypass = message.member?.permissions.has(PermissionFlagsBits.Administrator);
+      if (activeCfg && !adminBypass) {
+        if (Array.isArray(activeCfg.allowedRoles) && activeCfg.allowedRoles.length > 0) {
           const hasRole = message.member?.roles.cache.some(r => activeCfg.allowedRoles.includes(r.id));
-          const isAdmin = message.member?.permissions.has(1n << 3n); // Administrator
-          if (!hasRole && !isAdmin) return;
+          if (!hasRole) { dlog('[CMD DEBUG] BLOCKED by allowedRoles'); return; }
         }
-        if (activeCfg.allowedChannels && Array.isArray(activeCfg.allowedChannels) && activeCfg.allowedChannels.length > 0) {
-          const isAdmin = message.member?.permissions.has(1n << 3n); // Administrator bypass
-          if (!isAdmin && !activeCfg.allowedChannels.includes(message.channelId)) {
-            console.log('[CMD DEBUG] BLOCKED by allowedChannels! channelId:', message.channelId, '| allowed:', activeCfg.allowedChannels);
-            return;
-          }
+        if (Array.isArray(activeCfg.allowedChannels) && activeCfg.allowedChannels.length > 0 &&
+            !activeCfg.allowedChannels.includes(message.channelId)) {
+          dlog('[CMD DEBUG] BLOCKED by allowedChannels', message.channelId);
+          return;
         }
       }
 
-      if (command.executePrefix) {
+      if (typeof command.executePrefix === 'function') {
         await command.executePrefix(message, args, client);
+      } else if (typeof command.execute === 'function') {
+        const shim = createInteractionShim(message, args, client, commandName);
+        await command.execute(shim, client);
+      } else {
+        console.warn(`[CMD] الأمر "${commandName}" ما فيه executePrefix ولا execute`);
       }
     } catch (error) {
-      console.error(`خطأ أثناء تنفيذ الأمر البرفكس ${commandName}:`, error);
+      console.error(`خطأ أثناء تنفيذ الأمر ${commandName}:`, error);
       message.reply({
         embeds: [embedUtil.error('خطأ', 'حدث خطأ أثناء محاولة تنفيذ هذا الأمر.')]
       }).catch(() => {});
