@@ -6,7 +6,7 @@ const { askAI } = require('../../utils/ai');
 
 const spamMap = new Map();
 
-const DEBUG = true;
+const DEBUG = false;
 const dlog = (...a) => { if (DEBUG) console.log(...a); };
 
 function normalizePayload(payload) {
@@ -661,23 +661,21 @@ module.exports = {
       const prefixCmdSlash = '/' + commandName;
       if (disabledCmdsList.includes(prefixCmdSlash) ||
           disabledCmdsList.includes(commandName) ||
-          (matchedCmdKey && disabledCmdsList.includes(matchedCmdKey))) {
-        dlog('[CMD DEBUG] الأمر معطل:', commandName);
-        return;
-      }
+          (matchedCmdKey && disabledCmdsList.includes(matchedCmdKey))) return;
 
       const activeCfg = (matchedCmdKey && cmdConfigs[matchedCmdKey]) || cmdConfigs[prefixCmdSlash] || cmdConfigs[commandName];
-      const adminBypass = message.member?.permissions.has(PermissionFlagsBits.Administrator);
-      if (activeCfg && !adminBypass) {
+      const isAdmin = message.member?.permissions.has(PermissionFlagsBits.Administrator) ||
+                      message.member?.permissions.has(PermissionFlagsBits.ManageGuild);
+
+      if (activeCfg && !isAdmin) {
+        // فحص الرتب المسموحة فقط لو فيه رتب محددة
         if (Array.isArray(activeCfg.allowedRoles) && activeCfg.allowedRoles.length > 0) {
           const hasRole = message.member?.roles.cache.some(r => activeCfg.allowedRoles.includes(r.id));
-          if (!hasRole) { dlog('[CMD DEBUG] BLOCKED by allowedRoles'); return; }
+          if (!hasRole) return;
         }
+        // فحص القنوات المسموحة فقط لو فيه قنوات محددة
         if (Array.isArray(activeCfg.allowedChannels) && activeCfg.allowedChannels.length > 0 &&
-            !activeCfg.allowedChannels.includes(message.channelId)) {
-          dlog('[CMD DEBUG] BLOCKED by allowedChannels', message.channelId);
-          return;
-        }
+            !activeCfg.allowedChannels.includes(message.channelId)) return;
       }
 
       if (typeof command.executePrefix === 'function') {
@@ -685,11 +683,9 @@ module.exports = {
       } else if (typeof command.execute === 'function') {
         const shim = createInteractionShim(message, args, client, commandName);
         await command.execute(shim, client);
-      } else {
-        console.warn(`[CMD] الأمر "${commandName}" ما فيه executePrefix ولا execute`);
       }
     } catch (error) {
-      console.error(`خطأ أثناء تنفيذ الأمر ${commandName}:`, error);
+      console.error(`[CMD ERROR] ${commandName}:`, error);
       message.reply({
         embeds: [embedUtil.error('خطأ', 'حدث خطأ أثناء محاولة تنفيذ هذا الأمر.')]
       }).catch(() => {});
