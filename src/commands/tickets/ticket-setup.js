@@ -67,8 +67,8 @@ module.exports = {
 
     const channel = interaction.options.getChannel('channel');
     const panelType = interaction.options.getString('type');
-    const title = interaction.options.getString('title') || '🎫 نظام الدعم الفني والتذاكر';
-    const description = interaction.options.getString('description') || 'إذا كان لديك أي استفسار، شكوى، أو تحتاج للمساعدة، اختر القسم المناسب أو اضغط على الزر لفتح تذكرة خاصة.';
+    const title = interaction.options.getString('title') || 'التذاكر';
+    const description = interaction.options.getString('description') || 'قم باختيار قسم التذكرة المناسب لك ❤️';
     const buttonLabel = interaction.options.getString('button_label') || 'فتح تذكرة | Open Ticket';
     const buttonEmoji = interaction.options.getString('button_emoji') || '📩';
     const buttonColor = interaction.options.getString('button_color') || 'Primary';
@@ -100,11 +100,9 @@ module.exports = {
     const panelId = `panel_${interaction.guild.id}_${Date.now()}`;
 
     const embed = new EmbedBuilder()
-      .setColor(config.colors.ticket || '#06070a')
+      .setColor('#2b2d31')
       .setTitle(title)
-      .setDescription(description.replace(/\\n/g, '\n'))
-      .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL({ dynamic: true }) })
-      .setTimestamp();
+      .setDescription(description.replace(/\\n/g, '\n'));
 
     if (bannerUrl) {
       embed.setImage(bannerUrl);
@@ -123,7 +121,7 @@ module.exports = {
       const selectMenu = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
           .setCustomId(`ticket_select_${panelId}`)
-          .setPlaceholder('اختر قسم التذكرة المناسب...')
+          .setPlaceholder('اختر نوع التذكرة')
           .addOptions(options)
       );
       components.push(selectMenu);
