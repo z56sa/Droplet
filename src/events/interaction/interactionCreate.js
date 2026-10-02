@@ -42,7 +42,9 @@ module.exports = {
               }
               // فحص القنوات المسموح فيها
               if (cfg.allowedChannels && Array.isArray(cfg.allowedChannels) && cfg.allowedChannels.length > 0) {
-                if (!cfg.allowedChannels.includes(interaction.channelId)) {
+                const isAdminCh = interaction.member.permissions.has(PermissionFlagsBits.Administrator) ||
+                                  interaction.member.permissions.has(PermissionFlagsBits.ManageGuild);
+                if (!isAdminCh && !cfg.allowedChannels.includes(interaction.channelId)) {
                   const allowedList = cfg.allowedChannels.map(id => `<#${id}>`).join(', ');
                   return interaction.reply({ content: `❌ لا يمكن تشغيل هذا الأمر هنا. القنوات المسموح بها: ${allowedList}`, flags: 64 }).catch(() => {});
                 }
