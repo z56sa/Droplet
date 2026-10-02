@@ -101,8 +101,11 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor('#2b2d31')
-      .setTitle(title)
-      .setDescription(description.replace(/\\n/g, '\n'));
+      .setDescription(
+        `# **${title}**\n\n` +
+        `─── ─── ─── ─── ─── ─── ─── ───\n\n` +
+        `### **${description.replace(/\\n/g, '\n')}**`
+      );
 
     if (bannerUrl) {
       embed.setImage(bannerUrl);
