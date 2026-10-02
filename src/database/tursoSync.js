@@ -15,7 +15,7 @@ class TursoSync {
 
     // Support the normal Turso names plus common aliases used by hosting panels.
     // Never log the actual URL/token values.
-    const cleanEnv = (value) => String(value || '').trim().replace(/^['"]|['"]$/g, '');
+    const cleanEnv = (value) => String(value || '').trim().replace(/^['\"]|['\"]$/g, '');
     const url = cleanEnv(
       process.env.TURSO_DATABASE_URL ||
       process.env.TURSO_URL ||
@@ -82,9 +82,13 @@ class TursoSync {
           prefix TEXT DEFAULT '#',
           welcome_channel TEXT,
           log_channel TEXT,
-          economy_enabled INTEGER DEFAULT 1
+          economy_enabled INTEGER DEFAULT 1,
+          settings_json TEXT DEFAULT '{}'
         );
       `);
+
+      // Add settings_json column to existing guild_settings table if missing
+      try { await this.client.execute("ALTER TABLE guild_settings ADD COLUMN settings_json TEXT DEFAULT '{}';"); } catch (e) {}
 
       // 1.5 Create user_profiles table in Turso for persistent usernames & avatars
       await this.client.execute(`
@@ -182,6 +186,57 @@ class TursoSync {
       } catch (profErr) {
         console.error('[TURSO] ⚠️ Error restoring user profiles:', profErr.message);
       }
+
+      // 4. ✅ Restore guild_settings (including command_configs/aliases) from Turso into local SQLite
+      try {
+        const guildSettingsResult = await this.client.execute(
+          "SELECT guild_id, settings_json FROM guild_settings WHERE settings_json IS NOT NULL AND settings_json != '{}'"
+        );
+        if (guildSettingsResult.rows && guildSettingsResult.rows.length > 0) {
+          console.log(`[TURSO] 🔄 Restoring ${guildSettingsResult.rows.length} guild settings from Turso into local SQLite...`);
+          const restoreSettingsTx = localDb.transaction((rows) => {
+            for (const row of rows) {
+              try {
+                const settingsObj = JSON.parse(row.settings_json || '{}');
+                if (!settingsObj || typeof settingsObj !== 'object') continue;
+                // Ensure guild row exists
+                localDb.prepare('INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)').run(String(row.guild_id));
+                // Apply each setting key
+                for (const [key, value] of Object.entries(settingsObj)) {
+                  try {
+                    localDb.prepare(`UPDATE guild_settings SET ${key} = ? WHERE guild_id = ?`).run(
+                      typeof value === 'object' ? JSON.stringify(value) : value,
+                      String(row.guild_id)
+                    );
+                  } catch (colErr) {
+                    if (colErr.message && colErr.message.includes('no such column')) {
+                      try {
+                        const colType = typeof value === 'number' ? 'INTEGER' : 'TEXT';
+                        localDb.exec(`ALTER TABLE guild_settings ADD COLUMN ${key} ${colType};`);
+                        localDb.prepare(`UPDATE guild_settings SET ${key} = ? WHERE guild_id = ?`).run(
+                          typeof value === 'object' ? JSON.stringify(value) : value,
+                          String(row.guild_id)
+                        );
+                      } catch (addErr) {}
+                    }
+                  }
+                }
+              } catch (parseErr) {
+                console.error(`[TURSO] ⚠️ Failed to parse settings_json for guild ${row.guild_id}:`, parseErr.message);
+              }
+            }
+          });
+          restoreSettingsTx(guildSettingsResult.rows);
+          console.log('[TURSO] ✅ Guild settings (including command aliases) restored from Turso!');
+        } else {
+          // Turso has no guild settings yet — push local ones to Turso
+          console.log('[TURSO] ℹ️ No guild settings in Turso yet. Pushing local guild settings to Turso...');
+          this.backupAllLocalGuildSettings(localDb);
+        }
+      } catch (gsErr) {
+        console.error('[TURSO] ⚠️ Error restoring guild settings:', gsErr.message);
+      }
+
     } catch (err) {
       console.error('[TURSO] ⚠️ Error during initAndRestore:', err.message);
     }
@@ -225,6 +280,26 @@ class TursoSync {
   }
 
   /**
+   * ✅ Syncs a guild's full settings (as JSON) to Turso immediately.
+   * Call this whenever guild settings are updated (e.g., from the dashboard).
+   */
+  queueGuildSettingsSync(guildId, settingsRow) {
+    if (!this.enabled || !this.client || !guildId || !settingsRow) return;
+
+    // Store the full settings row as JSON (excluding guild_id itself)
+    const { guild_id, ...rest } = settingsRow;
+    const settingsJson = JSON.stringify(rest);
+
+    const sql = `
+      INSERT INTO guild_settings (guild_id, settings_json)
+      VALUES (?, ?)
+      ON CONFLICT(guild_id) DO UPDATE SET
+        settings_json = excluded.settings_json;
+    `;
+    this.enqueue({ sql, args: [String(guildId), settingsJson] });
+  }
+
+  /**
    * Pushes all local users to Turso
    */
   async backupAllLocalUsers(localDb) {
@@ -235,6 +310,24 @@ class TursoSync {
         this.queueUserSync(row);
       }
     } catch (e) {}
+  }
+
+  /**
+   * ✅ Pushes all local guild settings to Turso
+   */
+  async backupAllLocalGuildSettings(localDb) {
+    if (!this.enabled || !this.client) return;
+    try {
+      const rows = localDb.prepare('SELECT * FROM guild_settings').all();
+      for (const row of rows) {
+        if (row && row.guild_id) {
+          this.queueGuildSettingsSync(row.guild_id, row);
+        }
+      }
+      console.log(`[TURSO] 📤 Pushed ${rows.length} guild settings to Turso.`);
+    } catch (e) {
+      console.error('[TURSO] ⚠️ Failed to backup guild settings:', e.message);
+    }
   }
 
   /**

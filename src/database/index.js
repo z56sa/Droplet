@@ -843,6 +843,11 @@ function setGuildSetting(guildId, key, value) {
       console.error(`Failed to update setting ${key}:`, err);
     }
   }
+  // ✅ Sync this single setting change to Turso
+  try {
+    const updatedRow = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+    if (updatedRow) tursoSync.queueGuildSettingsSync(guildId, updatedRow);
+  } catch (e) {}
 }
 
 function updateGuildSettings(guildId, settingsObj) {
@@ -850,6 +855,11 @@ function updateGuildSettings(guildId, settingsObj) {
   for (const [key, value] of Object.entries(settingsObj)) {
     setGuildSetting(guildId, key, value);
   }
+  // ✅ Sync full guild settings row to Turso so bot (on Bot-Hosting.net) gets latest aliases/configs
+  try {
+    const updatedRow = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+    if (updatedRow) tursoSync.queueGuildSettingsSync(guildId, updatedRow);
+  } catch (e) {}
 }
 
 // alias
