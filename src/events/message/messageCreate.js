@@ -682,6 +682,7 @@ module.exports = {
     let matchedCmdKey = null;
 
     // 1. أولاً: فحص إذا كانت الرسالة تبدأ باختصار مخصص (بدون الحاجة لبرفكس أو مع / أو أي بادئة)
+    console.log('[ALIAS DEBUG] trimmedContent:', trimmedContent, '| cmdConfigs keys:', Object.keys(cmdConfigs));
     for (const [cmdKey, cfg] of Object.entries(cmdConfigs)) {
       if (cfg && cfg.alias) {
         const rawAlias = cfg.alias.trim();
@@ -690,6 +691,8 @@ module.exports = {
         const firstWord = (messageParts[0] || '').toLowerCase();
         const firstWordClean = firstWord.replace(/^[/#!.]+/, '');
 
+        console.log('[ALIAS DEBUG] checking cmdKey:', cmdKey, '| alias:', rawAlias, '| cleanAlias:', cleanAlias, '| firstWord:', firstWord, '| firstWordClean:', firstWordClean);
+
         // يطابق لو كتب المستخدم "H" أو "h" أو "/h" أو "#h" أو "!h"
         if (firstWord.toLowerCase() === rawAlias.toLowerCase() ||
             firstWordClean === cleanAlias ||
@@ -697,6 +700,7 @@ module.exports = {
             firstWord === ('/' + cleanAlias).toLowerCase()) {
           const rawName = cmdKey.replace(/^\//, '');
           command = client.prefixCommands.get(rawName) || client.prefixCommands.get(client.aliases.get(rawName));
+          console.log('[ALIAS DEBUG] MATCHED! cmdKey:', cmdKey, '| rawName:', rawName, '| command found:', !!command);
           if (command) {
             commandName = rawName;
             matchedCmdKey = cmdKey;
@@ -727,6 +731,7 @@ module.exports = {
 
       // فحص قيود الرتب والقنوات
       const activeCfg = (matchedCmdKey && cmdConfigs[matchedCmdKey]) || cmdConfigs[prefixCmdSlash] || cmdConfigs[commandName];
+      console.log('[CMD DEBUG] activeCfg:', JSON.stringify(activeCfg), '| channelId:', message.channelId, '| matchedCmdKey:', matchedCmdKey);
       if (activeCfg) {
         if (activeCfg.allowedRoles && Array.isArray(activeCfg.allowedRoles) && activeCfg.allowedRoles.length > 0) {
           const hasRole = message.member?.roles.cache.some(r => activeCfg.allowedRoles.includes(r.id));
@@ -734,7 +739,11 @@ module.exports = {
           if (!hasRole && !isAdmin) return;
         }
         if (activeCfg.allowedChannels && Array.isArray(activeCfg.allowedChannels) && activeCfg.allowedChannels.length > 0) {
-          if (!activeCfg.allowedChannels.includes(message.channelId)) return;
+          const isAdmin = message.member?.permissions.has(1n << 3n); // Administrator bypass
+          if (!isAdmin && !activeCfg.allowedChannels.includes(message.channelId)) {
+            console.log('[CMD DEBUG] BLOCKED by allowedChannels! channelId:', message.channelId, '| allowed:', activeCfg.allowedChannels);
+            return;
+          }
         }
       }
 
