@@ -164,7 +164,8 @@ module.exports = {
   async execute(interaction, client) {
     const embed = this.getMainEmbed();
     const row = this.getSelectMenu();
-    const response = await interaction.reply({ embeds: [embed], components: [row], withResponse: true });
+    await interaction.reply({ embeds: [embed], components: [row] });
+    const response = await interaction.fetchReply();
     this.handleMenu(response, interaction.user.id, client);
   },
 
