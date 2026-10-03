@@ -664,57 +664,57 @@ module.exports = function (app, client) {
                 </div>
             `;
 
-            const xpLeaderboardHtml = xpLeaderboard.slice(0, 100).map((r, i) => {
+            const xpLeaderboardHtml = xpLeaderboard.slice(0, 20).map((r, i) => {
                 const uName = r.display_name || r.username || `عضو #${String(r.user_id).slice(-4)}`;
-                const uTag = r.username && r.username !== uName ? `@${r.username}` : `ID: ${r.user_id}`;
                 const uAvatar = r.avatar_url || (r.avatar ? `https://cdn.discordapp.com/avatars/${r.user_id}/${r.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png');
-                const badgeClass = i === 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' :
-                                   i === 1 ? 'bg-slate-400/20 text-slate-300 border border-slate-400/40' :
-                                   i === 2 ? 'bg-orange-800/20 text-orange-300 border border-orange-700/40' :
-                                             'bg-purple-950/60 text-purple-300 border border-purple-800/40';
-                return `
-                <div class="bg-[#1c1f2e] border border-white/5 hover:border-purple-500/30 p-3 rounded-2xl flex items-center justify-between transition-all group">
-                    <div class="text-left">
-                        <span class="text-xs font-mono font-bold text-purple-400">⚡ ${Number(r.total_xp || 0).toLocaleString()} XP</span>
-                        <span class="text-[10px] text-gray-500 block font-mono">Level: ${r.max_level || 1}</span>
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : null;
+                const rowBg = i === 0 ? 'bg-amber-500/5 hover:bg-amber-500/10' : i === 1 ? 'bg-slate-500/5 hover:bg-slate-500/10' : i === 2 ? 'bg-orange-700/5 hover:bg-orange-700/10' : 'hover:bg-white/[0.02]';
+                const rankColor = i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-orange-400' : 'text-gray-500';
+                const isMe = r.user_id === user.id;
+                return `<div class="px-4 py-3 flex items-center justify-between transition-all ${rowBg} ${isMe ? 'ring-1 ring-inset ring-purple-500/30' : ''}">
+                    <div class="flex items-center gap-1.5 min-w-[60px]">
+                        ${medal ? `<span class="text-xl">${medal}</span>` : `<span class="text-sm font-black font-mono ${rankColor} w-7 text-center">${i + 1}</span>`}
                     </div>
-                    <div class="flex items-center gap-3">
-                        <div class="text-right">
-                            <span class="text-xs text-white font-bold block group-hover:text-purple-300 transition truncate max-w-[150px]">${uName}</span>
-                            <span class="text-[10px] text-gray-400 font-mono block">${uTag}</span>
+                    <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                        <img src="${uAvatar}" alt="${uName}" class="w-8 h-8 rounded-xl object-cover shrink-0 ${isMe ? 'ring-2 ring-purple-500' : ''}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+                        <div class="text-right min-w-0">
+                            <span class="text-xs text-white font-bold block truncate max-w-[130px] ${isMe ? 'text-purple-300' : ''}">${uName}${isMe ? ' 👤' : ''}</span>
+                            <span class="text-[10px] text-gray-500 font-mono block">Lv.${r.max_level || 1}</span>
                         </div>
-                        <img src="${uAvatar}" alt="${uName}" class="w-9 h-9 rounded-xl object-cover ring-2 ring-white/10 group-hover:ring-purple-500/50 transition shrink-0" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
-                        <span class="w-6 h-6 rounded-lg ${badgeClass} text-[10px] font-black flex items-center justify-center shrink-0">#${i + 1}</span>
                     </div>
-                </div>
-                `;
-            }).join('') || '<p class="text-xs text-gray-500 text-center py-4">لا توجد بيانات خبرة مسجلة بعد</p>';
+                    <div class="text-left shrink-0">
+                        <span class="text-xs font-black font-mono text-purple-400">⚡ ${Number(r.total_xp || 0).toLocaleString()}</span>
+                        <span class="text-[10px] text-gray-600 block">XP</span>
+                    </div>
+                </div>`;
+            }).join('') || '<p class="text-xs text-gray-500 text-center py-6">لا توجد بيانات بعد</p>';
 
-            const coinsLeaderboardHtml = coinsLeaderboard.slice(0, 100).map((r, i) => {
+
+            const coinsLeaderboardHtml = coinsLeaderboard.slice(0, 20).map((r, i) => {
                 const uName = r.display_name || r.username || `عضو #${String(r.user_id).slice(-4)}`;
-                const uTag = r.username && r.username !== uName ? `@${r.username}` : `ID: ${r.user_id}`;
                 const uAvatar = r.avatar_url || (r.avatar ? `https://cdn.discordapp.com/avatars/${r.user_id}/${r.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png');
-                const badgeClass = i === 0 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' :
-                                   i === 1 ? 'bg-slate-400/20 text-slate-300 border border-slate-400/40' :
-                                   i === 2 ? 'bg-orange-800/20 text-orange-300 border border-orange-700/40' :
-                                             'bg-amber-950/60 text-amber-300 border border-amber-800/40';
-                return `
-                <div class="bg-[#1c1f2e] border border-white/5 hover:border-amber-500/30 p-3 rounded-2xl flex items-center justify-between transition-all group">
-                    <div class="text-left">
-                        <span class="text-xs font-mono font-bold text-amber-400">🪙 ${Number(r.total_coins || 0).toLocaleString()}</span>
-                        <span class="text-[10px] text-gray-500 block font-mono">Gold</span>
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : null;
+                const rowBg = i === 0 ? 'bg-amber-500/5 hover:bg-amber-500/10' : i === 1 ? 'bg-slate-500/5 hover:bg-slate-500/10' : i === 2 ? 'bg-orange-700/5 hover:bg-orange-700/10' : 'hover:bg-white/[0.02]';
+                const rankColor = i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-orange-400' : 'text-gray-500';
+                const isMe = r.user_id === user.id;
+                return `<div class="px-4 py-3 flex items-center justify-between transition-all ${rowBg} ${isMe ? 'ring-1 ring-inset ring-amber-500/30' : ''}">
+                    <div class="flex items-center gap-1.5 min-w-[60px]">
+                        ${medal ? `<span class="text-xl">${medal}</span>` : `<span class="text-sm font-black font-mono ${rankColor} w-7 text-center">${i + 1}</span>`}
                     </div>
-                    <div class="flex items-center gap-3">
-                        <div class="text-right">
-                            <span class="text-xs text-white font-bold block group-hover:text-amber-300 transition truncate max-w-[150px]">${uName}</span>
-                            <span class="text-[10px] text-gray-400 font-mono block">${uTag}</span>
+                    <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                        <img src="${uAvatar}" alt="${uName}" class="w-8 h-8 rounded-xl object-cover shrink-0 ${isMe ? 'ring-2 ring-amber-500' : ''}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+                        <div class="text-right min-w-0">
+                            <span class="text-xs text-white font-bold block truncate max-w-[130px] ${isMe ? 'text-amber-300' : ''}">${uName}${isMe ? ' 👤' : ''}</span>
+                            <span class="text-[10px] text-gray-500 font-mono block">Lv.${r.max_level || 1}</span>
                         </div>
-                        <img src="${uAvatar}" alt="${uName}" class="w-9 h-9 rounded-xl object-cover ring-2 ring-white/10 group-hover:ring-amber-500/50 transition shrink-0" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
-                        <span class="w-6 h-6 rounded-lg ${badgeClass} text-[10px] font-black flex items-center justify-center shrink-0">#${i + 1}</span>
                     </div>
-                </div>
-                `;
-            }).join('') || '<p class="text-xs text-gray-500 text-center py-4">لا توجد بيانات ذهب مسجلة بعد</p>';
+                    <div class="text-left shrink-0">
+                        <span class="text-xs font-black font-mono text-amber-400">🪙 ${Number(r.total_coins || 0).toLocaleString()}</span>
+                        <span class="text-[10px] text-gray-600 block">Gold</span>
+                    </div>
+                </div>`;
+            }).join('') || '<p class="text-xs text-gray-500 text-center py-6">لا توجد بيانات بعد</p>';
+
 
             const dailyActionBoxHtml = canClaimDaily ? `
                 <button type="button" onclick="window.claimDailyReward()" id="claimDailyBtn" class="px-10 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm rounded-2xl shadow-xl shadow-purple-950/60 hover:scale-105 transition-all cursor-pointer flex items-center gap-2 mx-auto">
@@ -1215,79 +1215,120 @@ module.exports = function (app, client) {
                         </div>
 
 
-                        <!-- Tab 5: لوحة المتصدرين (Leaderboards) -->
-                        <div id="tabLeaderboard" class="tab-content hidden space-y-6">
-                            <div class="probot-card border border-white/5 rounded-3xl p-6 shadow-xl">
-                                <div class="flex items-center justify-between mb-4 border-b border-white/5 pb-3">
-                                    <span class="text-xs text-purple-400 font-mono font-bold">ترتيبك الحالي: #${userRankXp}</span>
-                                    <h3 class="text-sm font-black text-white text-right">أعلى 100 عضو بواسطة نقاط الخبرة (XP Leaderboard) 🏆</h3>
+                        <!-- Tab 5: أعلى نقاط XP -->
+                        <div id="tabLeaderboard" class="tab-content hidden space-y-5">
+                            <!-- Hero Banner -->
+                            <div class="relative bg-gradient-to-br from-purple-900/40 via-[#12141f] to-[#0b0d14] border border-purple-500/20 rounded-3xl p-6 overflow-hidden shadow-2xl">
+                                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(147,51,234,0.15),transparent_60%)]"></div>
+                                <div class="relative flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-12 h-12 rounded-2xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-2xl shadow-lg">⚡</div>
+                                        <div>
+                                            <h2 class="text-base font-black text-white">لوحة الصدارة — XP</h2>
+                                            <p class="text-xs text-purple-300/70 mt-0.5">أعلى 20 عضو بنقاط الخبرة</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-[10px] text-gray-500 block">ترتيبك</span>
+                                        <span class="text-2xl font-black text-purple-300 font-mono">#${userRankXp}</span>
+                                    </div>
                                 </div>
-                                <div class="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
+                            </div>
+                            <!-- List -->
+                            <div class="bg-[#10121b] border border-white/5 rounded-3xl overflow-hidden shadow-xl">
+                                <div class="space-y-0 max-h-[520px] overflow-y-auto divide-y divide-white/[0.03]">
                                     ${xpLeaderboardHtml}
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Tab 5B: أغنى الأثرياء (Coins Leaderboard) -->
-                        <div id="tabCoinsLeaderboard" class="tab-content hidden space-y-6">
-                            <div class="probot-card border border-white/5 rounded-3xl p-6 shadow-xl">
-                                <div class="flex items-center justify-between mb-4 border-b border-white/5 pb-3">
-                                    <span class="text-xs text-amber-400 font-mono font-bold">Financial Rank: #${userRankCoins}</span>
-                                    <h3 class="text-sm font-black text-white text-right">Richest Users by Gold Balance 🪙</h3>
+                        <!-- Tab 5B: أغنى الأثرياء -->
+                        <div id="tabCoinsLeaderboard" class="tab-content hidden space-y-5">
+                            <!-- Hero Banner -->
+                            <div class="relative bg-gradient-to-br from-amber-900/30 via-[#12141f] to-[#0b0d14] border border-amber-500/20 rounded-3xl p-6 overflow-hidden shadow-2xl">
+                                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(251,191,36,0.10),transparent_60%)]"></div>
+                                <div class="relative flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-12 h-12 rounded-2xl bg-amber-600/20 border border-amber-500/40 flex items-center justify-center text-2xl shadow-lg">🏆</div>
+                                        <div>
+                                            <h2 class="text-base font-black text-white">أغنى الأثرياء — الذهب</h2>
+                                            <p class="text-xs text-amber-300/70 mt-0.5">أعلى 20 عضو برصيد الذهب</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-[10px] text-gray-500 block">ترتيبك</span>
+                                        <span class="text-2xl font-black text-amber-300 font-mono">#${userRankCoins}</span>
+                                    </div>
                                 </div>
-                                <div class="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
+                            </div>
+                            <!-- List -->
+                            <div class="bg-[#10121b] border border-white/5 rounded-3xl overflow-hidden shadow-xl">
+                                <div class="space-y-0 max-h-[520px] overflow-y-auto divide-y divide-white/[0.03]">
                                     ${coinsLeaderboardHtml}
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Tab 6: الراتب اليومي (Daily Reward) -->
-                        <div id="tabDaily" class="tab-content hidden space-y-6">
-                            <div class="probot-card border border-white/5 rounded-3xl p-8 shadow-xl text-center space-y-5 max-w-xl mx-auto">
-                                <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-purple-600/30 to-indigo-600/30 border border-purple-500/40 flex items-center justify-center text-4xl mx-auto shadow-xl shadow-black/20">
-                                    🎁
-                                </div>
-                                <div>
-                                    <h3 class="text-xl font-black text-white">الراتب اليومي (Daily Reward)</h3>
-                                    <p class="text-gray-400 text-xs mt-2 leading-relaxed">
-                                        Get <span class="text-amber-300 font-bold">500 to 1,000 Gold</span> for free every 24 hours!
-                                    </p>
-                                </div>
-
-                                <div class="bg-[#1c1f2e] border border-white/5 rounded-2xl p-4 flex items-center justify-around text-xs">
+                        <!-- Tab 6: الراتب اليومي -->
+                        <div id="tabDaily" class="tab-content hidden space-y-5">
+                            <!-- Hero Card -->
+                            <div class="relative bg-gradient-to-br from-purple-900/40 via-[#12141f] to-[#0b0d14] border border-purple-500/20 rounded-3xl p-8 overflow-hidden shadow-2xl text-center">
+                                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(147,51,234,0.12),transparent_70%)]"></div>
+                                <div class="relative space-y-5">
+                                    <!-- Icon -->
+                                    <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-600/40 to-indigo-600/40 border border-purple-400/30 flex items-center justify-center text-4xl mx-auto shadow-2xl shadow-purple-900/40">🎁</div>
+                                    <!-- Title -->
                                     <div>
-                                        <span class="text-gray-400 block text-[11px]">مكافأة اليوم</span>
-                                        <span class="text-amber-400 font-black font-mono text-sm">+500 🪙</span>
+                                        <h2 class="text-xl font-black text-white">الراتب اليومي</h2>
+                                        <p class="text-gray-400 text-xs mt-1.5 leading-relaxed">استلم مكافأتك مجاناً كل 24 ساعة!</p>
                                     </div>
-                                    <div class="w-px h-8 bg-purple-950/50"></div>
-                                    <div>
-                                        <span class="text-gray-400 block text-[11px]">التكرار</span>
-                                        <span class="text-gray-200 font-bold">كل 24 ساعة</span>
+                                    <!-- Stats Row -->
+                                    <div class="grid grid-cols-3 gap-3 text-center">
+                                        <div class="bg-black/30 rounded-2xl py-3 border border-white/5">
+                                            <span class="text-amber-400 font-black font-mono text-base block">+500</span>
+                                            <span class="text-[10px] text-gray-500">الحد الأدنى 🪙</span>
+                                        </div>
+                                        <div class="bg-black/30 rounded-2xl py-3 border border-white/5">
+                                            <span class="text-amber-300 font-black font-mono text-base block">+1000</span>
+                                            <span class="text-[10px] text-gray-500">الحد الأقصى 🪙</span>
+                                        </div>
+                                        <div class="bg-black/30 rounded-2xl py-3 border border-white/5">
+                                            <span class="text-purple-300 font-black text-base block">24س</span>
+                                            <span class="text-[10px] text-gray-500">كل يوم ⏰</span>
+                                        </div>
                                     </div>
-                                </div>
-
-                                <div id="dailyActionBox" class="space-y-4">
-                                    ${dailyActionBoxHtml}
+                                    <!-- رصيدك الحالي -->
+                                    <div class="bg-[#1a1c2e] border border-purple-500/20 rounded-2xl px-5 py-3 flex items-center justify-between">
+                                        <span class="text-amber-400 font-black font-mono text-lg" id="userCoinsDisplay">${userCoins.toLocaleString()}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs text-gray-400">رصيدك الحالي</span>
+                                            <span class="text-lg">🪙</span>
+                                        </div>
+                                    </div>
+                                    <!-- Action Button -->
+                                    <div id="dailyActionBox" class="space-y-3">
+                                        ${dailyActionBoxHtml}
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- زر التصويت للبوت على Top.gg -->
-                            <div class="bg-[#12141f] border border-blue-500/20 rounded-3xl p-8 shadow-xl text-center space-y-4 max-w-xl mx-auto">
-                                <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-blue-600/30 to-indigo-600/30 border border-blue-500/40 flex items-center justify-center text-4xl mx-auto shadow-xl shadow-black/20">
-                                    🗳️
+                            <!-- Vote Card -->
+                            <div class="relative bg-gradient-to-br from-blue-900/30 via-[#12141f] to-[#0b0d14] border border-blue-500/20 rounded-3xl p-6 overflow-hidden shadow-xl text-center">
+                                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(59,130,246,0.08),transparent_70%)]"></div>
+                                <div class="relative space-y-4">
+                                    <div class="w-14 h-14 rounded-2xl bg-blue-600/20 border border-blue-400/30 flex items-center justify-center text-2xl mx-auto">🗳️</div>
+                                    <div>
+                                        <h3 class="text-base font-black text-white">صوّت للبوت على Top.gg</h3>
+                                        <p class="text-gray-400 text-xs mt-1.5 leading-relaxed">صوّتك يساعد البوت على الانتشار! يمكنك التصويت كل <span class="text-blue-300 font-bold">12 ساعة</span></p>
+                                    </div>
+                                    <a href="https://top.gg/ar/bot/${client?.user?.id || config.clientId}/vote" target="_blank"
+                                       class="inline-flex items-center gap-2 px-7 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-sm font-black transition-all shadow-lg hover:scale-105">
+                                        🗳️ صوّت الآن
+                                    </a>
                                 </div>
-                                <div>
-                                    <h3 class="text-xl font-black text-white">صوّت للبوت على Top.gg</h3>
-                                    <p class="text-gray-400 text-xs mt-2 leading-relaxed">
-                                        صوّتك يساعد البوت على الانتشار ويدعم تطويره! يمكنك التصويت مرة كل <span class="text-blue-300 font-bold">12 ساعة</span>
-                                    </p>
-                                </div>
-                                <a href="https://top.gg/ar/bot/${client?.user?.id || config.clientId}/vote" target="_blank"
-                                   class="inline-flex items-center gap-2.5 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-sm font-black transition-all shadow-lg shadow-blue-900/30 hover:shadow-blue-800/40 hover:scale-105">
-                                    🗳️ صوّت الآن على Top.gg
-                                </a>
                             </div>
                         </div>
+
                     </main>
 
                     <!-- Sidebar Right (Novax User Dashboard Menu with Exact Categories) -->
