@@ -942,9 +942,8 @@ module.exports = function (app, client) {
             }
         }
 
-        if (window.zenoI18n && typeof window.zenoI18n.apply === 'function') {
-            window.zenoI18n.apply();
-        }
+        // zenoI18n.apply() أُزيلت من هنا لأنها كانت تُجمّد المتصفح في كل ضغطة
+        // (كانت تمسح كل DOM لتطبيق الترجمات — 77KB script على صفحة ضخمة)
     };
 
     window.claimDailyReward = async function() {
@@ -10790,6 +10789,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>${guild.name} | ZENO Dashboard</title>
                 <script src="https://cdn.tailwindcss.com"></script>
+
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
                 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
                 
