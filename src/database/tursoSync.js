@@ -105,6 +105,40 @@ class TursoSync {
         );
       `);
 
+      // 1.6 Create auto_responders table in Turso
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS auto_responders (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          guild_id TEXT NOT NULL,
+          trigger_word TEXT NOT NULL,
+          reply_text TEXT NOT NULL,
+          match_mode TEXT DEFAULT 'contains',
+          reply_type TEXT DEFAULT 'text',
+          case_sensitive INTEGER DEFAULT 0,
+          delete_trigger INTEGER DEFAULT 0,
+          cooldown_seconds INTEGER DEFAULT 0,
+          allowed_channels TEXT DEFAULT '',
+          allowed_roles TEXT DEFAULT '',
+          exempt_channels TEXT DEFAULT '',
+          exempt_roles TEXT DEFAULT '',
+          is_active INTEGER DEFAULT 1,
+          uses_count INTEGER DEFAULT 0,
+          created_at INTEGER DEFAULT (strftime('%s','now'))
+        );
+      `);
+      try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN match_mode TEXT DEFAULT 'contains';"); } catch(e) {}
+      try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN reply_type TEXT DEFAULT 'text';"); } catch(e) {}
+      try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN case_sensitive INTEGER DEFAULT 0;"); } catch(e) {}
+      try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN delete_trigger INTEGER DEFAULT 0;"); } catch(e) {}
+      try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN cooldown_seconds INTEGER DEFAULT 0;"); } catch(e) {}
+      try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN allowed_channels TEXT DEFAULT '';"); } catch(e) {}
+      try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN allowed_roles TEXT DEFAULT '';"); } catch(e) {}
+      try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN exempt_channels TEXT DEFAULT '';"); } catch(e) {}
+      try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN exempt_roles TEXT DEFAULT '';"); } catch(e) {}
+      try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN is_active INTEGER DEFAULT 1;"); } catch(e) {}
+      try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN uses_count INTEGER DEFAULT 0;"); } catch(e) {}
+      try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN created_at INTEGER DEFAULT (strftime('%s','now'));"); } catch(e) {}
+
       console.log('[TURSO] ✅ Turso remote tables verified.');
 
       // 2. Restore users data from Turso to local SQLite (Restoring coins/streak/XP after container restart)
