@@ -530,40 +530,45 @@ module.exports = function (app, client) {
                     LIMIT 100
                 `).all();
 
-                // حل أسماء وصور المستخدمين غير المسجلين مسبقاً وتخزينها في Turso
-                const resolveProfiles = async (list) => {
-                    for (const item of list) {
-                        if (!item.username || !item.avatar_url) {
-                            let resolvedUser = client?.users?.cache?.get(item.user_id);
-                            if (!resolvedUser && client?.users?.fetch) {
-                                try {
-                                    resolvedUser = await client.users.fetch(item.user_id);
-                                } catch (e) {}
-                            }
-                            if (resolvedUser) {
-                                item.username = resolvedUser.tag || resolvedUser.username;
-                                item.display_name = resolvedUser.globalName || resolvedUser.username;
-                                item.avatar = resolvedUser.avatar;
-                                item.avatar_url = resolvedUser.displayAvatarURL({ dynamic: true, size: 128 });
-                                if (database.trackUserProfile) {
-                                    database.trackUserProfile({
-                                        userId: item.user_id,
-                                        username: item.username,
-                                        displayName: item.display_name,
-                                        avatar: item.avatar,
-                                        avatarUrl: item.avatar_url
-                                    });
+                // حل أسماء وصور المستخدمين غير المسجلين مسبقاً وتخزينها في Turso (في الخلفية - لا تعيق الصفحة)
+                const resolveProfiles = (list) => {
+                    // تشغيل بدون await حتى لا تتجمد الصفحة - النتائج ستظهر في الزيارة التالية
+                    (async () => {
+                        for (const item of list) {
+                            if (!item.username || !item.avatar_url) {
+                                let resolvedUser = client?.users?.cache?.get(item.user_id);
+                                if (!resolvedUser && client?.users?.fetch) {
+                                    try {
+                                        resolvedUser = await client.users.fetch(item.user_id);
+                                    } catch (e) {}
                                 }
-                            } else {
-                                item.username = item.username || `عضو #${item.user_id.slice(-4)}`;
-                                item.display_name = item.display_name || item.username;
-                                item.avatar_url = item.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
+                                if (resolvedUser) {
+                                    item.username = resolvedUser.tag || resolvedUser.username;
+                                    item.display_name = resolvedUser.globalName || resolvedUser.username;
+                                    item.avatar = resolvedUser.avatar;
+                                    item.avatar_url = resolvedUser.displayAvatarURL({ dynamic: true, size: 128 });
+                                    if (database.trackUserProfile) {
+                                        database.trackUserProfile({
+                                            userId: item.user_id,
+                                            username: item.username,
+                                            displayName: item.display_name,
+                                            avatar: item.avatar,
+                                            avatarUrl: item.avatar_url
+                                        });
+                                    }
+                                } else {
+                                    item.username = item.username || `عضو #${item.user_id.slice(-4)}`;
+                                    item.display_name = item.display_name || item.username;
+                                    item.avatar_url = item.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
+                                }
                             }
                         }
-                    }
+                    })().catch(() => {});
                 };
 
-                await Promise.all([resolveProfiles(xpLeaderboard), resolveProfiles(coinsLeaderboard)]);
+                // تشغيل في الخلفية بدون انتظار - الصفحة ترد فوراً
+                resolveProfiles(xpLeaderboard);
+                resolveProfiles(coinsLeaderboard);
 
                 const xIndex = xpLeaderboard.findIndex(r => r.user_id === user.id);
                 if (xIndex !== -1) userRankXp = xIndex + 1;
