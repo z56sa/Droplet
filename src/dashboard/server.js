@@ -361,7 +361,53 @@ module.exports = function (app, client) {
         }
     });
 
+    // ========================================================
+    // ✅ API: بيانات الداشبورد الخاصة بالمستخدم (لتحميل الصفحة بعد الـ shell)
+    // ========================================================
+    app.get('/api/dashboard/me', (req, res) => {
+        try {
+            const user = req.session?.user;
+            if (!user) return res.status(401).json({ error: 'not_logged_in' });
+
+            // user data - مرشح بالـ cache
+            const _userCache = _pageCache?.get('_user_' + user.id);
+            let userRow;
+            if (_userCache && (Date.now() - _userCache.ts) < _PAGE_TTL) {
+                userRow = _userCache.data;
+            } else {
+                userRow = rawDb.prepare('SELECT SUM(coins) as coins, MAX(level) as level, SUM(reputation) as rep, SUM(xp) as xp, MAX(last_daily) as last_daily, MAX(wallpaper) as wallpaper FROM users WHERE user_id = ?').get(user.id);
+                if (_pageCache) _pageCache.set('_user_' + user.id, { data: userRow, ts: Date.now() });
+            }
+
+            const now = Date.now();
+            const lastDaily = userRow?.last_daily || 0;
+            const cooldown = 24 * 60 * 60 * 1000;
+            const canClaim = (now - lastDaily) > cooldown;
+            const nextDailyIn = canClaim ? 0 : (cooldown - (now - lastDaily));
+
+            // leaderboard ranks من الكاش
+            const lb = getLeaderboardCached ? getLeaderboardCached() : { xpLeaderboard: [], coinsLeaderboard: [] };
+            const xpRank = lb.xpLeaderboard.findIndex(r => r.user_id === user.id);
+            const coinsRank = lb.coinsLeaderboard.findIndex(r => r.user_id === user.id);
+
+            res.json({
+                coins: userRow?.coins || 0,
+                level: userRow?.level || 1,
+                xp: userRow?.xp || 0,
+                rep: userRow?.rep || 0,
+                wallpaper: userRow?.wallpaper || 'default',
+                canClaimDaily: canClaim,
+                nextDailyIn,
+                rankXp: xpRank >= 0 ? xpRank + 1 : '99+',
+                rankCoins: coinsRank >= 0 ? coinsRank + 1 : '99+'
+            });
+        } catch(e) {
+            res.status(500).json({ error: e.message });
+        }
+    });
+
     // Endpoint for claiming daily reward from web dashboard
+
     app.post('/api/user/daily', (req, res) => {
         try {
             // Use real Discord user ID if logged in, else use stable session ID
@@ -587,6 +633,7 @@ module.exports = function (app, client) {
 
 
     app.get('/dashboard/manage', async (req, res) => {
+        const _t0 = Date.now();
         try {
             let user = req.session?.user || null;
             if (!user) return res.redirect('/auth/discord');
@@ -594,6 +641,7 @@ module.exports = function (app, client) {
             // تحقق من cache أولاً
             const cached = _pageCache.get(user.id);
             if (cached && (Date.now() - cached.ts) < _PAGE_TTL) {
+                console.log(`[DASH] cache HIT for ${user.id} — ${Date.now()-_t0}ms`);
                 return res.send(cached.html);
             }
 
@@ -620,9 +668,12 @@ module.exports = function (app, client) {
                 let userRow;
                 if (_userCache && (Date.now() - _userCache.ts) < _PAGE_TTL) {
                     userRow = _userCache.data;
+                    console.log(`[DASH] user cache HIT — ${Date.now()-_t0}ms`);
                 } else {
+                    const _tSQL = Date.now();
                     userRow = rawDb.prepare('SELECT SUM(coins) as coins, MAX(level) as level, SUM(reputation) as rep, SUM(xp) as xp, MAX(last_daily) as last_daily, MAX(wallpaper) as wallpaper FROM users WHERE user_id = ?').get(user.id);
                     _pageCache.set('_user_' + user.id, { data: userRow, ts: Date.now() });
+                    console.log(`[DASH] user SQL MISS — ${Date.now()-_tSQL}ms`);
                 }
                 userCoins = userRow?.coins || 0;
                 userLevel = userRow?.level || 1;
@@ -632,9 +683,11 @@ module.exports = function (app, client) {
                 userWallpaper = userRow?.wallpaper || 'default';
 
                 // ✅ استخدام cache بدلاً من GROUP BY ثقيل في كل request
+                const _tLB = Date.now();
                 const lb = getLeaderboardCached();
                 xpLeaderboard = lb.xpLeaderboard;
                 coinsLeaderboard = lb.coinsLeaderboard;
+                console.log(`[DASH] leaderboard ready — ${Date.now()-_tLB}ms (total ${Date.now()-_t0}ms)`);
 
                 // تعبئة بيانات المستخدمين من الكاش فقط (بدون طلبات Discord API لتجنب التجميد)
                 const fillFromCache = (list) => {
@@ -1493,6 +1546,7 @@ module.exports = function (app, client) {
             `;
             // ✅ حفظ الصفحة في cache وإرسالها
             _pageCache.set(user.id, { html: _pageHtml, ts: Date.now() });
+            console.log(`[DASH] ✅ RENDER DONE for ${user.id} — TOTAL: ${Date.now()-_t0}ms`);
             res.send(_pageHtml);
         } catch (e) {
             console.error("Dashboard render error:", e);
