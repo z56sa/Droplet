@@ -410,6 +410,12 @@ module.exports = function (app, client) {
             const updatedUser = database.getUser(userId, targetGuildId);
             const newBalance = updatedUser.coins || updatedUser.credits || 0;
 
+            // ✅ إبطال cache المستخدم لكي تُحدَّث البيانات في التحميل التالي
+            if (_pageCache) {
+                _pageCache.delete(userId);
+                _pageCache.delete('_user_' + userId);
+            }
+
             return res.json({
                 success: true,
                 amount: reward,
@@ -548,9 +554,37 @@ module.exports = function (app, client) {
         }
     }
 
-    // ✅ Per-user page cache - الصفحة تُحفظ 30 ثانية لكل مستخدم
+    // ✅ Per-user page cache - الصفحة تُحفظ 5 دقائق لكل مستخدم
     const _pageCache = new Map(); // userId -> { html, ts }
-    const _PAGE_TTL = 30 * 1000; // 30 ثانية
+    const _PAGE_TTL = 5 * 60 * 1000; // 5 دقائق
+
+    // ✅ تسخين الـ leaderboard cache في الخلفية تلقائياً - يمنع أي مستخدم من تشغيل القيود الثقيلة
+    function _warmLeaderboardCache() {
+        try {
+            const now = Date.now();
+            const xp = rawDb.prepare(`
+                SELECT u.user_id, SUM(u.xp) as total_xp, MAX(u.level) as max_level, SUM(u.coins) as total_coins,
+                       p.username, p.display_name, p.avatar, p.avatar_url
+                FROM users u LEFT JOIN user_profiles p ON u.user_id = p.user_id
+                GROUP BY u.user_id ORDER BY total_xp DESC LIMIT 20
+            `).all();
+            const coins = rawDb.prepare(`
+                SELECT u.user_id, SUM(u.coins) as total_coins, MAX(u.level) as max_level, SUM(u.xp) as total_xp,
+                       p.username, p.display_name, p.avatar, p.avatar_url
+                FROM users u LEFT JOIN user_profiles p ON u.user_id = p.user_id
+                GROUP BY u.user_id ORDER BY total_coins DESC LIMIT 20
+            `).all();
+            _lbCache.xp = xp;
+            _lbCache.coins = coins;
+            _lbCache.ts = now;
+        } catch(e) {}
+    }
+
+    // تسخين فوري عند بدء تشغيل السيرفر
+    setTimeout(_warmLeaderboardCache, 2000);
+    // إعادة التسخين كل 8 دقائق في الخلفية
+    setInterval(_warmLeaderboardCache, 8 * 60 * 1000);
+
 
     app.get('/dashboard/manage', async (req, res) => {
         try {
@@ -581,7 +615,15 @@ module.exports = function (app, client) {
             let userRankCoins = 1;
 
             try {
-                const userRow = rawDb.prepare('SELECT SUM(coins) as coins, MAX(level) as level, SUM(reputation) as rep, SUM(xp) as xp, MAX(last_daily) as last_daily, MAX(wallpaper) as wallpaper FROM users WHERE user_id = ?').get(user.id);
+                // ✅ cache بيانات المستخدم لمدة 5 دقائق
+                const _userCache = _pageCache.get('_user_' + user.id);
+                let userRow;
+                if (_userCache && (Date.now() - _userCache.ts) < _PAGE_TTL) {
+                    userRow = _userCache.data;
+                } else {
+                    userRow = rawDb.prepare('SELECT SUM(coins) as coins, MAX(level) as level, SUM(reputation) as rep, SUM(xp) as xp, MAX(last_daily) as last_daily, MAX(wallpaper) as wallpaper FROM users WHERE user_id = ?').get(user.id);
+                    _pageCache.set('_user_' + user.id, { data: userRow, ts: Date.now() });
+                }
                 userCoins = userRow?.coins || 0;
                 userLevel = userRow?.level || 1;
                 userStars = userRow?.rep || 0;
@@ -593,7 +635,6 @@ module.exports = function (app, client) {
                 const lb = getLeaderboardCached();
                 xpLeaderboard = lb.xpLeaderboard;
                 coinsLeaderboard = lb.coinsLeaderboard;
-
 
                 // تعبئة بيانات المستخدمين من الكاش فقط (بدون طلبات Discord API لتجنب التجميد)
                 const fillFromCache = (list) => {
