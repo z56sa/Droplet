@@ -806,7 +806,24 @@ module.exports = function (app, client) {
                 } else {
                     alert('🎉 تم استلام ' + data.amount + ' ذهب بنجاح! رصيدك الجديد: ' + data.newBalance.toLocaleString() + ' 🪙');
                 }
-                location.reload();
+                // ✅ تحديث الأرقام مباشرة بدون إعادة تحميل الصفحة
+                // تحديث رصيد الذهب في كل مكان يظهر فيه
+                var coinsDisplay = document.getElementById('userCoinsDisplay');
+                if (coinsDisplay) coinsDisplay.textContent = data.newBalance.toLocaleString();
+                // تحديث رصيد الذهب في الهيدر
+                document.querySelectorAll('.text-yellow-400.font-mono').forEach(function(el) {
+                    el.textContent = '🪙 ' + data.newBalance.toLocaleString() + ' Gold';
+                });
+                // تحديث صندوق زر الراتب - يحوله لعداد 24 ساعة
+                var box = document.getElementById('dailyActionBox');
+                if (box) {
+                    var nextTarget = Date.now() + 24 * 60 * 60 * 1000;
+                    var countdownLabel = _isEn() ? 'Next reward in:' : 'المكافأة التالية بعد:';
+                    box.innerHTML = '<div class="flex flex-col items-center gap-2">'
+                        + '<span class="text-xs text-gray-400">' + countdownLabel + '</span>'
+                        + '<span id="liveDailyTimer" class="font-mono text-purple-200 tracking-wider text-sm font-black" data-target="' + nextTarget + '">24س 00د 00ث</span>'
+                        + '</div>';
+                }
             } else {
                 alert('❌ ' + (data.error || _t('فشل استلام الراتب اليومي')));
                 if (btn) {
@@ -867,7 +884,21 @@ module.exports = function (app, client) {
             const data = await res.json();
             if (data.success) {
                 alert(_t('✅ تم الشراء والتفعيل بنجاح!'));
-                location.reload();
+                // ✅ تحديث رصيد الذهب بدون reload
+                if (data.newBalance !== undefined) {
+                    var coinsDisplay = document.getElementById('userCoinsDisplay');
+                    if (coinsDisplay) coinsDisplay.textContent = data.newBalance.toLocaleString();
+                    document.querySelectorAll('.text-yellow-400.font-mono').forEach(function(el) {
+                        el.textContent = '🪙 ' + data.newBalance.toLocaleString() + ' Gold';
+                    });
+                }
+                // تغيير نص الزر للمشتري
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = '✅ ' + _t('مفعّل');
+                    btn.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+                    btn.classList.add('bg-green-600');
+                }
             } else {
                 alert('❌ ' + (data.error || _t('رصيدك لا يكفي لإتمام الشراء')));
                 if (btn) {
@@ -11999,7 +12030,8 @@ ${embedScriptHtml}
             rawDb.prepare('UPDATE users SET coins = MAX(0, coins - ?) WHERE user_id = ? AND guild_id = ?').run(price, userId, primaryGuildId);
             rawDb.prepare('UPDATE users SET wallpaper = ? WHERE user_id = ?').run(name, userId);
             
-            res.json({ success: true });
+            const afterBuy = rawDb.prepare('SELECT SUM(coins) as coins FROM users WHERE user_id = ?').get(userId);
+            res.json({ success: true, newBalance: afterBuy?.coins || 0 });
         } catch(e) {
             res.status(500).json({ success: false, error: e.message });
         }
