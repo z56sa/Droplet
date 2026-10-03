@@ -1,9 +1,12 @@
 /**
- * ZENO Dashboard entrypoint.
+ * ZENO Bot + Dashboard entrypoint.
  *
- * The Discord bot itself runs on Bot-Hosting.net.
- * This process hosts the dashboard on Render and uses a lightweight
- * Discord.js client for dashboard-side guild/member/channel operations.
+ * Both the Discord bot (commands/events) and the web dashboard
+ * run on Render as a single Node.js web service.
+ *
+ * - Web service: hosts the dashboard at /dashboard/*
+ * - Discord client: handles all bot commands and events
+ * - Turso: persists user data across Render restarts
  */
 
 require('dotenv').config();
@@ -129,10 +132,11 @@ async function loginDashboardClient() {
     const token = process.env.DASHBOARD_BOT_TOKEN || process.env.BOT_TOKEN;
 
     if (!token) {
-        console.error('[Dashboard Discord] Missing DASHBOARD_BOT_TOKEN.');
-        console.error('[Dashboard Discord] Add the same Discord bot token used by the Bot-Hosting deployment.');
+        console.error('[Discord] Missing BOT_TOKEN / DASHBOARD_BOT_TOKEN.');
+        console.error('[Discord] Set BOT_TOKEN in your Render environment variables.');
         return;
     }
+
 
     let delay = 60000;
 

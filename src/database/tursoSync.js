@@ -1,7 +1,11 @@
 /**
  * @module tursoSync
  * @description Background synchronization between local SQLite (better-sqlite3) and remote Turso database.
- * Ensures that coins, XP, daily streak, and essential settings persist across Render redeploys and crashes.
+ * Ensures that coins, XP, daily streak, and essential settings persist across Render redeploys and restarts.
+ *
+ * Designed for Render:
+ * - TURSO_DATABASE_URL / TURSO_URL
+ * - TURSO_AUTH_TOKEN / TURSO_TOKEN
  */
 
 const { createClient } = require('@libsql/client');
@@ -13,9 +17,8 @@ class TursoSync {
     this.syncQueue = [];
     this.isProcessingQueue = false;
 
-    // Support the normal Turso names plus common aliases used by hosting panels.
-    // Never log the actual URL/token values.
-    const cleanEnv = (value) => String(value || '').trim().replace(/^['\"]|['\"]$/g, '');
+    // Support Turso environment variables configured in Render Dashboard
+    const cleanEnv = (value) => String(value || '').trim().replace(/^['"]|['"]$/g, '');
     const url = cleanEnv(
       process.env.TURSO_DATABASE_URL ||
       process.env.TURSO_URL ||
@@ -35,13 +38,13 @@ class TursoSync {
           authToken: authToken || undefined,
         });
         this.enabled = true;
-        console.log('[TURSO] 🌐 Turso Cloud Database Sync initialized successfully.');
+        console.log('[TURSO] 🌐 Turso Cloud Database Sync initialized on Render successfully.');
         console.log('[TURSO] 🔐 URL configured: yes | Auth token configured: ' + (authToken ? 'yes' : 'no'));
       } catch (err) {
-        console.error('[TURSO] ⚠️ Failed to initialize Turso client:', err.message);
+        console.error('[TURSO] ⚠️ Failed to initialize Turso client on Render:', err.message);
       }
     } else {
-      console.log('[TURSO] ℹ️ Turso credentials not detected. Expected TURSO_DATABASE_URL/TURSO_URL/LIBSQL_URL and TURSO_AUTH_TOKEN/TURSO_TOKEN/LIBSQL_AUTH_TOKEN. Running on local SQLite only.');
+      console.log('[TURSO] ℹ️ Turso credentials not detected on Render. Add TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in Render Environment Variables.');
     }
   }
 
