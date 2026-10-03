@@ -510,12 +510,57 @@ module.exports = function (app, client) {
     });
 
     // 3. User Dashboard & Main Routes (لوحة التحكم الداخلية للسيرفرات)
+
+    // ✅ Cache للـ leaderboard - يمنع تشغيل GROUP BY على كل الجدول في كل request
+    const _lbCache = { xp: null, coins: null, ts: 0 };
+    const _LB_TTL = 60 * 1000; // 60 ثانية
+
+    function getLeaderboardCached() {
+        const now = Date.now();
+        if (_lbCache.xp && _lbCache.coins && (now - _lbCache.ts) < _LB_TTL) {
+            return { xpLeaderboard: _lbCache.xp, coinsLeaderboard: _lbCache.coins };
+        }
+        try {
+            const xp = rawDb.prepare(`
+                SELECT u.user_id, SUM(u.xp) as total_xp, MAX(u.level) as max_level, SUM(u.coins) as total_coins,
+                       p.username, p.display_name, p.avatar, p.avatar_url
+                FROM users u
+                LEFT JOIN user_profiles p ON u.user_id = p.user_id
+                GROUP BY u.user_id
+                ORDER BY total_xp DESC
+                LIMIT 20
+            `).all();
+            const coins = rawDb.prepare(`
+                SELECT u.user_id, SUM(u.coins) as total_coins, MAX(u.level) as max_level, SUM(u.xp) as total_xp,
+                       p.username, p.display_name, p.avatar, p.avatar_url
+                FROM users u
+                LEFT JOIN user_profiles p ON u.user_id = p.user_id
+                GROUP BY u.user_id
+                ORDER BY total_coins DESC
+                LIMIT 20
+            `).all();
+            _lbCache.xp = xp;
+            _lbCache.coins = coins;
+            _lbCache.ts = now;
+            return { xpLeaderboard: xp, coinsLeaderboard: coins };
+        } catch(e) {
+            return { xpLeaderboard: _lbCache.xp || [], coinsLeaderboard: _lbCache.coins || [] };
+        }
+    }
+
+    // ✅ Per-user page cache - الصفحة تُحفظ 30 ثانية لكل مستخدم
+    const _pageCache = new Map(); // userId -> { html, ts }
+    const _PAGE_TTL = 30 * 1000; // 30 ثانية
+
     app.get('/dashboard/manage', async (req, res) => {
         try {
-            // التحقق من تسجيل دخول المستخدم عبر Discord OAuth2
             let user = req.session?.user || null;
-            if (!user) {
-                return res.redirect('/auth/discord');
+            if (!user) return res.redirect('/auth/discord');
+
+            // تحقق من cache أولاً
+            const cached = _pageCache.get(user.id);
+            if (cached && (Date.now() - cached.ts) < _PAGE_TTL) {
+                return res.send(cached.html);
             }
 
             // عرض فقط السيرفرات التي يمتلك فيها المستخدم صلاحية إدارة والموجود فيها البوت
@@ -544,25 +589,11 @@ module.exports = function (app, client) {
                 userLastDaily = userRow?.last_daily || 0;
                 userWallpaper = userRow?.wallpaper || 'default';
 
-                xpLeaderboard = rawDb.prepare(`
-                    SELECT u.user_id, SUM(u.xp) as total_xp, MAX(u.level) as max_level, SUM(u.coins) as total_coins,
-                           p.username, p.display_name, p.avatar, p.avatar_url
-                    FROM users u
-                    LEFT JOIN user_profiles p ON u.user_id = p.user_id
-                    GROUP BY u.user_id
-                    ORDER BY total_xp DESC
-                    LIMIT 20
-                `).all();
+                // ✅ استخدام cache بدلاً من GROUP BY ثقيل في كل request
+                const lb = getLeaderboardCached();
+                xpLeaderboard = lb.xpLeaderboard;
+                coinsLeaderboard = lb.coinsLeaderboard;
 
-                coinsLeaderboard = rawDb.prepare(`
-                    SELECT u.user_id, SUM(u.coins) as total_coins, MAX(u.level) as max_level, SUM(u.xp) as total_xp,
-                           p.username, p.display_name, p.avatar, p.avatar_url
-                    FROM users u
-                    LEFT JOIN user_profiles p ON u.user_id = p.user_id
-                    GROUP BY u.user_id
-                    ORDER BY total_coins DESC
-                    LIMIT 20
-                `).all();
 
                 // تعبئة بيانات المستخدمين من الكاش فقط (بدون طلبات Discord API لتجنب التجميد)
                 const fillFromCache = (list) => {
@@ -698,10 +729,9 @@ module.exports = function (app, client) {
                 </div>
             `;
 
-            // الخلفيات تُحمَّل بشكل كسول عند فتح تاب الهوية فقط (لتقليل حجم HTML الأولي)
             const identityWallpapersHtml = `<div id="wallpapersGrid" class="contents"><div class="col-span-full flex items-center justify-center py-12"><div class="text-purple-400 text-sm font-bold animate-pulse">⏳ جارٍ تحميل الخلفيات...</div></div></div>`;
 
-            res.send(`
+            const _pageHtml = `
             <!DOCTYPE html>
             <html lang="en" dir="ltr" class="dark">
             <head>
@@ -1378,7 +1408,10 @@ module.exports = function (app, client) {
                 </script>
             </body>
             </html>
-            `);
+            `;
+            // ✅ حفظ الصفحة في cache وإرسالها
+            _pageCache.set(user.id, { html: _pageHtml, ts: Date.now() });
+            res.send(_pageHtml);
         } catch (e) {
             console.error("Dashboard render error:", e);
             res.status(500).send("Internal error: " + e.message);
