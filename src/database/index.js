@@ -25,9 +25,12 @@ const db = new Database(dbPath);
 
 // تحسين الأمان واستقرار حفظ البيانات لضمان عدم ضياع العملات أو البيانات عند إطفاء البوت
 db.pragma('journal_mode = WAL');
-db.pragma('synchronous = FULL');
+db.pragma('synchronous = NORMAL');   // FULL كان يجعل كل write تنتظر disk flush - NORMAL آمن مع WAL وأسرع بكثير
 db.pragma('wal_autocheckpoint = 100');
 db.pragma('foreign_keys = ON');
+db.pragma('cache_size = -32000');    // 32MB cache للقراءة السريعة
+db.pragma('temp_store = MEMORY');    // العمليات المؤقتة في الذاكرة
+db.pragma('mmap_size = 134217728'); // 128MB memory-mapped I/O
 
 // حفظ نسخة احتياطية فورية تلقائية كل 5 دقائق
 setInterval(() => {
@@ -686,6 +689,14 @@ try {
     );
   `);
 } catch(e) {}
+
+// ✅ Performance Indexes - تسريع استعلامات الداشبورد
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_users_user_id ON users(user_id);'); } catch(e) {}
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_users_guild_id ON users(guild_id);'); } catch(e) {}
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_users_coins ON users(coins DESC);'); } catch(e) {}
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_users_xp ON users(xp DESC);'); } catch(e) {}
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);'); } catch(e) {}
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_guild_settings_guild_id ON guild_settings(guild_id);'); } catch(e) {}
 
 function trackGuildInfo(data) {
   if (!data || !data.guildId) return;

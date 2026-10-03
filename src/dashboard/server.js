@@ -327,6 +327,40 @@ module.exports = function (app, client) {
         }
     });
 
+    // ✅ Lazy-load: API يُرجع بطاقات الخلفيات عند الطلب فقط (بدل توليدها في كل تحميل للصفحة)
+    app.get('/api/user/wallpapers', (req, res) => {
+        try {
+            const user = req.session?.user;
+            if (!user) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول' });
+            const userId = user.id;
+            const userRow = rawDb.prepare('SELECT MAX(wallpaper) as wallpaper FROM users WHERE user_id = ?').get(userId);
+            const userWallpaper = userRow?.wallpaper || 'default';
+            const html = identityWallpapers.map(w => {
+                const isSelected = userWallpaper === w.url || userWallpaper === w.name;
+                return `<div class="wallpaper-item bg-[#10121b] border ${isSelected ? 'border-purple-500 ring-2 ring-purple-500/40' : 'border-white/5 hover:border-purple-500/30'} rounded-2xl overflow-hidden shadow-lg transition-all flex flex-col justify-between group" data-category="${w.category}">
+                    <div class="relative h-32 overflow-hidden bg-black">
+                        <img src="${w.url}" alt="${w.name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#10121b] via-transparent to-black/20"></div>
+                        <span class="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-[10px] font-bold text-purple-300 px-2 py-0.5 rounded-md border border-white/10">${w.category}</span>
+                        ${isSelected ? '<span class="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-md">✓ مفعّل حالياً</span>' : ''}
+                    </div>
+                    <div class="p-3.5 flex flex-col justify-between flex-1 text-right gap-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-bold text-amber-300">🪙 ${w.price.toLocaleString()}</span>
+                            <h4 class="text-xs font-bold text-white truncate max-w-[140px]">${w.name}</h4>
+                        </div>
+                        <button onclick="buyItem('identity', '${w.url}', ${w.price}, this)" class="w-full py-2 bg-gradient-to-r ${isSelected ? 'from-emerald-600 to-teal-600 cursor-default' : 'from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500'} text-white rounded-xl text-xs font-bold transition shadow-md flex items-center justify-center gap-1.5">
+                            ${isSelected ? '<span>مجهزة على بطاقتك 🪪</span>' : `<span>شراء وتجهيز (${w.price.toLocaleString()} 🪙)</span>`}
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+            res.send(html);
+        } catch (e) {
+            res.status(500).send('<p class="text-red-400 text-xs text-center py-4">حدث خطأ أثناء تحميل الخلفيات</p>');
+        }
+    });
+
     // Endpoint for claiming daily reward from web dashboard
     app.post('/api/user/daily', (req, res) => {
         try {
@@ -664,30 +698,8 @@ module.exports = function (app, client) {
                 </div>
             `;
 
-            // توليد بطاقات متجر خلفيات الهوية (105 صورة حقيقية مصنفة)
-            const categories = [...new Set(identityWallpapers.map(w => w.category))];
-            const identityWallpapersHtml = identityWallpapers.map(w => {
-                const isSelected = userWallpaper === w.url || userWallpaper === w.name;
-                return `
-                <div class="wallpaper-item bg-[#10121b] border ${isSelected ? 'border-purple-500 ring-2 ring-purple-500/40' : 'border-white/5 hover:border-purple-500/30'} rounded-2xl overflow-hidden shadow-lg transition-all flex flex-col justify-between group" data-category="${w.category}">
-                    <div class="relative h-32 overflow-hidden bg-black">
-                        <img src="${w.url}" alt="${w.name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
-                        <div class="absolute inset-0 bg-gradient-to-t from-[#10121b] via-transparent to-black/20"></div>
-                        <span class="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-[10px] font-bold text-purple-300 px-2 py-0.5 rounded-md border border-white/10">${w.category}</span>
-                        ${isSelected ? '<span class="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-md">✓ مفعّل حالياً</span>' : ''}
-                    </div>
-                    <div class="p-3.5 flex flex-col justify-between flex-1 text-right gap-2.5">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-mono font-bold text-amber-300">🪙 ${w.price.toLocaleString()}</span>
-                            <h4 class="text-xs font-bold text-white truncate max-w-[140px]">${w.name}</h4>
-                        </div>
-                        <button onclick="buyItem('identity', '${w.url}', ${w.price}, this)" class="w-full py-2 bg-gradient-to-r ${isSelected ? 'from-emerald-600 to-teal-600 cursor-default' : 'from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500'} text-white rounded-xl text-xs font-bold transition shadow-md flex items-center justify-center gap-1.5">
-                            ${isSelected ? '<span>مجهزة على بطاقتك 🪪</span>' : `<span>شراء وتجهيز (${w.price.toLocaleString()} 🪙)</span>`}
-                        </button>
-                    </div>
-                </div>
-                `;
-            }).join('');
+            // الخلفيات تُحمَّل بشكل كسول عند فتح تاب الهوية فقط (لتقليل حجم HTML الأولي)
+            const identityWallpapersHtml = `<div id="wallpapersGrid" class="contents"><div class="col-span-full flex items-center justify-center py-12"><div class="text-purple-400 text-sm font-bold animate-pulse">⏳ جارٍ تحميل الخلفيات...</div></div></div>`;
 
             res.send(`
             <!DOCTYPE html>
@@ -766,6 +778,8 @@ module.exports = function (app, client) {
         }
     };
 
+    var _wallpapersLoaded = false;
+
     window.switchTab = function(tabId, btn) {
         const tabs = document.querySelectorAll('.tab-content');
         tabs.forEach(t => t.classList.add('hidden'));
@@ -784,6 +798,23 @@ module.exports = function (app, client) {
             });
             btn.classList.add('bg-purple-600', 'text-white', 'font-bold', 'shadow-md');
             btn.classList.remove('text-gray-300', 'hover:text-white', 'hover:bg-[#151724]', 'font-medium');
+        }
+
+        // ✅ تحميل كسول للخلفيات عند فتح تاب الهوية لأول مرة فقط
+        if ((tabId === 'tabProfile' || tabId === 'tabIdentity') && !_wallpapersLoaded) {
+            _wallpapersLoaded = true;
+            var grid = document.getElementById('wallpapersGrid');
+            if (grid) {
+                fetch('/api/user/wallpapers')
+                    .then(function(r) { return r.text(); })
+                    .then(function(html) {
+                        var container = grid.parentElement || grid;
+                        container.innerHTML = html;
+                    })
+                    .catch(function() {
+                        _wallpapersLoaded = false;
+                    });
+            }
         }
 
         if (window.zenoI18n && typeof window.zenoI18n.apply === 'function') {
