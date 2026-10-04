@@ -497,15 +497,16 @@ module.exports = {
     const prefix = settings.prefix || config.defaultPrefix || '#';
     let cmdConfigs = {};
     try {
-      cmdConfigs = typeof settings.command_configs === 'string'
+      const parsed = typeof settings.command_configs === 'string'
         ? JSON.parse(settings.command_configs)
-        : (settings.command_configs || {});
+        : settings.command_configs;
+      cmdConfigs = (parsed && typeof parsed === 'object') ? parsed : {};
     } catch (e) {
       console.error('[CMD CONFIG] command_configs مو JSON صحيح:', e.message);
     }
 
     const trimmedContent = message.content.trim();
-    dlog('[ALIAS DEBUG] content:', trimmedContent, '| cmdConfigs keys:', Object.keys(cmdConfigs));
+    dlog('[ALIAS DEBUG] content:', trimmedContent, '| cmdConfigs keys:', Object.keys(cmdConfigs || {}));
 
     let resolved = matchCustomAlias(trimmedContent, cmdConfigs, prefix, client);
     if (!resolved && trimmedContent.startsWith(prefix)) {
