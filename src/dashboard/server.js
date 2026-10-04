@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module server
  * @description Handles the web server setup for the zeno dashboard, managing sessions and routing.
  */
@@ -841,37 +841,45 @@ module.exports = function (app, client) {
     });
 
 
-    // PATCH /api/guild/:guildId/store/admin/items/:itemId/publish — نشر/إخفاء من السوق العام
-    app.patch('/api/guild/:guildId/store/admin/items/:itemId/publish', express.json(), (req, res) => {
+    // POST /api/guild/:guildId/store/admin/items/:itemId/publish — نشر/إخفاء من السوق العام
+    app.post('/api/guild/:guildId/store/admin/items/:itemId/publish', express.json(), (req, res) => {
         try {
             const { guildId, itemId } = req.params;
             const userId = req.session?.user?.id;
             if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
-            const userGuilds = req.session?.guilds || [];
-            const guild = userGuilds.find(g => g.id === guildId);
             const isBotOwner = userId === (config.ownerID || '1178342841882267744');
-            const canManage = guild && (isBotOwner || guild.owner || guild.isOwner ||
-                (BigInt(guild.permissions || 0) & BigInt(0x20)) !== BigInt(0) ||
-                (BigInt(guild.permissions || 0) & BigInt(0x8)) !== BigInt(0));
-            if (!canManage) return res.status(403).json({ success: false, error: 'ليس لديك صلاحية' });
-            const { is_public } = req.body;
+            if (!isBotOwner) {
+                const userGuilds = req.session?.guilds || [];
+                const guild = userGuilds.find(g => g.id === guildId);
+                const canManage = guild && (guild.owner || guild.isOwner ||
+                    (BigInt(guild.permissions || 0) & BigInt(0x20)) !== BigInt(0) ||
+                    (BigInt(guild.permissions || 0) & BigInt(0x8)) !== BigInt(0));
+                if (!canManage) return res.status(403).json({ success: false, error: 'ليس لديك صلاحية' });
+            }
+            const is_public = req.body?.is_public ? 1 : 0;
+            console.log(`[STORE] Publish toggle: item=${itemId} guild=${guildId} is_public=${is_public}`);
             rawDb.prepare(`UPDATE store_items SET is_public = ?, updated_at = strftime('%s','now') WHERE id = ? AND guild_id = ?`)
-                .run(is_public ? 1 : 0, itemId, guildId);
-            // Sync to Turso
+                .run(is_public, itemId, guildId);
+            // Sync to Turso (best-effort)
             try {
-                const tursoSync = require('../database/tursoSync');
-                if (tursoSync?.client) {
-                    tursoSync.client.execute({
-                        sql: `UPDATE store_items SET is_public = ?, updated_at = strftime('%s','now') WHERE id = ?`,
-                        args: [is_public ? 1 : 0, Number(itemId)]
+                const ts = require('../database/tursoSync');
+                if (ts?.client) {
+                    ts.client.execute({
+                        sql: `ALTER TABLE store_items ADD COLUMN IF NOT EXISTS is_public INTEGER DEFAULT 0`
+                    }).catch(() => {});
+                    ts.client.execute({
+                        sql: `UPDATE store_items SET is_public = ? WHERE id = ?`,
+                        args: [is_public, Number(itemId)]
                     }).catch(() => {});
                 }
             } catch(e) {}
-            res.json({ success: true, is_public: is_public ? 1 : 0 });
+            res.json({ success: true, is_public });
         } catch (e) {
+            console.error('[STORE] Publish error:', e);
             res.status(500).json({ success: false, error: e.message });
         }
     });
+
 
     // GET /api/marketplace — جلب كل السلع المنشورة للعموم (لا يحتاج لوجين)
     app.get('/api/marketplace', (req, res) => {
@@ -1503,6 +1511,10 @@ window.mpLoad(true);
                 <div class="text-[10px] text-gray-600 font-black px-2 py-1">السيرفرات</div>
                 ${guildTabsHtml || '<p class="text-xs text-gray-600 px-2">لا يوجد سيرفرات</p>'}
                 <div class="mt-4 border-t border-white/5 pt-3 space-y-1">
+                    <a href="/marketplace" class="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 transition font-bold border border-amber-500/20">
+                        <span>🌐</span><span>السوق العام</span>
+                        <span class="mr-auto text-[9px] bg-amber-500/20 px-1.5 py-0.5 rounded font-black">مفتوح للجميع</span>
+                    </a>
                     <a href="/dashboard/manage" class="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition font-medium">
                         <span>🏠</span><span>لوحة التحكم</span>
                     </a>
@@ -1599,34 +1611,41 @@ window.mpLoad(true);
 
     window.togglePublishItem = async function(guildId, itemId, currentPublic, btn) {
         const newPublic = currentPublic ? 0 : 1;
+        const prevText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '⏳';
         try {
             const r = await fetch('/api/guild/' + guildId + '/store/admin/items/' + itemId + '/publish', {
-                method: 'PATCH',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ is_public: newPublic })
             });
             const d = await r.json();
             if (d.success) {
+                btn.disabled = false;
                 if (newPublic) {
                     btn.textContent = '🌐 منشور';
-                    btn.className = btn.className.replace(/text-emerald-400|bg-emerald-950\/20|hover:bg-emerald-950\/40/g, '').trim()
-                        + ' text-amber-400 bg-amber-950/30 hover:bg-amber-950/50';
+                    btn.style.cssText = 'color:#f59e0b;background:rgba(120,80,0,0.2)';
                     btn.setAttribute('onclick', "window.togglePublishItem('" + guildId + "', " + itemId + ", 1, this)");
-                    showGlobalToast('✅ تم نشر السلعة في السوق العام!', 'success');
+                    showGlobalToast('✅ تم النشر في السوق العام! يمكن لأي شخص رؤيتها الآن', 'success');
                 } else {
                     btn.textContent = '📢 نشر للعموم';
-                    btn.className = btn.className.replace(/text-amber-400|bg-amber-950\/30|hover:bg-amber-950\/50/g, '').trim()
-                        + ' text-emerald-400 bg-emerald-950/20 hover:bg-emerald-950/40';
+                    btn.style.cssText = 'color:#34d399;background:rgba(0,80,40,0.2)';
                     btn.setAttribute('onclick', "window.togglePublishItem('" + guildId + "', " + itemId + ", 0, this)");
                     showGlobalToast('✅ تم إخفاء السلعة من السوق العام', 'success');
                 }
             } else {
+                btn.disabled = false;
+                btn.textContent = prevText;
                 showGlobalToast('❌ ' + (d.error || 'حدث خطأ'), 'error');
             }
         } catch(e) {
-            showGlobalToast('❌ خطأ في الاتصال', 'error');
+            btn.disabled = false;
+            btn.textContent = prevText;
+            showGlobalToast('❌ خطأ في الاتصال: ' + e.message, 'error');
         }
     };
+
 
     window.deleteGlobalStoreItem = async function(guildId, itemId, btn) {
 
