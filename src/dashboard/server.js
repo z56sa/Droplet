@@ -562,7 +562,56 @@ module.exports = function (app, client) {
     });
 
 
+    // ✅ Cache للـ leaderboard - يمنع تشغيل GROUP BY على كل الجدول في كل request
+    const _lbCache = { xp: null, coins: null, ts: 0 };
+    const _LB_TTL = 60 * 1000; // 60 ثانية
+
+    function getLeaderboardCached() {
+        const now = Date.now();
+        if (_lbCache.xp && _lbCache.coins && (now - _lbCache.ts) < _LB_TTL) {
+            return { xpLeaderboard: _lbCache.xp, coinsLeaderboard: _lbCache.coins };
+        }
+        const xpLeaderboard = rawDb.prepare(`
+            SELECT u.user_id, u.guild_id, u.xp, u.level, u.coins,
+                   COALESCE(p.display_name, u.user_id) as display_name,
+                   COALESCE(p.avatar_url, '') as avatar_url
+            FROM users u LEFT JOIN user_profiles p ON u.user_id = p.user_id AND u.guild_id = p.guild_id
+            ORDER BY u.xp DESC LIMIT 100
+        `).all();
+        const coinsLeaderboard = rawDb.prepare(`
+            SELECT u.user_id, u.guild_id, u.xp, u.level, u.coins,
+                   COALESCE(p.display_name, u.user_id) as display_name,
+                   COALESCE(p.avatar_url, '') as avatar_url
+            FROM users u LEFT JOIN user_profiles p ON u.user_id = p.user_id AND u.guild_id = p.guild_id
+            ORDER BY u.coins DESC LIMIT 100
+        `).all();
+        _lbCache.xp = xpLeaderboard;
+        _lbCache.coins = coinsLeaderboard;
+        _lbCache.ts = now;
+        return { xpLeaderboard, coinsLeaderboard };
+    }
+
+    async function _warmLeaderboardCache() {
+        try { getLeaderboardCached(); } catch(e) {}
+    }
+
+    setTimeout(_warmLeaderboardCache, 15000);
+    setInterval(_warmLeaderboardCache, 8 * 60 * 1000);
+
+    // ✅ Page cache للداشبورد - يمنع إعادة بناء HTML في كل request
+    const _pageCache = new Map();
+    const _PAGE_TTL = 30 * 1000; // 30 ثانية
+
+    // مسح cache عند تغيير الإعدادات
+    global._zenoDashboardClearCaches = () => {
+        _pageCache.clear();
+        _lbCache.xp = null;
+        _lbCache.coins = null;
+        console.log('[DASH] 🔄 Dashboard caches cleared after Turso restore.');
+    };
+
     app.get('/dashboard/manage', async (req, res) => {
+
 
         const _t0 = Date.now();
         try {
