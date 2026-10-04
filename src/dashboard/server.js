@@ -927,7 +927,363 @@ module.exports = function (app, client) {
     setInterval(_warmLeaderboardCache, 8 * 60 * 1000);
 
 
+    // ============================================================
+    // 🛍️ GLOBAL STORE PAGE — /dashboard/store
+    // ============================================================
+    app.get('/dashboard/store', async (req, res) => {
+        try {
+            const user = req.session?.user;
+            if (!user) return res.redirect('/auth/discord');
+
+            let guilds = req.session?.guilds || [];
+            if (client?.guilds?.cache) {
+                guilds = guilds.filter(g => client.guilds.cache.has(g.id));
+            }
+
+            const userAvatar = user.avatar
+                ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+                : 'https://cdn.discordapp.com/embed/avatars/0.png';
+            const botAvatarUrl = client?.user?.avatar
+                ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png`
+                : 'https://cdn.discordapp.com/embed/avatars/0.png';
+
+            // رصيد المستخدم الإجمالي عبر كل السيرفرات
+            let userCoins = 0;
+            try {
+                const row = rawDb.prepare('SELECT SUM(coins) as coins FROM users WHERE user_id = ?').get(user.id);
+                userCoins = row?.coins || 0;
+            } catch(e) {}
+
+            // جلب أول سيرفر مشترك من query param أو من أول قائمة
+            const selectedGuildId = req.query?.guild || (guilds[0]?.id || '');
+            const selectedGuild = guilds.find(g => g.id === selectedGuildId) || guilds[0] || null;
+
+            // جلب عناصر المتجر للسيرفر المختار
+            let storeItems = [];
+            if (selectedGuildId) {
+                try {
+                    storeItems = rawDb.prepare(`
+                        SELECT * FROM store_items
+                        WHERE guild_id = ? AND is_active = 1
+                        ORDER BY is_featured DESC, total_sold DESC, created_at DESC
+                    `).all(selectedGuildId);
+                } catch(e) {}
+            }
+
+            // هل يملك صلاحية الإدارة؟
+            const isBotOwner = user.id === (config.ownerID || '1178342841882267744');
+            const canAdmin = selectedGuild && (isBotOwner || selectedGuild.owner || selectedGuild.isOwner ||
+                (BigInt(selectedGuild.permissions || 0) & BigInt(0x20)) !== BigInt(0) ||
+                (BigInt(selectedGuild.permissions || 0) & BigInt(0x8)) !== BigInt(0));
+
+            // Server selector tabs
+            const guildTabsHtml = guilds.map(g => {
+                const isActive = g.id === selectedGuildId;
+                const iconUrl = g.icon
+                    ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png`
+                    : 'https://cdn.discordapp.com/embed/avatars/0.png';
+                return `<a href="/dashboard/store?guild=${g.id}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl ${isActive ? 'bg-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-white/5'} transition text-xs font-bold truncate max-w-[160px]">
+                    <img src="${iconUrl}" class="w-6 h-6 rounded-lg object-cover shrink-0" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+                    <span class="truncate">${g.name}</span>
+                </a>`;
+            }).join('');
+
+            // بطاقات المنتجات
+            const itemCardsHtml = storeItems.length > 0 ? storeItems.map(item => {
+                const badgeHtml = item.badge_label ? `<span class="absolute top-2 right-2 px-2 py-0.5 bg-amber-500 text-black text-[9px] font-black rounded-lg">${item.badge_label}</span>` : (item.is_featured ? `<span class="absolute top-2 right-2 px-2 py-0.5 bg-purple-600 text-white text-[9px] font-black rounded-lg">⭐ مميز</span>` : '');
+                const stockBadge = item.stock === 0 ? `<span class="text-[9px] font-bold text-rose-400 bg-rose-950/40 px-2 py-0.5 rounded">نفد</span>` : item.stock > 0 ? `<span class="text-[9px] font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded">متبقي ${item.stock}</span>` : `<span class="text-[9px] font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded">غير محدود</span>`;
+                const typeIcon = { role: '🎭', xp_booster: '⚡', coin_booster: '🪙', vip: '👑', badge: '🏅', item: '🎁' }[item.item_type] || '🎁';
+                const originalPriceHtml = item.original_price > 0 && item.original_price > item.price
+                    ? `<span class="text-[10px] text-gray-500 line-through font-mono">${item.original_price.toLocaleString()}</span>` : '';
+                return `<div class="bg-[#151722] border border-white/5 hover:border-purple-500/30 rounded-2xl p-4 flex flex-col gap-3 relative transition group">
+                    ${badgeHtml}
+                    <div class="flex items-start justify-between">
+                        <div class="flex flex-col gap-1">${stockBadge}</div>
+                        <div class="w-12 h-12 rounded-2xl bg-[#1c1f2e] flex items-center justify-center text-2xl border border-white/5">${item.icon || typeIcon}</div>
+                    </div>
+                    <div class="text-right">
+                        <h3 class="text-sm font-black text-white leading-tight">${item.name}</h3>
+                        <p class="text-[10px] text-gray-500 mt-0.5 line-clamp-2">${item.description || ''}</p>
+                    </div>
+                    <div class="flex items-center justify-between mt-auto pt-2 border-t border-white/5">
+                        <button type="button" onclick="window.buyGlobalStoreItem('${selectedGuildId}', ${item.id}, '${item.name.replace(/'/g,"\\'")}', ${item.price})" ${item.stock === 0 ? 'disabled' : ''} class="px-4 py-2 ${item.stock === 0 ? 'bg-gray-800 text-gray-600 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 text-white cursor-pointer hover:scale-105'} text-xs font-black rounded-xl transition shadow-lg">
+                            ${item.stock === 0 ? 'نفد' : 'شراء 🛒'}
+                        </button>
+                        <div class="flex items-center gap-1 text-right">
+                            ${originalPriceHtml}
+                            <span class="text-sm font-black text-amber-400 font-mono">${item.price.toLocaleString()} 🪙</span>
+                        </div>
+                    </div>
+                    ${canAdmin ? `<div class="flex gap-1 pt-1 border-t border-white/5">
+                        <button onclick="window.deleteGlobalStoreItem('${selectedGuildId}', ${item.id}, this)" class="flex-1 py-1 text-[10px] font-bold text-rose-400 bg-rose-950/20 hover:bg-rose-950/40 rounded-lg transition">حذف</button>
+                    </div>` : ''}
+                </div>`;
+            }).join('') : `<div class="col-span-full py-16 text-center space-y-3">
+                <div class="text-5xl">🛍️</div>
+                <h4 class="text-white font-black text-sm">المتجر فارغ حالياً</h4>
+                <p class="text-gray-500 text-xs">${canAdmin ? 'اضغط على "إضافة سلعة" لإضافة أول منتج' : 'لا توجد منتجات متاحة حالياً'}</p>
+            </div>`;
+
+            // Add item modal (admins only)
+            const addItemModalHtml = canAdmin ? `
+            <div id="globalAddItemModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target===this)document.getElementById('globalAddItemModal').classList.add('hidden')">
+                <div class="bg-[#12141f] border border-white/10 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl" onclick="event.stopPropagation()">
+                    <div class="flex items-center justify-between">
+                        <button onclick="document.getElementById('globalAddItemModal').classList.add('hidden')" class="text-gray-500 hover:text-white transition text-lg">✕</button>
+                        <h3 class="text-white font-black text-base">إضافة سلعة جديدة 🛍️</h3>
+                    </div>
+                    <form id="globalAddStoreForm" onsubmit="window.submitGlobalStoreItem(event, '${selectedGuildId}')" class="space-y-3 text-right">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-gray-400 font-bold block mb-1">السعر 🪙 *</label>
+                                <input name="price" type="number" min="1" required placeholder="100" class="w-full bg-[#1c1f2e] border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500 text-right">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 font-bold block mb-1">الاسم *</label>
+                                <input name="name" type="text" required placeholder="اسم السلعة" class="w-full bg-[#1c1f2e] border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500 text-right">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-400 font-bold block mb-1">الوصف</label>
+                            <input name="description" type="text" placeholder="وصف مختصر..." class="w-full bg-[#1c1f2e] border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500 text-right">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-gray-400 font-bold block mb-1">المخزون (-1 = غير محدود)</label>
+                                <input name="stock" type="number" min="-1" value="-1" class="w-full bg-[#1c1f2e] border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500 text-right">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 font-bold block mb-1">النوع</label>
+                                <select name="item_type" class="w-full bg-[#1c1f2e] border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500 text-right">
+                                    <option value="role">🎭 رتبة</option>
+                                    <option value="xp_booster">⚡ مضاعف XP</option>
+                                    <option value="coin_booster">🪙 مضاعف ذهب</option>
+                                    <option value="vip">👑 VIP</option>
+                                    <option value="item">🎁 عنصر</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-gray-400 font-bold block mb-1">أيقونة (إيموجي)</label>
+                                <input name="icon" type="text" placeholder="🎁" class="w-full bg-[#1c1f2e] border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500 text-right">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 font-bold block mb-1">بادج (اختياري)</label>
+                                <input name="badge_label" type="text" placeholder="مثل: شعبي" class="w-full bg-[#1c1f2e] border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500 text-right">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-3 pt-1">
+                            <button type="submit" id="globalAddStoreSubmitBtn" class="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-black rounded-xl transition shadow-lg">
+                                حفظ وإضافة للمتجر 🚀
+                            </button>
+                            <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                                <input type="checkbox" name="is_featured" class="accent-purple-600 w-4 h-4">
+                                <span>مميز ⭐</span>
+                            </label>
+                        </div>
+                    </form>
+                </div>
+            </div>` : '';
+
+            const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر السيرفر 🛍️ | ZENO</title>
+    <link rel="stylesheet" href="/tw.css" onerror="this.remove()">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-main: #0b0d14; }
+        body { background-color: var(--bg-main) !important; color: #fff !important; font-family: 'Cairo', sans-serif !important; }
+        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #0b0d14; } ::-webkit-scrollbar-thumb { background: #2f3146; border-radius: 10px; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    </style>
+</head>
+<body class="bg-[#0b0d14] min-h-screen">
+    <!-- Toast -->
+    <div id="globalStoreToast" class="fixed top-5 left-1/2 -translate-x-1/2 z-[999] hidden">
+        <div id="globalStoreToastMsg" class="bg-[#1c1f2e] border border-white/10 text-white text-xs font-bold px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2"></div>
+    </div>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Left Icon Rail -->
+        <div class="w-[72px] bg-[#090a10] border-r border-white/5 flex flex-col items-center py-4 gap-3 shrink-0">
+            <a href="/dashboard/manage" class="w-12 h-12 rounded-2xl bg-purple-600/30 border border-purple-500/50 flex items-center justify-center text-purple-300 hover:text-white transition mb-1 group" title="لوحة التحكم">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            </a>
+            <div class="w-8 h-[1px] bg-white/5"></div>
+            ${guilds.map(g => `<a href="/dashboard/store?guild=${g.id}" title="${g.name}" class="group relative flex items-center justify-center">
+                <img src="${g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-11 h-11 rounded-2xl border ${g.id === selectedGuildId ? 'border-purple-500' : 'border-transparent'} hover:border-purple-500/40 hover:rounded-xl object-cover transition-all shadow-md">
+            </a>`).join('')}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="w-60 bg-[#10121b] border-r border-white/5 flex flex-col shrink-0 h-full">
+            <!-- Logo -->
+            <div class="p-4 border-b border-white/5 flex items-center gap-3">
+                <img src="${botAvatarUrl}" class="w-9 h-9 rounded-xl object-cover" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+                <div>
+                    <span class="text-sm font-black text-white block">متجر السيرفر</span>
+                    <span class="text-[10px] text-gray-500">${selectedGuild?.name || 'اختر سيرفر'}</span>
+                </div>
+            </div>
+            <!-- Guild Tabs -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-1 text-xs text-right">
+                <div class="text-[10px] text-gray-600 font-black px-2 py-1">السيرفرات</div>
+                ${guildTabsHtml || '<p class="text-xs text-gray-600 px-2">لا يوجد سيرفرات</p>'}
+                <div class="mt-4 border-t border-white/5 pt-3 space-y-1">
+                    <a href="/dashboard/manage" class="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition font-medium">
+                        <span>🏠</span><span>لوحة التحكم</span>
+                    </a>
+                    ${selectedGuildId ? `<a href="/dashboard/${selectedGuildId}/store" class="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition font-medium">
+                        <span>⚙️</span><span>إعدادات المتجر</span>
+                    </a>` : ''}
+                </div>
+            </div>
+            <!-- User Bottom Bar -->
+            <div class="p-3 border-t border-white/5">
+                <div class="bg-gradient-to-r from-purple-700 to-indigo-700 rounded-2xl p-2.5 flex items-center justify-between">
+                    <span class="text-amber-300 font-black text-xs font-mono">${userCoins.toLocaleString()} 🪙</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-black text-white truncate max-w-[80px]">${user.username}</span>
+                        <img src="${userAvatar}" class="w-7 h-7 rounded-xl object-cover" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-y-auto">
+            <!-- Top Header -->
+            <div class="sticky top-0 z-10 bg-[#0b0d14]/90 backdrop-blur-md border-b border-white/5 px-6 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    ${canAdmin ? `<button onclick="document.getElementById('globalAddItemModal').classList.remove('hidden')" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black rounded-xl transition shadow-lg flex items-center gap-2">
+                        <span>➕</span><span>إضافة سلعة</span>
+                    </button>` : ''}
+                    <span class="text-xs text-gray-500">${storeItems.length} منتج</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-lg font-black text-white flex items-center gap-2">
+                        <span>🛍️</span>
+                        <span>متجر ${selectedGuild?.name || 'السيرفر'}</span>
+                    </h1>
+                    <a href="/dashboard/manage" class="text-gray-500 hover:text-white transition text-sm">← رجوع</a>
+                </div>
+            </div>
+
+            <!-- Balance Banner -->
+            <div class="px-6 pt-5">
+                <div class="bg-gradient-to-l from-purple-900/40 to-indigo-900/40 border border-purple-500/20 rounded-2xl p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-xl">🪙</div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-gray-400 font-bold">رصيدك الحالي</p>
+                            <p class="text-xl font-black text-amber-400 font-mono" id="globalUserBalance">${userCoins.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    ${selectedGuildId ? `<a href="/dashboard/${selectedGuildId}/general" class="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 text-xs font-bold rounded-xl transition border border-purple-500/20">إعدادات السيرفر ⚙️</a>` : ''}
+                </div>
+            </div>
+
+            <!-- Store Grid -->
+            <div class="p-6">
+                ${!selectedGuildId ? `<div class="py-20 text-center space-y-3">
+                    <div class="text-5xl">🏪</div>
+                    <h3 class="text-white font-black">اختر سيرفر من القائمة الجانبية</h3>
+                    <p class="text-gray-500 text-xs">كل سيرفر له متجره الخاص</p>
+                </div>` : `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">${itemCardsHtml}</div>`}
+            </div>
+        </div>
+    </div>
+
+    ${addItemModalHtml}
+
+    <script>
+    function showGlobalToast(msg, type) {
+        const t = document.getElementById('globalStoreToast');
+        const m = document.getElementById('globalStoreToastMsg');
+        const color = type === 'error' ? 'text-rose-400' : type === 'success' ? 'text-emerald-400' : 'text-white';
+        m.innerHTML = '<span class="' + color + '">' + msg + '</span>';
+        t.classList.remove('hidden');
+        clearTimeout(window._toastTimer);
+        window._toastTimer = setTimeout(() => t.classList.add('hidden'), 4000);
+    }
+
+    window.buyGlobalStoreItem = async function(guildId, itemId, itemName, price) {
+        if (!confirm('هل تريد شراء "' + itemName + '" مقابل ' + price + ' 🪙؟')) return;
+        try {
+            const r = await fetch('/api/guild/' + guildId + '/store/buy/' + itemId, { method: 'POST' });
+            const d = await r.json();
+            if (d.success) {
+                showGlobalToast('✅ تم شراء "' + itemName + '" بنجاح!', 'success');
+                const balEl = document.getElementById('globalUserBalance');
+                if (balEl && d.newBalance !== undefined) balEl.textContent = Number(d.newBalance).toLocaleString();
+            } else {
+                showGlobalToast('❌ ' + (d.error || 'حدث خطأ'), 'error');
+            }
+        } catch(e) {
+            showGlobalToast('❌ خطأ في الاتصال', 'error');
+        }
+    };
+
+    window.deleteGlobalStoreItem = async function(guildId, itemId, btn) {
+        if (!confirm('هل تريد حذف هذه السلعة؟')) return;
+        try {
+            const r = await fetch('/api/guild/' + guildId + '/store/admin/items/' + itemId, { method: 'DELETE' });
+            const d = await r.json();
+            if (d.success) {
+                btn.closest('.bg-\\[\\#151722\\]').remove();
+                showGlobalToast('✅ تم حذف السلعة', 'success');
+            } else {
+                showGlobalToast('❌ ' + (d.error || 'حدث خطأ'), 'error');
+            }
+        } catch(e) {
+            showGlobalToast('❌ خطأ في الاتصال', 'error');
+        }
+    };
+
+    window.submitGlobalStoreItem = async function(e, guildId) {
+        e.preventDefault();
+        const form = e.target;
+        const btn = document.getElementById('globalAddStoreSubmitBtn');
+        const data = {};
+        new FormData(form).forEach((v, k) => { data[k] = v; });
+        data.is_featured = form.querySelector('[name=is_featured]')?.checked ? 1 : 0;
+        if (btn) { btn.disabled = true; btn.textContent = 'جاري الإضافة...'; }
+        try {
+            const r = await fetch('/api/guild/' + guildId + '/store/admin/items', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const d = await r.json();
+            if (d.success) {
+                showGlobalToast('✅ تمت الإضافة! جاري تحديث الصفحة...', 'success');
+                document.getElementById('globalAddItemModal').classList.add('hidden');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showGlobalToast('❌ ' + (d.error || 'حدث خطأ'), 'error');
+                if (btn) { btn.disabled = false; btn.textContent = 'حفظ وإضافة للمتجر 🚀'; }
+            }
+        } catch(err) {
+            showGlobalToast('❌ خطأ في الاتصال', 'error');
+            if (btn) { btn.disabled = false; btn.textContent = 'حفظ وإضافة للمتجر 🚀'; }
+        }
+    };
+    </script>
+</body>
+</html>`;
+            res.send(html);
+        } catch (e) {
+            console.error('[STORE PAGE] Error:', e);
+            res.status(500).send('Internal error: ' + e.message);
+        }
+    });
+
     app.get('/dashboard/manage', async (req, res) => {
+
         const _t0 = Date.now();
         try {
             let user = req.session?.user || null;
@@ -1773,6 +2129,15 @@ module.exports = function (app, client) {
                                     </button>
                                 </div>
                             </div>
+
+                            <!-- المتجر -->
+                            <div class="space-y-1">
+                                <a href="/dashboard/store" class="flex items-center justify-between px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-[#151724] font-medium transition w-full group">
+                                    <span class="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded text-[9px] font-black">جديد</span>
+                                    <span class="flex items-center gap-2"><span>متجر السيرفر</span><span class="text-gray-400 group-hover:text-amber-400 transition">🛍️</span></span>
+                                </a>
+                            </div>
+
 
                             <!-- أخرى (Other) -->
                             <div class="space-y-1">
