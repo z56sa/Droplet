@@ -748,14 +748,19 @@ module.exports = function (app, client) {
     // === Admin Store Endpoints ===
 
     // POST /api/guild/:guildId/store/admin/items — إضافة عنصر
-    app.post('/api/guild/:guildId/store/admin/items', (req, res) => {
+    app.post('/api/guild/:guildId/store/admin/items', express.json(), (req, res) => {
         try {
             const { guildId } = req.params;
             const userId = req.session?.user?.id;
             if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
             const userGuilds = req.session?.guilds || [];
             const guild = userGuilds.find(g => g.id === guildId);
-            if (!guild || (BigInt(guild.permissions || 0) & BigInt(0x20)) === BigInt(0)) {
+            // Check: bot owner, guild owner, or has MANAGE_GUILD (0x20) or ADMINISTRATOR (0x8)
+            const isBotOwner = userId === (config.ownerID || '1178342841882267744');
+            const canManage = guild && (isBotOwner || guild.owner || guild.isOwner ||
+                (BigInt(guild.permissions || 0) & BigInt(0x20)) !== BigInt(0) ||
+                (BigInt(guild.permissions || 0) & BigInt(0x8)) !== BigInt(0));
+            if (!canManage) {
                 return res.status(403).json({ success: false, error: 'ليس لديك صلاحية إدارة المتجر' });
             }
             const { name, description, item_type, icon, image_url, price, original_price, stock, role_id, booster_multiplier, booster_duration, cooldown_seconds, is_featured, badge_label } = req.body;
@@ -764,21 +769,39 @@ module.exports = function (app, client) {
                 INSERT INTO store_items (guild_id, name, description, item_type, icon, image_url, price, original_price, stock, role_id, booster_multiplier, booster_duration, cooldown_seconds, is_featured, badge_label)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).run(guildId, name, description || '', item_type || 'role', icon || '🎁', image_url || '', Number(price), Number(original_price || 0), Number(stock ?? -1), role_id || '', Number(booster_multiplier || 1.5), Number(booster_duration || 3600), Number(cooldown_seconds || 0), is_featured ? 1 : 0, badge_label || '');
+            // Sync to Turso cloud so item survives restarts
+            try {
+                const tursoSync = require('../database/tursoSync');
+                const newItem = rawDb.prepare(`SELECT * FROM store_items WHERE id = ?`).get(result.lastInsertRowid);
+                if (newItem && tursoSync?.client) {
+                    tursoSync.client.execute({
+                        sql: `INSERT OR REPLACE INTO store_items (id, guild_id, name, description, item_type, icon, image_url, price, original_price, stock, role_id, booster_multiplier, booster_duration, cooldown_seconds, is_featured, badge_label, is_active, total_sold, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                        args: [newItem.id, newItem.guild_id, newItem.name, newItem.description, newItem.item_type, newItem.icon, newItem.image_url, newItem.price, newItem.original_price, newItem.stock, newItem.role_id, newItem.booster_multiplier, newItem.booster_duration, newItem.cooldown_seconds, newItem.is_featured, newItem.badge_label, newItem.is_active, newItem.total_sold, newItem.created_at, newItem.updated_at]
+                    }).catch(e => console.error('[STORE TURSO SYNC] Error syncing new item:', e));
+                }
+            } catch (syncErr) {}
+            console.log(`[STORE] New item added: "${name}" (${item_type}) in guild ${guildId} by user ${userId}`);
             res.json({ success: true, id: result.lastInsertRowid });
         } catch (e) {
+            console.error('[STORE] Add item error:', e);
             res.status(500).json({ success: false, error: e.message });
         }
     });
 
+
     // PUT /api/guild/:guildId/store/admin/items/:itemId — تعديل عنصر
-    app.put('/api/guild/:guildId/store/admin/items/:itemId', (req, res) => {
+    app.put('/api/guild/:guildId/store/admin/items/:itemId', express.json(), (req, res) => {
         try {
             const { guildId, itemId } = req.params;
             const userId = req.session?.user?.id;
             if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
             const userGuilds = req.session?.guilds || [];
             const guild = userGuilds.find(g => g.id === guildId);
-            if (!guild || (BigInt(guild.permissions || 0) & BigInt(0x20)) === BigInt(0)) {
+            const isBotOwner = userId === (config.ownerID || '1178342841882267744');
+            const canManage = guild && (isBotOwner || guild.owner || guild.isOwner ||
+                (BigInt(guild.permissions || 0) & BigInt(0x20)) !== BigInt(0) ||
+                (BigInt(guild.permissions || 0) & BigInt(0x8)) !== BigInt(0));
+            if (!canManage) {
                 return res.status(403).json({ success: false, error: 'ليس لديك صلاحية' });
             }
             const fields = req.body;
@@ -803,7 +826,11 @@ module.exports = function (app, client) {
             if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
             const userGuilds = req.session?.guilds || [];
             const guild = userGuilds.find(g => g.id === guildId);
-            if (!guild || (BigInt(guild.permissions || 0) & BigInt(0x20)) === BigInt(0)) {
+            const isBotOwner = userId === (config.ownerID || '1178342841882267744');
+            const canManage = guild && (isBotOwner || guild.owner || guild.isOwner ||
+                (BigInt(guild.permissions || 0) & BigInt(0x20)) !== BigInt(0) ||
+                (BigInt(guild.permissions || 0) & BigInt(0x8)) !== BigInt(0));
+            if (!canManage) {
                 return res.status(403).json({ success: false, error: 'ليس لديك صلاحية' });
             }
             rawDb.prepare(`UPDATE store_items SET is_active = 0 WHERE id = ? AND guild_id = ?`).run(itemId, guildId);
@@ -812,6 +839,7 @@ module.exports = function (app, client) {
             res.status(500).json({ success: false, error: e.message });
         }
     });
+
 
     // 3. User Dashboard & Main Routes (لوحة التحكم الداخلية للسيرفرات)
 
@@ -11345,7 +11373,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
 
 
-                            ${(section === 'general' || section === 'commands') ? `
+                            ${(section === 'general' || section === 'commands' || section === 'store') ? `
                                 <div id="settingsContainer" class="space-y-6">
                                     ${formFieldsHtml}
                                 </div>

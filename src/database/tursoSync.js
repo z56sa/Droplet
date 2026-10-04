@@ -328,7 +328,63 @@ class TursoSync {
         console.error('[TURSO] ⚠️ Error restoring guild settings:', gsErr.message);
       }
 
+      // 5. ✅ Restore store_items from Turso into local SQLite
+      try {
+        const storeItemsResult = await this.client.execute('SELECT * FROM store_items WHERE is_active = 1');
+        if (storeItemsResult.rows && storeItemsResult.rows.length > 0) {
+          console.log(`[TURSO] 🔄 Restoring ${storeItemsResult.rows.length} store items from Turso into local SQLite...`);
+          const insertItem = localDb.prepare(`
+            INSERT INTO store_items (id, guild_id, name, description, item_type, icon, image_url, price, original_price, stock, role_id, booster_multiplier, booster_duration, cooldown_seconds, is_featured, badge_label, is_active, total_sold, created_at, updated_at)
+            VALUES (@id, @guild_id, @name, @description, @item_type, @icon, @image_url, @price, @original_price, @stock, @role_id, @booster_multiplier, @booster_duration, @cooldown_seconds, @is_featured, @badge_label, @is_active, @total_sold, @created_at, @updated_at)
+            ON CONFLICT(id) DO UPDATE SET
+              name = excluded.name,
+              description = excluded.description,
+              price = excluded.price,
+              original_price = excluded.original_price,
+              stock = excluded.stock,
+              is_featured = excluded.is_featured,
+              badge_label = excluded.badge_label,
+              is_active = excluded.is_active,
+              total_sold = excluded.total_sold,
+              updated_at = excluded.updated_at
+          `);
+          const restoreItemsTx = localDb.transaction((rows) => {
+            for (const row of rows) {
+              try {
+                insertItem.run({
+                  id: Number(row.id),
+                  guild_id: String(row.guild_id),
+                  name: String(row.name || ''),
+                  description: String(row.description || ''),
+                  item_type: String(row.item_type || 'role'),
+                  icon: String(row.icon || '🎁'),
+                  image_url: String(row.image_url || ''),
+                  price: Number(row.price || 100),
+                  original_price: Number(row.original_price || 0),
+                  stock: Number(row.stock ?? -1),
+                  role_id: String(row.role_id || ''),
+                  booster_multiplier: Number(row.booster_multiplier || 1.5),
+                  booster_duration: Number(row.booster_duration || 3600),
+                  cooldown_seconds: Number(row.cooldown_seconds || 0),
+                  is_featured: Number(row.is_featured || 0),
+                  badge_label: String(row.badge_label || ''),
+                  is_active: Number(row.is_active ?? 1),
+                  total_sold: Number(row.total_sold || 0),
+                  created_at: Number(row.created_at || 0),
+                  updated_at: Number(row.updated_at || 0)
+                });
+              } catch (rowErr) {}
+            }
+          });
+          restoreItemsTx(storeItemsResult.rows);
+          console.log('[TURSO] ✅ Store items successfully restored from Turso!');
+        }
+      } catch (storeErr) {
+        console.error('[TURSO] ⚠️ Error restoring store items:', storeErr.message);
+      }
+
       // ✅ بعد انتهاء كل الاستعادة — مسح cache الداشبورد حتى يظهر الـ leaderboard بالبيانات الصحيحة
+
       if (typeof global._zenoDashboardClearCaches === 'function') {
         setTimeout(() => {
           try { global._zenoDashboardClearCaches(); } catch(e) {}
