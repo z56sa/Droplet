@@ -1,68 +1,48 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { askAI } = require('../../utils/ai');
+const config = require('../../config.json');
 
-async function sendFormattedAIResponse(target, query, isInteraction = false) {
-    try {
-        const response = await askAI(query);
-
-        if (response.length <= 2000) {
-            if (isInteraction) {
-                return await target.editReply({ content: response });
-            } else {
-                return await target.edit({ content: response });
-            }
-        }
-
-        const chunks = response.match(/[\s\S]{1,1950}/g) || [response];
-        if (isInteraction) {
-            await target.editReply({ content: chunks[0] });
-            for (let i = 1; i < chunks.length; i++) {
-                await target.followUp({ content: chunks[i] }).catch(() => {});
-            }
-        } else {
-            await target.edit({ content: chunks[0] });
-            for (let i = 1; i < chunks.length; i++) {
-                await target.channel.send({ content: chunks[i] }).catch(() => {});
-            }
-        }
-    } catch (error) {
-        console.error('[Ask Command Error]:', error);
-        const errMsg = '❌ عذراً، حدث خطأ أثناء محاولة الاتصال بالذكاء الاصطناعي.';
-        if (isInteraction) {
-            await target.editReply({ content: errMsg }).catch(() => {});
-        } else {
-            await target.edit({ content: errMsg }).catch(() => {});
-        }
-    }
-}
+const OWNER_ID = config.ownerID || '1178342841882267744';
 
 module.exports = {
     name: 'ask',
-    description: 'اسأل ذكاء ZENO الاصطناعي أي سؤال!',
+    description: 'مخصص للمالك فقط',
     aliases: ['اسال', 'سؤال'],
     category: 'general',
     data: new SlashCommandBuilder()
         .setName('ask')
-        .setDescription('اسأل ذكاء ZENO الاصطناعي أي سؤال!')
+        .setDescription('مخصص للمالك فقط')
         .addStringOption(option =>
             option.setName('question')
-                .setDescription('السؤال الذي تريد طرحه على البوت')
+                .setDescription('السؤال')
                 .setRequired(true)
         ),
 
     async execute(interaction) {
-        await interaction.deferReply();
-        const question = interaction.options.getString('question');
-        await sendFormattedAIResponse(interaction, question, true);
+        if (interaction.user.id !== OWNER_ID) {
+            return interaction.reply({ content: '❌ هذا الأمر مخصص للمالك فقط.', ephemeral: true });
+        }
+        await interaction.deferReply({ ephemeral: true });
+        try {
+            const { askAI } = require('../../utils/ai');
+            const question = interaction.options.getString('question');
+            const response = await askAI(question);
+            await interaction.editReply({ content: response?.slice(0, 2000) || 'لا يوجد رد.' });
+        } catch (e) {
+            await interaction.editReply({ content: '❌ خطأ: ' + e.message });
+        }
     },
 
     async executePrefix(message, args) {
+        if (message.author.id !== OWNER_ID) return;
         const question = args.join(' ');
-        if (!question) {
-            return message.reply('❌ يرجى كتابة السؤال بعد الأمر، مثال: `#ask كيف يعمل الذكاء الاصطناعي؟`');
+        if (!question) return message.reply('❌ اكتب السؤال بعد الأمر.');
+        try {
+            const { askAI } = require('../../utils/ai');
+            const waiting = await message.reply('⏳ جاري المعالجة...');
+            const response = await askAI(question);
+            await waiting.edit({ content: response?.slice(0, 2000) || 'لا يوجد رد.' });
+        } catch (e) {
+            message.reply('❌ خطأ: ' + e.message).catch(() => {});
         }
-
-        const waiting = await message.reply('⏳ جاري التفكير ومعالجة الطلب...');
-        await sendFormattedAIResponse(waiting, question, false);
     }
 };
