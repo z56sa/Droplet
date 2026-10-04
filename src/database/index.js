@@ -1,4 +1,4 @@
-// ========================================================
+﻿// ========================================================
 // FILE: src/database/index.js
 // قاعدة بيانات SQLite متزامنة (Synchronous) باستخدام better-sqlite3
 // ========================================================
@@ -403,72 +403,8 @@ db.exec(`
     details TEXT,
     created_at INTEGER DEFAULT (strftime('%s','now'))
   );
-
-  -- ✅ نظام المتجر: جدول العناصر
-  CREATE TABLE IF NOT EXISTS store_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    guild_id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    description TEXT DEFAULT '',
-    item_type TEXT NOT NULL DEFAULT 'role',
-    -- item_type: 'role' | 'badge' | 'xp_booster' | 'coin_booster' | 'vip' | 'custom'
-    icon TEXT DEFAULT '🎁',
-    image_url TEXT DEFAULT '',
-    price INTEGER NOT NULL DEFAULT 100,
-    original_price INTEGER DEFAULT 0,
-    -- original_price > 0 = مخفض
-    stock INTEGER DEFAULT -1,
-    -- -1 = غير محدود
-    role_id TEXT DEFAULT '',
-    -- للنوع role
-    booster_multiplier REAL DEFAULT 1.5,
-    -- لـ xp/coin booster
-    booster_duration INTEGER DEFAULT 3600,
-    -- بالثواني
-    cooldown_seconds INTEGER DEFAULT 0,
-    -- كولداون بين الشراء
-    is_featured INTEGER DEFAULT 0,
-    is_active INTEGER DEFAULT 1,
-    is_public INTEGER DEFAULT 0,
-    -- 1 = منشور في السوق العام للجميع
-    badge_label TEXT DEFAULT '',
-    -- 'Popular' | 'Sale' | 'New' | ''
-    total_sold INTEGER DEFAULT 0,
-    created_at INTEGER DEFAULT (strftime('%s','now')),
-    updated_at INTEGER DEFAULT (strftime('%s','now'))
-  );
-  -- migration: add is_public if missing
-
-
-  -- ✅ نظام المتجر: مخزون المستخدمين
-  CREATE TABLE IF NOT EXISTS user_inventory (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id TEXT NOT NULL,
-    guild_id TEXT NOT NULL,
-    item_id INTEGER NOT NULL,
-    quantity INTEGER DEFAULT 1,
-    is_active INTEGER DEFAULT 1,
-    expires_at INTEGER DEFAULT 0,
-    -- 0 = لا ينتهي
-    purchased_at INTEGER DEFAULT (strftime('%s','now')),
-    FOREIGN KEY (item_id) REFERENCES store_items(id) ON DELETE CASCADE
-  );
-
-  -- ✅ نظام المتجر: سجل المعاملات
-  CREATE TABLE IF NOT EXISTS store_transactions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    guild_id TEXT NOT NULL,
-    user_id TEXT NOT NULL,
-    item_id INTEGER NOT NULL,
-    item_name TEXT NOT NULL,
-    amount INTEGER NOT NULL,
-    price_paid INTEGER NOT NULL,
-    status TEXT DEFAULT 'success',
-    -- 'success' | 'failed' | 'refunded'
-    notes TEXT DEFAULT '',
-    created_at INTEGER DEFAULT (strftime('%s','now'))
-  );
 `);
+
 
 
 // Migrations - إضافة الأعمدة الجديدة بشكل آمن
@@ -496,7 +432,6 @@ try { db.exec("ALTER TABLE staff_activity ADD COLUMN shift_seconds INTEGER DEFAU
 try { db.exec("ALTER TABLE staff_activity ADD COLUMN total_shifts INTEGER DEFAULT 0;"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN streak INTEGER DEFAULT 0;"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN bank_balance INTEGER DEFAULT 0;"); } catch(e) {}
-try { db.exec("ALTER TABLE store_items ADD COLUMN is_public INTEGER DEFAULT 0;"); } catch(e) {}
 
 try { db.exec("ALTER TABLE users ADD COLUMN last_work INTEGER DEFAULT 0;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN boost_enabled INTEGER DEFAULT 1;"); } catch(e) {}
