@@ -429,12 +429,16 @@ db.exec(`
     -- كولداون بين الشراء
     is_featured INTEGER DEFAULT 0,
     is_active INTEGER DEFAULT 1,
+    is_public INTEGER DEFAULT 0,
+    -- 1 = منشور في السوق العام للجميع
     badge_label TEXT DEFAULT '',
     -- 'Popular' | 'Sale' | 'New' | ''
     total_sold INTEGER DEFAULT 0,
     created_at INTEGER DEFAULT (strftime('%s','now')),
     updated_at INTEGER DEFAULT (strftime('%s','now'))
   );
+  -- migration: add is_public if missing
+
 
   -- ✅ نظام المتجر: مخزون المستخدمين
   CREATE TABLE IF NOT EXISTS user_inventory (
@@ -492,6 +496,8 @@ try { db.exec("ALTER TABLE staff_activity ADD COLUMN shift_seconds INTEGER DEFAU
 try { db.exec("ALTER TABLE staff_activity ADD COLUMN total_shifts INTEGER DEFAULT 0;"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN streak INTEGER DEFAULT 0;"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN bank_balance INTEGER DEFAULT 0;"); } catch(e) {}
+try { db.exec("ALTER TABLE store_items ADD COLUMN is_public INTEGER DEFAULT 0;"); } catch(e) {}
+
 try { db.exec("ALTER TABLE users ADD COLUMN last_work INTEGER DEFAULT 0;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN boost_enabled INTEGER DEFAULT 1;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN boost_channel TEXT;"); } catch(e) {}

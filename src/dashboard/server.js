@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @module server
  * @description Handles the web server setup for the zeno dashboard, managing sessions and routing.
  */
@@ -841,7 +841,81 @@ module.exports = function (app, client) {
     });
 
 
+    // PATCH /api/guild/:guildId/store/admin/items/:itemId/publish — نشر/إخفاء من السوق العام
+    app.patch('/api/guild/:guildId/store/admin/items/:itemId/publish', express.json(), (req, res) => {
+        try {
+            const { guildId, itemId } = req.params;
+            const userId = req.session?.user?.id;
+            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
+            const userGuilds = req.session?.guilds || [];
+            const guild = userGuilds.find(g => g.id === guildId);
+            const isBotOwner = userId === (config.ownerID || '1178342841882267744');
+            const canManage = guild && (isBotOwner || guild.owner || guild.isOwner ||
+                (BigInt(guild.permissions || 0) & BigInt(0x20)) !== BigInt(0) ||
+                (BigInt(guild.permissions || 0) & BigInt(0x8)) !== BigInt(0));
+            if (!canManage) return res.status(403).json({ success: false, error: 'ليس لديك صلاحية' });
+            const { is_public } = req.body;
+            rawDb.prepare(`UPDATE store_items SET is_public = ?, updated_at = strftime('%s','now') WHERE id = ? AND guild_id = ?`)
+                .run(is_public ? 1 : 0, itemId, guildId);
+            // Sync to Turso
+            try {
+                const tursoSync = require('../database/tursoSync');
+                if (tursoSync?.client) {
+                    tursoSync.client.execute({
+                        sql: `UPDATE store_items SET is_public = ?, updated_at = strftime('%s','now') WHERE id = ?`,
+                        args: [is_public ? 1 : 0, Number(itemId)]
+                    }).catch(() => {});
+                }
+            } catch(e) {}
+            res.json({ success: true, is_public: is_public ? 1 : 0 });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // GET /api/marketplace — جلب كل السلع المنشورة للعموم (لا يحتاج لوجين)
+    app.get('/api/marketplace', (req, res) => {
+        try {
+            const { search, type, sort, page } = req.query;
+            const limit = 48;
+            const offset = (Math.max(1, parseInt(page) || 1) - 1) * limit;
+            let where = `WHERE si.is_public = 1 AND si.is_active = 1`;
+            const params = [];
+            if (search) { where += ` AND si.name LIKE ?`; params.push(`%${search}%`); }
+            if (type && type !== 'all') { where += ` AND si.item_type = ?`; params.push(type); }
+            const orderBy = sort === 'price_asc' ? 'si.price ASC'
+                : sort === 'price_desc' ? 'si.price DESC'
+                : sort === 'popular' ? 'si.total_sold DESC'
+                : sort === 'new' ? 'si.created_at DESC'
+                : 'si.is_featured DESC, si.total_sold DESC, si.created_at DESC';
+            const items = rawDb.prepare(`
+                SELECT si.*, gs.bot_name as server_name, gs.bot_avatar as server_icon
+                FROM store_items si
+                LEFT JOIN guild_settings gs ON si.guild_id = gs.guild_id
+                ${where}
+                ORDER BY ${orderBy}
+                LIMIT ? OFFSET ?
+            `).all(...params, limit, offset);
+            // إضافة اسم السيرفر من Discord client إن لم يكن في DB
+            const enriched = items.map(item => {
+                const discordGuild = client?.guilds?.cache?.get(item.guild_id);
+                return {
+                    ...item,
+                    server_name: discordGuild?.name || item.server_name || 'سيرفر ZENO',
+                    server_icon: discordGuild?.icon
+                        ? `https://cdn.discordapp.com/icons/${item.guild_id}/${discordGuild.icon}.png`
+                        : (item.server_icon || null)
+                };
+            });
+            const total = rawDb.prepare(`SELECT COUNT(*) as c FROM store_items WHERE is_public = 1 AND is_active = 1`).get();
+            res.json({ success: true, items: enriched, total: total?.c || 0, page: parseInt(page) || 1, limit });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
     // 3. User Dashboard & Main Routes (لوحة التحكم الداخلية للسيرفرات)
+
 
 
     // ✅ Cache للـ leaderboard - يمنع تشغيل GROUP BY على كل الجدول في كل request
@@ -928,7 +1002,298 @@ module.exports = function (app, client) {
 
 
     // ============================================================
+    // 🌐 PUBLIC MARKETPLACE — /marketplace (NO LOGIN REQUIRED)
+    // ============================================================
+    app.get('/marketplace', (req, res) => {
+        const botName = client?.user?.username || 'ZENO';
+        const botAvatar = client?.user?.avatar
+            ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png`
+            : 'https://cdn.discordapp.com/embed/avatars/0.png';
+        const isLoggedIn = !!req.session?.user;
+        const userCoins = (() => {
+            if (!isLoggedIn) return 0;
+            try {
+                const r = rawDb.prepare('SELECT SUM(coins) as c FROM users WHERE user_id = ?').get(req.session.user.id);
+                return r?.c || 0;
+            } catch(e) { return 0; }
+        })();
+
+        res.send(`<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>السوق العام 🛍️ | ${botName}</title>
+    <meta name="description" content="تصفح وشراء السلع من سيرفرات Discord المختلفة في سوق ${botName} العام">
+    <link rel="stylesheet" href="/tw.css" onerror="this.remove()">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { background: #0b0d14 !important; color: #fff !important; font-family: 'Cairo', sans-serif !important; }
+        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #0b0d14; } ::-webkit-scrollbar-thumb { background: #2f3146; border-radius: 10px; }
+        .card-hover { transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; }
+        .card-hover:hover { transform: translateY(-2px); border-color: rgba(139,92,246,0.4) !important; box-shadow: 0 8px 32px rgba(139,92,246,0.15); }
+        .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        .skeleton { background: linear-gradient(90deg, #1c1f2e 25%, #252838 50%, #1c1f2e 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<!-- Toast -->
+<div id="mpToast" class="fixed top-5 left-1/2 -translate-x-1/2 z-[999] hidden transition-all">
+    <div id="mpToastMsg" class="bg-[#1c1f2e] border border-white/10 text-white text-sm font-bold px-6 py-3 rounded-2xl shadow-2xl"></div>
+</div>
+
+<!-- Navbar -->
+<nav class="sticky top-0 z-50 bg-[#0b0d14]/95 backdrop-blur-md border-b border-white/5">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            ${isLoggedIn ? `
+            <div class="flex items-center gap-2 bg-[#151722] border border-white/5 px-3 py-1.5 rounded-xl">
+                <span class="text-amber-400 font-black text-sm font-mono">${userCoins.toLocaleString()} 🪙</span>
+                <span class="text-gray-500 text-xs">رصيدك</span>
+            </div>
+            <a href="/dashboard/manage" class="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 text-xs font-bold rounded-xl transition border border-purple-500/20">لوحة التحكم</a>
+            ` : `
+            <a href="/auth/discord" class="px-4 py-2 bg-[#5865F2] hover:bg-[#4752c4] text-white text-xs font-black rounded-xl transition flex items-center gap-2 shadow-lg">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 13.957 13.957 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+                تسجيل الدخول للشراء
+            </a>
+            `}
+        </div>
+        <div class="flex items-center gap-3">
+            <h1 class="text-lg font-black text-white flex items-center gap-2">
+                <span>🛍️</span>
+                <span>السوق العام</span>
+                <span class="text-xs text-purple-400 font-bold bg-purple-950/40 px-2 py-0.5 rounded-lg">${botName}</span>
+            </h1>
+            <img src="${botAvatar}" class="w-9 h-9 rounded-xl object-cover" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+        </div>
+    </div>
+</nav>
+
+<!-- Hero -->
+<div class="bg-gradient-to-b from-purple-950/30 to-transparent border-b border-white/5 py-10 px-4 text-center">
+    <div class="text-5xl mb-3">🏪</div>
+    <h2 class="text-3xl font-black text-white mb-2">السوق العام لـ${botName}</h2>
+    <p class="text-gray-400 text-sm max-w-lg mx-auto">تصفح السلع المنشورة من جميع سيرفرات Discord — رتب، مميزات VIP، معززات XP والمزيد</p>
+    <div class="mt-5 max-w-md mx-auto relative">
+        <input type="text" id="mpSearch" placeholder="ابحث عن سلعة..." oninput="window.mpFilter()"
+            class="w-full bg-[#151722] border border-white/10 focus:border-purple-500 rounded-2xl px-5 py-3 text-sm text-white outline-none text-right pr-12 shadow-xl">
+        <span class="absolute right-4 top-3.5 text-gray-400 text-lg">🔍</span>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="max-w-7xl mx-auto px-4 py-4 flex items-center gap-2 flex-wrap justify-end border-b border-white/5">
+    <div class="flex items-center gap-2 ml-auto">
+        <select id="mpSort" onchange="window.mpFilter()" class="bg-[#151722] border border-white/10 text-gray-300 text-xs rounded-xl px-3 py-2 outline-none focus:border-purple-500 cursor-pointer">
+            <option value="featured">الأكثر تميزاً</option>
+            <option value="popular">الأكثر مبيعاً</option>
+            <option value="new">الأحدث</option>
+            <option value="price_asc">الأرخص أولاً</option>
+            <option value="price_desc">الأغلى أولاً</option>
+        </select>
+    </div>
+    <div class="flex items-center gap-1.5 flex-wrap justify-end">
+        <button onclick="window.mpSetType('all', this)" data-active="true" class="mp-type-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-600 text-white transition">الكل</button>
+        <button onclick="window.mpSetType('role', this)" class="mp-type-btn px-3 py-1.5 rounded-xl text-xs font-bold text-gray-400 bg-white/5 hover:text-white transition">🎭 رتب</button>
+        <button onclick="window.mpSetType('xp_booster', this)" class="mp-type-btn px-3 py-1.5 rounded-xl text-xs font-bold text-gray-400 bg-white/5 hover:text-white transition">⚡ XP بوستر</button>
+        <button onclick="window.mpSetType('coin_booster', this)" class="mp-type-btn px-3 py-1.5 rounded-xl text-xs font-bold text-gray-400 bg-white/5 hover:text-white transition">🪙 ذهب بوستر</button>
+        <button onclick="window.mpSetType('vip', this)" class="mp-type-btn px-3 py-1.5 rounded-xl text-xs font-bold text-gray-400 bg-white/5 hover:text-white transition">👑 VIP</button>
+        <button onclick="window.mpSetType('item', this)" class="mp-type-btn px-3 py-1.5 rounded-xl text-xs font-bold text-gray-400 bg-white/5 hover:text-white transition">🎁 عناصر</button>
+    </div>
+    <div id="mpCount" class="text-xs text-gray-500 font-bold ml-auto"></div>
+</div>
+
+<!-- Grid -->
+<div class="max-w-7xl mx-auto px-4 py-6">
+    <div id="mpGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <!-- skeleton -->
+        ${[...Array(12)].map(() => `<div class="skeleton rounded-2xl h-56"></div>`).join('')}
+    </div>
+    <div id="mpEmpty" class="hidden py-20 text-center space-y-3">
+        <div class="text-5xl">🔍</div>
+        <h3 class="text-white font-black">لا توجد نتائج</h3>
+        <p class="text-gray-500 text-xs">جرب مصطلح بحث مختلف أو غيّر الفلتر</p>
+    </div>
+    <div id="mpLoadMore" class="hidden mt-8 text-center">
+        <button onclick="window.mpLoadMore()" class="px-8 py-3 bg-[#151722] hover:bg-[#1c1f2e] text-gray-300 hover:text-white border border-white/5 rounded-2xl text-sm font-bold transition">تحميل المزيد ⬇️</button>
+    </div>
+</div>
+
+<!-- Buy Modal -->
+<div id="mpBuyModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target===this)document.getElementById('mpBuyModal').classList.add('hidden')">
+    <div class="bg-[#12141f] border border-white/10 rounded-2xl w-full max-w-sm p-6 space-y-4 shadow-2xl" onclick="event.stopPropagation()">
+        <div class="text-center space-y-2">
+            <div id="mpBuyIcon" class="text-5xl"></div>
+            <h3 id="mpBuyName" class="text-white font-black text-lg"></h3>
+            <p id="mpBuyDesc" class="text-gray-400 text-xs"></p>
+            <div class="flex items-center justify-center gap-3 py-2">
+                <span id="mpBuyPrice" class="text-2xl font-black text-amber-400 font-mono"></span>
+                <span class="text-xs text-gray-500 bg-[#1c1f2e] px-3 py-1 rounded-xl">
+                    رصيدك: <span class="text-white font-bold">${isLoggedIn ? userCoins.toLocaleString() : '—'} 🪙</span>
+                </span>
+            </div>
+            <p id="mpBuyServer" class="text-xs text-purple-400 font-bold"></p>
+        </div>
+        ${isLoggedIn ? `
+        <button id="mpBuyConfirmBtn" onclick="window.mpConfirmBuy()" class="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black rounded-2xl transition shadow-lg text-sm">
+            تأكيد الشراء 🛒
+        </button>
+        ` : `
+        <a href="/auth/discord" class="block w-full py-3 bg-[#5865F2] hover:bg-[#4752c4] text-white font-black rounded-2xl transition shadow-lg text-sm text-center">
+            تسجيل الدخول للشراء 🔑
+        </a>
+        `}
+        <button onclick="document.getElementById('mpBuyModal').classList.add('hidden')" class="w-full py-2 text-gray-500 hover:text-gray-300 text-xs transition">إلغاء</button>
+    </div>
+</div>
+
+<script>
+let _mpCurrentType = 'all';
+let _mpCurrentPage = 1;
+let _mpItems = [];
+let _mpTotal = 0;
+let _mpBuyTarget = null;
+let _mpSearchTimeout = null;
+
+window.mpSetType = function(type, btn) {
+    _mpCurrentType = type;
+    _mpCurrentPage = 1;
+    document.querySelectorAll('.mp-type-btn').forEach(b => {
+        b.classList.remove('bg-purple-600', 'text-white');
+        b.classList.add('text-gray-400', 'bg-white/5');
+        delete b.dataset.active;
+    });
+    btn.classList.add('bg-purple-600', 'text-white');
+    btn.classList.remove('text-gray-400', 'bg-white/5');
+    btn.dataset.active = 'true';
+    window.mpLoad(true);
+};
+
+window.mpFilter = function() {
+    clearTimeout(_mpSearchTimeout);
+    _mpSearchTimeout = setTimeout(() => {
+        _mpCurrentPage = 1;
+        window.mpLoad(true);
+    }, 400);
+};
+
+window.mpLoad = async function(reset) {
+    if (reset) { _mpItems = []; _mpCurrentPage = 1; }
+    const search = document.getElementById('mpSearch')?.value || '';
+    const sort = document.getElementById('mpSort')?.value || 'featured';
+    const params = new URLSearchParams({ page: _mpCurrentPage, sort });
+    if (search) params.set('search', search);
+    if (_mpCurrentType !== 'all') params.set('type', _mpCurrentType);
+    try {
+        const r = await fetch('/api/marketplace?' + params.toString());
+        const d = await r.json();
+        if (!d.success) return;
+        if (reset) _mpItems = d.items;
+        else _mpItems = [..._mpItems, ...d.items];
+        _mpTotal = d.total;
+        window.mpRender();
+        document.getElementById('mpLoadMore').classList.toggle('hidden', _mpItems.length >= _mpTotal);
+        document.getElementById('mpCount').textContent = _mpTotal + ' سلعة';
+    } catch(e) { console.error(e); }
+};
+
+window.mpLoadMore = function() {
+    _mpCurrentPage++;
+    window.mpLoad(false);
+};
+
+window.mpRender = function() {
+    const grid = document.getElementById('mpGrid');
+    const empty = document.getElementById('mpEmpty');
+    if (!_mpItems.length) {
+        grid.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+    }
+    empty.classList.add('hidden');
+    const typeIcons = { role: '🎭', xp_booster: '⚡', coin_booster: '🪙', vip: '👑', badge: '🏅', item: '🎁' };
+    grid.innerHTML = _mpItems.map(item => {
+        const icon = item.icon || typeIcons[item.item_type] || '🎁';
+        const outOfStock = item.stock === 0;
+        const badgeHtml = item.badge_label ? \`<span class="absolute top-2 right-2 px-1.5 py-0.5 bg-amber-500 text-black text-[8px] font-black rounded-md">\${item.badge_label}</span>\`
+            : item.is_featured ? \`<span class="absolute top-2 right-2 px-1.5 py-0.5 bg-purple-600 text-white text-[8px] font-black rounded-md">⭐</span>\` : '';
+        const origPrice = item.original_price > item.price ? \`<span class="text-[9px] text-gray-500 line-through">\${item.original_price.toLocaleString()}</span> \` : '';
+        const serverIconHtml = item.server_icon
+            ? \`<img src="\${item.server_icon}" class="w-4 h-4 rounded-md object-cover inline-block mr-1" onerror="this.style.display='none'">\`
+            : '<span class="text-[8px] mr-1">🌐</span>';
+        return \`<div class="bg-[#151722] border border-white/5 rounded-2xl p-3.5 flex flex-col gap-2.5 relative card-hover fade-in cursor-pointer" onclick="window.mpOpenBuy(\${JSON.stringify(item).replace(/"/g,'&quot;')})">
+            \${badgeHtml}
+            <div class="w-12 h-12 rounded-2xl bg-[#1c1f2e] flex items-center justify-center text-2xl border border-white/5 mx-auto">\${icon}</div>
+            <div class="text-right space-y-0.5">
+                <h3 class="text-xs font-black text-white leading-tight line-clamp-2">\${item.name}</h3>
+                <p class="text-[9px] text-gray-500 line-clamp-2">\${item.description || ''}</p>
+            </div>
+            <div class="text-[9px] text-gray-500 text-right flex items-center justify-end gap-1">
+                \${serverIconHtml}\${item.server_name || ''}
+            </div>
+            <div class="flex items-center justify-between pt-1 border-t border-white/5 mt-auto">
+                <span class="\${outOfStock ? 'text-rose-400' : 'text-emerald-400'} text-[9px] font-bold">
+                    \${outOfStock ? 'نفد' : item.stock > 0 ? 'متبقي ' + item.stock : '∞'}
+                </span>
+                <span class="text-xs font-black text-amber-400 font-mono">\${origPrice}\${item.price.toLocaleString()} 🪙</span>
+            </div>
+        </div>\`;
+    }).join('');
+};
+
+window.mpOpenBuy = function(item) {
+    _mpBuyTarget = item;
+    document.getElementById('mpBuyIcon').textContent = item.icon || '🎁';
+    document.getElementById('mpBuyName').textContent = item.name;
+    document.getElementById('mpBuyDesc').textContent = item.description || '';
+    document.getElementById('mpBuyPrice').textContent = item.price.toLocaleString() + ' 🪙';
+    document.getElementById('mpBuyServer').textContent = '📍 ' + (item.server_name || 'سيرفر ZENO');
+    document.getElementById('mpBuyModal').classList.remove('hidden');
+};
+
+window.mpConfirmBuy = async function() {
+    if (!_mpBuyTarget) return;
+    const btn = document.getElementById('mpBuyConfirmBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'جاري الشراء...'; }
+    try {
+        const r = await fetch('/api/guild/' + _mpBuyTarget.guild_id + '/store/buy/' + _mpBuyTarget.id, { method: 'POST' });
+        const d = await r.json();
+        if (d.success) {
+            document.getElementById('mpBuyModal').classList.add('hidden');
+            const t = document.getElementById('mpToast');
+            const m = document.getElementById('mpToastMsg');
+            m.innerHTML = '<span class="text-emerald-400">✅ تم الشراء بنجاح! ' + (d.discordNote || '') + '</span>';
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 4000);
+        } else {
+            const m = document.getElementById('mpToastMsg');
+            m.innerHTML = '<span class="text-rose-400">❌ ' + (d.error || 'حدث خطأ') + '</span>';
+            document.getElementById('mpToast').classList.remove('hidden');
+            setTimeout(() => document.getElementById('mpToast').classList.add('hidden'), 4000);
+        }
+    } catch(e) {
+        const m = document.getElementById('mpToastMsg');
+        m.innerHTML = '<span class="text-rose-400">❌ خطأ في الاتصال</span>';
+        document.getElementById('mpToast').classList.remove('hidden');
+    }
+    if (btn) { btn.disabled = false; btn.textContent = 'تأكيد الشراء 🛒'; }
+};
+
+// Load on start
+window.mpLoad(true);
+</script>
+</body>
+</html>`);
+    });
+
+    // ============================================================
     // 🛍️ GLOBAL STORE PAGE — /dashboard/store
+
     // ============================================================
     app.get('/dashboard/store', async (req, res) => {
         try {
@@ -1015,8 +1380,12 @@ module.exports = function (app, client) {
                         </div>
                     </div>
                     ${canAdmin ? `<div class="flex gap-1 pt-1 border-t border-white/5">
-                        <button onclick="window.deleteGlobalStoreItem('${selectedGuildId}', ${item.id}, this)" class="flex-1 py-1 text-[10px] font-bold text-rose-400 bg-rose-950/20 hover:bg-rose-950/40 rounded-lg transition">حذف</button>
+                        <button onclick="window.togglePublishItem('${selectedGuildId}', ${item.id}, ${item.is_public ? 1 : 0}, this)" class="flex-1 py-1 text-[10px] font-bold ${item.is_public ? 'text-amber-400 bg-amber-950/30 hover:bg-amber-950/50' : 'text-emerald-400 bg-emerald-950/20 hover:bg-emerald-950/40'} rounded-lg transition">
+                            ${item.is_public ? '🌐 منشور' : '📢 نشر للعموم'}
+                        </button>
+                        <button onclick="window.deleteGlobalStoreItem('${selectedGuildId}', ${item.id}, this)" class="px-2 py-1 text-[10px] font-bold text-rose-400 bg-rose-950/20 hover:bg-rose-950/40 rounded-lg transition">🗑</button>
                     </div>` : ''}
+
                 </div>`;
             }).join('') : `<div class="col-span-full py-16 text-center space-y-3">
                 <div class="text-5xl">🛍️</div>
@@ -1228,7 +1597,39 @@ module.exports = function (app, client) {
         }
     };
 
+    window.togglePublishItem = async function(guildId, itemId, currentPublic, btn) {
+        const newPublic = currentPublic ? 0 : 1;
+        try {
+            const r = await fetch('/api/guild/' + guildId + '/store/admin/items/' + itemId + '/publish', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_public: newPublic })
+            });
+            const d = await r.json();
+            if (d.success) {
+                if (newPublic) {
+                    btn.textContent = '🌐 منشور';
+                    btn.className = btn.className.replace(/text-emerald-400|bg-emerald-950\/20|hover:bg-emerald-950\/40/g, '').trim()
+                        + ' text-amber-400 bg-amber-950/30 hover:bg-amber-950/50';
+                    btn.setAttribute('onclick', "window.togglePublishItem('" + guildId + "', " + itemId + ", 1, this)");
+                    showGlobalToast('✅ تم نشر السلعة في السوق العام!', 'success');
+                } else {
+                    btn.textContent = '📢 نشر للعموم';
+                    btn.className = btn.className.replace(/text-amber-400|bg-amber-950\/30|hover:bg-amber-950\/50/g, '').trim()
+                        + ' text-emerald-400 bg-emerald-950/20 hover:bg-emerald-950/40';
+                    btn.setAttribute('onclick', "window.togglePublishItem('" + guildId + "', " + itemId + ", 0, this)");
+                    showGlobalToast('✅ تم إخفاء السلعة من السوق العام', 'success');
+                }
+            } else {
+                showGlobalToast('❌ ' + (d.error || 'حدث خطأ'), 'error');
+            }
+        } catch(e) {
+            showGlobalToast('❌ خطأ في الاتصال', 'error');
+        }
+    };
+
     window.deleteGlobalStoreItem = async function(guildId, itemId, btn) {
+
         if (!confirm('هل تريد حذف هذه السلعة؟')) return;
         try {
             const r = await fetch('/api/guild/' + guildId + '/store/admin/items/' + itemId, { method: 'DELETE' });
@@ -1735,6 +2136,8 @@ module.exports = function (app, client) {
                         <a href="/logout" data-i18n="logout" class="text-xs text-rose-400 hover:text-rose-300 font-bold transition">تسجيل الخروج</a>
                         <span class="text-gray-700">|</span>
                         <a href="https://discord.gg/zduGPYv7pE" target="_blank" data-i18n="support_server" class="text-xs text-gray-400 hover:text-gray-200 transition">الدعم الفني</a>
+                        <span class="text-gray-700">|</span>
+                        <a href="/marketplace" class="text-xs text-amber-400 hover:text-amber-300 font-bold transition">🛍️ السوق العام</a>
                     </div>
                     <div class="flex items-center gap-3">
                         <img src="${botAvatarUrl}" class="w-8 h-8 rounded-xl object-cover ring-2 ring-purple-500/40 shadow-md shadow-purple-900/30">
