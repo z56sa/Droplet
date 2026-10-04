@@ -561,7 +561,260 @@ module.exports = function (app, client) {
         }
     });
 
+    // ============================================================
+    // 🛍️ STORE SYSTEM — Economy Store API
+    // ============================================================
+
+    // مخزن مؤقت للعمليات الجارية (منع Race Conditions)
+    const _purchaseLocks = new Set();
+
+    // GET /api/guild/:guildId/store/items — جلب عناصر المتجر
+    app.get('/api/guild/:guildId/store/items', (req, res) => {
+        try {
+            const { guildId } = req.params;
+            const items = rawDb.prepare(`
+                SELECT * FROM store_items
+                WHERE guild_id = ? AND is_active = 1
+                ORDER BY is_featured DESC, total_sold DESC, created_at DESC
+            `).all(guildId);
+            res.json({ success: true, items });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // GET /api/guild/:guildId/store/inventory — مخزون المستخدم
+    app.get('/api/guild/:guildId/store/inventory', (req, res) => {
+        try {
+            const { guildId } = req.params;
+            const userId = req.session?.user?.id;
+            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
+            const now = Math.floor(Date.now() / 1000);
+            const inventory = rawDb.prepare(`
+                SELECT ui.*, si.name, si.icon, si.item_type, si.description
+                FROM user_inventory ui
+                JOIN store_items si ON ui.item_id = si.id
+                WHERE ui.user_id = ? AND ui.guild_id = ?
+                  AND (ui.expires_at = 0 OR ui.expires_at > ?)
+                ORDER BY ui.purchased_at DESC
+            `).all(userId, guildId, now);
+            res.json({ success: true, inventory });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // GET /api/guild/:guildId/store/transactions — سجل المعاملات (أدمن)
+    app.get('/api/guild/:guildId/store/transactions', (req, res) => {
+        try {
+            const { guildId } = req.params;
+            const userId = req.session?.user?.id;
+            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
+            // التحقق من صلاحيات الأدمن (يمتلك MANAGE_GUILD)
+            const userGuilds = req.session?.guilds || [];
+            const guild = userGuilds.find(g => g.id === guildId);
+            const isAdmin = guild && (BigInt(guild.permissions || 0) & BigInt(0x20)) !== BigInt(0);
+            const query = isAdmin
+                ? rawDb.prepare(`SELECT * FROM store_transactions WHERE guild_id = ? ORDER BY created_at DESC LIMIT 100`).all(guildId)
+                : rawDb.prepare(`SELECT * FROM store_transactions WHERE guild_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 50`).all(guildId, userId);
+            res.json({ success: true, transactions: query });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // POST /api/guild/:guildId/store/buy/:itemId — شراء عنصر
+    app.post('/api/guild/:guildId/store/buy/:itemId', async (req, res) => {
+        const { guildId, itemId } = req.params;
+        const userId = req.session?.user?.id;
+        if (!userId) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
+
+        const lockKey = `${userId}:${guildId}:${itemId}`;
+        if (_purchaseLocks.has(lockKey)) {
+            return res.status(429).json({ success: false, error: 'طلبك السابق لا يزال قيد المعالجة، انتظر لحظة...' });
+        }
+        _purchaseLocks.add(lockKey);
+
+        try {
+            // جلب العنصر
+            const item = rawDb.prepare(`SELECT * FROM store_items WHERE id = ? AND guild_id = ? AND is_active = 1`).get(itemId, guildId);
+            if (!item) return res.status(404).json({ success: false, error: 'العنصر غير موجود أو غير متاح' });
+
+            // تحقق من المخزون
+            if (item.stock === 0) return res.status(400).json({ success: false, error: 'نفد المخزون لهذا العنصر' });
+
+            // تحقق من كولداون المستخدم
+            if (item.cooldown_seconds > 0) {
+                const lastTx = rawDb.prepare(`
+                    SELECT created_at FROM store_transactions
+                    WHERE user_id = ? AND item_id = ? AND status = 'success'
+                    ORDER BY created_at DESC LIMIT 1
+                `).get(userId, item.id);
+                if (lastTx) {
+                    const elapsed = Math.floor(Date.now() / 1000) - lastTx.created_at;
+                    if (elapsed < item.cooldown_seconds) {
+                        const remaining = item.cooldown_seconds - elapsed;
+                        const h = Math.floor(remaining / 3600);
+                        const m = Math.floor((remaining % 3600) / 60);
+                        return res.status(400).json({ success: false, error: `يجب الانتظار ${h > 0 ? h + 'س ' : ''}${m}د قبل إعادة الشراء` });
+                    }
+                }
+            }
+
+            // جلب رصيد المستخدم
+            const userRow = rawDb.prepare(`SELECT coins FROM users WHERE user_id = ? AND guild_id = ?`).get(userId, guildId);
+            const userCoins = userRow?.coins || 0;
+            if (userCoins < item.price) {
+                return res.status(400).json({ success: false, error: `رصيدك غير كافٍ! تحتاج ${item.price} 🪙 ولديك ${userCoins} 🪙` });
+            }
+
+            // === تنفيذ الشراء كـ Transaction ===
+            const purchaseTransaction = rawDb.transaction(() => {
+                // خصم الذهب
+                rawDb.prepare(`UPDATE users SET coins = coins - ? WHERE user_id = ? AND guild_id = ?`).run(item.price, userId, guildId);
+
+                // تقليل المخزون إن كان محدوداً
+                if (item.stock > 0) {
+                    rawDb.prepare(`UPDATE store_items SET stock = stock - 1, total_sold = total_sold + 1, updated_at = strftime('%s','now') WHERE id = ?`).run(item.id);
+                } else {
+                    rawDb.prepare(`UPDATE store_items SET total_sold = total_sold + 1, updated_at = strftime('%s','now') WHERE id = ?`).run(item.id);
+                }
+
+                // حساب وقت الانتهاء
+                const expiresAt = item.booster_duration > 0 && (item.item_type === 'xp_booster' || item.item_type === 'coin_booster' || item.item_type === 'vip')
+                    ? Math.floor(Date.now() / 1000) + item.booster_duration
+                    : 0;
+
+                // إضافة للمخزون
+                rawDb.prepare(`
+                    INSERT INTO user_inventory (user_id, guild_id, item_id, quantity, is_active, expires_at)
+                    VALUES (?, ?, ?, 1, 1, ?)
+                `).run(userId, guildId, item.id, expiresAt);
+
+                // تسجيل المعاملة
+                rawDb.prepare(`
+                    INSERT INTO store_transactions (guild_id, user_id, item_id, item_name, amount, price_paid, status)
+                    VALUES (?, ?, ?, ?, 1, ?, 'success')
+                `).run(guildId, userId, item.id, item.name, item.price);
+
+                return expiresAt;
+            });
+
+            const expiresAt = purchaseTransaction();
+
+            // ✅ تطبيق الفائدة في Discord
+            let discordNote = '';
+            try {
+                const discordGuild = client?.guilds?.cache?.get(guildId);
+                if (discordGuild && item.item_type === 'role' && item.role_id) {
+                    const member = await discordGuild.members.fetch(userId).catch(() => null);
+                    if (member) {
+                        await member.roles.add(item.role_id).catch(() => {});
+                        discordNote = 'تم تعيين الرتبة في Discord ✅';
+                    }
+                }
+            } catch (discordErr) {
+                discordNote = 'سيتم تطبيق الفائدة قريباً';
+            }
+
+            // مزامنة مع Turso
+            try {
+                const tursoSync = require('../database/tursoSync');
+                const updatedUser = rawDb.prepare(`SELECT * FROM users WHERE user_id = ? AND guild_id = ?`).get(userId, guildId);
+                if (updatedUser) tursoSync.queueUserSync(updatedUser);
+            } catch (e) {}
+
+            // مسح page cache للمستخدم
+            if (typeof global._zenoDashboardClearCaches === 'function') {
+                global._zenoDashboardClearCaches();
+            }
+
+            return res.json({
+                success: true,
+                message: `تم شراء "${item.name}" بنجاح!`,
+                newBalance: (userCoins - item.price),
+                discordNote,
+                expiresAt
+            });
+
+        } catch (e) {
+            console.error('[STORE] Purchase error:', e);
+            return res.status(500).json({ success: false, error: 'حدث خطأ أثناء المعالجة، حاول مجدداً' });
+        } finally {
+            _purchaseLocks.delete(lockKey);
+        }
+    });
+
+    // === Admin Store Endpoints ===
+
+    // POST /api/guild/:guildId/store/admin/items — إضافة عنصر
+    app.post('/api/guild/:guildId/store/admin/items', (req, res) => {
+        try {
+            const { guildId } = req.params;
+            const userId = req.session?.user?.id;
+            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
+            const userGuilds = req.session?.guilds || [];
+            const guild = userGuilds.find(g => g.id === guildId);
+            if (!guild || (BigInt(guild.permissions || 0) & BigInt(0x20)) === BigInt(0)) {
+                return res.status(403).json({ success: false, error: 'ليس لديك صلاحية إدارة المتجر' });
+            }
+            const { name, description, item_type, icon, image_url, price, original_price, stock, role_id, booster_multiplier, booster_duration, cooldown_seconds, is_featured, badge_label } = req.body;
+            if (!name || !price) return res.status(400).json({ success: false, error: 'الاسم والسعر مطلوبان' });
+            const result = rawDb.prepare(`
+                INSERT INTO store_items (guild_id, name, description, item_type, icon, image_url, price, original_price, stock, role_id, booster_multiplier, booster_duration, cooldown_seconds, is_featured, badge_label)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(guildId, name, description || '', item_type || 'role', icon || '🎁', image_url || '', Number(price), Number(original_price || 0), Number(stock ?? -1), role_id || '', Number(booster_multiplier || 1.5), Number(booster_duration || 3600), Number(cooldown_seconds || 0), is_featured ? 1 : 0, badge_label || '');
+            res.json({ success: true, id: result.lastInsertRowid });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // PUT /api/guild/:guildId/store/admin/items/:itemId — تعديل عنصر
+    app.put('/api/guild/:guildId/store/admin/items/:itemId', (req, res) => {
+        try {
+            const { guildId, itemId } = req.params;
+            const userId = req.session?.user?.id;
+            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
+            const userGuilds = req.session?.guilds || [];
+            const guild = userGuilds.find(g => g.id === guildId);
+            if (!guild || (BigInt(guild.permissions || 0) & BigInt(0x20)) === BigInt(0)) {
+                return res.status(403).json({ success: false, error: 'ليس لديك صلاحية' });
+            }
+            const fields = req.body;
+            const allowed = ['name','description','item_type','icon','image_url','price','original_price','stock','role_id','booster_multiplier','booster_duration','cooldown_seconds','is_featured','is_active','badge_label'];
+            const sets = allowed.filter(k => fields[k] !== undefined).map(k => `${k} = @${k}`).join(', ');
+            if (!sets) return res.status(400).json({ success: false, error: 'لا توجد بيانات للتعديل' });
+            const values = {};
+            allowed.forEach(k => { if (fields[k] !== undefined) values[k] = fields[k]; });
+            values.id = itemId; values.guild_id = guildId;
+            rawDb.prepare(`UPDATE store_items SET ${sets}, updated_at = strftime('%s','now') WHERE id = @id AND guild_id = @guild_id`).run(values);
+            res.json({ success: true });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // DELETE /api/guild/:guildId/store/admin/items/:itemId — حذف عنصر
+    app.delete('/api/guild/:guildId/store/admin/items/:itemId', (req, res) => {
+        try {
+            const { guildId, itemId } = req.params;
+            const userId = req.session?.user?.id;
+            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
+            const userGuilds = req.session?.guilds || [];
+            const guild = userGuilds.find(g => g.id === guildId);
+            if (!guild || (BigInt(guild.permissions || 0) & BigInt(0x20)) === BigInt(0)) {
+                return res.status(403).json({ success: false, error: 'ليس لديك صلاحية' });
+            }
+            rawDb.prepare(`UPDATE store_items SET is_active = 0 WHERE id = ? AND guild_id = ?`).run(itemId, guildId);
+            res.json({ success: true });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
     // 3. User Dashboard & Main Routes (لوحة التحكم الداخلية للسيرفرات)
+
 
     // ✅ Cache للـ leaderboard - يمنع تشغيل GROUP BY على كل الجدول في كل request
     const _lbCache = { xp: null, coins: null, ts: 0 };
@@ -1720,7 +1973,8 @@ module.exports = function (app, client) {
                 'broadcast': 'Broadcast System 📢',
                 'embed': 'Advanced Embed Builder 📄',
                 'applications': 'Staff Applications System 📝',
-                'help': 'Full Commands List 📚'
+                'help': 'Full Commands List 📚',
+                'store': 'Economy & Server Store 🛍️'
             };
 
             let title = sectionTitles[section] || 'لوحة الإعدادات ⚙️';
@@ -8571,6 +8825,338 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
                     + 'if (searchEl) searchEl.addEventListener("input", filterCards);'
                     + 'if (filterEl) filterEl.addEventListener("change", filterCards);'
                     + '})();';
+            } else if (section === 'store') {
+                const userRow = rawDb.prepare('SELECT coins, bank_balance, xp, level FROM users WHERE user_id = ? AND guild_id = ?').get(user.id, guildId) || { coins: 0, bank_balance: 0, xp: 0, level: 1 };
+                const storeItems = rawDb.prepare('SELECT * FROM store_items WHERE guild_id = ? AND is_active = 1 ORDER BY is_featured DESC, total_sold DESC, created_at DESC').all(guildId);
+                const userInv = rawDb.prepare('SELECT ui.*, si.name, si.icon, si.item_type FROM user_inventory ui JOIN store_items si ON ui.item_id = si.id WHERE ui.user_id = ? AND ui.guild_id = ? ORDER BY ui.purchased_at DESC LIMIT 20').all(user.id, guildId);
+                const storeTx = rawDb.prepare('SELECT * FROM store_transactions WHERE guild_id = ? ORDER BY created_at DESC LIMIT 15').all(guildId);
+
+                formFieldsHtml = `
+                    <div class="space-y-6 text-right" dir="rtl">
+                        <!-- Top Economy & Store Header -->
+                        <div class="bg-gradient-to-r from-[#1e1035] via-[#131525] to-[#1e1035] border border-purple-500/30 p-6 rounded-3xl shadow-2xl relative overflow-hidden">
+                            <div class="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-purple-600 flex items-center justify-center text-3xl shadow-lg shadow-purple-950/60 border border-amber-300/30">
+                                        🛍️
+                                    </div>
+                                    <div class="text-right">
+                                        <h3 class="text-2xl font-black text-white flex items-center gap-2">
+                                            <span>متجر السيرفر والاقتصاد</span>
+                                            <span class="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full font-bold">Economy Store</span>
+                                        </h3>
+                                        <p class="text-gray-400 text-xs mt-1">اشترِ رتب ديسكورد، معززات XP وذهب، وميزات حصرية باستخدام رصيدك الذهبي في السيرفر.</p>
+                                    </div>
+                                </div>
+
+                                <!-- User Balance Widget -->
+                                <div class="flex items-center gap-3 bg-[#0a0c14]/80 border border-white/10 p-3.5 rounded-2xl shadow-inner backdrop-blur-md">
+                                    <div class="text-right">
+                                        <div class="text-[11px] text-gray-400 font-bold">رصيدك الحالي</div>
+                                        <div class="text-xl font-black text-amber-400 flex items-center gap-1.5 font-mono">
+                                            <span id="user-coins-display">${Number(userRow.coins || 0).toLocaleString()}</span>
+                                            <span class="text-amber-300 text-base">🪙</span>
+                                        </div>
+                                    </div>
+                                    <div class="h-8 w-[1px] bg-white/10"></div>
+                                    <div class="text-right">
+                                        <div class="text-[11px] text-gray-400 font-bold">البنك</div>
+                                        <div class="text-sm font-black text-purple-300 font-mono">
+                                            <span>${Number(userRow.bank_balance || 0).toLocaleString()}</span>
+                                            <span class="text-xs">💳</span>
+                                        </div>
+                                    </div>
+                                    <button onclick="document.getElementById('modal-add-item').classList.remove('hidden')" class="px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-purple-900/40">
+                                        <span>➕</span><span>إضافة سلعة</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Store Tabs: Catalog / My Inventory / Admin History -->
+                        <div class="flex items-center gap-2 border-b border-white/10 pb-3 text-xs font-bold">
+                            <button type="button" onclick="switchStoreTab('catalog')" id="tab-btn-catalog" class="px-4 py-2 rounded-xl bg-purple-600 text-white transition flex items-center gap-1.5 shadow">
+                                <span>🛒</span><span>الكتالوج والسلع (${storeItems.length})</span>
+                            </button>
+                            <button type="button" onclick="switchStoreTab('inventory')" id="tab-btn-inventory" class="px-4 py-2 rounded-xl bg-[#12141f] text-gray-300 hover:text-white transition flex items-center gap-1.5 border border-white/5">
+                                <span>🎒</span><span>مخزوني ومشترياتي (${userInv.length})</span>
+                            </button>
+                            <button type="button" onclick="switchStoreTab('history')" id="tab-btn-history" class="px-4 py-2 rounded-xl bg-[#12141f] text-gray-300 hover:text-white transition flex items-center gap-1.5 border border-white/5">
+                                <span>📜</span><span>سجل المبيعات</span>
+                            </button>
+                        </div>
+
+                        <!-- 1. Catalog Section -->
+                        <div id="store-view-catalog" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                ${storeItems.length === 0 ? `
+                                    <div class="col-span-full py-16 text-center bg-[#12141f] border border-dashed border-white/10 rounded-3xl">
+                                        <div class="text-4xl mb-2">🏪</div>
+                                        <div class="text-white font-bold text-sm">المتجر فارغ حالياً!</div>
+                                        <p class="text-gray-400 text-xs mt-1">اضغط على زر "إضافة سلعة" بالأعلى لإضافة رتب أو معززات يشتريها الأعضاء بالذهب.</p>
+                                    </div>
+                                ` : storeItems.map(item => {
+                                    const isDiscounted = item.original_price > item.price;
+                                    const discountPercent = isDiscounted ? Math.round(((item.original_price - item.price) / item.original_price) * 100) : 0;
+                                    const outOfStock = item.stock === 0;
+                                    return `
+                                        <div class="bg-[#12141f] border ${item.is_featured ? 'border-purple-500/50 shadow-purple-950/30' : 'border-white/5'} hover:border-purple-500/40 rounded-3xl p-5 flex flex-col justify-between transition-all duration-300 shadow-xl group relative overflow-hidden">
+                                            ${item.is_featured ? '<div class="absolute top-0 right-0 bg-gradient-to-l from-purple-600 to-indigo-600 text-white text-[10px] font-black px-3 py-0.5 rounded-bl-xl shadow">⭐ مميز</div>' : ''}
+                                            
+                                            <div>
+                                                <div class="flex items-start justify-between gap-3 mb-3">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="w-12 h-12 rounded-2xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                                                            ${item.icon || '🎁'}
+                                                        </div>
+                                                        <div>
+                                                            <h4 class="text-white font-black text-sm group-hover:text-purple-300 transition-colors">${item.name}</h4>
+                                                            <div class="flex items-center gap-1.5 mt-0.5">
+                                                                <span class="text-[10px] px-2 py-0.2 rounded-md font-bold bg-white/5 text-gray-300 border border-white/10">${item.item_type}</span>
+                                                                ${item.badge_label ? `<span class="text-[10px] px-2 py-0.2 rounded-md font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">${item.badge_label}</span>` : ''}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <p class="text-gray-400 text-xs leading-relaxed min-h-[36px] mb-4">${item.description || 'سلعة حصرية من متجر السيرفر تمنحك مميزات فورية.'}</p>
+                                            </div>
+
+                                            <div class="border-t border-white/5 pt-3 mt-2">
+                                                <div class="flex items-center justify-between mb-3">
+                                                    <div class="text-right">
+                                                        <div class="text-base font-black text-amber-400 font-mono flex items-center gap-1">
+                                                            <span>${Number(item.price).toLocaleString()}</span>
+                                                            <span class="text-sm">🪙</span>
+                                                            ${isDiscounted ? `<span class="text-xs text-gray-500 line-through font-normal mr-1">${Number(item.original_price).toLocaleString()}</span>` : ''}
+                                                        </div>
+                                                        ${isDiscounted ? `<span class="text-[10px] text-emerald-400 font-bold">وفرت ${discountPercent}% 🔥</span>` : ''}
+                                                    </div>
+                                                    <div class="text-left text-[11px] text-gray-400 font-mono">
+                                                        ${item.stock === -1 ? 'مخزون لا نهائي' : (outOfStock ? '<span class="text-rose-400 font-bold">نفد المخزون</span>' : `المتبقي: ${item.stock}`)}
+                                                    </div>
+                                                </div>
+
+                                                <div class="flex items-center gap-2">
+                                                    <button type="button" onclick="buyStoreItem(${item.id}, '${item.name.replace(/'/g, "\\'")}', ${item.price})" ${outOfStock ? 'disabled' : ''} class="flex-1 py-2.5 ${outOfStock ? 'bg-gray-700/50 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-950/40'} text-xs font-black rounded-xl transition flex items-center justify-center gap-1.5">
+                                                        <span>${outOfStock ? 'نفد' : 'شراء الآن'}</span>
+                                                        <span>${outOfStock ? '❌' : '⚡'}</span>
+                                                    </button>
+                                                    <button type="button" onclick="deleteStoreItem(${item.id})" class="p-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs transition" title="حذف السلعة">
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <!-- 2. Inventory Section -->
+                        <div id="store-view-inventory" class="hidden space-y-4">
+                            <div class="bg-[#12141f] border border-white/5 rounded-3xl p-6">
+                                <h4 class="text-white font-black text-sm mb-4 flex items-center gap-2"><span>🎒</span><span>مشترياتك ومخزونك في هذا السيرفر</span></h4>
+                                ${userInv.length === 0 ? `
+                                    <div class="py-12 text-center text-gray-400 text-xs">
+                                        لم تقم بشراء أي عناصر بعد! تصفح الكتالوج واشترِ بالذهب الخاص بك.
+                                    </div>
+                                ` : `
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        ${userInv.map(inv => `
+                                            <div class="bg-[#0b0d14] border border-white/10 rounded-2xl p-4 flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-xl">
+                                                    ${inv.icon || '🎁'}
+                                                </div>
+                                                <div class="flex-1">
+                                                    <div class="text-white font-bold text-xs">${inv.name}</div>
+                                                    <div class="text-[10px] text-gray-400 mt-0.5">نوع: ${inv.item_type} • الكمية: ${inv.quantity}</div>
+                                                </div>
+                                                <span class="text-emerald-400 text-xs font-bold">نشط ✅</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+
+                        <!-- 3. Sales History Section -->
+                        <div id="store-view-history" class="hidden space-y-4">
+                            <div class="bg-[#12141f] border border-white/5 rounded-3xl p-6">
+                                <h4 class="text-white font-black text-sm mb-4 flex items-center gap-2"><span>📜</span><span>آخر معاملات الشراء في السيرفر</span></h4>
+                                ${storeTx.length === 0 ? `
+                                    <div class="py-12 text-center text-gray-400 text-xs">لا توجد عمليات شراء مسجلة بعد.</div>
+                                ` : `
+                                    <div class="overflow-x-auto">
+                                        <table class="w-full text-right text-xs">
+                                            <thead>
+                                                <tr class="border-b border-white/10 text-gray-400 pb-2">
+                                                    <th class="py-2">المستخدم</th>
+                                                    <th class="py-2">السلعة</th>
+                                                    <th class="py-2">السعر المدفوع</th>
+                                                    <th class="py-2">الحالة</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-white/5">
+                                                ${storeTx.map(tx => `
+                                                    <tr>
+                                                        <td class="py-3 font-mono text-purple-300">ID: ${tx.user_id}</td>
+                                                        <td class="py-3 text-white font-bold">${tx.item_name}</td>
+                                                        <td class="py-3 text-amber-400 font-mono">${Number(tx.price_paid).toLocaleString()} 🪙</td>
+                                                        <td class="py-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">ناجحة ✅</span></td>
+                                                    </tr>
+                                                `).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+
+                        <!-- Modal: Add Item -->
+                        <div id="modal-add-item" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                            <div class="bg-[#12141f] border border-purple-500/30 rounded-3xl max-w-lg w-full p-6 text-right space-y-4 shadow-2xl relative">
+                                <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                                    <button type="button" onclick="document.getElementById('modal-add-item').classList.add('hidden')" class="text-gray-400 hover:text-white text-lg">✕</button>
+                                    <h4 class="text-white font-black text-sm flex items-center gap-2"><span>➕</span><span>إضافة سلعة جديدة للمتجر</span></h4>
+                                </div>
+                                <form id="form-add-store-item" onsubmit="submitNewStoreItem(event)" class="space-y-3 text-xs">
+                                    <div>
+                                        <label class="text-gray-300 font-bold block mb-1">اسم السلعة *</label>
+                                        <input type="text" name="name" required placeholder="مثال: رتبة VIP، معزز ذهب 2x" class="w-full bg-[#0a0c14] border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="text-gray-300 font-bold block mb-1">نوع السلعة</label>
+                                            <select name="item_type" class="w-full bg-[#0a0c14] border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500">
+                                                <option value="role">رتبة ديسكورد (Role)</option>
+                                                <option value="xp_booster">معزز خبرة (XP Booster)</option>
+                                                <option value="coin_booster">معزز ذهب (Coin Booster)</option>
+                                                <option value="vip">اشتراك VIP مؤقت</option>
+                                                <option value="badge">شارة بروفايل (Badge)</option>
+                                                <option value="custom">عنصر مخصص (Custom)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="text-gray-300 font-bold block mb-1">الأيقونة (Emoji)</label>
+                                            <input type="text" name="icon" value="🎁" class="w-full bg-[#0a0c14] border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 text-center">
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="text-gray-300 font-bold block mb-1">السعر (بالذهب) *</label>
+                                            <input type="number" name="price" required min="1" placeholder="500" class="w-full bg-[#0a0c14] border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 font-mono">
+                                        </div>
+                                        <div>
+                                            <label class="text-gray-300 font-bold block mb-1">السعر الأصلي (للخصومات)</label>
+                                            <input type="number" name="original_price" min="0" placeholder="0" class="w-full bg-[#0a0c14] border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 font-mono">
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="text-gray-300 font-bold block mb-1">رتبة ديسكورد المرتبطة (إن وجد)</label>
+                                            ${renderRoleSelect('role_id', '')}
+                                        </div>
+                                        <div>
+                                            <label class="text-gray-300 font-bold block mb-1">المخزون (-1 لا نهائي)</label>
+                                            <input type="number" name="stock" value="-1" class="w-full bg-[#0a0c14] border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500 font-mono">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="text-gray-300 font-bold block mb-1">الوصف</label>
+                                        <textarea name="description" rows="2" placeholder="وصف المزايا والصلاحيات..." class="w-full bg-[#0a0c14] border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-500"></textarea>
+                                    </div>
+                                    <div class="flex items-center gap-4 pt-2">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox" name="is_featured" value="1" class="accent-purple-600">
+                                            <span class="text-gray-300">عنصر مميز (Featured ⭐)</span>
+                                        </label>
+                                    </div>
+                                    <div class="pt-3 flex items-center justify-end gap-2">
+                                        <button type="button" onclick="document.getElementById('modal-add-item').classList.add('hidden')" class="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl font-bold">إلغاء</button>
+                                        <button type="submit" class="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black rounded-xl shadow-lg">حفظ وإضافة للمتجر 🚀</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                embedScriptHtml = \`
+                    function switchStoreTab(tab) {
+                        ['catalog', 'inventory', 'history'].forEach(t => {
+                            const el = document.getElementById('store-view-' + t);
+                            const btn = document.getElementById('tab-btn-' + t);
+                            if (el) el.classList.toggle('hidden', t !== tab);
+                            if (btn) {
+                                if (t === tab) {
+                                    btn.className = 'px-4 py-2 rounded-xl bg-purple-600 text-white transition flex items-center gap-1.5 shadow';
+                                } else {
+                                    btn.className = 'px-4 py-2 rounded-xl bg-[#12141f] text-gray-300 hover:text-white transition flex items-center gap-1.5 border border-white/5';
+                                }
+                            }
+                        });
+                    }
+
+                    async function buyStoreItem(itemId, itemName, price) {
+                        if (!confirm('هل أنت متأكد من رغبتك في شراء "' + itemName + '" مقابل ' + price + ' 🪙 ذهب؟')) return;
+                        try {
+                            const res = await fetch('/api/guild/${guildId}/store/buy/' + itemId, { method: 'POST' });
+                            const data = await res.json();
+                            if (data.success) {
+                                alert('🎉 ' + data.message + (data.discordNote ? '\\n' + data.discordNote : ''));
+                                if (data.newBalance !== undefined) {
+                                    const disp = document.getElementById('user-coins-display');
+                                    if (disp) disp.textContent = Number(data.newBalance).toLocaleString();
+                                }
+                                location.reload();
+                            } else {
+                                alert('❌ ' + (data.error || 'فشلت عملية الشراء'));
+                            }
+                        } catch(e) {
+                            alert('❌ حدث خطأ في الاتصال');
+                        }
+                    }
+
+                    async function submitNewStoreItem(e) {
+                        e.preventDefault();
+                        const form = e.target;
+                        const formData = new FormData(form);
+                        const body = Object.fromEntries(formData.entries());
+                        body.is_featured = form.is_featured ? form.is_featured.checked : false;
+                        try {
+                            const res = await fetch('/api/guild/${guildId}/store/admin/items', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(body)
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                alert('✅ تمت إضافة السلعة إلى المتجر بنجاح!');
+                                location.reload();
+                            } else {
+                                alert('❌ ' + (data.error || 'فشلت الإضافة'));
+                            }
+                        } catch(e) {
+                            alert('❌ خطأ في الاتصال');
+                        }
+                    }
+
+                    async function deleteStoreItem(itemId) {
+                        if (!confirm('هل أنت متأكد من حذف هذه السلعة من المتجر؟')) return;
+                        try {
+                            const res = await fetch('/api/guild/${guildId}/store/admin/items/' + itemId, { method: 'DELETE' });
+                            const data = await res.json();
+                            if (data.success) {
+                                location.reload();
+                            } else {
+                                alert('❌ ' + (data.error || 'فشل الحذف'));
+                            }
+                        } catch(e) {
+                            alert('❌ خطأ في الاتصال');
+                        }
+                    }
+                \`;
             } else if (section === 'analytics' || section === 'stats') {
                 const totalMembers = guild.memberCount || 0;
                 const textChCount = (guildTextChannels || []).length;
@@ -11003,7 +11589,21 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                             </div>
 
-                            
+                            <!-- المتجر الاقتصادي -->
+                            <div class="space-y-1">
+                                <button type="button" onclick="toggleNavGroup('grp_sub_store')" class="w-full flex items-center justify-between text-gray-400 hover:text-white px-2 py-1 font-bold text-[11px] transition">
+                                    <svg id="arrow_grp_sub_store" class="w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    <span class="flex items-center gap-1.5"><span>المتجر</span></span>
+                                </button>
+                                <div id="grp_sub_store" class="space-y-1">
+                                    <a href="/dashboard/${guildId}/store" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'store' ? 'bg-purple-600 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                        <span class="text-[9px] font-bold text-amber-300 bg-amber-950/60 border border-amber-500/30 px-1.5 py-0.2 rounded">جديد</span>
+                                        <span class="flex items-center gap-2"><span>متجر السيرفر</span><span class="text-gray-400 group-hover:text-amber-400">🛍️</span></span>
+                                    </a>
+                                </div>
+                            </div>
+
+
 
                         <!-- User Profile Bottom Bar -->
                         <div class="p-3 border-t border-white/5">

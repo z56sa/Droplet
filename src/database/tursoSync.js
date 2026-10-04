@@ -139,6 +139,60 @@ class TursoSync {
       try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN uses_count INTEGER DEFAULT 0;"); } catch(e) {}
       try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN created_at INTEGER DEFAULT (strftime('%s','now'));"); } catch(e) {}
 
+      // 1.7 Create store_items and inventory tables in Turso
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS store_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          guild_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT DEFAULT '',
+          item_type TEXT NOT NULL DEFAULT 'role',
+          icon TEXT DEFAULT '🎁',
+          image_url TEXT DEFAULT '',
+          price INTEGER NOT NULL DEFAULT 100,
+          original_price INTEGER DEFAULT 0,
+          stock INTEGER DEFAULT -1,
+          role_id TEXT DEFAULT '',
+          booster_multiplier REAL DEFAULT 1.5,
+          booster_duration INTEGER DEFAULT 3600,
+          cooldown_seconds INTEGER DEFAULT 0,
+          is_featured INTEGER DEFAULT 0,
+          is_active INTEGER DEFAULT 1,
+          badge_label TEXT DEFAULT '',
+          total_sold INTEGER DEFAULT 0,
+          created_at INTEGER DEFAULT (strftime('%s','now')),
+          updated_at INTEGER DEFAULT (strftime('%s','now'))
+        );
+      `);
+
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS user_inventory (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id TEXT NOT NULL,
+          guild_id TEXT NOT NULL,
+          item_id INTEGER NOT NULL,
+          quantity INTEGER DEFAULT 1,
+          is_active INTEGER DEFAULT 1,
+          expires_at INTEGER DEFAULT 0,
+          purchased_at INTEGER DEFAULT (strftime('%s','now'))
+        );
+      `);
+
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS store_transactions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          guild_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          item_id INTEGER NOT NULL,
+          item_name TEXT NOT NULL,
+          amount INTEGER NOT NULL,
+          price_paid INTEGER NOT NULL,
+          status TEXT DEFAULT 'success',
+          notes TEXT DEFAULT '',
+          created_at INTEGER DEFAULT (strftime('%s','now'))
+        );
+      `);
+
       console.log('[TURSO] ✅ Turso remote tables verified.');
 
       // 2. Restore users data from Turso to local SQLite (Restoring coins/streak/XP after container restart)
