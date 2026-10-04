@@ -1720,8 +1720,7 @@ module.exports = function (app, client) {
                 'broadcast': 'Broadcast System 📢',
                 'embed': 'Advanced Embed Builder 📄',
                 'applications': 'Staff Applications System 📝',
-                'help': 'Full Commands List 📚',
-                'ai': 'AI & Web (ZENO AI & Web) 🤖'
+                'help': 'Full Commands List 📚'
             };
 
             let title = sectionTitles[section] || 'لوحة الإعدادات ⚙️';
@@ -8572,108 +8571,6 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
                     + 'if (searchEl) searchEl.addEventListener("input", filterCards);'
                     + 'if (filterEl) filterEl.addEventListener("change", filterCards);'
                     + '})();';
-            } else if (section === 'ai') {
-                title = 'AI & Web (ZENO AI & Web) 🤖';
-
-                formFieldsHtml = '<div class="space-y-6 text-left" dir="ltr">'
-                    + '<div class="bg-gradient-to-r from-[#1c0f38] via-[#12141f] to-[#0d1527] border border-purple-500/30 p-6 rounded-3xl shadow-2xl relative overflow-hidden">'
-                    + '<div class="flex items-center justify-between flex-wrap gap-4 relative z-10">'
-                    + '<div class="flex items-center gap-2 flex-wrap">'
-                    + '<span class="bg-purple-600/30 border border-purple-500/50 text-purple-300 text-xs font-bold px-3 py-1 rounded-full">ZENO AI</span>'
-                    + '<span class="bg-emerald-600/30 border border-emerald-500/50 text-emerald-300 text-xs font-bold px-3 py-1 rounded-full">🌐 Online</span>'
-                    + '<span class="bg-indigo-600/30 border border-indigo-500/50 text-indigo-300 text-xs font-bold px-3 py-1 rounded-full">Live Browsing</span>'
-                    + '</div>'
-                    + '<div>'
-                    + '<h3 class="text-2xl font-black text-white flex items-center gap-2 justify-start"><span>🤖</span><span>AI & Smart Browsing</span></h3>'
-                    + '<p class="text-gray-400 text-xs mt-1">Chat directly with ZENO AI and test live browsing capabilities and internet search.</p>'
-                    + '</div>'
-                    + '</div>'
-                    + '</div>'
-                    + '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">'
-                    + '<div class="bg-[#12141f] border border-white/5 rounded-2xl p-4 text-left">'
-                    + '<div class="text-purple-400 text-xl mb-1">⚡</div>'
-                    + '<h4 class="text-white font-bold text-sm">Auto Interaction in Server</h4>'
-                    + '<p class="text-gray-400 text-xs mt-1 leading-relaxed">Any member who types <code class="text-purple-300 bg-purple-950/60 px-1 py-0.5 rounded">zeno</code> or <code class="text-purple-300 bg-purple-950/60 px-1 py-0.5 rounded">زينو</code> or mentions the bot will get an instant AI response.</p>'
-                    + '</div>'
-                    + '<div class="bg-[#12141f] border border-white/5 rounded-2xl p-4 text-left">'
-                    + '<div class="text-cyan-400 text-xl mb-1">🌐</div>'
-                    + '<h4 class="text-white font-bold text-sm">Live Web Browsing</h4>'
-                    + '<p class="text-gray-400 text-xs mt-1 leading-relaxed">Powered by Google Search Grounding and live search engine for latest news, results, and prices.</p>'
-                    + '</div>'
-                    + '<div class="bg-[#12141f] border border-white/5 rounded-2xl p-4 text-left">'
-                    + '<div class="text-amber-400 text-xl mb-1">⌨️</div>'
-                    + '<h4 class="text-white font-bold text-sm">Quick Discord Commands</h4>'
-                    + '<p class="text-gray-400 text-xs mt-1 leading-relaxed">Use slash commands <code class="text-amber-300 bg-amber-950/60 px-1 py-0.5 rounded">/ai</code> and <code class="text-amber-300 bg-amber-950/60 px-1 py-0.5 rounded">/ask</code> or prefix <code class="text-amber-300 bg-amber-950/60 px-1 py-0.5 rounded">#ai</code> for any question.</p>'
-                    + '</div>'
-                    + '</div>'
-                    + '<div class="bg-[#12141f] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4">'
-                    + '<div class="flex items-center justify-between border-b border-white/5 pb-3">'
-                    + '<h4 class="text-white font-black text-sm flex items-center gap-2"><span>💬</span><span>Live AI Experience (Live Chat)</span></h4>'
-                    + '<span class="text-xs text-gray-400">Live Chat Test from Dashboard</span>'
-                    + '</div>'
-                    + '<div id="ai-chat-box" class="h-80 overflow-y-auto space-y-3 p-4 bg-[#0a0c13] border border-white/5 rounded-2xl text-xs custom-scrollbar">'
-                    + '<div class="flex items-start gap-2.5 justify-start">'
-                    + '<div class="w-7 h-7 rounded-xl bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-sm shrink-0">🤖</div>'
-                    + '<div class="bg-[#161928] border border-white/10 text-gray-200 p-3 rounded-2xl max-w-[80%] leading-relaxed text-left">'
-                    + 'Welcome to ZENO Dashboard! I am your smart AI assistant connected to the internet. Ask me anything about your server or search for latest news and information, and I will answer instantly.'
-                    + '</div>'
-                    + '</div>'
-                    + '</div>'
-                    + '<div class="flex items-center gap-2">'
-                    + '<button type="button" id="ai-send-btn" class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shrink-0 shadow-lg shadow-purple-900/30">'
-                    + '<span>🚀</span><span>Send</span>'
-                    + '</button>'
-                    + '<input type="text" id="ai-input" placeholder="Ask ZENO any question or search the web..." dir="ltr" class="flex-1 bg-[#0a0c13] border border-white/10 focus:border-purple-500 rounded-xl px-4 py-2.5 text-xs text-white outline-none transition">'
-                    + '</div>'
-                    + '</div>'
-                    + '</div>';
-
-                embedScriptHtml = '(function() {'
-                    + 'var input = document.getElementById("ai-input");'
-                    + 'var btn = document.getElementById("ai-send-btn");'
-                    + 'var box = document.getElementById("ai-chat-box");'
-                    + 'function appendMsg(text, isUser) {'
-                    + '  var wrap = document.createElement("div");'
-                    + '  wrap.className = "flex items-start gap-2.5 " + (isUser ? "justify-end" : "justify-start flex-row-reverse");'
-                    + '  var avatar = document.createElement("div");'
-                    + '  avatar.className = "w-7 h-7 rounded-xl flex items-center justify-center text-sm shrink-0 " + (isUser ? "bg-indigo-600/30 border border-indigo-500/40" : "bg-purple-600/30 border border-purple-500/40");'
-                    + '  avatar.textContent = isUser ? "👤" : "🤖";'
-                    + '  var bubble = document.createElement("div");'
-                    + '  bubble.className = "p-3 rounded-2xl max-w-[80%] leading-relaxed text-right whitespace-pre-wrap " + (isUser ? "bg-purple-600/20 border border-purple-500/30 text-white" : "bg-[#161928] border border-white/10 text-gray-200");'
-                    + '  bubble.textContent = text;'
-                    + '  wrap.appendChild(bubble); wrap.appendChild(avatar);'
-                    + '  box.appendChild(wrap);'
-                    + '  box.scrollTop = box.scrollHeight;'
-                    + '}'
-                    + 'async function send() {'
-                    + '  var val = (input.value || "").trim();'
-                    + '  if (!val || btn.disabled) return;'
-                    + '  input.value = "";'
-                    + '  appendMsg(val, true);'
-                    + '  btn.disabled = true;'
-                    + '  btn.innerHTML = "<span>جاري التفكير...</span><span>⏳</span>";'
-                    + '  try {'
-                    + '    var res = await fetch("/api/guild/' + guildId + '/ai/chat", {'
-                    + '      method: "POST",'
-                    + '      headers: { "Content-Type": "application/json" },'
-                    + '      body: JSON.stringify({ prompt: val })'
-                    + '    });'
-                    + '    var data = await res.json();'
-                    + '    if (data && data.success) {'
-                    + '      appendMsg(data.response, false);'
-                    + '    } else {'
-                    + '      appendMsg("❌ " + (data.error || "حدث خطأ"), false);'
-                    + '    }'
-                    + '  } catch(err) {'
-                    + '    appendMsg("❌ تعذر الاتصال بالخادم، يرجى المحاولة لاحقاً.", false);'
-                    + '  } finally {'
-                    + '    btn.disabled = false;'
-                    + '    btn.innerHTML = "<span>إرسال</span><span>🚀</span>";'
-                    + '  }'
-                    + '}'
-                    + 'if (btn) btn.onclick = send;'
-                    + 'if (input) input.onkeydown = function(e) { if (e.key === "Enter") { e.preventDefault(); send(); } };'
-                    + '})();';
             } else if (section === 'analytics' || section === 'stats') {
                 const totalMembers = guild.memberCount || 0;
                 const textChCount = (guildTextChannels || []).length;
@@ -10962,10 +10859,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span></span>
                                         <span class="flex items-center gap-2"><span>قائمة الأوامر</span><span class="text-gray-400 group-hover:text-purple-400">📚</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/ai" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'ai' ? 'bg-purple-600 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
-                                        <span class="text-[9px] font-bold text-purple-300 bg-purple-950/70 border border-purple-500/30 px-1.5 py-0.2 rounded">ZENO</span>
-                                        <span class="flex items-center gap-2"><span class="text-gray-400 group-hover:text-purple-400">🤖</span><span>AI & Web</span></span>
-                                    </a>
+
                                 </div>
                             </div>
 

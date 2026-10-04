@@ -1,12 +1,12 @@
 /**
- * AI Auto-Healer & Real-time Crash / Error Reporter for ZENO.
+ * AI Error Monitor & Owner Consultant for ZENO.
  *
- * Automatically intercepts runtime errors, uses Gemini AI to analyze the cause,
- * applies automatic runtime healing/mitigation where possible, and delivers
- * an instant, formatted report directly to the bot owner's Discord DM.
+ * يرصد الأخطاء والمشاكل في البوت والداشبورد في الوقت الفعلي،
+ * يحلل المشكلة بالذكاء الاصطناعي، ثم يرسل تقريراً فورياً للمالك
+ * ويطلب موافقته قبل اتخاذ أي إجراء.
  */
 
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { GoogleGenAI } = require('@google/genai');
 const config = require('../config.json');
 
@@ -20,7 +20,7 @@ function getAI() {
     return aiClient;
 }
 
-// Throttle reports to avoid Discord DM rate limits (max 1 identical error per 5 minutes)
+// منع تكرار نفس الخطأ أكثر من مرة كل 5 دقائق
 const errorCache = new Map();
 const COOLDOWN_MS = 5 * 60 * 1000;
 
@@ -33,7 +33,6 @@ class AIAutoHealer {
     }
 
     init(client) {
-        // Update Discord client reference whenever provided
         if (client) {
             this.client = client;
             this.initialized = true;
@@ -42,13 +41,12 @@ class AIAutoHealer {
             });
         }
 
-        // Register process-level listeners only once
         if (this.listenersAttached) return;
         this.listenersAttached = true;
 
         console.log('[AI AutoHealer] Initialized and monitoring for errors 🛡️');
 
-        // Hook into uncaught exceptions without crashing the process
+        // رصد الأخطاء غير المعالجة بدون إيقاف البوت
         process.on('uncaughtException', (err) => {
             console.error('[AI AutoHealer] Uncaught Exception caught:', err);
             this.handleError(err, 'uncaughtException');
@@ -62,7 +60,7 @@ class AIAutoHealer {
     }
 
     /**
-     * Main error handling and auto-healing pipeline
+     * مسار رصد الأخطاء الرئيسي — يحلل ويستشير المالك
      */
     async handleError(error, context = 'Runtime') {
         try {
@@ -73,22 +71,18 @@ class AIAutoHealer {
             const isTest = context && context.startsWith('Test');
             const lastReported = errorCache.get(cacheKey) || 0;
             if (!isTest && Date.now() - lastReported < COOLDOWN_MS) {
-                return; // Suppress duplicate flood
+                return; // منع الإزعاج بتكرار نفس الخطأ
             }
             errorCache.set(cacheKey, Date.now());
 
-            // 1. Automatic runtime healing attempt
-            const healingResult = this.attemptSelfHealing(error, context);
+            // تحليل المشكلة بالذكاء الاصطناعي
+            const analysis = await this.analyzeWithAI(errMessage, errStack, context);
 
-            // 2. Analyze with Gemini AI
-            const analysis = await this.analyzeWithAI(errMessage, errStack, context, healingResult);
-
-            // 3. Send real-time instant report to owner's DM
+            // إرسال تقرير للمالك مع اقتراح الحل والسؤال عن الموافقة
             await this.sendOwnerReport({
                 context,
                 errMessage,
                 errStack,
-                healingResult,
                 analysis
             });
         } catch (fatalInternalErr) {
@@ -97,93 +91,45 @@ class AIAutoHealer {
     }
 
     /**
-     * Automatic self-healing routines for known common runtime failures
+     * تحليل المشكلة بـ Gemini AI
      */
-    attemptSelfHealing(error, context) {
-        const msg = (error?.message || '').toLowerCase();
-
-        // 1. Discord Rate Limits / 429
-        if (msg.includes('rate limit') || error?.status === 429) {
-            return {
-                action: 'تفعيل نظام الحماية من الـ Rate Limit تلقائياً وتأخير الطلبات القادمة لمنع الحظر مؤقتاً.',
-                status: 'تم التصحيح والتهدئة ✅'
-            };
-        }
-
-        // 2. Database lock or busy (SQLite/Turso)
-        if (msg.includes('database is locked') || msg.includes('sqlite_busy')) {
-            return {
-                action: 'إعادة محاولة كتابة البيانات وتفريغ طابور المعاملات في الخلفية مع تأخير تصاعدي.',
-                status: 'تمت المعالجة التلقائية ✅'
-            };
-        }
-
-        // 3. Discord Missing Permissions (50013)
-        if (error?.code === 50013 || msg.includes('missing permissions')) {
-            return {
-                action: 'تخطي العملية غير المسموح بها وإرجاع استجابة آمنة للمستخدم تفيد بنقص رتبة البوت.',
-                status: 'تم تفادي الانهيار ✅'
-            };
-        }
-
-        // 4. Session / Cookie corruption
-        if (msg.includes('cookie') || msg.includes('session')) {
-            return {
-                action: 'تفريغ وتجديد الجلسة المعطوبة تلقائياً لإعادة توجيه المستخدم بأمان.',
-                status: 'تم التصحيح ✅'
-            };
-        }
-
-        return {
-            action: 'تم اعتراض الخطأ ومنع توقف السيرفر أو انهياره في بيئة Render/Hosting.',
-            status: 'تم منع السقوط والتأمين ✅'
-        };
-    }
-
-    /**
-     * Send diagnostic prompt to Gemini AI
-     */
-    async analyzeWithAI(errMessage, errStack, context, healingResult) {
+    async analyzeWithAI(errMessage, errStack, context) {
         const ai = getAI();
         if (!ai) {
-            return '🤖 الذكاء الاصطناعي: لم يتم ضبط `GEMINI_API_KEY`، تم تطبيق المعالجة الذاتية التلقائية بنجاح.';
+            return '⚠️ لم يتم ضبط `GEMINI_API_KEY` — تم رصد الخطأ لكن لا يوجد تحليل ذكاء اصطناعي متاح.';
         }
 
         try {
-            const prompt = `أنت مهندس برمجيات وذكاء اصطناعي خبير في Node.js و Discord.js لبوت ZENO.
-حدث خطأ أثناء تشغيل النظام. حلله باختصار وقدم تشخيصاً دقيقاً باللغة العربية:
+            const prompt = `أنت مستشار برمجي لبوت Discord اسمه ZENO مكتوب بـ Node.js وdiscord.js.
+حدث خطأ أثناء التشغيل، حلله واقترح حلاً دقيقاً باللغة العربية:
 
-نوع الخطأ وسياقه: ${context}
+نوع الخطأ: ${context}
 الرسالة: ${errMessage}
-جزء من الـ Stack Trace:
+Stack Trace (جزء):
 ${errStack.slice(0, 800)}
 
-الإجراء التلقائي المتخذ: ${healingResult.action}
-
 المطلوب:
-1. ما سبب المشكلة بجملتين؟
-2. هل تم تحييدها؟
-3. نصيحة برمجية سريعة ومختصرة جداً لتجنب تكرارها.`;
+1. ما سبب المشكلة بجملتين فقط؟
+2. ما الحل المقترح بالضبط؟ (خطوة واحدة واضحة)
+3. هل هي خطيرة وتحتاج تدخلاً فورياً أم يمكن تجاهلها مؤقتاً؟`;
 
             const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
             const response = await ai.models.generateContent({
                 model: model,
                 contents: prompt,
-                config: {
-                    temperature: 0.3
-                }
+                config: { temperature: 0.2 }
             });
 
-            return response?.text || 'تعذر استخراج تحليل مفصل من الذكاء الاصطناعي حالياً.';
+            return response?.text || 'تعذر استخراج تحليل من الذكاء الاصطناعي.';
         } catch (e) {
-            return `تعذر استدعاء الذكاء الاصطناعي لتحليل الخطأ: ${e.message}`;
+            return `تعذر استدعاء الذكاء الاصطناعي: ${e.message}`;
         }
     }
 
     /**
-     * Deliver the real-time rich report to the owner's Discord DM
+     * إرسال تقرير للمالك مع اقتراح الحل والسؤال عن الموافقة
      */
-    async sendOwnerReport({ context, errMessage, errStack, healingResult, analysis }) {
+    async sendOwnerReport({ context, errMessage, errStack, analysis }) {
         if (!this.client || !this.client.isReady()) {
             console.warn('[AI AutoHealer] Discord client not ready to send DM report yet.');
             return;
@@ -199,22 +145,32 @@ ${errStack.slice(0, 800)}
             const cleanStack = (errStack || '').split('\n').slice(0, 5).join('\n') || errMessage;
 
             const embed = new EmbedBuilder()
-                .setColor(0x9333ea) // Purple
-                .setTitle('🚨 تقرير ذكي فوري: رصد مشكلة وحلها تلقائياً')
-                .setDescription(`قام نظام الذكاء الاصطناعي برصد خطأ برمجي/تشغيلي في بوت **ZENO** واتخذ الإجراء اللازم لحله فورياً ومنع توقف البوت.`)
+                .setColor(0xf59e0b) // أصفر/برتقالي = تحذير يحتاج مراجعة
+                .setTitle('🔍 رصد مشكلة في البوت/الداشبورد — يحتاج مراجعتك')
+                .setDescription(`تم رصد خطأ في بوت **ZENO**. تم تحليله بالذكاء الاصطناعي.\n**لم يتم اتخاذ أي إجراء تلقائي — القرار بيدك.**`)
                 .addFields(
-                    { name: '📍 سياق الخطأ', value: `\`${context}\``, inline: true },
-                    { name: '⚙️ حالة التصحيح الذاتي', value: `${healingResult.status}`, inline: true },
-                    { name: '🛠️ الإجراء المتخذ فورياً', value: `${healingResult.action}` },
+                    { name: '📍 مصدر الخطأ', value: `\`${context}\``, inline: true },
                     { name: '📄 رسالة الخطأ', value: `\`\`\`${errMessage.slice(0, 200)}\`\`\`` },
-                    { name: '🧠 تقرير وتحليل الذكاء الاصطناعي (Gemini)', value: `${analysis.slice(0, 1000)}` },
-                    { name: '📑 تتبع الكود (Stack Trace)', value: `\`\`\`js\n${cleanStack.slice(0, 600)}\n\`\`\`` }
+                    { name: '🧠 تحليل الذكاء الاصطناعي واقتراح الحل', value: analysis.slice(0, 1000) },
+                    { name: '📑 Stack Trace', value: `\`\`\`js\n${cleanStack.slice(0, 500)}\n\`\`\`` }
                 )
-                .setFooter({ text: 'ZENO AI Self-Healing System • تقرير فوري للمالك', iconURL: this.client.user?.displayAvatarURL() })
+                .setFooter({ text: 'ZENO Error Monitor • انتظار موافقة المالك', iconURL: this.client.user?.displayAvatarURL() })
                 .setTimestamp();
 
-            await owner.send({ embeds: [embed] }).catch(err => {
-                console.error('[AI AutoHealer] Failed to send DM to owner (check DMs open):', err.message);
+            // أزرار للمالك ليقرر
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('healer_ack')
+                    .setLabel('✅ تم الاطلاع، شكراً')
+                    .setStyle(ButtonStyle.Success),
+                new ButtonBuilder()
+                    .setCustomId('healer_ignore')
+                    .setLabel('🚫 تجاهل هذا النوع مؤقتاً')
+                    .setStyle(ButtonStyle.Secondary)
+            );
+
+            await owner.send({ embeds: [embed], components: [row] }).catch(err => {
+                console.error('[AI AutoHealer] Failed to send DM to owner:', err.message);
             });
 
             console.log('[AI AutoHealer] Instant DM report sent to owner ✅');
