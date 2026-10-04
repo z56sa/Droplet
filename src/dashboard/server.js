@@ -9082,7 +9082,7 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
                     </div>
                 `;
 
-                embedScriptHtml = \`
+                embedScriptHtml = `
                     function switchStoreTab(tab) {
                         ['catalog', 'inventory', 'history'].forEach(t => {
                             const el = document.getElementById('store-view-' + t);
@@ -9156,7 +9156,7 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
                             alert('❌ خطأ في الاتصال');
                         }
                     }
-                \`;
+                `;
             } else if (section === 'analytics' || section === 'stats') {
                 const totalMembers = guild.memberCount || 0;
                 const textChCount = (guildTextChannels || []).length;
