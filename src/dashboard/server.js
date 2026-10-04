@@ -887,40 +887,40 @@ module.exports = function (app, client) {
             const { search, type, sort, page } = req.query;
             const limit = 48;
             const offset = (Math.max(1, parseInt(page) || 1) - 1) * limit;
-            let where = `WHERE si.is_public = 1 AND si.is_active = 1`;
+            let whereClauses = ['is_public = 1', 'is_active = 1'];
             const params = [];
-            if (search) { where += ` AND si.name LIKE ?`; params.push(`%${search}%`); }
-            if (type && type !== 'all') { where += ` AND si.item_type = ?`; params.push(type); }
-            const orderBy = sort === 'price_asc' ? 'si.price ASC'
-                : sort === 'price_desc' ? 'si.price DESC'
-                : sort === 'popular' ? 'si.total_sold DESC'
-                : sort === 'new' ? 'si.created_at DESC'
-                : 'si.is_featured DESC, si.total_sold DESC, si.created_at DESC';
+            if (search) { whereClauses.push('name LIKE ?'); params.push(`%${search}%`); }
+            if (type && type !== 'all') { whereClauses.push('item_type = ?'); params.push(type); }
+            const where = 'WHERE ' + whereClauses.join(' AND ');
+            const orderBy = sort === 'price_asc' ? 'price ASC'
+                : sort === 'price_desc' ? 'price DESC'
+                : sort === 'popular' ? 'total_sold DESC'
+                : sort === 'new' ? 'created_at DESC'
+                : 'is_featured DESC, total_sold DESC, created_at DESC';
+            // بدون JOIN — فقط store_items مباشرة
             const items = rawDb.prepare(`
-                SELECT si.*, gs.bot_name as server_name, gs.bot_avatar as server_icon
-                FROM store_items si
-                LEFT JOIN guild_settings gs ON si.guild_id = gs.guild_id
+                SELECT * FROM store_items
                 ${where}
                 ORDER BY ${orderBy}
                 LIMIT ? OFFSET ?
             `).all(...params, limit, offset);
-            // إضافة اسم السيرفر من Discord client إن لم يكن في DB
+            // إضافة اسم السيرفر وأيقونته من Discord client cache
             const enriched = items.map(item => {
-                const discordGuild = client?.guilds?.cache?.get(item.guild_id);
-                return {
-                    ...item,
-                    server_name: discordGuild?.name || item.server_name || 'سيرفر ZENO',
-                    server_icon: discordGuild?.icon
-                        ? `https://cdn.discordapp.com/icons/${item.guild_id}/${discordGuild.icon}.png`
-                        : (item.server_icon || null)
-                };
+                const discordGuild = client?.guilds?.cache?.get(String(item.guild_id));
+                const serverName = discordGuild?.name || 'سيرفر ZENO';
+                const serverIcon = discordGuild?.icon
+                    ? `https://cdn.discordapp.com/icons/${item.guild_id}/${discordGuild.icon}.png`
+                    : null;
+                return { ...item, server_name: serverName, server_icon: serverIcon };
             });
-            const total = rawDb.prepare(`SELECT COUNT(*) as c FROM store_items WHERE is_public = 1 AND is_active = 1`).get();
-            res.json({ success: true, items: enriched, total: total?.c || 0, page: parseInt(page) || 1, limit });
+            const totalRow = rawDb.prepare(`SELECT COUNT(*) as c FROM store_items WHERE is_public = 1 AND is_active = 1`).get();
+            res.json({ success: true, items: enriched, total: totalRow?.c || 0, page: parseInt(page) || 1, limit });
         } catch (e) {
+            console.error('[MARKETPLACE API] Error:', e.message);
             res.status(500).json({ success: false, error: e.message });
         }
     });
+
 
     // 3. User Dashboard & Main Routes (لوحة التحكم الداخلية للسيرفرات)
 
