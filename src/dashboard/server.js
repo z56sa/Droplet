@@ -1073,7 +1073,7 @@ module.exports = function (app, client) {
 
     <script src="/i18n.js"></script>
 </head>
-            <body class="min-h-screen flex flex-col bg-[#0b0d14] text-gray-200">
+            <body data-zeno-manual-lang="true" class="min-h-screen flex flex-col bg-[#0b0d14] text-gray-200">
                 <header class="h-16 bg-[#10121b]/95 backdrop-blur-md border-b border-white/5 px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-3">
                         <button type="button" onclick="window.zenoI18n.toggleLang()" class="zeno-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
@@ -10816,7 +10816,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 </style>
                 <script src="/i18n.js"></script>
             </head>
-            <body class="min-h-screen flex flex-col bg-[#0b0d14] text-gray-200">
+            <body data-zeno-manual-lang="true" class="min-h-screen flex flex-col bg-[#0b0d14] text-gray-200">
                 <header class="h-16 bg-[#10121b]/95 backdrop-blur-md border-b border-white/5 px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-3">
                         <button type="button" onclick="window.zenoI18n.toggleLang()" class="zeno-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">

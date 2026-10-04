@@ -1014,7 +1014,11 @@
         if (document.documentElement && document.documentElement.hasAttribute && document.documentElement.hasAttribute('data-zeno-manual-lang')) return true;
         try {
             var lp = location.pathname;
-            if (lp === '/' || lp === '' || lp === '/dashboard' || lp === '/index.html' || lp === '/dashboard/') {
+            // لوحات التحكم تحتوي على آلاف العناصر وتحديثات مستمرة، فحص شجرة الـ DOM كاملة مع كل نقرة أو تعديل يتسبب بتجمد كامل للمتصفح
+            if (lp.startsWith('/dashboard') || lp.includes('/dashboard')) {
+                return true;
+            }
+            if (lp === '/' || lp === '' || lp === '/index.html') {
                 var hasLangSpans = document.querySelector && (document.querySelector('.lang-ar') || document.querySelector('.lang-en'));
                 if (hasLangSpans) return true;
             }
@@ -1027,10 +1031,10 @@
         applyLayout(lang);
         if (!document.body) return lang;
         if (isManualLangPage()) return lang;
+        // الصفحة بالأساس مكتوبة بالعربية، لذا في حال العربية لا حاجة لفحص شجرة الـ DOM كاملة
+        if (lang === 'ar') return lang;
         if (lang === 'en') {
             translateNodeWithDict(document.body, dictionary, arKeysByLength);
-        } else {
-            translateNodeWithDict(document.body, reverseDictionary, enKeysByLength);
         }
         return lang;
     }
@@ -1094,12 +1098,15 @@
     function startMutationObserver() {
         if (observerActive || !('MutationObserver' in window)) return;
         if (isManualLangPage()) return;
+        const currentLang = detectLang();
+        if (currentLang === 'ar') return; // الصفحة مكتوبة بالعربية أصلاً، لا داعي لمراقبة التغييرات وإعادة ترجمتها
         observerActive = true;
         const observer = new MutationObserver(function(mutations) {
             if (isTranslating) return;
             const lang = detectLang();
-            const dict = lang === 'en' ? dictionary : reverseDictionary;
-            const keys = lang === 'en' ? arKeysByLength : enKeysByLength;
+            if (lang === 'ar') return;
+            const dict = dictionary;
+            const keys = arKeysByLength;
             isTranslating = true;
             try {
                 for (let j = 0; j < mutations.length; j++) {
