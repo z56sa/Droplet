@@ -274,6 +274,13 @@ class TursoSync {
         console.error('[TURSO] ⚠️ Error restoring guild settings:', gsErr.message);
       }
 
+      // ✅ بعد انتهاء كل الاستعادة — مسح cache الداشبورد حتى يظهر الـ leaderboard بالبيانات الصحيحة
+      if (typeof global._zenoDashboardClearCaches === 'function') {
+        setTimeout(() => {
+          try { global._zenoDashboardClearCaches(); } catch(e) {}
+        }, 1000); // نتأخر ثانية إضافية للتأكد من انتهاء كل العمليات
+      }
+
     } catch (err) {
       console.error('[TURSO] ⚠️ Error during initAndRestore:', err.message);
     }

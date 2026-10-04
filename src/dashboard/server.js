@@ -600,9 +600,23 @@ module.exports = function (app, client) {
         }
     }
 
-    // ✅ Per-user page cache - الصفحة تُحفظ 5 دقائق لكل مستخدم
+    // ✅ Per-user page cache - الصفحة تُحفظ 60 ثانية لكل مستخدم
     const _pageCache = new Map(); // userId -> { html, ts }
-    const _PAGE_TTL = 5 * 60 * 1000; // 5 دقائق
+    const _PAGE_TTL = 60 * 1000; // 60 ثانية (مخفضة لضمان تحديث البيانات بعد Turso restore)
+
+    // دالة لمسح caches بعد انتهاء Turso restore
+    function clearDashboardCaches() {
+        _pageCache.clear();
+        _lbCache.xp = null;
+        _lbCache.coins = null;
+        _lbCache.ts = 0;
+        console.log('[DASH] 🔄 Dashboard caches cleared after Turso restore.');
+        _warmLeaderboardCache();
+    }
+    // تصدير الدالة لاستخدامها من tursoSync
+    if (typeof global._zenoDashboardClearCaches === 'undefined') {
+        global._zenoDashboardClearCaches = clearDashboardCaches;
+    }
 
     // ✅ تسخين الـ leaderboard cache في الخلفية تلقائياً - يمنع أي مستخدم من تشغيل القيود الثقيلة
     function _warmLeaderboardCache() {
@@ -626,8 +640,8 @@ module.exports = function (app, client) {
         } catch(e) {}
     }
 
-    // تسخين فوري عند بدء تشغيل السيرفر
-    setTimeout(_warmLeaderboardCache, 2000);
+    // تسخين فوري عند بدء تشغيل السيرفر (نتأخر 15 ثانية لانتظار انتهاء Turso restore)
+    setTimeout(_warmLeaderboardCache, 15000);
     // إعادة التسخين كل 8 دقائق في الخلفية
     setInterval(_warmLeaderboardCache, 8 * 60 * 1000);
 
