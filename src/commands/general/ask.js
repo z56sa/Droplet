@@ -86,6 +86,8 @@ const ZENO_SYSTEM_INSTRUCTION = `
 const MODELS = [
     process.env.GEMINI_MODEL,
     process.env.GEMINI_FALLBACK_MODEL,
+    'gemini-3.8-flash',
+    'gemini-3-flash',
     'gemini-2.5-flash'
 ].filter(Boolean);
 

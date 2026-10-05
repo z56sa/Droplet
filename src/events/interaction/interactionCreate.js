@@ -1,5 +1,4 @@
 const autoHealer = require('../../services/aiAutoHealer');
-if (await autoHealer.handleInteraction(interaction)) return;
 const { ChannelType, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, AttachmentBuilder, StringSelectMenuBuilder, UserSelectMenuBuilder } = require('discord.js');
 const db = require('../../database');
 const embedUtil = require('../../utils/embed');
@@ -10,6 +9,8 @@ module.exports = {
   name: 'interactionCreate',
   async execute(interaction, client) {
     try {
+      if (await autoHealer.handleInteraction(interaction)) return;
+
       // 1. التعامل مع أوامر السلاش (Slash Commands)
       if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
