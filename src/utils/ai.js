@@ -150,60 +150,43 @@ async function askAI(promptText) {
         }
     }
 
-    const configuredModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-    const modelsToTry = [configuredModel];
+    const configuredModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 
-    let lastError = null;
-
-    // محاولة أولى: تجربة التصفح التلقائي المدمج عبر Google Search Grounding
-    for (const model of modelsToTry) {
-        try {
-            const response = await ai.models.generateContent({
-                model: model,
-                contents: enrichedPrompt,
-                config: {
-                    systemInstruction: ZENO_SYSTEM_INSTRUCTION,
-                    temperature: 0.7,
-                    tools: [{ googleSearch: {} }]
-                }
-            });
-            if (response && response.text) {
-                return response.text;
-            }
-        } catch (error) {
-            // إذا كان الخطأ متعلقاً بالـ Grounding Tool أو الكوتا الخاصة به، نجرب بدون tool مع الاعتماد على نتائج محرك التصفح المرفقة
-            lastError = error;
+    try {
+        const ai = getClient();
+        if (!ai) {
+            return '❌ لم يتم ضبط مفتاح `GEMINI_API_KEY` في متغيرات البيئة.';
         }
+
+        const response = await ai.models.generateContent({
+            model: configuredModel,
+            contents: enrichedPrompt,
+            config: {
+                systemInstruction: ZENO_SYSTEM_INSTRUCTION,
+                temperature: 0.7,
+            }
+        });
+
+        if (response && response.text) {
+            return response.text;
+        }
+
+        return '❌ لم يأتِ رد من الذكاء الاصطناعي، حاول مرة أخرى.';
+
+    } catch (error) {
+        const status = Number(error?.status || error?.code || 0);
+        console.error(`[AI Error] فشل الاتصال (status ${status}):`, error?.message || error);
+
+        if (status === 429) {
+            return '⏳ الذكاء الاصطناعي مشغول حالياً، يرجى الانتظار قليلاً والمحاولة مجدداً.';
+        }
+        if (status === 400) {
+            return '❌ السؤال يحتوي على محتوى غير مدعوم، يرجى إعادة صياغته.';
+        }
+
+        return '❌ عذراً، حدث خطأ أثناء الاتصال بالذكاء الاصطناعي، يرجى المحاولة لاحقاً.';
     }
 
-    // محاولة ثانية: توليد الرد بالاعتماد على نتائج محرك التصفح المدمجة
-    for (const model of modelsToTry) {
-        try {
-            const response = await ai.models.generateContent({
-                model: model,
-                contents: enrichedPrompt,
-                config: {
-                    systemInstruction: ZENO_SYSTEM_INSTRUCTION,
-                    temperature: 0.7,
-                }
-            });
-            if (response && response.text) {
-                return response.text;
-            }
-        } catch (error) {
-            lastError = error;
-            const status = Number(error?.status || error?.code || 0);
-            console.warn(`[AI] فشلت المحاولة باستخدام النموذج ${model} (status ${status}):`, error?.message || error);
-            // لا تدوّر على نماذج متعددة عند 429/503؛ ذلك يحوّل عطلًا مؤقتًا إلى استنزاف للكوتا.
-            if (status === 429 || status === 503) {
-                const retrySeconds = Number(error?.error?.details?.find?.(d => d['@type']?.includes('RetryInfo'))?.retryDelay?.replace?.('s','') || 30);
-                await new Promise(resolve => setTimeout(resolve, Math.min(Math.max(retrySeconds * 1000, 5000), 30000)));
-            }
-        }
-    }
-
-    console.error('[AI Error] تعذر الحصول على رد من Gemini:', lastError);
-    return '❌ عذراً، حدث خطأ أثناء الاتصال بالذكاء الاصطناعي، يرجى المحاولة لاحقاً.';
 }
 
 module.exports = { askAI, ZENO_SYSTEM_INSTRUCTION, searchWeb };
