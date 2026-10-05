@@ -561,6 +561,260 @@ module.exports = function (app, client) {
         }
     });
 
+    // ============================================================
+    // 🛍️ STORE SYSTEM — Economy Store API
+    // ============================================================
+
+    // مخزن مؤقت للعمليات الجارية (منع Race Conditions)
+    const _purchaseLocks = new Set();
+
+    // GET /api/guild/:guildId/store/items — جلب عناصر المتجر
+    app.get('/api/guild/:guildId/store/items', (req, res) => {
+        try {
+            const { guildId } = req.params;
+            const items = rawDb.prepare(`
+                SELECT * FROM store_items
+                WHERE guild_id = ? AND is_active = 1
+                ORDER BY is_featured DESC, total_sold DESC, created_at DESC
+            `).all(guildId);
+            res.json({ success: true, items });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // GET /api/guild/:guildId/store/inventory — مخزون المستخدم
+    app.get('/api/guild/:guildId/store/inventory', (req, res) => {
+        try {
+            const { guildId } = req.params;
+            const userId = req.session?.user?.id;
+            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
+            const now = Math.floor(Date.now() / 1000);
+            const inventory = rawDb.prepare(`
+                SELECT ui.*, si.name, si.icon, si.item_type, si.description
+                FROM user_inventory ui
+                JOIN store_items si ON ui.item_id = si.id
+                WHERE ui.user_id = ? AND ui.guild_id = ?
+                  AND (ui.expires_at = 0 OR ui.expires_at > ?)
+                ORDER BY ui.purchased_at DESC
+            `).all(userId, guildId, now);
+            res.json({ success: true, inventory });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // GET /api/guild/:guildId/store/transactions — سجل المعاملات (أدمن)
+    app.get('/api/guild/:guildId/store/transactions', (req, res) => {
+        try {
+            const { guildId } = req.params;
+            const userId = req.session?.user?.id;
+            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
+            // التحقق من صلاحيات الأدمن (يمتلك MANAGE_GUILD)
+            const userGuilds = req.session?.guilds || [];
+            const guild = userGuilds.find(g => g.id === guildId);
+            const isAdmin = guild && (BigInt(guild.permissions || 0) & BigInt(0x20)) !== BigInt(0);
+            const query = isAdmin
+                ? rawDb.prepare(`SELECT * FROM store_transactions WHERE guild_id = ? ORDER BY created_at DESC LIMIT 100`).all(guildId)
+                : rawDb.prepare(`SELECT * FROM store_transactions WHERE guild_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 50`).all(guildId, userId);
+            res.json({ success: true, transactions: query });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // POST /api/guild/:guildId/store/buy/:itemId — شراء عنصر
+    app.post('/api/guild/:guildId/store/buy/:itemId', async (req, res) => {
+        const { guildId, itemId } = req.params;
+        const userId = req.session?.user?.id;
+        if (!userId) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
+
+        const lockKey = `${userId}:${guildId}:${itemId}`;
+        if (_purchaseLocks.has(lockKey)) {
+            return res.status(429).json({ success: false, error: 'طلبك السابق لا يزال قيد المعالجة، انتظر لحظة...' });
+        }
+        _purchaseLocks.add(lockKey);
+
+        try {
+            // جلب العنصر
+            const item = rawDb.prepare(`SELECT * FROM store_items WHERE id = ? AND guild_id = ? AND is_active = 1`).get(itemId, guildId);
+            if (!item) return res.status(404).json({ success: false, error: 'العنصر غير موجود أو غير متاح' });
+
+            // تحقق من المخزون
+            if (item.stock === 0) return res.status(400).json({ success: false, error: 'نفد المخزون لهذا العنصر' });
+
+            // تحقق من كولداون المستخدم
+            if (item.cooldown_seconds > 0) {
+                const lastTx = rawDb.prepare(`
+                    SELECT created_at FROM store_transactions
+                    WHERE user_id = ? AND item_id = ? AND status = 'success'
+                    ORDER BY created_at DESC LIMIT 1
+                `).get(userId, item.id);
+                if (lastTx) {
+                    const elapsed = Math.floor(Date.now() / 1000) - lastTx.created_at;
+                    if (elapsed < item.cooldown_seconds) {
+                        const remaining = item.cooldown_seconds - elapsed;
+                        const h = Math.floor(remaining / 3600);
+                        const m = Math.floor((remaining % 3600) / 60);
+                        return res.status(400).json({ success: false, error: `يجب الانتظار ${h > 0 ? h + 'س ' : ''}${m}د قبل إعادة الشراء` });
+                    }
+                }
+            }
+
+            // جلب رصيد المستخدم
+            const userRow = rawDb.prepare(`SELECT coins FROM users WHERE user_id = ? AND guild_id = ?`).get(userId, guildId);
+            const userCoins = userRow?.coins || 0;
+            if (userCoins < item.price) {
+                return res.status(400).json({ success: false, error: `رصيدك غير كافٍ! تحتاج ${item.price} 🪙 ولديك ${userCoins} 🪙` });
+            }
+
+            // === تنفيذ الشراء كـ Transaction ===
+            const purchaseTransaction = rawDb.transaction(() => {
+                // خصم الذهب
+                rawDb.prepare(`UPDATE users SET coins = coins - ? WHERE user_id = ? AND guild_id = ?`).run(item.price, userId, guildId);
+
+                // تقليل المخزون إن كان محدوداً
+                if (item.stock > 0) {
+                    rawDb.prepare(`UPDATE store_items SET stock = stock - 1, total_sold = total_sold + 1, updated_at = strftime('%s','now') WHERE id = ?`).run(item.id);
+                } else {
+                    rawDb.prepare(`UPDATE store_items SET total_sold = total_sold + 1, updated_at = strftime('%s','now') WHERE id = ?`).run(item.id);
+                }
+
+                // حساب وقت الانتهاء
+                const expiresAt = item.booster_duration > 0 && (item.item_type === 'xp_booster' || item.item_type === 'coin_booster' || item.item_type === 'vip')
+                    ? Math.floor(Date.now() / 1000) + item.booster_duration
+                    : 0;
+
+                // إضافة للمخزون
+                rawDb.prepare(`
+                    INSERT INTO user_inventory (user_id, guild_id, item_id, quantity, is_active, expires_at)
+                    VALUES (?, ?, ?, 1, 1, ?)
+                `).run(userId, guildId, item.id, expiresAt);
+
+                // تسجيل المعاملة
+                rawDb.prepare(`
+                    INSERT INTO store_transactions (guild_id, user_id, item_id, item_name, amount, price_paid, status)
+                    VALUES (?, ?, ?, ?, 1, ?, 'success')
+                `).run(guildId, userId, item.id, item.name, item.price);
+
+                return expiresAt;
+            });
+
+            const expiresAt = purchaseTransaction();
+
+            // ✅ تطبيق الفائدة في Discord
+            let discordNote = '';
+            try {
+                const discordGuild = client?.guilds?.cache?.get(guildId);
+                if (discordGuild && item.item_type === 'role' && item.role_id) {
+                    const member = await discordGuild.members.fetch(userId).catch(() => null);
+                    if (member) {
+                        await member.roles.add(item.role_id).catch(() => {});
+                        discordNote = 'تم تعيين الرتبة في Discord ✅';
+                    }
+                }
+            } catch (discordErr) {
+                discordNote = 'سيتم تطبيق الفائدة قريباً';
+            }
+
+            // مزامنة مع Turso
+            try {
+                const tursoSync = require('../database/tursoSync');
+                const updatedUser = rawDb.prepare(`SELECT * FROM users WHERE user_id = ? AND guild_id = ?`).get(userId, guildId);
+                if (updatedUser) tursoSync.queueUserSync(updatedUser);
+            } catch (e) {}
+
+            // مسح page cache للمستخدم
+            if (typeof global._zenoDashboardClearCaches === 'function') {
+                global._zenoDashboardClearCaches();
+            }
+
+            return res.json({
+                success: true,
+                message: `تم شراء "${item.name}" بنجاح!`,
+                newBalance: (userCoins - item.price),
+                discordNote,
+                expiresAt
+            });
+
+        } catch (e) {
+            console.error('[STORE] Purchase error:', e);
+            return res.status(500).json({ success: false, error: 'حدث خطأ أثناء المعالجة، حاول مجدداً' });
+        } finally {
+            _purchaseLocks.delete(lockKey);
+        }
+    });
+
+    // === Admin Store Endpoints ===
+
+    // POST /api/guild/:guildId/store/admin/items — إضافة عنصر
+    app.post('/api/guild/:guildId/store/admin/items', (req, res) => {
+        try {
+            const { guildId } = req.params;
+            const userId = req.session?.user?.id;
+            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
+            const userGuilds = req.session?.guilds || [];
+            const guild = userGuilds.find(g => g.id === guildId);
+            if (!guild || (BigInt(guild.permissions || 0) & BigInt(0x20)) === BigInt(0)) {
+                return res.status(403).json({ success: false, error: 'ليس لديك صلاحية إدارة المتجر' });
+            }
+            const { name, description, item_type, icon, image_url, price, original_price, stock, role_id, booster_multiplier, booster_duration, cooldown_seconds, is_featured, badge_label } = req.body;
+            if (!name || !price) return res.status(400).json({ success: false, error: 'الاسم والسعر مطلوبان' });
+            const result = rawDb.prepare(`
+                INSERT INTO store_items (guild_id, name, description, item_type, icon, image_url, price, original_price, stock, role_id, booster_multiplier, booster_duration, cooldown_seconds, is_featured, badge_label)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(guildId, name, description || '', item_type || 'role', icon || '🎁', image_url || '', Number(price), Number(original_price || 0), Number(stock ?? -1), role_id || '', Number(booster_multiplier || 1.5), Number(booster_duration || 3600), Number(cooldown_seconds || 0), is_featured ? 1 : 0, badge_label || '');
+            res.json({ success: true, id: result.lastInsertRowid });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // PUT /api/guild/:guildId/store/admin/items/:itemId — تعديل عنصر
+    app.put('/api/guild/:guildId/store/admin/items/:itemId', (req, res) => {
+        try {
+            const { guildId, itemId } = req.params;
+            const userId = req.session?.user?.id;
+            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
+            const userGuilds = req.session?.guilds || [];
+            const guild = userGuilds.find(g => g.id === guildId);
+            if (!guild || (BigInt(guild.permissions || 0) & BigInt(0x20)) === BigInt(0)) {
+                return res.status(403).json({ success: false, error: 'ليس لديك صلاحية' });
+            }
+            const fields = req.body;
+            const allowed = ['name','description','item_type','icon','image_url','price','original_price','stock','role_id','booster_multiplier','booster_duration','cooldown_seconds','is_featured','is_active','badge_label'];
+            const sets = allowed.filter(k => fields[k] !== undefined).map(k => `${k} = @${k}`).join(', ');
+            if (!sets) return res.status(400).json({ success: false, error: 'لا توجد بيانات للتعديل' });
+            const values = {};
+            allowed.forEach(k => { if (fields[k] !== undefined) values[k] = fields[k]; });
+            values.id = itemId; values.guild_id = guildId;
+            rawDb.prepare(`UPDATE store_items SET ${sets}, updated_at = strftime('%s','now') WHERE id = @id AND guild_id = @guild_id`).run(values);
+            res.json({ success: true });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // DELETE /api/guild/:guildId/store/admin/items/:itemId — حذف عنصر
+    app.delete('/api/guild/:guildId/store/admin/items/:itemId', (req, res) => {
+        try {
+            const { guildId, itemId } = req.params;
+            const userId = req.session?.user?.id;
+            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
+            const userGuilds = req.session?.guilds || [];
+            const guild = userGuilds.find(g => g.id === guildId);
+            if (!guild || (BigInt(guild.permissions || 0) & BigInt(0x20)) === BigInt(0)) {
+                return res.status(403).json({ success: false, error: 'ليس لديك صلاحية' });
+            }
+            rawDb.prepare(`UPDATE store_items SET is_active = 0 WHERE id = ? AND guild_id = ?`).run(itemId, guildId);
+            res.json({ success: true });
+        } catch (e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // 3. User Dashboard & Main Routes (لوحة التحكم الداخلية للسيرفرات)
+
 
     // ✅ Cache للـ leaderboard - يمنع تشغيل GROUP BY على كل الجدول في كل request
     const _lbCache = { xp: null, coins: null, ts: 0 };
@@ -10727,7 +10981,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
 
 
-                            ${(section === 'general' || section === 'commands') ? `
+                            ${(section === 'general' || section === 'commands' || section === 'store') ? `
                                 <div id="settingsContainer" class="space-y-6">
                                     ${formFieldsHtml}
                                 </div>
@@ -10735,7 +10989,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <form id="settingsForm" class="space-y-6">
                                 ${formFieldsHtml}
 
-                                <div class="pt-6 border-t border-white/5 flex items-center justify-between flex-row-reverse${(section === 'embed' || section === 'logs') ? ' hidden' : ''}">
+                                <div class="pt-6 border-t border-white/5 flex items-center justify-between flex-row-reverse${(section === 'embed' || section === 'logs' || section === 'store') ? ' hidden' : ''}">
                                     <button type="submit" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-black/20 flex items-center gap-2">
                                         <span>💾</span>
                                         <span>حفظ التغييرات</span>
