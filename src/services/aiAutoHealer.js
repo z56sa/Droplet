@@ -1,5 +1,5 @@
 /**
- * AI Error Monitor & Owner Consultant for ZENO (v2)
+ * AI Error Monitor & Owner Consultant for Droplet (v2)
  *
  * - يرصد الأخطاء في الوقت الفعلي (Discord / Process / فحص صحة دوري)
  * - يحجب الأسرار (التوكنات والمفاتيح) قبل إرسالها للذكاء الاصطناعي أو للمالك
@@ -363,7 +363,7 @@ class AIAutoHealer {
             return '⚠️ لم يتم ضبط `GEMINI_API_KEY` — تم رصد الخطأ لكن لا يوجد تحليل ذكاء اصطناعي متاح.';
         }
 
-        const prompt = `أنت مستشار برمجي لبوت Discord اسمه ZENO مكتوب بـ Node.js وdiscord.js ويعمل على Render.
+        const prompt = `أنت مستشار برمجي لبوت Discord اسمه Droplet مكتوب بـ Node.js وdiscord.js ويعمل على Render.
 حدث خطأ أثناء التشغيل، حلله واقترح حلاً دقيقاً باللغة العربية.
 
 نوع الخطأ: ${context}
@@ -379,8 +379,6 @@ ${stack.slice(0, 800)}
         const models = [...new Set([
             process.env.GEMINI_MODEL,
             process.env.GEMINI_FALLBACK_MODEL,
-            'gemini-3.8-flash',
-            'gemini-3-flash',
             'gemini-2.5-flash'
         ].filter(Boolean))];
 
@@ -434,10 +432,10 @@ ${stack.slice(0, 800)}
         const embed = new EmbedBuilder()
             .setColor(sev.color)
             .setTitle('🔍 رصد مشكلة في البوت/الداشبورد — يحتاج مراجعتك')
-            .setDescription('تم رصد خطأ في بوت **ZENO**.\n**لم يتم اتخاذ أي إجراء تلقائي — القرار بيدك.**')
+            .setDescription('تم رصد خطأ في بوت **Droplet**.\n**لم يتم اتخاذ أي إجراء تلقائي — القرار بيدك.**')
             .addFields(fields)
             .setFooter({
-                text: `ZENO Error Monitor • تشغيل: ${formatUptime(process.uptime())}`,
+                text: `Droplet Error Monitor • تشغيل: ${formatUptime(process.uptime())}`,
                 iconURL: this.client.user?.displayAvatarURL()
             })
             .setTimestamp();
@@ -504,7 +502,7 @@ ${stack.slice(0, 800)}
 
             const base = interaction.message.embeds[0];
             const updated = base
-                ? EmbedBuilder.from(base).setColor(0x6b7280).setFooter({ text: `ZENO Error Monitor • ${note}` })
+                ? EmbedBuilder.from(base).setColor(0x6b7280).setFooter({ text: `Droplet Error Monitor • ${note}` })
                 : null;
 
             await interaction.update({ embeds: updated ? [updated] : [], components: [] });
