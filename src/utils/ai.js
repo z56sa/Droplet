@@ -96,7 +96,7 @@ async function askAI(promptText) {
         }
     }
 
-    // تم التحديث إلى النموذج المدعوم بناءً على رسالة الخطأ الأخيرة
+    // استخدام النموذج المدعوم الجديد
     const configuredModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
     try {
@@ -128,4 +128,14 @@ async function askAI(promptText) {
         const status = Number(error?.status || error?.code || 0);
 
         if (status === 429) {
-            return '⏳ الذكاء الاصطناعي مشغول حالياً، يرجى الانتظار
+            return '⏳ الذكاء الاصطناعي مشغول حالياً، يرجى الانتظار قليلاً والمحاولة مجدداً.';
+        }
+        if (status === 400 || status === 404) {
+            return '❌ حدث خطأ في نموذج الذكاء الاصطناعي أو أن المفتاح المستخدم غير صالح.';
+        }
+
+        return '❌ عذراً، حدث خطأ أثناء الاتصال بالذكاء الاصطناعي، يرجى المحاولة لاحقاً.';
+    }
+}
+
+module.exports = { askAI, ZENO_SYSTEM_INSTRUCTION, searchWeb };
