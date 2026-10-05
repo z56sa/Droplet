@@ -14,4 +14,7 @@ yarn-error.log*
 Thumbs.db
 
 mingit/
+blobs/
+manifests/
+metadata/
 

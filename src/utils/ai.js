@@ -56,22 +56,71 @@ async function searchWeb(query) {
     });
 }
 
+// كلمات مفردة: تُطابق ككلمة كاملة فقط (حتى لا تطابق "نت" داخل "كنت" أو "انت")
+const SINGLE_KEYWORDS = new Set([
+    'بحث', 'ابحث', 'جوجل', 'نت', 'انترنت', 'اخبار', 'أخبار', 'اليوم', 'الآن', 'الان',
+    'مباراة', 'مباريات', 'نتائج', 'سعر', 'اسعار', 'طقس', 'الطقس', 'جديد', 'اخر', 'آخر',
+    'تريند', 'تويتر', 'يوتيوب', 'حدث', 'حديث', 'متى'
+]);
+// عبارات متعددة الكلمات: تُطابق كجزء من النص
+const PHRASE_KEYWORDS = [
+    'سنة 2024', 'سنة 2025', 'سنة 2026', 'معلومات عن',
+    'من هو', 'من هي', 'ما هو', 'ما هي', 'كم سعر'
+];
+
 function needsLiveBrowsing(text) {
     if (!text || typeof text !== 'string') return false;
-    const searchKeywords = [
-        'بحث', 'ابحث', 'جوجل', 'نت', 'انترنت', 'اخبار', 'أخبار', 'اليوم', 'الآن', 'الان',
-        'مباراة', 'مباريات', 'نتائج', 'سعر', 'اسعار', 'طقس', 'الطقس', 'جديد', 'اخر', 'آخر',
-        'تريند', 'تويتر', 'يوتيوب', 'حدث', 'حديث', 'سنة 2024', 'سنة 2025', 'سنة 2026', 'معلومات عن',
-        'من هو', 'من هي', 'ما هو', 'ما هي', 'متى', 'كم سعر'
-    ];
     const lower = text.toLowerCase();
-    return searchKeywords.some(kw => lower.includes(kw));
+    const words = lower.split(/[\s\p{P}]+/u).filter(Boolean);
+    if (words.some(w => SINGLE_KEYWORDS.has(w))) return true;
+    return PHRASE_KEYWORDS.some(p => lower.includes(p));
 }
 
 const ZENO_SYSTEM_INSTRUCTION = `
 أنت المساعد الذكي الرسمي المدمج داخل بوت الديسكورد العربي "ZENO" (زينو).
 صفتك: متحدث لبق، ذكي، سريع البديهة، مطلع على الإنترنت، وتتحدث باللغة العربية الفصحى الواضحة والودية مع لمسة احترافية وممتعة.
 `;
+
+// النماذج بالترتيب: الأساسي ثم الاحتياطي. تأكد من أسمائها في Google AI Studio
+const MODELS = [
+    process.env.GEMINI_MODEL,
+    process.env.GEMINI_FALLBACK_MODEL,
+    'gemini-2.5-flash'
+].filter(Boolean);
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+async function generateWithRetry(ai, prompt) {
+    let lastError;
+    for (const model of MODELS) {
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const response = await ai.models.generateContent({
+                    model,
+                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                    config: { systemInstruction: ZENO_SYSTEM_INSTRUCTION, temperature: 0.7 }
+                });
+                const text = response.text || response.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) return text;
+                throw new Error('EMPTY_RESPONSE');
+            } catch (error) {
+                lastError = error;
+                const status = Number(error?.status || error?.code || 0);
+                console.warn(`[AI] ${model} attempt ${attempt + 1} failed: ${status} ${error?.message?.slice(0, 120)}`);
+
+                // 400/404: النموذج أو المفتاح خطأ، انتقل للنموذج التالي
+                if (status === 400 || status === 404) break;
+                // 429/500/503: مؤقتة، انتظر ثم أعد المحاولة
+                if ([429, 500, 503].includes(status)) {
+                    await sleep(1000 * Math.pow(2, attempt)); // 1s, 2s, 4s
+                    continue;
+                }
+                break;
+            }
+        }
+    }
+    throw lastError;
+}
 
 async function askAI(promptText) {
     if (!promptText || typeof promptText !== 'string' || !promptText.trim()) {
@@ -96,44 +145,15 @@ async function askAI(promptText) {
         }
     }
 
-    // استخدام النموذج المدعوم الجديد
-    const configuredModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
-
     try {
-        const response = await ai.models.generateContent({
-            model: configuredModel,
-            contents: [
-                {
-                    role: 'user',
-                    parts: [{ text: enrichedPrompt }]
-                }
-            ],
-            config: {
-                systemInstruction: ZENO_SYSTEM_INSTRUCTION,
-                temperature: 0.7,
-            }
-        });
-
-        const textResponse = response.text || (response.candidates?.[0]?.content?.parts?.[0]?.text);
-
-        if (textResponse) {
-            return textResponse;
-        }
-
-        return '❌ لم يأتِ رد من الذكاء الاصطناعي، حاول مرة أخرى.';
-
+        return await generateWithRetry(ai, enrichedPrompt);
     } catch (error) {
-        console.error(`[AI Critical Error Details]:`, error);
-
+        console.error('[AI Critical Error Details]:', error);
         const status = Number(error?.status || error?.code || 0);
 
-        if (status === 429) {
-            return '⏳ الذكاء الاصطناعي مشغول حالياً، يرجى الانتظار قليلاً والمحاولة مجدداً.';
-        }
-        if (status === 400 || status === 404) {
-            return '❌ حدث خطأ في نموذج الذكاء الاصطناعي أو أن المفتاح المستخدم غير صالح.';
-        }
-
+        if (status === 429) return '⏳ تجاوزنا حد الطلبات، حاول بعد قليل.';
+        if (status === 503) return '⏳ خوادم Gemini مزدحمة الآن، حاول بعد دقيقة.';
+        if (status === 400 || status === 404) return '❌ إعدادات النموذج أو المفتاح غير صحيحة، تواصل مع الإدارة.';
         return '❌ عذراً، حدث خطأ أثناء الاتصال بالذكاء الاصطناعي، يرجى المحاولة لاحقاً.';
     }
 }

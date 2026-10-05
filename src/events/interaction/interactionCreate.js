@@ -1,3 +1,5 @@
+const autoHealer = require('../../services/aiAutoHealer');
+if (await autoHealer.handleInteraction(interaction)) return;
 const { ChannelType, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, AttachmentBuilder, StringSelectMenuBuilder, UserSelectMenuBuilder } = require('discord.js');
 const db = require('../../database');
 const embedUtil = require('../../utils/embed');
