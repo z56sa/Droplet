@@ -15,7 +15,6 @@ function getClient() {
 
 /**
  * محرك البحث والوصول الحي للإنترنت (Live Web Surfing Engine)
- * يجلب نتائج بحث فورية ومعلومات حية من الويب
  */
 async function searchWeb(query) {
     return new Promise((resolve) => {
@@ -57,9 +56,6 @@ async function searchWeb(query) {
     });
 }
 
-/**
- * فحص ما إذا كان السؤال يتطلب معلومات مباشرة أو تصفحاً حياً للإنترنت
- */
 function needsLiveBrowsing(text) {
     if (!text || typeof text !== 'string') return false;
     const searchKeywords = [
@@ -72,60 +68,11 @@ function needsLiveBrowsing(text) {
     return searchKeywords.some(kw => lower.includes(kw));
 }
 
-/**
- * دليل النظام الشامل لبوت ZENO
- */
 const ZENO_SYSTEM_INSTRUCTION = `
 أنت المساعد الذكي الرسمي المدمج داخل بوت الديسكورد العربي "ZENO" (زينو).
 صفتك: متحدث لبق، ذكي، سريع البديهة، مطلع على الإنترنت، وتتحدث باللغة العربية الفصحى الواضحة والودية مع لمسة احترافية وممتعة.
-
-قدراتك الخاصة:
-- أنت متصل بالإنترنت ومزود بمحرك تصفح حي ومعلومات حية لحظية.
-- يمكنك البحث في الإنترنت، معرفة أحدث الأخبار، الرياضة، التكنولوجيا، الأسعار، وأي معلومات حديثة بدقة.
-
-معلومات أساسية عن البوت ZENO:
-- الاسم: ZENO (زينو)
-- الوظيفة: بوت ديسكورد عربي شامل ومتكامل يجمع بين الحماية القوية (Anti-Nuke / Auto-Mod)، السجلات الشاملة (Audit Logs)، نظام التذاكر والدعم الفني، الاقتصاد والرصيد، الخط والبرودكاست التلقائي، الرقابة وإدارة الأعضاء، ولوحة تحكم متطورة (Dashboard).
-- البادئة الافتراضية (Prefix): # (مع دعم كامل لجميع أوامر السلاش / Slash Commands).
-- لوحة التحكم (Web Dashboard): تتيح لمالك السيرفر والإدارة التحكم الكامل في كل إعدادات البوت والسجلات والأوامر لحظياً.
-
-أقسام وميزات بوت ZENO الرئيسية:
-1. نظام الحماية الشاملة و Anti-Nuke:
-   - حماية السيرفر من هجمات التخريب (Anti-Raid, Anti-Nuke, Anti-Bot).
-   - أوامر: /anti-ban، /anti-bots، /anti-delete-roles، /anti-delete-rooms، /antilink، /antispam، /badwords، /protection-status، /set-protect-logs.
-
-2. نظام السجلات الشاملة (Server Audit Logs):
-   - 13 فئة و105 نوع من السجلات التفصيلية.
-   - أوامر: /setup-logs، /logs-info، /set-logs.
-
-3. نظام التذاكر والدعم الفني (Tickets & Applications):
-   - تذاكر متقدمة بأزرار أو قائمة منسدلة (Select Menu)، مع حفظ الترانسكريبت (Transcript).
-   - أوامر: /setup-ticket، /add-ticket-button، /to-select، /close، /delete، /rename، /add-user، /remove-user، /set-ticket-log، /setup-rating.
-   - التقديمات: /setup-apply، /new-apply، /close-apply.
-
-4. نظام الإشراف والرقابة (Moderation):
-   - /ban، /unban، /unbanall، /kick، /mute، /timeout، /untimeout، /untimeall، /warn، /warns، /unwarn، /clear، /lock، /unlock، /hide، /show، /unhide، /nickname، /promote، /demote، /role، /role-all، /xroles، /snipe، /come.
-
-5. نظام الاقتصاد والرصيد (Economy):
-   - /daily، /rovex، /balance، /tax، /tax-mode، /set-tax-room، /set-tax-line، /profile، /rank، /top، /leaderboard.
-
-6. نظام الخطوط التلقائية (Auto-Line & Services):
-   - /set-autoline-line، /add-autoline-channel، /remove-autoline-channel، /line-mode، /set-suggestions-room، /set-suggestions-line، /suggestion-mode، /set-feedback-room، /set-feedback-line.
-
-7. الإعدادات والخدمات العامة:
-   - /greet، /setup-welcome، /set-message، /autorole، /settempvoice، /autoreply-add، /autoreply-list، /autoreply-remove، /alias، /set-shortcut، /help، /avatar، /banner، /user، /server، /embed، /say، /ping، /gstart، /gend، /greroll.
-
-إرشادات الإجابة:
-- عند الإجابة على أي موضوع حالي أو عام، اعتمد على نتائج التصفح الحي المرفقة مع السؤال مع التحليل الذكي.
-- نسق الإجابات بأسلوب ديسكورد المميز (خط عريض، نقاط، إيموجي).
-- تجنب الردود الطويلة جداً غير المفيدة؛ كن دقيقاً وممتعاً.
 `;
 
-/**
- * دالة مركزية للتحدث مع الذكاء الاصطناعي مع التصفح التلقائي الحي للإنترنت
- * @param {string} promptText نص السؤال أو المحادثة
- * @returns {Promise<string>} رد الذكاء الاصطناعي المدعم بالإنترنت
- */
 async function askAI(promptText) {
     if (!promptText || typeof promptText !== 'string' || !promptText.trim()) {
         return '❌ يرجى كتابة سؤال صالح.';
@@ -138,7 +85,6 @@ async function askAI(promptText) {
 
     let enrichedPrompt = promptText.trim();
 
-    // إذا كان السؤال يتطلب معلومات حية أو بحثاً من الإنترنت
     if (needsLiveBrowsing(promptText)) {
         try {
             const webResults = await searchWeb(promptText.trim());
@@ -150,43 +96,49 @@ async function askAI(promptText) {
         }
     }
 
-    const configuredModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+    // استخدام الموديل القياسي المدعوم في حزمة @google/genai الجديدة
+    const configuredModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
     try {
-        const ai = getClient();
-        if (!ai) {
-            return '❌ لم يتم ضبط مفتاح `GEMINI_API_KEY` في متغيرات البيئة.';
-        }
-
+        // التصحيح الأساسي هنا: استخدام التنسيق المتوافق مع مكتبة @google/genai الحديثة
         const response = await ai.models.generateContent({
             model: configuredModel,
-            contents: enrichedPrompt,
+            contents: [
+                {
+                    role: 'user',
+                    parts: [{ text: enrichedPrompt }]
+                }
+            ],
             config: {
                 systemInstruction: ZENO_SYSTEM_INSTRUCTION,
                 temperature: 0.7,
             }
         });
 
-        if (response && response.text) {
-            return response.text;
+        // استخراج النص بالطريقة الصحيحة للـ SDK الجديد
+        const textResponse = response.text || (response.candidates?.[0]?.content?.parts?.[0]?.text);
+
+        if (textResponse) {
+            return textResponse;
         }
 
         return '❌ لم يأتِ رد من الذكاء الاصطناعي، حاول مرة أخرى.';
 
     } catch (error) {
+        // طباعة تفاصيل الخطأ بدقة في الـ Terminal لمعرفة السبب الحقيقي فوراً
+        console.error(`[AI Critical Error Details]:`, error);
+
         const status = Number(error?.status || error?.code || 0);
-        console.error(`[AI Error] فشل الاتصال (status ${status}):`, error?.message || error);
 
         if (status === 429) {
             return '⏳ الذكاء الاصطناعي مشغول حالياً، يرجى الانتظار قليلاً والمحاولة مجدداً.';
         }
-        if (status === 400) {
-            return '❌ السؤال يحتوي على محتوى غير مدعوم، يرجى إعادة صياغته.';
+        if (status === 400 || status === 404) {
+            return '❌ حدث خطأ في نموذج الذكاء الاصطناعي أو أن المفتاح المستخدم غير صالح.';
         }
 
         return '❌ عذراً، حدث خطأ أثناء الاتصال بالذكاء الاصطناعي، يرجى المحاولة لاحقاً.';
     }
-
 }
 
 module.exports = { askAI, ZENO_SYSTEM_INSTRUCTION, searchWeb };
