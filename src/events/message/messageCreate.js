@@ -217,9 +217,32 @@ module.exports = {
     const matchZeno = cleanContent.match(zenoCallRegex);
 
 
-    // تم تعطيل ردود الذكاء الاصطناعي للمستخدمين — الذكاء الاصطناعي مخصص لإشعارات المالك فقط
-    // if (isBotMentioned || matchZeno) { ... }
+    if (isBotMentioned || matchZeno) {
+      let userPrompt = '';
+      if (isBotMentioned) {
+        userPrompt = cleanContent.replace(botMentionRegex, '').replace(new RegExp(`<@!?${client.user?.id}>`, 'g'), '').trim();
+      } else if (matchZeno) {
+        userPrompt = (matchZeno[1] || '').trim();
+      }
+      if (!userPrompt) userPrompt = 'أهلاً وسهلاً! أنا ZENO، كيف يمكنني مساعدتك اليوم؟';
 
+      try {
+        await message.channel.sendTyping().catch(() => {});
+        const aiResponse = await askAI(userPrompt);
+        if (aiResponse) {
+          const chunks = aiResponse.length <= 2000 ? [aiResponse] : (aiResponse.match(/[\s\S]{1,1950}/g) || [aiResponse]);
+          await message.reply({ content: chunks[0] }).catch(async () => {
+            await message.channel.send({ content: chunks[0] }).catch(() => {});
+          });
+          for (let i = 1; i < chunks.length; i++) {
+            await message.channel.send({ content: chunks[i] }).catch(() => {});
+          }
+        }
+        return;
+      } catch (err) {
+        console.error('[Auto ZENO AI Error]:', err);
+      }
+    }
 
 
     // 🛡️ Auto-Mod
