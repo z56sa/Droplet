@@ -96,11 +96,10 @@ async function askAI(promptText) {
         }
     }
 
-    // استخدام الموديل القياسي المدعوم في حزمة @google/genai الجديدة
-    const configuredModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    // تم التحديث إلى النموذج المدعوم بناءً على رسالة الخطأ الأخيرة
+    const configuredModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
     try {
-        // التصحيح الأساسي هنا: استخدام التنسيق المتوافق مع مكتبة @google/genai الحديثة
         const response = await ai.models.generateContent({
             model: configuredModel,
             contents: [
@@ -115,7 +114,6 @@ async function askAI(promptText) {
             }
         });
 
-        // استخراج النص بالطريقة الصحيحة للـ SDK الجديد
         const textResponse = response.text || (response.candidates?.[0]?.content?.parts?.[0]?.text);
 
         if (textResponse) {
@@ -125,20 +123,9 @@ async function askAI(promptText) {
         return '❌ لم يأتِ رد من الذكاء الاصطناعي، حاول مرة أخرى.';
 
     } catch (error) {
-        // طباعة تفاصيل الخطأ بدقة في الـ Terminal لمعرفة السبب الحقيقي فوراً
         console.error(`[AI Critical Error Details]:`, error);
 
         const status = Number(error?.status || error?.code || 0);
 
         if (status === 429) {
-            return '⏳ الذكاء الاصطناعي مشغول حالياً، يرجى الانتظار قليلاً والمحاولة مجدداً.';
-        }
-        if (status === 400 || status === 404) {
-            return '❌ حدث خطأ في نموذج الذكاء الاصطناعي أو أن المفتاح المستخدم غير صالح.';
-        }
-
-        return '❌ عذراً، حدث خطأ أثناء الاتصال بالذكاء الاصطناعي، يرجى المحاولة لاحقاً.';
-    }
-}
-
-module.exports = { askAI, ZENO_SYSTEM_INSTRUCTION, searchWeb };
+            return '⏳ الذكاء الاصطناعي مشغول حالياً، يرجى الانتظار
