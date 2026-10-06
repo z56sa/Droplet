@@ -76,6 +76,9 @@ module.exports = {
       if (transcriptResult) {
         db.saveTranscript(interaction.guild.id, interaction.channel.id, ticket.user_id, interaction.user.id, reason, transcriptResult.html);
 
+        const baseUrl = process.env.DASHBOARD_URL || config.dashboardUrl || 'https://zeno-dashboard.onrender.com';
+        const webUrl = `${baseUrl}/transcript/${interaction.channel.id}`;
+
         // إرسال لقناة السجلات
         const logChannelId = settings.ticket_log_channel || settings.log_channel;
         if (logChannelId) {
@@ -88,6 +91,7 @@ module.exports = {
                 { name: '🎫 اسم الروم', value: `\`${interaction.channel.name}\``, inline: true },
                 { name: '👤 صاحب التذكرة', value: `<@${ticket.user_id}>`, inline: true },
                 { name: '👮 أغلقت بواسطة', value: `${interaction.user}`, inline: true },
+                { name: '🌐 عارض الويب', value: `[مشاهدة السجل التفاعلي مباشرة](${webUrl})`, inline: false },
                 { name: '📝 السبب', value: `\`${reason}\``, inline: false }
               )
               .setTimestamp();
@@ -103,7 +107,7 @@ module.exports = {
             const rateEmbed = new EmbedBuilder()
               .setColor('#9333ea')
               .setTitle('⭐ تقييم تجربة الدعم الفني')
-              .setDescription(`مرحباً **${user.username}**!\nتم إغلاق تذكرتك في سيرفر **${interaction.guild.name}**.\n\nتجد مرفقاً سجل التذكرة (Transcript HTML).\nيرجى تقييم أداء الدعم الفني بالضغط على النجوم:`)
+              .setDescription(`مرحباً **${user.username}**!\nتم إغلاق تذكرتك في سيرفر **${interaction.guild.name}**.\n\n🌐 **رابط السجل التفاعلي:** [اضغط هنا لمشاهدة التذكرة](${webUrl})\nيرجى تقييم أداء الدعم الفني بالضغط على النجوم أدناه:`)
               .setTimestamp();
 
             const ratingRow = new ActionRowBuilder().addComponents(

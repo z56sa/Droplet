@@ -35,17 +35,21 @@ module.exports = {
     if (member && member.id === interaction.user.id)
       return interaction.editReply({ content: '❌ لا تستطيع حظر نفسك!' });
 
-    // إرسال DM قبل الحظر
+    // إرسال DM قبل الحظر مع رابط تقديم الاستئناف
     const durationMs = durationStr ? ms(durationStr) : null;
+    const baseUrl = process.env.DASHBOARD_URL || config.dashboardUrl || 'https://zeno-dashboard.onrender.com';
+    const appealUrl = `${baseUrl}/appeal`;
+
     const dmEmbed = new EmbedBuilder()
       .setColor(config.colors?.danger || '#e74c3c')
       .setTitle(`🔨 تم حظرك من ${interaction.guild.name}`)
+      .setDescription(`⚖️ **تقديم طلب فك حظر (Appeal):**\nإذا كنت تعتقد أن الحظر تم عن طريق الخطأ أو ترغب بطلب استئناف، يمكنك التقديم عبر الرابط التالي:\n🔗 **[اضغط هنا لتقديم طلب فك الحظر](${appealUrl})**`)
       .addFields(
         { name: '📋 السبب', value: reason, inline: false },
         { name: '⏳ المدة', value: durationStr ? durationStr : 'دائم', inline: true },
         { name: '👮 بواسطة', value: interaction.user.tag, inline: true }
       )
-      .setFooter({ text: 'إذا اعتقدت أن هذا خطأ، تواصل مع إدارة السيرفر' })
+      .setFooter({ text: 'ZENO Security & Unban Appeal System' })
       .setTimestamp();
 
     if (member) await member.send({ embeds: [dmEmbed] }).catch(() => {});

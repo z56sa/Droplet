@@ -5,7 +5,14 @@ const config = require('../../config.json');
 module.exports = {
   name: 'messageUpdate',
   async execute(oldMessage, newMessage) {
-    if (!oldMessage.guild || oldMessage.author?.bot) return;
+    if (!oldMessage.guild) return;
+    if (oldMessage.partial) {
+      try { await oldMessage.fetch(); } catch (e) {}
+    }
+    if (newMessage.partial) {
+      try { await newMessage.fetch(); } catch (e) {}
+    }
+    if (oldMessage.author?.bot) return;
     if (oldMessage.content === newMessage.content) return;
 
     const settings = db.getGuildSettings(oldMessage.guild.id);

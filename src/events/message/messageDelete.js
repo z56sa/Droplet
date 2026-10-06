@@ -5,7 +5,15 @@ const config = require('../../config.json');
 module.exports = {
   name: 'messageDelete',
   async execute(message) {
-    if (!message.guild || message.author?.bot) return;
+    if (!message.guild) return;
+    if (message.partial) {
+      try {
+        await message.fetch();
+      } catch (e) {
+        // الرسالة تم حذفها قبل أن يتمكن البوت من جلبها
+      }
+    }
+    if (message.author?.bot) return;
 
     const settings = db.getGuildSettings(message.guild.id);
 

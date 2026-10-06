@@ -60,6 +60,14 @@ async function sendServerLog(guild, eventId, catKey, embedData = {}) {
                 const foundCh = guild.channels.cache.find(c => c.name === matchName);
                 if (foundCh) targetChannelId = foundCh.id;
             }
+
+            // Fallback: ابحث عن أي روم يحتوي اسمه على 'log' أو 'سجل'
+            if (!targetChannelId) {
+                const autoLog = guild.channels.cache.find(c => 
+                    c.isTextBased() && (c.name.toLowerCase().includes('log') || c.name.includes('سجل') || c.name.includes('لوق'))
+                );
+                if (autoLog) targetChannelId = autoLog.id;
+            }
         }
 
         if (!targetChannelId) return;

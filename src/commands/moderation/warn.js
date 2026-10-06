@@ -51,18 +51,30 @@ module.exports = {
       const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
       if (member) await member.send({ embeds: [dmEmbed] }).catch(() => {});
 
-      // عقوبات تلقائية
+      // عقوبات متدرجة تلقائياً (Advanced Escalation Sanctions)
       let autoPunishment = '';
       if (member) {
-        if (count >= 7) {
-          await interaction.guild.bans.create(targetUser.id, { reason: `تجاوز حد التحذيرات (${count} تحذيرات)` }).catch(() => {});
-          autoPunishment = '🔨 **تم حظره تلقائياً** (7+ تحذيرات)';
-        } else if (count >= 5) {
-          await member.kick(`تجاوز حد التحذيرات (${count} تحذيرات)`).catch(() => {});
-          autoPunishment = '👢 **تم طرده تلقائياً** (5+ تحذيرات)';
+        const baseUrl = process.env.DASHBOARD_URL || config.dashboardUrl || 'https://zeno-dashboard.onrender.com';
+        const appealUrl = `${baseUrl}/appeal`;
+
+        if (count >= 6) {
+          await member.send({
+            content: `🔨 **تم حظرك نهائياً من سيرفر ${interaction.guild.name} لتجاوزك حد التحذيرات (${count} تحذيرات).**\n⚖️ يمكنك تقديم طلب فك حظر واستئناف عبر الرابط التالي:\n🔗 ${appealUrl}`
+          }).catch(() => {});
+          await interaction.guild.bans.create(targetUser.id, { reason: `تجاوز حد المخالفات التراكمية (${count} تحذيرات)` }).catch(() => {});
+          autoPunishment = `🔨 **تم حظره تلقائياً** (6+ تحذيرات) • [تقديم استئناف](${appealUrl})`;
+        } else if (count >= 4) {
+          await member.send({
+            content: `👢 **تم طردك من سيرفر ${interaction.guild.name} لتراكم التحذيرات (${count} تحذيرات).**`
+          }).catch(() => {});
+          await member.kick(`تجاوز حد المخالفات (${count} تحذيرات)`).catch(() => {});
+          autoPunishment = '👢 **تم طرده تلقائياً** (4+ تحذيرات)';
         } else if (count >= 3) {
-          await member.timeout(60 * 60 * 1000, `تجاوز حد التحذيرات (${count} تحذيرات)`).catch(() => {});
-          autoPunishment = '🔇 **تم إسكاته لمدة ساعة** (3+ تحذيرات)';
+          await member.timeout(30 * 60 * 1000, `تراكم 3 تحذيرات`).catch(() => {});
+          autoPunishment = '🔇 **تم إسكاته لمدة 30 دقيقة** (3 تحذيرات)';
+        } else if (count >= 2) {
+          await member.timeout(5 * 60 * 1000, `تراكم تحذيرين`).catch(() => {});
+          autoPunishment = '🔇 **تم إسكاته لمدة 5 دقائق** (تحذيران)';
         }
       }
 

@@ -114,6 +114,195 @@ module.exports = function (app, client) {
         }
     });
 
+    // ==========================================
+    // 🌐 Interactive Web Transcript Viewer
+    // ==========================================
+    app.get('/transcript/:channelId', async (req, res) => {
+        const { channelId } = req.params;
+        const transcript = database.getTranscript ? database.getTranscript(channelId) : null;
+        if (!transcript || !transcript.html_content) {
+            return res.status(404).send(`
+                <!DOCTYPE html>
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>السجل غير موجود | ZENO</title>
+                    <style>
+                        body { background: #0f111a; color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+                        .card { background: #181b29; padding: 40px; border-radius: 16px; border: 1px solid #2d3748; text-align: center; max-width: 450px; }
+                        h1 { color: #ef4444; font-size: 24px; margin-bottom: 12px; }
+                        p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
+                        a { display: inline-block; margin-top: 20px; color: #8b5cf6; text-decoration: none; font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <div class="card">
+                        <h1>⚠️ السجل غير متوفر</h1>
+                        <p>عذراً، لم يتم العثور على سجل تفاعلي لهذه التذكرة أو أنه قد تم حذفه.</p>
+                        <a href="/dashboard">العودة للوحة التحكم ←</a>
+                    </div>
+                </body>
+                </html>
+            `);
+        }
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.send(transcript.html_content);
+    });
+
+    // ==========================================
+    // ⚖️ Unban Appeal Web Page (تقديم طلب فك الحظر)
+    // ==========================================
+    app.get('/appeal', (req, res) => {
+        return res.send(`
+            <!DOCTYPE html>
+            <html lang="ar" dir="rtl">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>تقديم طلب فك الحظر | ZENO Unban Appeal</title>
+                <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+                <style>
+                    body { background-color: #0b0d14; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                    .glass { background: rgba(22, 27, 46, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+                    .btn-purple { background: linear-gradient(135deg, #7c3aed, #4f46e5); transition: all 0.2s ease; }
+                    .btn-purple:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4); }
+                </style>
+            </head>
+            <body class="min-h-screen flex items-center justify-center p-4">
+                <div class="w-full max-w-lg glass rounded-2xl p-8 shadow-2xl">
+                    <div class="text-center mb-6">
+                        <div class="w-16 h-16 bg-purple-600 bg-opacity-20 text-purple-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl font-bold">
+                            ⚖️
+                        </div>
+                        <h1 class="text-2xl font-extrabold text-white">طلب فك الحظر (Unban Appeal)</h1>
+                        <p class="text-gray-400 text-sm mt-1">قم بملء النموذج التالي وسيتم مراجعته مباشرة من قبل إدارة السيرفر.</p>
+                    </div>
+
+                    <form id="appealForm" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-300 mb-1">معرف السيرفر (Server ID) *</label>
+                            <input type="text" id="guildId" required placeholder="مثال: 123456789012345678" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-300 mb-1">الديسكورد آيدي الخاص بك (Your Discord ID) *</label>
+                            <input type="text" id="userId" required placeholder="مثال: 987654321098765432" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-300 mb-1">اسم حسابك (Username / Tag) *</label>
+                            <input type="text" id="username" required placeholder="مثال: username" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-300 mb-1">سبب حظرك من السيرفر *</label>
+                            <input type="text" id="banReason" required placeholder="ما هو السبب الذي تم حظرك بسببه؟" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-300 mb-1">لماذا يجب على الإدارة فك حظرك؟ *</label>
+                            <textarea id="appealReason" required rows="3" placeholder="اشرح موقفك ووجهة نظرك للإدارة..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-300 mb-1">تعهدك بعدم تكرار المخالفة *</label>
+                            <input type="text" id="promise" required placeholder="أتعهد بالالتزام بالقوانين..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500">
+                        </div>
+
+                        <div id="statusMsg" class="hidden p-3 rounded-xl text-sm font-semibold text-center"></div>
+
+                        <button type="submit" class="w-full btn-purple py-3.5 rounded-xl font-bold text-white shadow-lg text-sm">
+                            إرسال طلب فك الحظر 🚀
+                        </button>
+                    </form>
+                </div>
+
+                <script>
+                    document.getElementById('appealForm').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const btn = e.target.querySelector('button');
+                        const statusMsg = document.getElementById('statusMsg');
+                        btn.disabled = true;
+                        btn.innerText = 'جاري الإرسال...';
+
+                        try {
+                            const res = await fetch('/api/appeal', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    guildId: document.getElementById('guildId').value.trim(),
+                                    userId: document.getElementById('userId').value.trim(),
+                                    username: document.getElementById('username').value.trim(),
+                                    banReason: document.getElementById('banReason').value.trim(),
+                                    appealReason: document.getElementById('appealReason').value.trim(),
+                                    promise: document.getElementById('promise').value.trim()
+                                })
+                            });
+                            const data = await res.json();
+                            statusMsg.classList.remove('hidden');
+                            if (data.success) {
+                                statusMsg.className = 'p-3 rounded-xl text-sm font-semibold text-center bg-green-900 text-green-300 border border-green-700';
+                                statusMsg.innerText = '✅ تم إرسال طلبك بنجاح! سيتم مراجعته من قبل إدارة السيرفر قريباً.';
+                                document.getElementById('appealForm').reset();
+                            } else {
+                                statusMsg.className = 'p-3 rounded-xl text-sm font-semibold text-center bg-red-900 text-red-300 border border-red-700';
+                                statusMsg.innerText = '❌ ' + (data.message || 'حدث خطأ أثناء الإرسال');
+                            }
+                        } catch (err) {
+                            statusMsg.classList.remove('hidden');
+                            statusMsg.className = 'p-3 rounded-xl text-sm font-semibold text-center bg-red-900 text-red-300 border border-red-700';
+                            statusMsg.innerText = '❌ تعذر الاتصال بالخادم. يرجى المحاولة لاحقاً.';
+                        } finally {
+                            btn.disabled = false;
+                            btn.innerText = 'إرسال طلب فك الحظر 🚀';
+                        }
+                    });
+                </script>
+            </body>
+            </html>
+        `);
+    });
+
+    app.post('/api/appeal', express.json(), async (req, res) => {
+        const { guildId, userId, username, banReason, appealReason, promise } = req.body;
+        if (!guildId || !userId || !appealReason) {
+            return res.status(400).json({ success: false, message: 'يرجى تعبئة جميع الحقول المطلوبة.' });
+        }
+
+        const existing = database.getUserAppeal ? database.getUserAppeal(guildId, userId) : null;
+        if (existing && existing.status === 'pending') {
+            return res.status(400).json({ success: false, message: 'لديك طلب استئناف معلق بالفعل بانتظار مراجعة الإدارة.' });
+        }
+
+        const appealRes = database.addUnbanAppeal(guildId, userId, username, banReason, appealReason, promise);
+        if (!appealRes) {
+            return res.status(500).json({ success: false, message: 'فشل حفظ الطلب بقاعدة البيانات.' });
+        }
+
+        // إرسال إشعار في روم سجلات الإشراف إن وجد
+        try {
+            const guild = client.guilds.cache.get(guildId);
+            if (guild) {
+                const settings = database.getGuildSettings(guildId);
+                const logChId = settings.log_channel_moderation || settings.log_channel;
+                const logCh = logChId ? guild.channels.cache.get(logChId) : null;
+                if (logCh && logCh.isTextBased()) {
+                    const { EmbedBuilder } = require('discord.js');
+                    const appealEmbed = new EmbedBuilder()
+                        .setColor('#f59e0b')
+                        .setTitle('⚖️ طلب فك حظر جديد (Unban Appeal)')
+                        .setDescription(`قام المستخدم **${username}** (<@${userId}>) بتقديم طلب فك حظر عبر الموقع.`)
+                        .addFields(
+                            { name: '🆔 المعرف', value: `\`${userId}\``, inline: true },
+                            { name: '📋 سبب الحظر', value: banReason || 'غير محدد', inline: true },
+                            { name: '📝 التبرير والاستئناف', value: appealReason, inline: false },
+                            { name: '🤝 التعهد', value: promise || 'لا يوجد', inline: false }
+                        )
+                        .setFooter({ text: 'يمكنك مراجعة الطلب أو فك الحظر عبر أمر /unban أو اللوحة' })
+                        .setTimestamp();
+                    await logCh.send({ embeds: [appealEmbed] }).catch(() => {});
+                }
+            }
+        } catch (e) {}
+
+        return res.json({ success: true, message: 'تم إرسال الطلب بنجاح.' });
+    });
+
     // 2. Real Discord OAuth2 Authentication Routes
     app.get('/auth/discord', (req, res) => {
         const { clientId, redirectUri } = getOAuthConfig(req);

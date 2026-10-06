@@ -225,6 +225,32 @@ class StaffShiftService {
                     }
                 }
             }
+
+            // ─── فحص انتهاء صلاحية الرتب الخاصة المؤقتة (Expired Custom Roles) ───
+            if (db.getExpiredCustomRoles) {
+                const expiredRoles = db.getExpiredCustomRoles();
+                for (const row of expiredRoles) {
+                    const guild = this.client.guilds.cache.get(row.guild_id);
+                    if (guild) {
+                        const role = guild.roles.cache.get(row.role_id);
+                        if (role) await role.delete('انتهاء مدة صلاحية الرتبة المخصصة').catch(() => {});
+                    }
+                    db.deleteCustomRole(row.guild_id, row.role_id);
+                }
+            }
+
+            // ─── فحص انتهاء صلاحية الرومات المؤجرة (Expired Rented Channels) ───
+            if (db.getExpiredRentedChannels) {
+                const expiredChannels = db.getExpiredRentedChannels();
+                for (const row of expiredChannels) {
+                    const guild = this.client.guilds.cache.get(row.guild_id);
+                    if (guild) {
+                        const channel = guild.channels.cache.get(row.channel_id);
+                        if (channel) await channel.delete('انتهاء مدة استئجار الروم').catch(() => {});
+                    }
+                    db.deleteRentedChannel(row.guild_id, row.channel_id);
+                }
+            }
         } catch (e) {
             console.error('[StaffShiftService] Error in tick:', e.message);
         }

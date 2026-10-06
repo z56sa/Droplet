@@ -61,12 +61,20 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildModeration,
         GatewayIntentBits.GuildPresences,
         GatewayIntentBits.GuildEmojisAndStickers,
         GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.MessageContent
     ],
-    partials: [Partials.GuildMember, Partials.User, Partials.Channel]
+    partials: [
+        Partials.GuildMember,
+        Partials.User,
+        Partials.Channel,
+        Partials.Message,
+        Partials.Reaction
+    ]
 });
 
 const aiAutoHealer = require('./services/aiAutoHealer');

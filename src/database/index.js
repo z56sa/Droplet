@@ -428,6 +428,60 @@ db.exec(`
     details TEXT,
     created_at INTEGER DEFAULT (strftime('%s','now'))
   );
+
+  -- ⚖️ Unban Appeals System (طلبات فك الحظر)
+  CREATE TABLE IF NOT EXISTS unban_appeals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    username TEXT,
+    ban_reason TEXT,
+    appeal_reason TEXT NOT NULL,
+    promise TEXT,
+    status TEXT DEFAULT 'pending', -- pending, accepted, rejected
+    reviewed_by TEXT,
+    review_note TEXT,
+    created_at INTEGER DEFAULT (strftime('%s','now')),
+    updated_at INTEGER
+  );
+
+  -- 👑 Custom Roles Store (نظام شراء وتخصيص الرتب الخاصة)
+  CREATE TABLE IF NOT EXISTS custom_roles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    role_id TEXT NOT NULL UNIQUE,
+    role_name TEXT NOT NULL,
+    role_color TEXT,
+    role_icon TEXT,
+    expires_at INTEGER, -- timestamp
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  );
+
+  -- 🎙️ Rented Channels (استئجار الرومات الصوتية والكتابية الخاصة)
+  CREATE TABLE IF NOT EXISTS rented_channels (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL UNIQUE,
+    channel_type TEXT DEFAULT 'voice', -- voice, text
+    channel_name TEXT NOT NULL,
+    expires_at INTEGER,
+    allowed_users TEXT DEFAULT '[]',
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  );
+
+  -- 🎨 Cosmetic Bundles & Avatar Frames (حزم المظهر وإطارات الهوية)
+  CREATE TABLE IF NOT EXISTS user_cosmetics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    item_type TEXT NOT NULL, -- avatar_frame, badge, profile_title
+    item_id TEXT NOT NULL,
+    item_name TEXT,
+    is_equipped INTEGER DEFAULT 0,
+    created_at INTEGER DEFAULT (strftime('%s','now')),
+    UNIQUE(user_id, item_type, item_id)
+  );
 `);
 
 
@@ -2464,5 +2518,110 @@ module.exports = {
   trackUserProfile,
   getUserProfile,
   getTrackedUserProfiles,
+
+  // ⚖️ Unban Appeals API
+  addUnbanAppeal: (guildId, userId, username, banReason, appealReason, promise) => {
+    try {
+      return db.prepare(`
+        INSERT INTO unban_appeals (guild_id, user_id, username, ban_reason, appeal_reason, promise)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(guildId, userId, username, banReason, appealReason, promise);
+    } catch(e) { return null; }
+  },
+  getGuildAppeals: (guildId, status = 'pending') => {
+    try {
+      if (status === 'all') return db.prepare('SELECT * FROM unban_appeals WHERE guild_id = ? ORDER BY created_at DESC').all(guildId);
+      return db.prepare('SELECT * FROM unban_appeals WHERE guild_id = ? AND status = ? ORDER BY created_at DESC').all(guildId, status);
+    } catch(e) { return []; }
+  },
+  getUserAppeal: (guildId, userId) => {
+    try {
+      return db.prepare('SELECT * FROM unban_appeals WHERE guild_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 1').get(guildId, userId);
+    } catch(e) { return null; }
+  },
+  updateAppealStatus: (appealId, status, reviewedBy, note = '') => {
+    try {
+      const now = Math.floor(Date.now() / 1000);
+      return db.prepare('UPDATE unban_appeals SET status = ?, reviewed_by = ?, review_note = ?, updated_at = ? WHERE id = ?')
+        .run(status, reviewedBy, note, now, appealId);
+    } catch(e) { return null; }
+  },
+
+  // 👑 Custom Roles API
+  addCustomRole: (guildId, userId, roleId, roleName, roleColor, roleIcon, expiresAt) => {
+    try {
+      return db.prepare(`
+        INSERT INTO custom_roles (guild_id, user_id, role_id, role_name, role_color, role_icon, expires_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(guildId, userId, roleId, roleName, roleColor, roleIcon, expiresAt);
+    } catch(e) { return null; }
+  },
+  getUserCustomRole: (guildId, userId) => {
+    try {
+      return db.prepare('SELECT * FROM custom_roles WHERE guild_id = ? AND user_id = ?').get(guildId, userId);
+    } catch(e) { return null; }
+  },
+  getExpiredCustomRoles: () => {
+    try {
+      const now = Math.floor(Date.now() / 1000);
+      return db.prepare('SELECT * FROM custom_roles WHERE expires_at IS NOT NULL AND expires_at <= ?').all(now);
+    } catch(e) { return []; }
+  },
+  deleteCustomRole: (guildId, roleId) => {
+    try {
+      return db.prepare('DELETE FROM custom_roles WHERE guild_id = ? AND role_id = ?').run(guildId, roleId);
+    } catch(e) { return null; }
+  },
+
+  // 🎙️ Rented Channels API
+  addRentedChannel: (guildId, userId, channelId, channelType, channelName, expiresAt) => {
+    try {
+      return db.prepare(`
+        INSERT INTO rented_channels (guild_id, user_id, channel_id, channel_type, channel_name, expires_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(guildId, userId, channelId, channelType, channelName, expiresAt);
+    } catch(e) { return null; }
+  },
+  getUserRentedChannel: (guildId, userId) => {
+    try {
+      return db.prepare('SELECT * FROM rented_channels WHERE guild_id = ? AND user_id = ?').get(guildId, userId);
+    } catch(e) { return null; }
+  },
+  getExpiredRentedChannels: () => {
+    try {
+      const now = Math.floor(Date.now() / 1000);
+      return db.prepare('SELECT * FROM rented_channels WHERE expires_at IS NOT NULL AND expires_at <= ?').all(now);
+    } catch(e) { return []; }
+  },
+  deleteRentedChannel: (guildId, channelId) => {
+    try {
+      return db.prepare('DELETE FROM rented_channels WHERE guild_id = ? AND channel_id = ?').run(guildId, channelId);
+    } catch(e) { return null; }
+  },
+
+  // 🎨 User Cosmetics API
+  equipCosmetic: (userId, itemType, itemId, itemName) => {
+    try {
+      db.prepare('UPDATE user_cosmetics SET is_equipped = 0 WHERE user_id = ? AND item_type = ?').run(userId, itemType);
+      return db.prepare(`
+        INSERT INTO user_cosmetics (user_id, item_type, item_id, item_name, is_equipped)
+        VALUES (?, ?, ?, ?, 1)
+        ON CONFLICT(user_id, item_type, item_id) DO UPDATE SET is_equipped = 1
+      `).run(userId, itemType, itemId, itemName);
+    } catch(e) { return null; }
+  },
+  getUserEquippedCosmetics: (userId) => {
+    try {
+      return db.prepare('SELECT * FROM user_cosmetics WHERE user_id = ? AND is_equipped = 1').all(userId);
+    } catch(e) { return []; }
+  },
+
+  // 📜 Ticket Transcripts
+  saveTranscript,
+  getTranscript,
+  addTicketRating,
+  getStaffRatings,
+  getStaffAverageRating,
+
   db
 };
