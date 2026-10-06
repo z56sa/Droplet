@@ -40,7 +40,7 @@ except ImportError:
 # ───────────── الإعدادات ─────────────
 TOKEN = os.environ["BOT_TOKEN"]
 LOG_CHANNEL_ID = int(os.environ.get("LOG_CHANNEL_ID", "0"))
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
 MCP_URL = os.environ.get("MCP_SERVER_URL", "")
 MCP_COMMAND = os.environ.get("MCP_COMMAND", "")
 MCP_ARGS = os.environ.get("MCP_ARGS", "").split()

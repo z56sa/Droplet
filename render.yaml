@@ -15,7 +15,7 @@ services:
       - key: LOG_CHANNEL_ID
         sync: false
       - key: GEMINI_MODEL
-        value: gemini-2.5-flash
+        value: gemini-3.8-flash
       - key: CODE_CHANNEL_IDS
         value: ""
       - key: MCP_SERVER_URL
