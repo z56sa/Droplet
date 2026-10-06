@@ -1,4 +1,4 @@
-﻿// ========================================================
+// ========================================================
 // FILE: src/database/index.js
 // قاعدة بيانات SQLite متزامنة (Synchronous) باستخدام better-sqlite3
 // ========================================================
@@ -293,6 +293,31 @@ db.exec(`
     target_type TEXT NOT NULL, -- tickets, mod_actions, messages, voice_hours
     target_value INTEGER NOT NULL,
     reward_points INTEGER DEFAULT 100,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  );
+
+  -- 🎖️ Staff Auto Promotions (رتب وترقيات الإدارة التلقائية حسب النقاط)
+  CREATE TABLE IF NOT EXISTS staff_ranks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id TEXT NOT NULL,
+    role_id TEXT NOT NULL,
+    required_points INTEGER NOT NULL,
+    rank_name TEXT,
+    created_at INTEGER DEFAULT (strftime('%s','now')),
+    UNIQUE(guild_id, role_id)
+  );
+
+  -- 📋 Staff Tasks (مهام الإدارة مع النقاط والمكافآت)
+  CREATE TABLE IF NOT EXISTS staff_tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    assigned_to TEXT, -- user_id أو NULL للكل
+    points INTEGER DEFAULT 50,
+    status TEXT DEFAULT 'pending', -- pending, completed, cancelled
+    created_by TEXT NOT NULL,
+    completed_at INTEGER,
     created_at INTEGER DEFAULT (strftime('%s','now'))
   );
 
@@ -1789,6 +1814,126 @@ function deleteStaffGoal(id, guildId) {
   return db.prepare('DELETE FROM staff_goals WHERE id = ? AND guild_id = ?').run(id, guildId);
 }
 
+// 🎖️ Staff Ranks & Auto-Promotions Helpers
+function getStaffRanks(guildId) {
+  try {
+    return db.prepare('SELECT * FROM staff_ranks WHERE guild_id = ? ORDER BY required_points ASC').all(guildId);
+  } catch (e) {
+    return [];
+  }
+}
+
+function setStaffRank(guildId, roleId, requiredPoints, rankName = null) {
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO staff_ranks (guild_id, role_id, required_points, rank_name)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(guild_id, role_id) DO UPDATE SET required_points = excluded.required_points, rank_name = excluded.rank_name
+    `);
+    return stmt.run(guildId, roleId, requiredPoints, rankName);
+  } catch (e) {
+    console.error('[DB] setStaffRank error:', e);
+    return null;
+  }
+}
+
+function removeStaffRank(guildId, roleId) {
+  try {
+    return db.prepare('DELETE FROM staff_ranks WHERE guild_id = ? AND role_id = ?').run(guildId, roleId);
+  } catch (e) {
+    return null;
+  }
+}
+
+function checkStaffPromotion(guildId, userId) {
+  try {
+    const staff = getStaffMember(guildId, userId);
+    if (!staff) return null;
+    const ranks = getStaffRanks(guildId);
+    if (!ranks || ranks.length === 0) return null;
+
+    // العثور على أعلى رتبة يستحقها العضو بناءً على نقاطه
+    const eligibleRanks = ranks.filter(r => staff.points >= r.required_points);
+    if (eligibleRanks.length === 0) return null;
+
+    const highestRank = eligibleRanks[eligibleRanks.length - 1];
+    return {
+      highestRank,
+      allEligible: eligibleRanks,
+      staffPoints: staff.points
+    };
+  } catch (e) {
+    console.error('[DB] checkStaffPromotion error:', e);
+    return null;
+  }
+}
+
+function addStaffPoints(guildId, staffId, pointsToAdd, reason = 'مكافأة إدارية') {
+  try {
+    getStaffMember(guildId, staffId);
+    db.prepare('UPDATE staff_activity SET points = points + ? WHERE guild_id = ? AND user_id = ?')
+      .run(pointsToAdd, guildId, staffId);
+    recordStaffAction(guildId, staffId, 'points_award', null, reason, `+${pointsToAdd} نقطة`);
+    return getStaffMember(guildId, staffId);
+  } catch (e) {
+    console.error('[DB] addStaffPoints error:', e);
+    return null;
+  }
+}
+
+// 📋 Staff Tasks Helpers
+function addStaffTask(guildId, title, description, assignedTo = null, points = 50, createdBy = 'Admin') {
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO staff_tasks (guild_id, title, description, assigned_to, points, created_by)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    return stmt.run(guildId, title, description, assignedTo, points, createdBy);
+  } catch (e) {
+    console.error('[DB] addStaffTask error:', e);
+    return null;
+  }
+}
+
+function getStaffTasks(guildId, status = null) {
+  try {
+    if (status) {
+      return db.prepare('SELECT * FROM staff_tasks WHERE guild_id = ? AND status = ? ORDER BY created_at DESC').all(guildId, status);
+    }
+    return db.prepare('SELECT * FROM staff_tasks WHERE guild_id = ? ORDER BY created_at DESC').all(guildId);
+  } catch (e) {
+    console.error('[DB] getStaffTasks error:', e);
+    return [];
+  }
+}
+
+function completeStaffTask(taskId, guildId, completedBy) {
+  try {
+    const task = db.prepare('SELECT * FROM staff_tasks WHERE id = ? AND guild_id = ?').get(taskId, guildId);
+    if (!task || task.status !== 'pending') return { success: false, reason: 'المهمة غير صالحة أو مكتملة مسبقاً' };
+
+    const now = Math.floor(Date.now() / 1000);
+    db.prepare('UPDATE staff_tasks SET status = "completed", completed_at = ?, assigned_to = COALESCE(assigned_to, ?) WHERE id = ?')
+      .run(now, completedBy, taskId);
+
+    // إضافة النقاط للإداري المنجز
+    addStaffPoints(guildId, completedBy, task.points, `إنجاز مهمة إدارية: ${task.title}`);
+
+    return { success: true, task, points: task.points };
+  } catch (e) {
+    console.error('[DB] completeStaffTask error:', e);
+    return { success: false, error: e.message };
+  }
+}
+
+function cancelStaffTask(taskId, guildId) {
+  try {
+    return db.prepare('UPDATE staff_tasks SET status = "cancelled" WHERE id = ? AND guild_id = ?').run(taskId, guildId);
+  } catch (e) {
+    return null;
+  }
+}
+
 function resetStaffStats(guildId, userId = null) {
   if (userId) {
     return db.prepare('UPDATE staff_activity SET tickets_closed = 0, mod_actions = 0, bans_count = 0, kicks_count = 0, mutes_count = 0, warns_count = 0, messages_count = 0, voice_seconds = 0, streak_days = 0, points = 0, shift_seconds = 0, total_shifts = 0 WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
@@ -2305,6 +2450,15 @@ module.exports = {
     const u = getUser(userId, guildId);
     return u.coins || 0;
   },
+  getStaffRanks,
+  setStaffRank,
+  removeStaffRank,
+  checkStaffPromotion,
+  addStaffPoints,
+  addStaffTask,
+  getStaffTasks,
+  completeStaffTask,
+  cancelStaffTask,
   trackGuildInfo,
   getTrackedGuildInfo,
   trackUserProfile,

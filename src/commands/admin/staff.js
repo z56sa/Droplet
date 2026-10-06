@@ -31,6 +31,29 @@ module.exports = {
       sub.setName('reset')
         .setDescription('إعادة تعيين إحصائيات الستاف (خاص بمالك السيرفر)')
         .addUserOption(opt => opt.setName('user').setDescription('العضو المراد تصفير نشاطه (اتركه فارغاً لتصفير الكل)').setRequired(false))
+    )
+    .addSubcommand(sub =>
+      sub.setName('rank-set')
+        .setDescription('🎖️ تحديد رتبة ديسكورد كترقية تلقائية عند وصول عدد معين من النقاط')
+        .addRoleOption(opt => opt.setName('role').setDescription('رتبة ديسكورد التي ستُمنح عند الترقية').setRequired(true))
+        .addIntegerOption(opt => opt.setName('points').setDescription('عدد النقاط المطلوبة للترقية').setMinValue(1).setRequired(true))
+        .addStringOption(opt => opt.setName('name').setDescription('اسم الرتبة (اختياري)').setRequired(false))
+    )
+    .addSubcommand(sub =>
+      sub.setName('rank-list')
+        .setDescription('📋 عرض قائمة رتب الترقية التلقائية المضبوطة في السيرفر')
+    )
+    .addSubcommand(sub =>
+      sub.setName('rank-remove')
+        .setDescription('🗑️ حذف رتبة من نظام الترقية التلقائية')
+        .addRoleOption(opt => opt.setName('role').setDescription('الرتبة المراد حذفها من نظام الترقية').setRequired(true))
+    )
+    .addSubcommand(sub =>
+      sub.setName('points')
+        .setDescription('⭐ منح نقاط مكافأة يدوياً لأحد أعضاء الإدارة')
+        .addUserOption(opt => opt.setName('user').setDescription('عضو الإدارة المراد منحه نقاط').setRequired(true))
+        .addIntegerOption(opt => opt.setName('amount').setDescription('عدد النقاط المراد منحها').setMinValue(1).setRequired(true))
+        .addStringOption(opt => opt.setName('reason').setDescription('سبب منح النقاط').setRequired(false))
     ),
 
   async execute(interaction) {
@@ -174,6 +197,117 @@ module.exports = {
         db.resetStaffStats(guildId);
         return interaction.reply({ content: '✅ تم تصفير وإعادة تعيين إحصائيات جميع الستاف في هذا السيرفر بنجاح.' });
       }
+    }
+
+    // ─── Rank Set ───
+    if (sub === 'rank-set') {
+      if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+        return interaction.reply({ content: '❌ هذا الأمر مخصص للإدارة العليا فقط.', flags: 64 });
+      }
+      const role = interaction.options.getRole('role');
+      const points = interaction.options.getInteger('points');
+      const name = interaction.options.getString('name') || role.name;
+
+      db.setStaffRank(guildId, role.id, points, name);
+
+      const embed = new EmbedBuilder()
+        .setColor('#10b981')
+        .setTitle('🎖️ تم ضبط رتبة الترقية التلقائية')
+        .addFields(
+          { name: '🏷️ الرتبة', value: `<@&${role.id}>`, inline: true },
+          { name: '⭐ النقاط المطلوبة', value: `\`${points}\` نقطة`, inline: true },
+          { name: '📝 الاسم', value: `\`${name}\``, inline: true }
+        )
+        .setDescription('سيتم منح هذه الرتبة تلقائياً لأي عضو إدارة يصل لهذا العدد من النقاط.')
+        .setFooter({ text: 'ZENO Staff Auto-Promotion System' })
+        .setTimestamp();
+
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    // ─── Rank List ───
+    if (sub === 'rank-list') {
+      const ranks = db.getStaffRanks(guildId);
+      if (!ranks || ranks.length === 0) {
+        return interaction.reply({ content: '📭 لا توجد رتب ترقية تلقائية مضبوطة بعد.\nاستخدم `/staff rank-set` لإضافة رتبة.', flags: 64 });
+      }
+
+      const lines = ranks.map((r, i) =>
+        `**${i + 1}.** <@&${r.role_id}> — \`${r.required_points}\` نقطة${r.rank_name ? ` (**${r.rank_name}**)` : ''}`
+      );
+
+      const embed = new EmbedBuilder()
+        .setColor('#7c3aed')
+        .setTitle('🎖️ قائمة رتب الترقية التلقائية (Staff Auto-Promotion Ranks)')
+        .setDescription(lines.join('\n'))
+        .setFooter({ text: 'تُمنح الرتب تلقائياً عند تحقق شرط النقاط' })
+        .setTimestamp();
+
+      return interaction.reply({ embeds: [embed] });
+    }
+
+    // ─── Rank Remove ───
+    if (sub === 'rank-remove') {
+      if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+        return interaction.reply({ content: '❌ هذا الأمر مخصص للإدارة العليا فقط.', flags: 64 });
+      }
+      const role = interaction.options.getRole('role');
+      const result = db.removeStaffRank(guildId, role.id);
+
+      if (!result || result.changes === 0) {
+        return interaction.reply({ content: `⚠️ الرتبة <@&${role.id}> غير موجودة في نظام الترقيات.`, flags: 64 });
+      }
+
+      return interaction.reply({ content: `✅ تم حذف الرتبة <@&${role.id}> من نظام الترقية التلقائية بنجاح.` });
+    }
+
+    // ─── Points Award ───
+    if (sub === 'points') {
+      if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+        return interaction.reply({ content: '❌ هذا الأمر مخصص للإدارة العليا فقط.', flags: 64 });
+      }
+      const targetUser = interaction.options.getUser('user');
+      const amount = interaction.options.getInteger('amount');
+      const reason = interaction.options.getString('reason') || 'مكافأة إدارية';
+
+      const updated = db.addStaffPoints(guildId, targetUser.id, amount, reason);
+      if (!updated) {
+        return interaction.reply({ content: '❌ حدث خطأ أثناء منح النقاط.', flags: 64 });
+      }
+
+      // فحص الترقية التلقائية بعد منح النقاط
+      let promotionStr = '';
+      const promotion = db.checkStaffPromotion(guildId, targetUser.id);
+      if (promotion) {
+        const allRoles = promotion.allEligible;
+        try {
+          const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
+          if (member) {
+            for (const r of allRoles) {
+              if (!member.roles.cache.has(r.role_id)) {
+                await member.roles.add(r.role_id).catch(() => {});
+                promotionStr += `\n🎖️ تمت الترقية التلقائية إلى <@&${r.role_id}>!`;
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor('#f59e0b')
+        .setTitle('⭐ تم منح نقاط المكافأة')
+        .addFields(
+          { name: '👤 العضو', value: `<@${targetUser.id}>`, inline: true },
+          { name: '⭐ النقاط المضافة', value: `+\`${amount}\` نقطة`, inline: true },
+          { name: '💰 إجمالي النقاط', value: `\`${updated.points}\` نقطة`, inline: true },
+          { name: '📋 السبب', value: reason, inline: false }
+        )
+        .setFooter({ text: `بواسطة ${interaction.user.username} • ZENO Staff System` })
+        .setTimestamp();
+
+      if (promotionStr) embed.setDescription(promotionStr);
+
+      return interaction.reply({ embeds: [embed] });
     }
   },
 

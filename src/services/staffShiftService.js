@@ -186,6 +186,45 @@ class StaffShiftService {
                     db.removeTempMute(row.guild_id, row.user_id);
                 }
             }
+
+            // ─── فحص الترقيات التلقائية لطاقم الإدارة (Staff Auto-Promotions) ───
+            if (db.getStaffRanks && db.checkStaffPromotion) {
+                for (const guild of this.client.guilds.cache.values()) {
+                    const ranks = db.getStaffRanks(guild.id);
+                    if (!ranks || ranks.length === 0) continue;
+
+                    const leaderboard = db.getStaffLeaderboard ? db.getStaffLeaderboard(guild.id, 50) : [];
+                    for (const staffMember of leaderboard) {
+                        const promotion = db.checkStaffPromotion(guild.id, staffMember.user_id);
+                        if (!promotion) continue;
+
+                        const member = guild.members.cache.get(staffMember.user_id) || await guild.members.fetch(staffMember.user_id).catch(() => null);
+                        if (!member) continue;
+
+                        for (const r of promotion.allEligible) {
+                            if (!member.roles.cache.has(r.role_id)) {
+                                const roleToAdd = guild.roles.cache.get(r.role_id);
+                                if (roleToAdd) {
+                                    await member.roles.add(roleToAdd).catch(() => {});
+                                    const settings = db.getGuildSettings(guild.id);
+                                    const logChannelId = settings.staff_log_channel || settings.log_channel;
+                                    const logChannel = logChannelId ? guild.channels.cache.get(logChannelId) : null;
+                                    if (logChannel && logChannel.isTextBased()) {
+                                        const promoEmbed = new EmbedBuilder()
+                                            .setColor('#10b981')
+                                            .setTitle('🎖️ ترقية تلقائية لإداري!')
+                                            .setDescription(`تهانينا للإداري <@${member.id}>! حصل على ترقية تلقائية إلى رتبة <@&${r.role_id}> بعد بلوغ نقاطه **${staffMember.points}** نقطة 🚀`)
+                                            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+                                            .setFooter({ text: 'ZENO Staff Auto-Promotion System' })
+                                            .setTimestamp();
+                                        await logChannel.send({ embeds: [promoEmbed] }).catch(() => {});
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         } catch (e) {
             console.error('[StaffShiftService] Error in tick:', e.message);
         }
