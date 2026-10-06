@@ -218,13 +218,18 @@ module.exports = {
 
 
     if (isBotMentioned || matchZeno) {
+      const ownerId = process.env.OWNER_ID || config.ownerId || '1178342841882267744';
+      if (message.author.id !== ownerId) {
+        return; // تجاهل الأعضاء العاديين، الذكاء الاصطناعي مخصص للمالك ومساعدته في إدارة البوت فقط
+      }
+
       let userPrompt = '';
       if (isBotMentioned) {
         userPrompt = cleanContent.replace(botMentionRegex, '').replace(new RegExp(`<@!?${client.user?.id}>`, 'g'), '').trim();
       } else if (matchZeno) {
         userPrompt = (matchZeno[1] || '').trim();
       }
-      if (!userPrompt) userPrompt = 'أهلاً وسهلاً! أنا ZENO، كيف يمكنني مساعدتك اليوم؟';
+      if (!userPrompt) userPrompt = 'أهلاً بك يا مالك البوت! كيف يمكنني مساعدتك في تطوير وإدارة ZENO اليوم؟';
 
       try {
         await message.channel.sendTyping().catch(() => {});

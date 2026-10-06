@@ -149,10 +149,14 @@ module.exports = {
                 .setRequired(true)),
 
     async execute(interaction) {
+        const ownerId = process.env.OWNER_ID || config.ownerId || '1178342841882267744';
+        if (interaction.user.id !== ownerId) {
+            return interaction.reply({ content: '🔒 هذا الأمر مخصص لمالك البوت وإدارته فقط.', flags: 64 });
+        }
         const question = interaction.options.getString('question');
         const ai = getClient();
         if (!ai) {
-            return interaction.reply({ content: '❌ مفتاح Gemini غير مضبوط في ملف .env', ephemeral: true });
+            return interaction.reply({ content: '❌ مفتاح Gemini غير مضبوط في ملف .env', flags: 64 });
         }
 
         await interaction.deferReply();

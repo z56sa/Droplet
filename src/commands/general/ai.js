@@ -53,18 +53,26 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        const ownerId = process.env.OWNER_ID || config.ownerId || '1178342841882267744';
+        if (interaction.user.id !== ownerId) {
+            return interaction.reply({ content: '🔒 هذا النظام والمساعد الذكي مخصص لمالك البوت وإدارته فقط.', flags: 64 });
+        }
         await interaction.deferReply();
         const prompt = interaction.options.getString('prompt');
         await sendFormattedAIResponse(interaction, prompt, true);
     },
 
     async executePrefix(message, args) {
+        const ownerId = process.env.OWNER_ID || config.ownerId || '1178342841882267744';
+        if (message.author.id !== ownerId) {
+            return; // تجاهل الأعضاء
+        }
         const query = args.join(' ');
         if (!query) {
-            return message.reply('❌ يرجى كتابة السؤال أو النص بعد الأمر، مثال: `#ai ما هي عاصمة فرنسا؟`');
+            return message.reply('❌ يرجى كتابة السؤال أو الطلب البرمجي بعد الأمر.');
         }
 
-        const waiting = await message.reply('⏳ جاري التفكير ومعالجة الطلب...');
+        const waiting = await message.reply('⏳ جاري المعالجة...');
         await sendFormattedAIResponse(waiting, query, false);
     }
 };
