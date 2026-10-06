@@ -22,13 +22,10 @@ async function sendServerLog(guild, eventId, catKey, embedData = {}) {
 
         const logCfg = logsConfig[eventId];
         
-        // If explicitly set, check if enabled. If not set, check general log_channel fallback
-        let isEnabled = false;
-        if (logCfg && logCfg.enabled !== undefined) {
-            isEnabled = logCfg.enabled === true || logCfg.enabled === 1 || logCfg.enabled === '1';
-        } else if (settings.logs_enabled !== 0 && settings.log_channel) {
-            // Default fallback if master log is on and general channel exists
-            isEnabled = true;
+        // Logs are enabled by default UNLESS explicitly disabled (enabled === false or 0)
+        let isEnabled = true;
+        if (logCfg && (logCfg.enabled === false || logCfg.enabled === 0 || logCfg.enabled === '0')) {
+            isEnabled = false;
         }
 
         if (!isEnabled) return;

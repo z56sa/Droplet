@@ -303,6 +303,28 @@ module.exports = function (app, client) {
         return res.json({ success: true, message: 'تم إرسال الطلب بنجاح.' });
     });
 
+    app.post('/api/appeal/review', express.json(), async (req, res) => {
+        const { appealId, status, guildId, targetUserId } = req.body;
+        const reviewer = req.session?.user?.username || 'Admin';
+
+        if (!appealId || !status || !guildId) {
+            return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
+        }
+
+        database.updateAppealStatus(appealId, status, reviewer);
+
+        if (status === 'accepted' && targetUserId) {
+            try {
+                const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
+                if (guild) {
+                    await guild.bans.remove(targetUserId, `قبول طلب فك الحظر بواسطة ${reviewer}`).catch(() => {});
+                }
+            } catch (e) {}
+        }
+
+        return res.json({ success: true });
+    });
+
     // 2. Real Discord OAuth2 Authentication Routes
     app.get('/auth/discord', (req, res) => {
         const { clientId, redirectUri } = getOAuthConfig(req);
@@ -11086,6 +11108,186 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         initEmbedEditor();
                     }
                 `
+            } else if (section === 'appeals') {
+                const appealsList = database.getGuildAppeals ? database.getGuildAppeals(guildId, 'all') : [];
+                formFieldsHtml = `
+                    <div class="space-y-6 text-right" dir="rtl">
+                        <div class="flex items-center justify-between bg-gradient-to-r from-purple-900/30 to-indigo-900/30 border border-purple-500/20 p-5 rounded-2xl">
+                            <div>
+                                <h3 class="text-lg font-black text-white">⚖️ مركز مراجعة طلبات فك الحظر (Unban Appeals)</h3>
+                                <p class="text-xs text-gray-400 mt-1">مراجعة والبت في طلبات فك الحظر المقدمة من الأعضاء عبر صفحة الويب.</p>
+                            </div>
+                            <span class="px-3 py-1 bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold font-mono">
+                                ${appealsList.length} طلب
+                            </span>
+                        </div>
+
+                        ${appealsList.length === 0 ? `
+                            <div class="p-8 text-center bg-[#10121b] border border-white/5 rounded-2xl">
+                                <span class="text-4xl block mb-2">📭</span>
+                                <h4 class="text-sm font-bold text-gray-300">لا توجد طلبات فك حظر مسجلة حالياً</h4>
+                                <p class="text-xs text-gray-500 mt-1">رابط تقديم الأعضاء لطلبات فك الحظر: <code class="text-purple-400 bg-black/40 px-2 py-0.5 rounded">/appeal</code></p>
+                            </div>
+                        ` : `
+                            <div class="space-y-3">
+                                ${appealsList.map(a => `
+                                    <div class="bg-[#12141f] border border-white/5 hover:border-purple-500/30 p-5 rounded-2xl transition">
+                                        <div class="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-black text-white text-sm">${a.username || 'مستخدم'}</span>
+                                                <span class="text-xs text-gray-500 font-mono">(${a.user_id})</span>
+                                            </div>
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                a.status === 'accepted' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                                                a.status === 'rejected' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                                                'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                            }">
+                                                ${a.status === 'accepted' ? 'مقبول ✅' : a.status === 'rejected' ? 'مرفوض ❌' : 'قيد المراجعة ⏳'}
+                                            </span>
+                                        </div>
+                                        <div class="space-y-2 text-xs">
+                                            <p><span class="text-gray-400 font-bold">سبب الحظر:</span> <span class="text-gray-200">${a.ban_reason || 'غير محدد'}</span></p>
+                                            <p><span class="text-gray-400 font-bold">التبرير والاستئناف:</span> <span class="text-purple-200">${a.appeal_reason}</span></p>
+                                            <p><span class="text-gray-400 font-bold">التعهد:</span> <span class="text-emerald-300">${a.promise || 'لا يوجد'}</span></p>
+                                        </div>
+                                        <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
+                                            <span class="text-[10px] text-gray-500 font-mono">${new Date(a.created_at * 1000).toLocaleString('ar-SA')}</span>
+                                            ${a.status === 'pending' ? `
+                                                <div class="flex gap-2">
+                                                    <button type="button" onclick="handleAppealAction(${a.id}, 'accepted', '${guildId}', '${a.user_id}')" class="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-bold transition">قبول وفك الحظر</button>
+                                                    <button type="button" onclick="handleAppealAction(${a.id}, 'rejected', '${guildId}', '${a.user_id}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition">رفض الطلب</button>
+                                                </div>
+                                            ` : `<span class="text-xs text-gray-400">تمت المراجعة بواسطة: ${a.reviewed_by || 'الإدارة'}</span>`}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `}
+                    </div>
+                    <script>
+                        async function handleAppealAction(id, action, guildId, targetUserId) {
+                            if (!confirm(action === 'accepted' ? 'هل أنت متأكد من قبول الطلب وفك الحظر عن العضو؟' : 'هل أنت متأكد من رفض الطلب؟')) return;
+                            try {
+                                const res = await fetch('/api/appeal/review', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ appealId: id, status: action, guildId, targetUserId })
+                                });
+                                const d = await res.json();
+                                if (d.success) location.reload();
+                                else alert(d.message || 'فشلت العملية');
+                            } catch(e) { alert('حدث خطأ في الاتصال'); }
+                        }
+                    </script>
+                `;
+            } else if (section === 'staff_system') {
+                const ranks = database.getStaffRanks ? database.getStaffRanks(guildId) : [];
+                const tasks = database.getStaffTasks ? database.getStaffTasks(guildId) : [];
+                const leaderboard = database.getStaffLeaderboard ? database.getStaffLeaderboard(guildId, 10) : [];
+
+                formFieldsHtml = `
+                    <div class="space-y-6 text-right" dir="rtl">
+                        <div class="bg-gradient-to-r from-purple-900/30 to-indigo-900/30 border border-purple-500/20 p-5 rounded-2xl">
+                            <h3 class="text-lg font-black text-white">👮 نظام إدارة الستاف والترقيات التلقائية</h3>
+                            <p class="text-xs text-gray-400 mt-1">متابعة نقاط الإداريين، رتب الترقية التلقائية، ومهام العمل الإداري.</p>
+                        </div>
+
+                        <!-- 1. Auto Promotion Ranks -->
+                        <div class="bg-[#12141f] border border-white/5 p-6 rounded-2xl">
+                            <h4 class="text-sm font-black text-purple-300 mb-4 flex items-center gap-2">
+                                <span>🎖️ سلم رتب الترقية التلقائية</span>
+                            </h4>
+                            ${ranks.length === 0 ? `
+                                <p class="text-xs text-gray-500">لا توجد رتب ترقية تلقائية مضبوطة بعد. استخدم أمر ديسكورد <code class="text-purple-400">/staff rank-set</code> لضبطها.</p>
+                            ` : `
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    ${ranks.map((r, i) => `
+                                        <div class="bg-[#0b0d14] border border-white/5 p-3 rounded-xl">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-xs font-bold text-white">${r.rank_name || 'رتبة ترقية'}</span>
+                                                <span class="text-[10px] text-purple-400 font-mono font-bold">#${i + 1}</span>
+                                            </div>
+                                            <p class="text-xs text-emerald-400 font-bold mt-1">⭐ ${r.required_points} نقطة</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+
+                        <!-- 2. Staff Leaderboard -->
+                        <div class="bg-[#12141f] border border-white/5 p-6 rounded-2xl">
+                            <h4 class="text-sm font-black text-amber-300 mb-4 flex items-center gap-2">
+                                <span>🏆 متصدري طاقم الإدارة (Staff Leaderboard)</span>
+                            </h4>
+                            <div class="space-y-2">
+                                ${leaderboard.length === 0 ? '<p class="text-xs text-gray-500">لا يوجد نشاط مسجل للستاف بعد.</p>' : leaderboard.map((s, idx) => `
+                                    <div class="flex items-center justify-between p-3 bg-[#0b0d14] border border-white/5 rounded-xl text-xs">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-amber-400 font-mono">#${idx + 1}</span>
+                                            <span class="text-white font-bold">&lt;@${s.user_id}&gt;</span>
+                                        </div>
+                                        <div class="flex gap-4 text-gray-400">
+                                            <span>🎫 ${s.tickets_closed} تذكرة</span>
+                                            <span>🔨 ${s.mod_actions} إجراء</span>
+                                            <span class="text-purple-400 font-bold font-mono">⭐ ${s.points || 0} نقطة</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (section === 'custom_shop') {
+                const customRoles = database.db.prepare('SELECT * FROM custom_roles WHERE guild_id = ?').all(guildId);
+                const rentedChannels = database.db.prepare('SELECT * FROM rented_channels WHERE guild_id = ?').all(guildId);
+
+                formFieldsHtml = `
+                    <div class="space-y-6 text-right" dir="rtl">
+                        <div class="bg-gradient-to-r from-purple-900/30 to-indigo-900/30 border border-purple-500/20 p-5 rounded-2xl">
+                            <h3 class="text-lg font-black text-white">🛒 إدارة متجر السيرفر والأدوات المخصصة</h3>
+                            <p class="text-xs text-gray-400 mt-1">متابعة الرتب المخصصة المشتراة والرومات المستأجرة الحالية.</p>
+                        </div>
+
+                        <!-- Custom Roles Active -->
+                        <div class="bg-[#12141f] border border-white/5 p-6 rounded-2xl">
+                            <h4 class="text-sm font-black text-purple-300 mb-4">👑 الرتب الخاصة النشطة (${customRoles.length})</h4>
+                            ${customRoles.length === 0 ? '<p class="text-xs text-gray-500">لا توجد رتب مخصصة مشتراة حالياً.</p>' : `
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    ${customRoles.map(cr => `
+                                        <div class="p-3 bg-[#0b0d14] border border-white/5 rounded-xl flex items-center justify-between text-xs">
+                                            <div>
+                                                <span class="font-bold text-white block">${cr.role_name}</span>
+                                                <span class="text-[10px] text-gray-400">العضو: &lt;@${cr.user_id}&gt;</span>
+                                            </div>
+                                            <div class="text-left">
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-mono" style="background:${cr.role_color || '#7c3aed'};color:#fff;">${cr.role_color || 'HEX'}</span>
+                                                <span class="text-[10px] text-gray-500 block mt-1">تنتهي: ${new Date(cr.expires_at * 1000).toLocaleDateString('ar-SA')}</span>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+
+                        <!-- Rented Channels Active -->
+                        <div class="bg-[#12141f] border border-white/5 p-6 rounded-2xl">
+                            <h4 class="text-sm font-black text-emerald-300 mb-4">🎙️ الغرف المستأجرة النشطة (${rentedChannels.length})</h4>
+                            ${rentedChannels.length === 0 ? '<p class="text-xs text-gray-500">لا توجد رومات مستأجرة حالياً.</p>' : `
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    ${rentedChannels.map(rc => `
+                                        <div class="p-3 bg-[#0b0d14] border border-white/5 rounded-xl flex items-center justify-between text-xs">
+                                            <div>
+                                                <span class="font-bold text-white block">${rc.channel_type === 'voice' ? '🔊' : '💬'} ${rc.channel_name}</span>
+                                                <span class="text-[10px] text-gray-400">المستأجر: &lt;@${rc.user_id}&gt;</span>
+                                            </div>
+                                            <span class="text-[10px] text-gray-500 font-mono">تنتهي: ${new Date(rc.expires_at * 1000).toLocaleDateString('ar-SA')}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                `;
             } else {
                 formFieldsHtml = `
                     <div class="space-y-5 text-right" dir="rtl">
@@ -11410,6 +11612,18 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <span class="text-amber-400 text-xs">👑</span>
                                         </span>
                                         <span class="flex items-center gap-2"><span>التذاكر</span><span class="text-gray-400 group-hover:text-purple-400">🎫</span></span>
+                                    </a>
+                                    <a href="/dashboard/${guildId}/appeals" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'appeals' ? 'bg-purple-600 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                        <span class="text-[9px] font-bold text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded">جديد</span>
+                                        <span class="flex items-center gap-2"><span>طلبات فك الحظر</span><span class="text-gray-400 group-hover:text-purple-400">⚖️</span></span>
+                                    </a>
+                                    <a href="/dashboard/${guildId}/staff_system" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'staff_system' ? 'bg-purple-600 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                        <span class="text-[9px] font-bold text-purple-400 bg-purple-950/60 px-1.5 py-0.2 rounded">جديد</span>
+                                        <span class="flex items-center gap-2"><span>نظام الإدارة والترقيات</span><span class="text-gray-400 group-hover:text-purple-400">👮</span></span>
+                                    </a>
+                                    <a href="/dashboard/${guildId}/custom_shop" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'custom_shop' ? 'bg-purple-600 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                        <span class="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded">جديد</span>
+                                        <span class="flex items-center gap-2"><span>المتجر والرتب والرومات</span><span class="text-gray-400 group-hover:text-purple-400">🛒</span></span>
                                     </a>
                                 </div>
                             </div>
