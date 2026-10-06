@@ -11494,30 +11494,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                             </div>
 
-                            <!-- Voice Room Card -->
-                            <div class="bg-[#12141f] border border-emerald-500/20 rounded-2xl overflow-hidden">
-                                <div class="bg-gradient-to-r from-emerald-900/30 to-teal-900/20 px-5 py-4 flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-2xl">🔊</span>
-                                        <div>
-                                            <h4 class="text-sm font-black text-white">غرفة صوتية خاصة</h4>
-                                            <p class="text-[11px] text-gray-400">Voice Channel Rental</p>
-                                        </div>
-                                    </div>
-                                    <label class="toggle"><input type="checkbox" id="shop_voice_enabled" ${shopSettings.voiceRoom?.enabled ? 'checked' : ''}><span class="slider"></span></label>
-                                </div>
-                                <div class="p-5 space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <label class="text-xs text-gray-400">السعر (Gold 🪙)</label>
-                                        <input type="number" id="shop_voice_price" value="${shopSettings.voiceRoom?.price || 800}" min="1" class="w-28 bg-[#0b0d14] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left">
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <label class="text-xs text-gray-400">المدة (أيام)</label>
-                                        <input type="number" id="shop_voice_days" value="${shopSettings.voiceRoom?.duration || 30}" min="1" class="w-28 bg-[#0b0d14] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white font-mono text-left">
-                                    </div>
-                                    <p class="text-[11px] text-gray-500">العضو يسمّي الغرفة ويتحكم بصلاحيات الدخول</p>
-                                </div>
-                            </div>
 
                             <!-- Text Room Card -->
                             <div class="bg-[#12141f] border border-blue-500/20 rounded-2xl overflow-hidden">
