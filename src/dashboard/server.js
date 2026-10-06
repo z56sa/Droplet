@@ -325,6 +325,53 @@ module.exports = function (app, client) {
         return res.json({ success: true });
     });
 
+    // ─── Staff Auto-Promotion Ranks API ───
+    app.post('/api/staff/ranks', express.json(), (req, res) => {
+        const { guildId, roleId, points, name } = req.body;
+        if (!guildId || !roleId || !points) {
+            return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
+        }
+        database.setStaffRank(guildId, roleId, points, name || null);
+        return res.json({ success: true });
+    });
+
+    app.post('/api/staff/ranks/delete', express.json(), (req, res) => {
+        const { guildId, roleId } = req.body;
+        if (!guildId || !roleId) {
+            return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
+        }
+        database.removeStaffRank(guildId, roleId);
+        return res.json({ success: true });
+    });
+
+    // ─── Dashboard Custom Roles API ───
+    app.post('/api/custom-roles/create', express.json(), async (req, res) => {
+        const { guildId, userId, roleName, roleColor, days } = req.body;
+        if (!guildId || !userId || !roleName) {
+            return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
+        }
+        try {
+            const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
+            if (!guild) return res.status(404).json({ success: false, message: 'السيرفر غير موجود' });
+
+            const createdRole = await guild.roles.create({
+                name: roleName,
+                color: roleColor || '#7c3aed',
+                reason: `إنشاء رتبة مخصصة من الداشبورد بواسطة الإدارة`
+            });
+
+            const member = await guild.members.fetch(userId).catch(() => null);
+            if (member) await member.roles.add(createdRole).catch(() => {});
+
+            const expiresAt = Math.floor(Date.now() / 1000) + ((days || 30) * 24 * 3600);
+            database.addCustomRole(guildId, userId, createdRole.id, roleName, roleColor, null, expiresAt);
+
+            return res.json({ success: true, roleId: createdRole.id });
+        } catch(err) {
+            return res.status(500).json({ success: false, message: err.message });
+        }
+    });
+
     // 2. Real Discord OAuth2 Authentication Routes
     app.get('/auth/discord', (req, res) => {
         const { clientId, redirectUri } = getOAuthConfig(req);
@@ -2154,6 +2201,9 @@ module.exports = function (app, client) {
                 'embed': 'Advanced Embed Builder 📄',
                 'applications': 'Staff Applications System 📝',
                 'help': 'Full Commands List 📚',
+                'appeals': 'طلبات فك الحظر (Unban Appeals) ⚖️',
+                'staff_system': 'نظام الإدارة والترقيات التلقائية 👮',
+                'custom_shop': 'متجر السيرفر والرتب والرومات 🛒',
             };
 
             let title = sectionTitles[section] || 'لوحة الإعدادات ⚙️';
@@ -11192,22 +11242,52 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <p class="text-xs text-gray-400 mt-1">متابعة نقاط الإداريين، رتب الترقية التلقائية، ومهام العمل الإداري.</p>
                         </div>
 
-                        <!-- 1. Auto Promotion Ranks -->
+                        <!-- 1. Auto Promotion Ranks Form & List -->
                         <div class="bg-[#12141f] border border-white/5 p-6 rounded-2xl">
                             <h4 class="text-sm font-black text-purple-300 mb-4 flex items-center gap-2">
                                 <span>🎖️ سلم رتب الترقية التلقائية</span>
                             </h4>
+                            
+                            <!-- Add Rank Form -->
+                            <div class="bg-[#0b0d14] border border-purple-500/20 p-4 rounded-xl mb-4">
+                                <h5 class="text-xs font-bold text-white mb-3">➕ إضافة رتبة ترقية تلقائية جديدة</h5>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-[11px] text-gray-400 mb-1">الرتبة في السيرفر</label>
+                                        <select id="new_rank_role" class="w-full bg-[#161824] border border-white/10 rounded-lg p-2 text-xs text-white">
+                                            <option value="">...اختر الرتبة</option>
+                                            ${guildRoles.map(r => `<option value="${r.id}">@ ${r.name}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] text-gray-400 mb-1">النقاط المطلوبة</label>
+                                        <input type="number" id="new_rank_points" min="1" placeholder="مثال: 100" class="w-full bg-[#161824] border border-white/10 rounded-lg p-2 text-xs text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] text-gray-400 mb-1">اسم مخصص للرتبة</label>
+                                        <input type="text" id="new_rank_name" placeholder="مثال: مشرف أول" class="w-full bg-[#161824] border border-white/10 rounded-lg p-2 text-xs text-white">
+                                    </div>
+                                </div>
+                                <button type="button" onclick="handleAddStaffRank('${guildId}')" class="mt-3 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold transition">
+                                    إضافة الرتبة للسلم 🚀
+                                </button>
+                            </div>
+
                             ${ranks.length === 0 ? `
-                                <p class="text-xs text-gray-500">لا توجد رتب ترقية تلقائية مضبوطة بعد. استخدم أمر ديسكورد <code class="text-purple-400">/staff rank-set</code> لضبطها.</p>
+                                <p class="text-xs text-gray-500">لا توجد رتب ترقية تلقائية مضبوطة بعد. استخدم النموذج أعلاه لإضافة أول رتبة.</p>
                             ` : `
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                                     ${ranks.map((r, i) => `
-                                        <div class="bg-[#0b0d14] border border-white/5 p-3 rounded-xl">
-                                            <div class="flex items-center justify-between">
-                                                <span class="text-xs font-bold text-white">${r.rank_name || 'رتبة ترقية'}</span>
-                                                <span class="text-[10px] text-purple-400 font-mono font-bold">#${i + 1}</span>
+                                        <div class="bg-[#0b0d14] border border-white/5 p-3 rounded-xl flex flex-col justify-between">
+                                            <div>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-xs font-bold text-white">${r.rank_name || 'رتبة ترقية'}</span>
+                                                    <span class="text-[10px] text-purple-400 font-mono font-bold">#${i + 1}</span>
+                                                </div>
+                                                <p class="text-xs text-emerald-400 font-bold mt-1">⭐ ${r.required_points} نقطة</p>
+                                                <span class="text-[10px] text-gray-400 block mt-1">الرتبة: &lt;@&amp;${r.role_id}&gt;</span>
                                             </div>
-                                            <p class="text-xs text-emerald-400 font-bold mt-1">⭐ ${r.required_points} نقطة</p>
+                                            <button type="button" onclick="handleDeleteStaffRank('${guildId}', '${r.role_id}')" class="mt-2 text-left text-[11px] text-red-400 hover:text-red-300 font-bold">حذف 🗑️</button>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -11236,6 +11316,36 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                         </div>
                     </div>
+                    <script>
+                        async function handleAddStaffRank(guildId) {
+                            const roleId = document.getElementById('new_rank_role').value;
+                            const points = parseInt(document.getElementById('new_rank_points').value, 10);
+                            const name = document.getElementById('new_rank_name').value.trim();
+                            if (!roleId || !points) return alert('يرجى اختيار الرتبة وتحديد النقاط');
+                            try {
+                                const res = await fetch('/api/staff/ranks', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ guildId, roleId, points, name })
+                                });
+                                const d = await res.json();
+                                if (d.success) location.reload();
+                                else alert(d.message || 'فشلت الإضافة');
+                            } catch(e) { alert('خطأ في الاتصال'); }
+                        }
+                        async function handleDeleteStaffRank(guildId, roleId) {
+                            if (!confirm('هل أنت متأكد من حذف هذه الرتبة؟')) return;
+                            try {
+                                const res = await fetch('/api/staff/ranks/delete', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ guildId, roleId })
+                                });
+                                const d = await res.json();
+                                if (d.success) location.reload();
+                            } catch(e) { alert('خطأ في الاتصال'); }
+                        }
+                    </script>
                 `;
             } else if (section === 'custom_shop') {
                 const customRoles = database.db.prepare('SELECT * FROM custom_roles WHERE guild_id = ?').all(guildId);
@@ -11246,6 +11356,32 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="bg-gradient-to-r from-purple-900/30 to-indigo-900/30 border border-purple-500/20 p-5 rounded-2xl">
                             <h3 class="text-lg font-black text-white">🛒 إدارة متجر السيرفر والأدوات المخصصة</h3>
                             <p class="text-xs text-gray-400 mt-1">متابعة الرتب المخصصة المشتراة والرومات المستأجرة الحالية.</p>
+                        </div>
+
+                        <!-- Add Quick Custom Role from Dashboard -->
+                        <div class="bg-[#0b0d14] border border-purple-500/20 p-4 rounded-xl">
+                            <h5 class="text-xs font-bold text-white mb-3">➕ إنشاء وتعيين رتبة مخصصة لعضو مباشرة</h5>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                                <div>
+                                    <label class="block text-[11px] text-gray-400 mb-1">آيدي العضو (Discord User ID)</label>
+                                    <input type="text" id="dash_role_user" placeholder="مثال: 123456789" class="w-full bg-[#161824] border border-white/10 rounded-lg p-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-gray-400 mb-1">اسم الرتبة</label>
+                                    <input type="text" id="dash_role_name" placeholder="مثال: VIP King" class="w-full bg-[#161824] border border-white/10 rounded-lg p-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-gray-400 mb-1">اللون HEX</label>
+                                    <input type="color" id="dash_role_color" value="#7c3aed" class="w-full h-8 bg-[#161824] border border-white/10 rounded-lg cursor-pointer">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-gray-400 mb-1">المدة (بالأيام)</label>
+                                    <input type="number" id="dash_role_days" value="30" min="1" class="w-full bg-[#161824] border border-white/10 rounded-lg p-2 text-xs text-white">
+                                </div>
+                            </div>
+                            <button type="button" onclick="handleCreateDashRole('${guildId}')" class="mt-3 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold transition">
+                                إنشاء وتفعيل الرتبة للعضو 👑
+                            </button>
                         </div>
 
                         <!-- Custom Roles Active -->
@@ -11287,6 +11423,25 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             `}
                         </div>
                     </div>
+                    <script>
+                        async function handleCreateDashRole(guildId) {
+                            const userId = document.getElementById('dash_role_user').value.trim();
+                            const roleName = document.getElementById('dash_role_name').value.trim();
+                            const roleColor = document.getElementById('dash_role_color').value;
+                            const days = parseInt(document.getElementById('dash_role_days').value, 10) || 30;
+                            if (!userId || !roleName) return alert('يرجى كتابة آيدي العضو واسم الرتبة');
+                            try {
+                                const res = await fetch('/api/custom-roles/create', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ guildId, userId, roleName, roleColor, days })
+                                });
+                                const d = await res.json();
+                                if (d.success) location.reload();
+                                else alert(d.message || 'فشل إنشاء الرتبة');
+                            } catch(e) { alert('خطأ في الاتصال بالسيرفر'); }
+                        }
+                    </script>
                 `;
             } else {
                 formFieldsHtml = `

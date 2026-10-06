@@ -107,9 +107,11 @@ async function sendServerLog(guild, eventId, catKey, embedData = {}) {
             embed.setFooter({ text: 'ZENO Logs • سجلات السيرفر' });
         }
 
-        await targetChannel.send({ embeds: [embed] }).catch(() => {});
+        await targetChannel.send({ embeds: [embed] }).catch((err) => {
+            console.error(`[SERVER LOGS] ❌ Failed to send log [${eventId}] to channel #${targetChannel.name} (${targetChannel.id}):`, err.message);
+        });
     } catch(err) {
-        console.error('Error dispatching log event [' + eventId + ']:', err);
+        console.error('[SERVER LOGS] Error dispatching log event [' + eventId + ']:', err);
     }
 }
 
