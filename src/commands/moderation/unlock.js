@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'unlock',
@@ -6,17 +7,19 @@ module.exports = {
   aliases: ['فتح'],
   data: new SlashCommandBuilder()
     .setName('unlock')
-    .setDescription('فتح الروم الحالي')
+    .setDescription('Unlock the current channel')
+
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild?.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية إدارة القنوات.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'moderation.unlock.no_perm'), flags: 64 });
     }
 
     const botMember = interaction.guild.members.me || await interaction.guild.members.fetchMe().catch(() => null);
     if (!botMember?.permissions.has(PermissionFlagsBits.ManageChannels)) {
-      return interaction.reply({ content: '❌ البوت لا يملك صلاحية إدارة القنوات (Manage Channels) لتنفيذ هذا الإجراء.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'moderation.unlock.bot_no_perm'), flags: 64 });
     }
 
     await interaction.deferReply().catch(() => { });
@@ -25,21 +28,22 @@ module.exports = {
       await interaction.channel.permissionOverwrites.edit(interaction.guild.roles.everyone, {
         SendMessages: null
       });
-      await interaction.editReply({ content: '🔓 **تم فتح هذا الروم بنجاح.**' });
+      await interaction.editReply({ content: t(lang, 'moderation.unlock.done') });
     } catch (err) {
-      await interaction.editReply({ content: '❌ تعذر فتح الروم. تأكد من صلاحيات البوت ورتبته.' }).catch(() => {});
+      await interaction.editReply({ content: t(lang, 'moderation.unlock.fail') }).catch(() => {});
     }
   },
 
   async executePrefix(message) {
+    const lang = getGuildLang(message.guild?.id);
     if (!message.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
-      return message.reply('❌ لا تملك صلاحية إدارة القنوات.');
+      return message.reply(t(lang, 'moderation.unlock.no_perm'));
     }
 
     await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, {
       SendMessages: null
     });
 
-    await message.channel.send('🔓 **تم فتح هذا الروم بنجاح.**');
+    await message.channel.send(t(lang, 'moderation.unlock.done'));
   }
 };

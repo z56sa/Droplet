@@ -1,8 +1,9 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { askAI } = require('../../utils/ai');
 const config = require('../../config.json');
+const { t } = require('../../utils/lang');
 
-async function sendFormattedAIResponse(target, query, isInteraction = false) {
+async function sendFormattedAIResponse(target, query, isInteraction = false, langOrGuildId = 'EN') {
     try {
         const response = await askAI(query);
 
@@ -14,7 +15,7 @@ async function sendFormattedAIResponse(target, query, isInteraction = false) {
             }
         }
 
-        // إذا كان الرد طويلاً يتجاوز 2000 حرف
+        // If the reply exceeds 2000 chars, split it into chunks
         const chunks = response.match(/[\s\S]{1,1950}/g) || [response];
         if (isInteraction) {
             await target.editReply({ content: chunks[0] });
@@ -29,7 +30,7 @@ async function sendFormattedAIResponse(target, query, isInteraction = false) {
         }
     } catch (error) {
         console.error('[AI Command Error]:', error);
-        const errMsg = '❌ حدث خطأ غير متوقع أثناء معالجة رد الذكاء الاصطناعي.';
+        const errMsg = t(langOrGuildId, 'general.ai.error');
         if (isInteraction) {
             await target.editReply({ content: errMsg }).catch(() => {});
         } else {
@@ -45,34 +46,34 @@ module.exports = {
     category: 'general',
     data: new SlashCommandBuilder()
         .setName('ai')
-        .setDescription('التحدث مع الذكاء الاصطناعي (Droplet AI)')
+        .setDescription('Chat with the AI (Droplet AI)')
         .addStringOption(option =>
             option.setName('prompt')
-                .setDescription('السؤال أو النص الذي تريد إرساله للذكاء الاصطناعي')
+                .setDescription('The question or text to send to the AI')
                 .setRequired(true)
         ),
 
     async execute(interaction) {
         const ownerId = process.env.OWNER_ID || config.ownerId || '1178342841882267744';
         if (interaction.user.id !== ownerId) {
-            return interaction.reply({ content: '🔒 هذا النظام والمساعد الذكي مخصص لمالك البوت وإدارته فقط.', flags: 64 });
+            return interaction.reply({ content: t(interaction.guild.id, 'general.ai.owner_only'), flags: 64 });
         }
         await interaction.deferReply();
         const prompt = interaction.options.getString('prompt');
-        await sendFormattedAIResponse(interaction, prompt, true);
+        await sendFormattedAIResponse(interaction, prompt, true, interaction.guild.id);
     },
 
     async executePrefix(message, args) {
         const ownerId = process.env.OWNER_ID || config.ownerId || '1178342841882267744';
         if (message.author.id !== ownerId) {
-            return; // تجاهل الأعضاء
+            return; // Ignore non-owners
         }
         const query = args.join(' ');
         if (!query) {
-            return message.reply('❌ يرجى كتابة السؤال أو الطلب البرمجي بعد الأمر.');
+            return message.reply(t(message.guild.id, 'general.ai.need_query'));
         }
 
-        const waiting = await message.reply('⏳ جاري المعالجة...');
-        await sendFormattedAIResponse(waiting, query, false);
+        const waiting = await message.reply(t(message.guild.id, 'general.ai.processing'));
+        await sendFormattedAIResponse(waiting, query, false, message.guild.id);
     }
 };

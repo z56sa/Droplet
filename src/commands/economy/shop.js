@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { t } = require('../../utils/lang');
 
 // أسعار المتجر الافتراضية
 const SHOP_PRICES = {
@@ -18,42 +19,49 @@ module.exports = {
   aliases: ['متجر', 'سوق', 'store'],
   data: new SlashCommandBuilder()
     .setName('shop')
-    .setDescription('🛒 متجر السيرفر والأدوات المخصصة (Custom Roles & Rentals)')
+    .setDescription('🛒 Server shop & custom tools')
+
     .addSubcommand(sub =>
       sub.setName('view')
-        .setDescription('عرض قائمة عناصر وأسعار المتجر الشامل')
+        .setDescription('View shop items and prices')
+
     )
     .addSubcommand(sub =>
       sub.setName('buy-role')
-        .setDescription('👑 شراء وتصميم رتبة خاصة باسمك ولونك المفضل (30 يوماً)')
-        .addStringOption(opt => opt.setName('name').setDescription('اسم الرتبة الخاصة').setRequired(true))
-        .addStringOption(opt => opt.setName('color').setDescription('لون الرتبة بصيغة HEX (مثال: #9333ea أو #ff0055)').setRequired(true))
+        .setDescription('👑 Buy a custom role (30 days)')
+
+        .addStringOption(opt => opt.setName('name').setDescription('Custom role name').setRequired(true))
+        .addStringOption(opt => opt.setName('color').setDescription('Role color as HEX (e.g. #9333ea)').setRequired(true))
     )
     .addSubcommand(sub =>
       sub.setName('rent-room')
-        .setDescription('🎙️ استئجار غرفة صوتية أو كتابية خاصة لمدة أسبوع')
+        .setDescription('🎙️ Rent a private voice/text room (1 week)')
+
         .addStringOption(opt =>
           opt.setName('type')
-            .setDescription('نوع الغرفة المراد استئجارها')
+            .setDescription('Room type')
+
             .setRequired(true)
             .addChoices(
-              { name: '🔊 روم صوتي خاص (3,500 Gold)', value: 'voice' },
-              { name: '💬 روم كتابي خاص (2,500 Gold)', value: 'text' }
+              { name: '🔊 Private voice room (3,500 Gold)', value: 'voice' },
+              { name: '💬 Private text room (2,500 Gold)', value: 'text' }
             )
         )
-        .addStringOption(opt => opt.setName('name').setDescription('اسم الروم').setRequired(true))
+        .addStringOption(opt => opt.setName('name').setDescription('Room name').setRequired(true))
     )
     .addSubcommand(sub =>
       sub.setName('buy-cosmetic')
-        .setDescription('🎨 شراء حزم المظهر وإطارات الهوية لبطاقة البروفايل')
+        .setDescription('🎨 Buy profile cosmetics')
+
         .addStringOption(opt =>
           opt.setName('item')
-            .setDescription('العنصر المراد شراؤه وتفعيله')
+            .setDescription('Item to buy')
+
             .setRequired(true)
             .addChoices(
-              { name: '👑 إطار الذهب الملكي (1,500 Gold)', value: 'frame_gold' },
-              { name: '🔮 إطار النيون الأرجواني (1,200 Gold)', value: 'frame_neon' },
-              { name: '⭐ شارة العضو الملكي VIP (2,000 Gold)', value: 'badge_vip' }
+              { name: '👑 Royal gold frame (1,500 Gold)', value: 'frame_gold' },
+              { name: '🔮 Neon frame (1,200 Gold)', value: 'frame_neon' },
+              { name: '⭐ Royal VIP member badge (2,000 Gold)', value: 'badge_vip' }
             )
         )
     ),
@@ -68,26 +76,26 @@ module.exports = {
     if (sub === 'view') {
       const embed = new EmbedBuilder()
         .setColor('#8b5cf6')
-        .setTitle('🛒 متجر السيرفر الشامل والأدوات المخصصة')
-        .setDescription(`مرحباً <@${userId}>! رصيدك الحالي: **${userCoins.toLocaleString()}** 🪙 ذهب.\nاختر ما يناسبك واشترِه مباشرة باستخدام أوامر السلاش أدناه:`)
+        .setTitle(t(guildId, 'economy.shop.view_title'))
+        .setDescription(t(guildId, 'economy.shop.view_desc', { user: userId, coins: userCoins.toLocaleString() }))
         .addFields(
           {
-            name: '👑 الرتب الخاصة (Custom Roles)',
-            value: `• **رتبة مخصصة بالكامل (30 يوماً):** \`${SHOP_PRICES.custom_role_days_30.toLocaleString()}\` ذهب\n  *(تحدد اسمها ولونها الخاص HEX بالكامل وتُمنح لك تلقائياً)*\n  👉 الشراء: \`/shop buy-role name:اسم color:#hex\``,
+            name: t(guildId, 'economy.shop.view_roles_title'),
+            value: t(guildId, 'economy.shop.view_roles_value', { price: SHOP_PRICES.custom_role_days_30.toLocaleString() }),
             inline: false
           },
           {
-            name: '🎙️ استئجار الغرف الخاصة (Room Rentals)',
-            value: `• **استئجار روم صوتي خاص (7 أيام):** \`${SHOP_PRICES.rent_voice_room_days_7.toLocaleString()}\` ذهب\n• **استئجار روم كتابي خاص (7 أيام):** \`${SHOP_PRICES.rent_text_room_days_7.toLocaleString()}\` ذهب\n  👉 الشراء: \`/shop rent-room\``,
+            name: t(guildId, 'economy.shop.view_rent_title'),
+            value: t(guildId, 'economy.shop.view_rent_value', { voice: SHOP_PRICES.rent_voice_room_days_7.toLocaleString(), text: SHOP_PRICES.rent_text_room_days_7.toLocaleString() }),
             inline: false
           },
           {
-            name: '🎨 حزم المظهر وإطارات البروفايل (Cosmetics)',
-            value: `• **إطار الذهب الملكي:** \`${SHOP_PRICES.avatar_frame_gold.toLocaleString()}\` ذهب\n• **إطار النيون الأرجواني:** \`${SHOP_PRICES.avatar_frame_neon.toLocaleString()}\` ذهب\n• **شارة VIP الملكية:** \`${SHOP_PRICES.badge_vip.toLocaleString()}\` ذهب\n  👉 الشراء: \`/shop buy-cosmetic\``,
+            name: t(guildId, 'economy.shop.view_cos_title'),
+            value: t(guildId, 'economy.shop.view_cos_value', { gold: SHOP_PRICES.avatar_frame_gold.toLocaleString(), neon: SHOP_PRICES.avatar_frame_neon.toLocaleString(), vip: SHOP_PRICES.badge_vip.toLocaleString() }),
             inline: false
           }
         )
-        .setFooter({ text: 'Droplet Economy & Utility Store • تجديد الصلاحيات تلقائياً' })
+        .setFooter({ text: t(guildId, 'economy.shop.footer') })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
@@ -97,13 +105,13 @@ module.exports = {
     if (sub === 'buy-role') {
       const cost = SHOP_PRICES.custom_role_days_30;
       if (userCoins < cost) {
-        return interaction.reply({ content: `❌ رصيدك غير كافٍ. تحتاج إلى \`${cost.toLocaleString()}\` ذهب، ورصيدك الحالي: \`${userCoins.toLocaleString()}\` ذهب.`, flags: 64 });
+        return interaction.reply({ content: t(guildId, 'economy.shop.role_insufficient', { cost: cost.toLocaleString(), coins: userCoins.toLocaleString() }), flags: 64 });
       }
 
       const roleName = interaction.options.getString('name').trim();
       let roleColor = interaction.options.getString('color').trim();
       if (!/^#[0-9A-Fa-f]{6}$/.test(roleColor)) {
-        return interaction.reply({ content: '❌ صيغة اللون غير صحيحة! يجب أن تكون كود HEX مثل: `#7c3aed` أو `#ff0055`', flags: 64 });
+        return interaction.reply({ content: t(guildId, 'economy.shop.role_badcolor'), flags: 64 });
       }
 
       await interaction.deferReply();
@@ -111,14 +119,14 @@ module.exports = {
       // فحص إذا كان للعضو رتبة خاصة سابقة
       const existing = db.getUserCustomRole ? db.getUserCustomRole(guildId, userId) : null;
       if (existing) {
-        return interaction.editReply({ content: `⚠️ لديك رتبة خاصة سابقة بالفعل (<@&${existing.role_id}>) تنتهي <t:${existing.expires_at}:R>.` });
+        return interaction.editReply({ content: t(guildId, 'economy.shop.role_existing', { role: existing.role_id, expiry: `<t:${existing.expires_at}:R>` }) });
       }
 
       try {
         const createdRole = await interaction.guild.roles.create({
           name: roleName,
           color: roleColor,
-          reason: `شراء رتبة مخصصة بواسطة ${interaction.user.tag}`
+          reason: t(guildId, 'economy.shop.role_reason', { tag: interaction.user.tag })
         });
 
         await interaction.member.roles.add(createdRole).catch(() => {});
@@ -130,19 +138,19 @@ module.exports = {
 
         const embed = new EmbedBuilder()
           .setColor(roleColor)
-          .setTitle('🎉 تم إنشاء رتبتك الخاصة بنجاح!')
-          .setDescription(`تهانينا <@${userId}>! تم إنشاء رتبتك الخاصة وإعطاؤها لك بنجاح.`)
+          .setTitle(t(guildId, 'economy.shop.role_created_title'))
+          .setDescription(t(guildId, 'economy.shop.role_created_desc', { user: userId }))
           .addFields(
-            { name: '🏷️ اسم الرتبة', value: `\`${roleName}\``, inline: true },
-            { name: '🎨 اللون', value: `\`${roleColor}\``, inline: true },
-            { name: '⏳ تنتهي الصلاحية', value: `<t:${expiresAt}:R>`, inline: true }
+            { name: t(guildId, 'economy.shop.role_name_field'), value: `\`${roleName}\``, inline: true },
+            { name: t(guildId, 'economy.shop.role_color_field'), value: `\`${roleColor}\``, inline: true },
+            { name: t(guildId, 'economy.shop.role_expires_field'), value: `<t:${expiresAt}:R>`, inline: true }
           )
-          .setFooter({ text: 'Droplet Custom Role Store' })
+          .setFooter({ text: t(guildId, 'economy.shop.role_footer') })
           .setTimestamp();
 
         return interaction.editReply({ embeds: [embed] });
       } catch (err) {
-        return interaction.editReply({ content: `❌ فشل إنشاء الرتبة: ${err.message}. تأكد من صلاحيات البوت الإدارية.` });
+        return interaction.editReply({ content: t(guildId, 'economy.shop.role_fail', { err: err.message }) });
       }
     }
 
@@ -153,14 +161,14 @@ module.exports = {
       const cost = type === 'voice' ? SHOP_PRICES.rent_voice_room_days_7 : SHOP_PRICES.rent_text_room_days_7;
 
       if (userCoins < cost) {
-        return interaction.reply({ content: `❌ رصيدك غير كافٍ. التكلفة: \`${cost.toLocaleString()}\` ذهب، ورصيدك: \`${userCoins.toLocaleString()}\` ذهب.`, flags: 64 });
+        return interaction.reply({ content: t(guildId, 'economy.shop.room_insufficient', { cost: cost.toLocaleString(), coins: userCoins.toLocaleString() }), flags: 64 });
       }
 
       await interaction.deferReply();
 
       const existing = db.getUserRentedChannel ? db.getUserRentedChannel(guildId, userId) : null;
       if (existing) {
-        return interaction.editReply({ content: `⚠️ لديك روم مستأجر بالفعل (<#${existing.channel_id}>) ينتهي <t:${existing.expires_at}:R>.` });
+        return interaction.editReply({ content: t(guildId, 'economy.shop.room_existing', { channel: existing.channel_id, expiry: `<t:${existing.expires_at}:R>` }) });
       }
 
       try {
@@ -184,7 +192,7 @@ module.exports = {
               ]
             }
           ],
-          reason: `استئجار غرفة خاصة بواسطة ${interaction.user.tag}`
+          reason: t(guildId, 'economy.shop.room_reason', { tag: interaction.user.tag })
         });
 
         // خصم الذهب وتسجيل الروم لمدة 7 أيام
@@ -194,19 +202,19 @@ module.exports = {
 
         const embed = new EmbedBuilder()
           .setColor('#10b981')
-          .setTitle('🏠 تم استئجار الروم بنجاح!')
-          .setDescription(`تم إنشاء وتجهيز غرفتك الخاصة: <#${createdChannel.id}>`)
+          .setTitle(t(guildId, 'economy.shop.room_created_title'))
+          .setDescription(t(guildId, 'economy.shop.room_created_desc', { channel: createdChannel.id }))
           .addFields(
-            { name: '📂 نوع الروم', value: type === 'voice' ? '🔊 صوتي' : '💬 كتابي', inline: true },
-            { name: '💰 التكلفة المحسومة', value: `\`${cost.toLocaleString()}\` ذهب`, inline: true },
-            { name: '⏳ ينتهي الاستئجار', value: `<t:${expiresAt}:R>`, inline: true }
+            { name: t(guildId, 'economy.shop.room_type_field'), value: type === 'voice' ? t(guildId, 'economy.shop.room_type_voice') : t(guildId, 'economy.shop.room_type_text'), inline: true },
+            { name: t(guildId, 'economy.shop.room_cost_field'), value: `\`${cost.toLocaleString()}\` ذهب`, inline: true },
+            { name: t(guildId, 'economy.shop.room_expires_field'), value: `<t:${expiresAt}:R>`, inline: true }
           )
-          .setFooter({ text: 'يمكنك التحكم بالصلاحيات وإدخال أصدقائك عبر إعدادات الروم' })
+          .setFooter({ text: t(guildId, 'economy.shop.room_footer') })
           .setTimestamp();
 
         return interaction.editReply({ embeds: [embed] });
       } catch (err) {
-        return interaction.editReply({ content: `❌ فشل إنشاء الروم: ${err.message}` });
+        return interaction.editReply({ content: t(guildId, 'economy.shop.room_fail', { err: err.message }) });
       }
     }
 
@@ -220,19 +228,19 @@ module.exports = {
       if (itemKey === 'frame_gold') {
         cost = SHOP_PRICES.avatar_frame_gold;
         itemType = 'avatar_frame';
-        itemName = 'إطار الذهب الملكي';
+        itemName = t(guildId, 'economy.shop.item_frame_gold');
       } else if (itemKey === 'frame_neon') {
         cost = SHOP_PRICES.avatar_frame_neon;
         itemType = 'avatar_frame';
-        itemName = 'إطار النيون الأرجواني';
+        itemName = t(guildId, 'economy.shop.item_frame_neon');
       } else if (itemKey === 'badge_vip') {
         cost = SHOP_PRICES.badge_vip;
         itemType = 'badge';
-        itemName = 'شارة VIP الملكية';
+        itemName = t(guildId, 'economy.shop.item_badge_vip');
       }
 
       if (userCoins < cost) {
-        return interaction.reply({ content: `❌ رصيدك غير كافٍ. التكلفة: \`${cost.toLocaleString()}\` ذهب، ورصيدك: \`${userCoins.toLocaleString()}\` ذهب.`, flags: 64 });
+        return interaction.reply({ content: t(guildId, 'economy.shop.cosmetic_insufficient', { cost: cost.toLocaleString(), coins: userCoins.toLocaleString() }), flags: 64 });
       }
 
       db.removeCoins(userId, guildId, cost);
@@ -240,14 +248,14 @@ module.exports = {
 
       const embed = new EmbedBuilder()
         .setColor('#f59e0b')
-        .setTitle('✨ تم شراء وتجهيز عنصر المظهر بنجاح!')
-        .setDescription(`تم شراء وتفعيل **${itemName}** في بطاقة الهوية والبروفايل الخاصة بك!`)
+        .setTitle(t(guildId, 'economy.shop.cosmetic_title'))
+        .setDescription(t(guildId, 'economy.shop.cosmetic_desc', { item: itemName }))
         .addFields(
-          { name: '🎁 العنصر', value: itemName, inline: true },
-          { name: '💰 السعر', value: `\`${cost.toLocaleString()}\` ذهب`, inline: true },
-          { name: '👤 المالك', value: `<@${userId}>`, inline: true }
+          { name: t(guildId, 'economy.shop.cosmetic_item_field'), value: itemName, inline: true },
+          { name: t(guildId, 'economy.shop.cosmetic_price_field'), value: `\`${cost.toLocaleString()}\` ذهب`, inline: true },
+          { name: t(guildId, 'economy.shop.cosmetic_owner_field'), value: `<@${userId}>`, inline: true }
         )
-        .setFooter({ text: 'يظهر في ملفك الشخصي داخل اللوحة والسيرفر' })
+        .setFooter({ text: t(guildId, 'economy.shop.cosmetic_footer') })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });

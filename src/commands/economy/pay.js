@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const db = require('../../database');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'pay',
@@ -27,24 +28,24 @@ module.exports = {
     const guildId = interaction.guild.id;
 
     if (recipient.id === sender.id) {
-      return interaction.reply({ content: '❌ لا يمكنك تحويل العملات لنفسك!', flags: 64 });
+      return interaction.reply({ content: t(guildId, 'economy.pay.self'), flags: 64 });
     }
     if (recipient.bot) {
-      return interaction.reply({ content: '❌ لا يمكنك تحويل العملات للبوتات!', flags: 64 });
+      return interaction.reply({ content: t(guildId, 'economy.pay.bot'), flags: 64 });
     }
 
     try {
       const result = db.transferCoins(guildId, sender.id, recipient.id, amount);
       const embed = new EmbedBuilder()
         .setColor('#10B981')
-        .setTitle('💸 تمت عملية التحويل المالي بنجاح!')
+        .setTitle(t(guildId, 'economy.pay.title'))
         .setDescription(
-          `📤 **من:** <@${sender.id}>\n` +
-          `📥 **إلى:** <@${recipient.id}>\n` +
-          `💰 **المبلغ المحول:** \`${amount.toLocaleString()}\` **Gold** 🪙\n\n` +
-          `💳 **رصيدك المتبقي:** \`${result.senderBalance.toLocaleString()}\` 🪙`
+          t(guildId, 'economy.pay.from') + ` <@${sender.id}>\n` +
+          t(guildId, 'economy.pay.to') + ` <@${recipient.id}>\n` +
+          t(guildId, 'economy.pay.amount') + ` \`${amount.toLocaleString()}\` **Gold** 🪙\n\n` +
+          t(guildId, 'economy.pay.remaining') + ` \`${result.senderBalance.toLocaleString()}\` 🪙`
         )
-        .setFooter({ text: 'Droplet Economy System • تم الحفظ فوراً بقاعدة البيانات', iconURL: interaction.guild.iconURL({ dynamic: true }) })
+        .setFooter({ text: t(guildId, 'economy.pay.footer'), iconURL: interaction.guild.iconURL({ dynamic: true }) })
         .setTimestamp();
 
       await interaction.reply({ embeds: [embed] });
@@ -52,11 +53,11 @@ module.exports = {
       if (err.message === 'INSUFFICIENT_FUNDS') {
         const senderData = db.getUser(sender.id, guildId);
         return interaction.reply({
-          content: `❌ رصيدك غير كافي! رصيدك الحالي هو **${(senderData.coins || 0).toLocaleString()}** Gold 🪙`,
+          content: t(guildId, 'economy.pay.insufficient', { balance: (senderData.coins || 0).toLocaleString() }),
           flags: 64
         });
       }
-      return interaction.reply({ content: '⚠️ حدث خطأ أثناء تنفيذ الحوالة المالية.', flags: 64 });
+      return interaction.reply({ content: t(guildId, 'economy.pay.error'), flags: 64 });
     }
   },
 
@@ -69,28 +70,28 @@ module.exports = {
     const amount = parseInt(args[1] || args[0]);
 
     if (!recipient || !amount || isNaN(amount) || amount <= 0) {
-      return message.reply({ content: '⚠️ طريقة الاستخدام الصحيحة:\n`#pay @user <amount>` أو `#تحويل @user 100`' });
+      return message.reply({ content: t(guildId, 'economy.pay.usage') });
     }
 
     if (recipient.id === sender.id) {
-      return message.reply({ content: '❌ لا يمكنك تحويل العملات لنفسك!' });
+      return message.reply({ content: t(guildId, 'economy.pay.self') });
     }
     if (recipient.bot) {
-      return message.reply({ content: '❌ لا يمكنك تحويل العملات للبوتات!' });
+      return message.reply({ content: t(guildId, 'economy.pay.bot') });
     }
 
     try {
       const result = db.transferCoins(guildId, sender.id, recipient.id, amount);
       const embed = new EmbedBuilder()
         .setColor('#10B981')
-        .setTitle('💸 تمت عملية التحويل المالي بنجاح!')
+        .setTitle(t(guildId, 'economy.pay.title'))
         .setDescription(
-          `📤 **من:** <@${sender.id}>\n` +
-          `📥 **إلى:** <@${recipient.id}>\n` +
-          `💰 **المبلغ المحول:** \`${amount.toLocaleString()}\` **Gold** 🪙\n\n` +
-          `💳 **رصيدك المتبقي:** \`${result.senderBalance.toLocaleString()}\` 🪙`
+          t(guildId, 'economy.pay.from') + ` <@${sender.id}>\n` +
+          t(guildId, 'economy.pay.to') + ` <@${recipient.id}>\n` +
+          t(guildId, 'economy.pay.amount') + ` \`${amount.toLocaleString()}\` **Gold** 🪙\n\n` +
+          t(guildId, 'economy.pay.remaining') + ` \`${result.senderBalance.toLocaleString()}\` 🪙`
         )
-        .setFooter({ text: 'Droplet Economy System • تم الحفظ فوراً بقاعدة البيانات', iconURL: message.guild.iconURL({ dynamic: true }) })
+        .setFooter({ text: t(guildId, 'economy.pay.footer'), iconURL: message.guild.iconURL({ dynamic: true }) })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });
@@ -98,10 +99,10 @@ module.exports = {
       if (err.message === 'INSUFFICIENT_FUNDS') {
         const senderData = db.getUser(sender.id, guildId);
         return message.reply({
-          content: `❌ رصيدك غير كافي! رصيدك الحالي هو **${(senderData.coins || 0).toLocaleString()}** Gold 🪙`
+          content: t(guildId, 'economy.pay.insufficient', { balance: (senderData.coins || 0).toLocaleString() })
         });
       }
-      return message.reply({ content: '⚠️ حدث خطأ أثناء تنفيذ الحوالة المالية.' });
+      return message.reply({ content: t(guildId, 'economy.pay.error') });
     }
   }
 };

@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'role-all',
@@ -7,42 +8,48 @@ module.exports = {
   aliases: ['رول-الكل', 'roleall'],
   data: new SlashCommandBuilder()
     .setName('role-all')
-    .setDescription('إعطاء رتبة لجميع الأعضاء أو إزالتها منهم')
+    .setDescription('Give a role to all members or remove it from them')
+
     .addSubcommand(sub =>
       sub.setName('give')
-        .setDescription('إعطاء رتبة للجميع')
-        .addRoleOption(opt => opt.setName('role').setDescription('الرتبة المراد إعطاؤها للجميع').setRequired(true))
+        .setDescription('Give a role to everyone')
+
+        .addRoleOption(opt => opt.setName('role').setDescription('The role to give to everyone').setRequired(true))
         .addStringOption(opt =>
           opt.setName('target')
-            .setDescription('الفئة المستهدفة')
+            .setDescription('Target category')
+
             .setRequired(false)
             .addChoices(
-              { name: '👥 الجميع (بشر وبوتات)', value: 'all' },
-              { name: '👤 البشر فقط (بدون بوتات)', value: 'humans' },
-              { name: '🤖 البوتات فقط', value: 'bots' }
+              { name: '👥 Everyone (humans and bots)', value: 'all' },
+              { name: '👤 Humans only (no bots)', value: 'humans' },
+              { name: '🤖 Bots only', value: 'bots' }
             )
         )
     )
     .addSubcommand(sub =>
       sub.setName('remove')
-        .setDescription('إزالة رتبة من الجميع')
-        .addRoleOption(opt => opt.setName('role').setDescription('الرتبة المراد إزالتها من الجميع').setRequired(true))
+        .setDescription('Remove a role from everyone')
+
+        .addRoleOption(opt => opt.setName('role').setDescription('The role to remove from everyone').setRequired(true))
         .addStringOption(opt =>
           opt.setName('target')
-            .setDescription('الفئة المستهدفة')
+            .setDescription('Target category')
+
             .setRequired(false)
             .addChoices(
-              { name: '👥 الجميع (بشر وبوتات)', value: 'all' },
-              { name: '👤 البشر فقط (بدون بوتات)', value: 'humans' },
-              { name: '🤖 البوتات فقط', value: 'bots' }
+              { name: '👥 Everyone (humans and bots)', value: 'all' },
+              { name: '👤 Humans only (no bots)', value: 'humans' },
+              { name: '🤖 Bots only', value: 'bots' }
             )
         )
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild?.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
-      return interaction.reply({ content: '❌ ليس لديك صلاحية إدارة الرتب (`Manage Roles`).', flags: 64 });
+      return interaction.reply({ content: t(lang, 'moderation.role_all.no_perm'), flags: 64 });
     }
 
     const sub = interaction.options.getSubcommand();
@@ -51,19 +58,19 @@ module.exports = {
 
     const botMember = interaction.guild.members.me;
     if (!botMember.permissions.has(PermissionFlagsBits.ManageRoles)) {
-      return interaction.reply({ content: '❌ البوت لا يمتلك صلاحية إدارة الرتب (`Manage Roles`).', flags: 64 });
+      return interaction.reply({ content: t(lang, 'moderation.role_all.bot_no_perm'), flags: 64 });
     }
 
     if (role.position >= botMember.roles.highest.position) {
       return interaction.reply({
-        content: `❌ رتبة <@&${role.id}> أعلى من أو مساوية لأعلى رتبة للبوت، يرجى رفع رتبة البوت فوقها في إعدادات السيرفر.`,
+        content: t(lang, 'moderation.role_all.higher', { role: role.id }),
         flags: 64
       });
     }
 
     if (role.managed) {
       return interaction.reply({
-        content: `❌ هذه الرتبة مدارة تلقائياً بواسطة تطبيق أو تكامل ولا يمكن إضافتها/إزالتها يدوياً.`,
+        content: t(lang, 'moderation.role_all.managed'),
         flags: 64
       });
     }
@@ -88,20 +95,19 @@ module.exports = {
     const totalCount = targetMembers.size;
     if (totalCount === 0) {
       return interaction.editReply({
-        content: isGive
-          ? `ℹ️ جميع الأعضاء المحددين لديهم رتبة <@&${role.id}> بالفعل.`
-          : `ℹ️ لا يوجد أي عضو من الفئة المحددة يمتلك رتبة <@&${role.id}>.`
+        content: t(lang, isGive ? 'moderation.role_all.none_give' : 'moderation.role_all.none_remove', { role: role.id })
       });
     }
 
+    const targetLabel = t(lang, targetType === 'humans' ? 'moderation.role_all.target_humans' : targetType === 'bots' ? 'moderation.role_all.target_bots' : 'moderation.role_all.target_all');
     const initialEmbed = new EmbedBuilder()
       .setColor(config.colors?.primary || '#9333ea')
-      .setTitle(isGive ? '⏳ جارٍ إعطاء الرتبة للجميع...' : '⏳ جارٍ إزالة الرتبة من الجميع...')
-      .setDescription(`جارٍ تنفيذ العملية على **${totalCount}** عضو، يُرجى الانتظار لتفادي قيود الديسكورد (Rate-limits).`)
+      .setTitle(t(lang, isGive ? 'moderation.role_all.initial_give' : 'moderation.role_all.initial_remove'))
+      .setDescription(t(lang, 'moderation.role_all.initial_desc', { count: totalCount }))
       .addFields(
-        { name: '🎭 الرتبة', value: `<@&${role.id}>`, inline: true },
-        { name: '🎯 الفئة المستهدفة', value: targetType === 'humans' ? 'بشر فقط' : targetType === 'bots' ? 'بوتات فقط' : 'الجميع', inline: true },
-        { name: '🔢 العدد الإجمالي', value: `${totalCount}`, inline: true }
+        { name: t(lang, 'moderation.role_all.field_role'), value: `<@&${role.id}>`, inline: true },
+        { name: t(lang, 'moderation.role_all.field_target'), value: targetLabel, inline: true },
+        { name: t(lang, 'moderation.role_all.field_total'), value: `${totalCount}`, inline: true }
       )
       .setTimestamp();
 
@@ -113,9 +119,9 @@ module.exports = {
     for (const [, member] of targetMembers) {
       try {
         if (isGive) {
-          await member.roles.add(role.id, `Role-All بواسطة ${interaction.user.tag}`);
+          await member.roles.add(role.id, t(lang, 'moderation.role_all.audit_give', { tag: interaction.user.tag }));
         } else {
-          await member.roles.remove(role.id, `Role-All إزالة بواسطة ${interaction.user.tag}`);
+          await member.roles.remove(role.id, t(lang, 'moderation.role_all.audit_remove', { tag: interaction.user.tag }));
         }
         successCount++;
       } catch (err) {
@@ -128,17 +134,15 @@ module.exports = {
 
     const finishEmbed = new EmbedBuilder()
       .setColor(failCount === 0 ? (config.colors?.success || '#2ecc71') : '#e67e22')
-      .setTitle(isGive ? '✅ اكتمل إعطاء الرتبة للجميع' : '✅ اكتمل إزالة الرتبة من الجميع')
+      .setTitle(t(lang, isGive ? 'moderation.role_all.finish_give' : 'moderation.role_all.finish_remove'))
       .setDescription(
-        isGive
-          ? `تم الانتهاء بنجاح من إعطاء رتبة <@&${role.id}>!`
-          : `تم الانتهاء بنجاح من إزالة رتبة <@&${role.id}>!`
+        t(lang, isGive ? 'moderation.role_all.finish_desc_give' : 'moderation.role_all.finish_desc_remove', { role: role.id })
       )
       .addFields(
-        { name: '🎭 الرتبة', value: `<@&${role.id}>`, inline: true },
-        { name: '✅ نجح', value: `${successCount}`, inline: true },
-        { name: '❌ تعذر', value: `${failCount}`, inline: true },
-        { name: '👮 المنفذ', value: `<@${interaction.user.id}>`, inline: false }
+        { name: t(lang, 'moderation.role_all.field_role'), value: `<@&${role.id}>`, inline: true },
+        { name: t(lang, 'moderation.role_all.field_success'), value: `${successCount}`, inline: true },
+        { name: t(lang, 'moderation.role_all.field_fail'), value: `${failCount}`, inline: true },
+        { name: t(lang, 'moderation.role_all.field_by'), value: `<@${interaction.user.id}>`, inline: false }
       )
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL({ dynamic: true }) || undefined })
       .setTimestamp();
@@ -147,13 +151,14 @@ module.exports = {
   },
 
   async executePrefix(message, args) {
+    const lang = getGuildLang(message.guild?.id);
     if (!message.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
-      return message.reply('❌ ليس لديك صلاحية إدارة الرتب (`Manage Roles`).');
+      return message.reply(t(lang, 'moderation.role_all.no_perm'));
     }
 
     const botMember = message.guild.members.me;
     if (!botMember.permissions.has(PermissionFlagsBits.ManageRoles)) {
-      return message.reply('❌ البوت لا يمتلك صلاحية إدارة الرتب (`Manage Roles`).');
+      return message.reply(t(lang, 'moderation.role_all.bot_no_perm'));
     }
 
     const action = args[0]?.toLowerCase();
@@ -161,20 +166,20 @@ module.exports = {
 
     if (!action || !['give', 'add', 'remove', 'del'].includes(action) || !role) {
       return message.reply({
-        content: '❌ **طريقة الاستخدام:**\n- `#role-all give @Role` (إعطاء الرتبة للجميع)\n- `#role-all remove @Role` (إزالة الرتبة من الجميع)'
+        content: t(lang, 'moderation.role_all.prefix_usage')
       });
     }
 
     if (role.position >= botMember.roles.highest.position) {
-      return message.reply(`❌ رتبة <@&${role.id}> أعلى من أو مساوية لأعلى رتبة للبوت.`);
+      return message.reply(t(lang, 'moderation.role_all.prefix_higher', { role: role.id }));
     }
 
     if (role.managed) {
-      return message.reply('❌ هذه الرتبة مدارة بواسطة تطبيق ولا يمكن إدارتها يدوياً.');
+      return message.reply(t(lang, 'moderation.role_all.prefix_managed'));
     }
 
     const isGive = action === 'give' || action === 'add';
-    const statusMsg = await message.reply(`⏳ جارٍ جلب الأعضاء وبدء العملية على رتبة <@&${role.id}>...`);
+    const statusMsg = await message.reply(t(lang, 'moderation.role_all.prefix_status', { role: role.id }));
 
     await message.guild.members.fetch().catch(() => {});
     const members = message.guild.members.cache;
@@ -184,7 +189,7 @@ module.exports = {
 
     const totalCount = targetMembers.size;
     if (totalCount === 0) {
-      return statusMsg.edit(isGive ? 'ℹ️ جميع الأعضاء يمتلكون هذه الرتبة بالفعل.' : 'ℹ️ لا يوجد أعضاء يمتلكون هذه الرتبة.');
+      return statusMsg.edit(t(lang, isGive ? 'moderation.role_all.prefix_all_have' : 'moderation.role_all.prefix_none_have'));
     }
 
     let successCount = 0;
@@ -193,9 +198,9 @@ module.exports = {
     for (const [, member] of targetMembers) {
       try {
         if (isGive) {
-          await member.roles.add(role.id, `Role-All بواسطة ${message.author.tag}`);
+          await member.roles.add(role.id, t(lang, 'moderation.role_all.audit_give', { tag: message.author.tag }));
         } else {
-          await member.roles.remove(role.id, `Role-All بواسطة ${message.author.tag}`);
+          await member.roles.remove(role.id, t(lang, 'moderation.role_all.audit_remove', { tag: message.author.tag }));
         }
         successCount++;
       } catch (err) {
@@ -206,12 +211,12 @@ module.exports = {
 
     const finishEmbed = new EmbedBuilder()
       .setColor(config.colors?.success || '#2ecc71')
-      .setTitle(isGive ? '✅ اكتمل إعطاء الرتبة للجميع' : '✅ اكتمل إزالة الرتبة من الجميع')
+      .setTitle(t(lang, isGive ? 'moderation.role_all.finish_give' : 'moderation.role_all.finish_remove'))
       .addFields(
-        { name: '🎭 الرتبة', value: `<@&${role.id}>`, inline: true },
-        { name: '✅ نجح', value: `${successCount}`, inline: true },
-        { name: '❌ تعذر', value: `${failCount}`, inline: true },
-        { name: '👮 المنفذ', value: `<@${message.author.id}>`, inline: false }
+        { name: t(lang, 'moderation.role_all.field_role'), value: `<@&${role.id}>`, inline: true },
+        { name: t(lang, 'moderation.role_all.field_success'), value: `${successCount}`, inline: true },
+        { name: t(lang, 'moderation.role_all.field_fail'), value: `${failCount}`, inline: true },
+        { name: t(lang, 'moderation.role_all.field_by'), value: `<@${message.author.id}>`, inline: false }
       )
       .setTimestamp();
 

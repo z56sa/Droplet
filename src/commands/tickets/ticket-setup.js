@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ChannelType } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'ticket-setup',
@@ -8,90 +9,95 @@ module.exports = {
   aliases: ['تذاكر', 'تكت_مخصص'],
   data: new SlashCommandBuilder()
     .setName('ticket-setup')
-    .setDescription('إعداد لوحة تذاكر مخصصة بالكامل')
+    .setDescription('Set up a fully custom ticket panel')
+
     .addChannelOption(opt =>
       opt.setName('channel')
-        .setDescription('الروم المراد إرسال لوحة التذاكر فيه')
+        .setDescription('The channel to send the ticket panel in')
+
         .addChannelTypes(ChannelType.GuildText)
         .setRequired(true)
     )
     .addStringOption(opt =>
       opt.setName('type')
-        .setDescription('نوع اللوحة: بزر تفاعلي أم قائمة أقسام منسدلة (Dropdown)')
+        .setDescription('Panel type: interactive button or dropdown category list')
+
         .setRequired(true)
         .addChoices(
-          { name: '🔘 زر تفاعلي عادي (Button Panel)', value: 'button' },
-          { name: '📑 قائمة أقسام متعددة مخصصة (Dropdown Categories)', value: 'dropdown' }
+          { name: '🔘 Normal interactive button (Button Panel)', value: 'button' },
+          { name: '📑 Custom multi-category list (Dropdown Categories)', value: 'dropdown' }
         )
     )
-    .addStringOption(opt => opt.setName('title').setDescription('عنوان لوحة التذاكر').setRequired(false))
-    .addStringOption(opt => opt.setName('description').setDescription('وصف وشرح لوحة التذاكر').setRequired(false))
-    .addStringOption(opt => opt.setName('button_label').setDescription('النص الظاهر على زر فتح التذكرة').setRequired(false))
-    .addStringOption(opt => opt.setName('button_emoji').setDescription('إيموجي الزر (مثال: 📩 أو 🎫 أو 🛒)').setRequired(false))
+    .addStringOption(opt => opt.setName('title').setDescription('Ticket panel title').setRequired(false))
+    .addStringOption(opt => opt.setName('description').setDescription('Ticket panel description').setRequired(false))
+    .addStringOption(opt => opt.setName('button_label').setDescription('Text shown on the ticket open button').setRequired(false))
+    .addStringOption(opt => opt.setName('button_emoji').setDescription('Button emoji (e.g. 📩, 🎫, 🛒)').setRequired(false))
     .addStringOption(opt =>
       opt.setName('button_color')
-        .setDescription('لون الزر')
+        .setDescription('Button color')
+
         .setRequired(false)
         .addChoices(
-          { name: '🔵 أزرق (Primary)', value: 'Primary' },
-          { name: '🟢 أخضر (Success)', value: 'Success' },
-          { name: '🔴 أحمر (Danger)', value: 'Danger' },
-          { name: '⚪ رمادي (Secondary)', value: 'Secondary' }
+          { name: '🔵 Blue (Primary)', value: 'Primary' },
+          { name: '🟢 Green (Success)', value: 'Success' },
+          { name: '🔴 Red (Danger)', value: 'Danger' },
+          { name: '⚪ Gray (Secondary)', value: 'Secondary' }
         )
     )
-    .addStringOption(opt => opt.setName('welcome_message').setDescription('الرسالة الترحيبية داخل التذكرة (استخدم {user} لمنشن العضو)').setRequired(false))
-    .addRoleOption(opt => opt.setName('support_role').setDescription('رتبة مسؤولي الدعم الفني للتذكرة').setRequired(false))
-    .addChannelOption(opt => opt.setName('category').setDescription('تصنيف الرومات (Category) لتنظيم التذاكر تحته').addChannelTypes(ChannelType.GuildCategory).setRequired(false))
-    .addChannelOption(opt => opt.setName('logs_channel').setDescription('روم حفظ سجلات وإغلاق التذاكر (Logs)').addChannelTypes(ChannelType.GuildText).setRequired(false))
-    .addStringOption(opt => opt.setName('naming_scheme').setDescription('نمط اسم روم التذكرة (افتراضي: ticket-{username})').setRequired(false))
+    .addStringOption(opt => opt.setName('welcome_message').setDescription('Welcome message inside the ticket (use {user} to mention the member)').setRequired(false))
+    .addRoleOption(opt => opt.setName('support_role').setDescription('Support staff role for the ticket').setRequired(false))
+    .addChannelOption(opt => opt.setName('category').setDescription('Room category to organize tickets under').addChannelTypes(ChannelType.GuildCategory).setRequired(false))
+    .addChannelOption(opt => opt.setName('logs_channel').setDescription('Ticket close logs channel (Logs)').addChannelTypes(ChannelType.GuildText).setRequired(false))
+    .addStringOption(opt => opt.setName('naming_scheme').setDescription('Ticket channel name pattern (default: ticket-{username})').setRequired(false))
     // أقسام مخصصة للقائمة المنسدلة
-    .addStringOption(opt => opt.setName('cat1_name').setDescription('اسم القسم الأول (افتراضي: الدعم الفني العام)').setRequired(false))
-    .addStringOption(opt => opt.setName('cat1_desc').setDescription('وصف القسم الأول').setRequired(false))
-    .addStringOption(opt => opt.setName('cat1_emoji').setDescription('إيموجي القسم الأول').setRequired(false))
-    .addStringOption(opt => opt.setName('cat2_name').setDescription('اسم القسم الثاني (افتراضي: قسم الشراء والمتجر)').setRequired(false))
-    .addStringOption(opt => opt.setName('cat2_desc').setDescription('وصف القسم الثاني').setRequired(false))
-    .addStringOption(opt => opt.setName('cat2_emoji').setDescription('إيموجي القسم الثاني').setRequired(false))
-    .addStringOption(opt => opt.setName('cat3_name').setDescription('اسم القسم الثالث (افتراضي: الشكاوى والاقتراحات)').setRequired(false))
-    .addStringOption(opt => opt.setName('cat3_desc').setDescription('وصف القسم الثالث').setRequired(false))
-    .addStringOption(opt => opt.setName('cat3_emoji').setDescription('إيموجي القسم الثالث').setRequired(false))
-    .addStringOption(opt => opt.setName('cat4_name').setDescription('اسم القسم الرابع (افتراضي: التقديم والإدارة)').setRequired(false))
-    .addStringOption(opt => opt.setName('cat4_desc').setDescription('وصف القسم الرابع').setRequired(false))
-    .addStringOption(opt => opt.setName('banner_url').setDescription('رابط صورة بانر لوحة التذاكر (Image Banner)').setRequired(false))
-    .addStringOption(opt => opt.setName('welcome_image').setDescription('رابط صورة البانر داخل التذكرة المفتوحة').setRequired(false))
+    .addStringOption(opt => opt.setName('cat1_name').setDescription('First section name').setRequired(false))
+    .addStringOption(opt => opt.setName('cat1_desc').setDescription('First section description').setRequired(false))
+    .addStringOption(opt => opt.setName('cat1_emoji').setDescription('First section emoji').setRequired(false))
+    .addStringOption(opt => opt.setName('cat2_name').setDescription('Second section name').setRequired(false))
+    .addStringOption(opt => opt.setName('cat2_desc').setDescription('Second section description').setRequired(false))
+    .addStringOption(opt => opt.setName('cat2_emoji').setDescription('Second section emoji').setRequired(false))
+    .addStringOption(opt => opt.setName('cat3_name').setDescription('Third section name').setRequired(false))
+    .addStringOption(opt => opt.setName('cat3_desc').setDescription('Third section description').setRequired(false))
+    .addStringOption(opt => opt.setName('cat3_emoji').setDescription('Third section emoji').setRequired(false))
+    .addStringOption(opt => opt.setName('cat4_name').setDescription('Fourth section name').setRequired(false))
+    .addStringOption(opt => opt.setName('cat4_desc').setDescription('Fourth section description').setRequired(false))
+    .addStringOption(opt => opt.setName('banner_url').setDescription('Ticket panel banner image URL').setRequired(false))
+    .addStringOption(opt => opt.setName('welcome_image').setDescription('Banner image URL inside the opened ticket').setRequired(false))
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية الأدمن لتنفيذ هذا الأمر.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'tickets.ticketsetup.no_admin'), flags: 64 });
     }
 
     const channel = interaction.options.getChannel('channel');
     const panelType = interaction.options.getString('type');
-    const title = interaction.options.getString('title') || 'التذاكر';
-    const description = interaction.options.getString('description') || 'قم باختيار قسم التذكرة المناسب لك ❤️';
-    const buttonLabel = interaction.options.getString('button_label') || 'فتح تذكرة | Open Ticket';
+    const title = interaction.options.getString('title') || t(lang, 'tickets.ticketsetup.def_title');
+    const description = interaction.options.getString('description') || t(lang, 'tickets.ticketsetup.def_description');
+    const buttonLabel = interaction.options.getString('button_label') || t(lang, 'tickets.ticketsetup.def_button_label');
     const buttonEmoji = interaction.options.getString('button_emoji') || '📩';
     const buttonColor = interaction.options.getString('button_color') || 'Primary';
-    const welcomeMsg = interaction.options.getString('welcome_message') || 'مرحباً بك {user} في تذكرتك! يرجى كتابة استفسارك أو مشكلتك بالتفصيل وسيقوم فريق الدعم بالرد عليك قريباً.';
+    const welcomeMsg = interaction.options.getString('welcome_message') || t(lang, 'tickets.ticketsetup.def_welcome');
     const supportRole = interaction.options.getRole('support_role');
     const category = interaction.options.getChannel('category');
     const logsChannel = interaction.options.getChannel('logs_channel');
     const namingScheme = interaction.options.getString('naming_scheme') || 'ticket-{username}';
 
-    const cat1Name = interaction.options.getString('cat1_name') || 'الدعم الفني العام';
-    const cat1Desc = interaction.options.getString('cat1_desc') || 'للاستفسارات والمشاكل العامة';
+    const cat1Name = interaction.options.getString('cat1_name') || t(lang, 'tickets.ticketsetup.def_cat1_name');
+    const cat1Desc = interaction.options.getString('cat1_desc') || t(lang, 'tickets.ticketsetup.def_cat1_desc');
     const cat1Emoji = interaction.options.getString('cat1_emoji') || '🛠️';
 
-    const cat2Name = interaction.options.getString('cat2_name') || 'قسم الشراء والمتجر';
-    const cat2Desc = interaction.options.getString('cat2_desc') || 'لشراء الرتب والخدمات والمنتجات';
+    const cat2Name = interaction.options.getString('cat2_name') || t(lang, 'tickets.ticketsetup.def_cat2_name');
+    const cat2Desc = interaction.options.getString('cat2_desc') || t(lang, 'tickets.ticketsetup.def_cat2_desc');
     const cat2Emoji = interaction.options.getString('cat2_emoji') || '🛒';
 
-    const cat3Name = interaction.options.getString('cat3_name') || 'الشكاوى والاقتراحات';
-    const cat3Desc = interaction.options.getString('cat3_desc') || 'لتقديم شكوى أو اقتراح للإدارة';
+    const cat3Name = interaction.options.getString('cat3_name') || t(lang, 'tickets.ticketsetup.def_cat3_name');
+    const cat3Desc = interaction.options.getString('cat3_desc') || t(lang, 'tickets.ticketsetup.def_cat3_desc');
     const cat3Emoji = interaction.options.getString('cat3_emoji') || '📝';
 
-    const cat4Name = interaction.options.getString('cat4_name') || 'التقديم والإدارة';
-    const cat4Desc = interaction.options.getString('cat4_desc') || 'للتقديم على رتبة أو طلب شراكة';
+    const cat4Name = interaction.options.getString('cat4_name') || t(lang, 'tickets.ticketsetup.def_cat4_name');
+    const cat4Desc = interaction.options.getString('cat4_desc') || t(lang, 'tickets.ticketsetup.def_cat4_desc');
     const cat4Emoji = interaction.options.getString('cat4_emoji') || '👑';
 
     const bannerUrl = interaction.options.getString('banner_url');
@@ -124,7 +130,7 @@ module.exports = {
       const selectMenu = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
           .setCustomId(`ticket_select_${panelId}`)
-          .setPlaceholder('اختر نوع التذكرة')
+          .setPlaceholder(t(lang, 'tickets.ticketsetup.select_placeholder'))
           .addOptions(options)
       );
       components.push(selectMenu);
@@ -161,6 +167,6 @@ module.exports = {
       welcome_image: welcomeImage || null
     });
 
-    await interaction.reply({ content: `✅ تم إرسال لوحة التذاكر المخصصة بنجاح في القناة: <#${channel.id}>`, flags: 64 });
+    await interaction.reply({ content: t(lang, 'tickets.ticketsetup.panel_sent', { channel: channel.id }), flags: 64 });
   }
 };

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'applications',
@@ -8,44 +9,52 @@ module.exports = {
   aliases: ['تقديمات', 'تقديم'],
   data: new SlashCommandBuilder()
     .setName('applications')
-    .setDescription('إدارة نظام التقديمات ومراجعة الطلبات')
+    .setDescription('Manage the application system and review requests')
+
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .addSubcommand(sub =>
       sub
         .setName('pending')
-        .setDescription('عرض التقديمات والطلبات قيد الانتظار')
+        .setDescription('Show pending applications and requests')
+
     )
     .addSubcommandGroup(group =>
       group
         .setName('points')
-        .setDescription('إدارة نقاط مراجعي التقديمات')
+        .setDescription('Manage application reviewer points')
+
         .addSubcommand(sub =>
           sub
             .setName('list')
-            .setDescription('عرض نقاط التقديمات الخاصة بك أو الخاصة بعضو آخر')
-            .addUserOption(opt => opt.setName('user').setDescription('العضو المراد فحص نقاطه').setRequired(false))
+            .setDescription('Show your or another member application points')
+
+            .addUserOption(opt => opt.setName('user').setDescription('The member to check points for').setRequired(false))
         )
         .addSubcommand(sub =>
           sub
             .setName('set')
-            .setDescription('تعيين نقاط التقديمات لعضو معين')
-            .addUserOption(opt => opt.setName('user').setDescription('العضو').setRequired(true))
-            .addIntegerOption(opt => opt.setName('points').setDescription('عدد النقاط').setRequired(true).setMinValue(0))
+            .setDescription('Set application points for a member')
+
+            .addUserOption(opt => opt.setName('user').setDescription('The member').setRequired(true))
+            .addIntegerOption(opt => opt.setName('points').setDescription('The number of points').setRequired(true).setMinValue(0))
         )
         .addSubcommand(sub =>
           sub
             .setName('reset_user')
-            .setDescription('إعادة تعيين وتصفير نقاط التقديمات لعضو')
-            .addUserOption(opt => opt.setName('user').setDescription('العضو').setRequired(true))
+            .setDescription('Reset application points for a member')
+
+            .addUserOption(opt => opt.setName('user').setDescription('The member').setRequired(true))
         )
         .addSubcommand(sub =>
           sub
             .setName('reset_server')
-            .setDescription('إعادة تعيين وتصفير جميع نقاط التقديمات في السيرفر بالكامل')
+            .setDescription('Reset all application points in the entire server')
+
         )
     ),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild.id);
     const subGroup = interaction.options.getSubcommandGroup(false);
     const subCmd = interaction.options.getSubcommand();
     const guildId = interaction.guild.id;
@@ -54,21 +63,21 @@ module.exports = {
     if (subCmd === 'pending') {
       const pendingList = db.getPendingSubmissions(guildId);
       if (!pendingList || pendingList.length === 0) {
-        return interaction.reply({ content: '✅ لا توجد أي تقديمات معلقة قيد الانتظار حالياً.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.applications.pending_empty'), flags: 64 });
       }
 
       const embed = new EmbedBuilder()
         .setColor(config.colors.primary)
-        .setTitle('📋 التقديمات قيد الانتظار')
-        .setDescription(`يوجد حالياً **${pendingList.length}** طلب تقديم بانتظار المراجعة:`)
-        .setFooter({ text: 'يمكنك مراجعة وقبول أو رفض الطلبات عبر رسائل اللوق المخصصة.' })
+        .setTitle(t(lang, 'admin.applications.pending_title'))
+        .setDescription(t(lang, 'admin.applications.pending_desc', { count: pendingList.length }))
+        .setFooter({ text: t(lang, 'admin.applications.pending_footer') })
         .setTimestamp();
 
       pendingList.slice(0, 10).forEach((sub, i) => {
         const app = db.getApplication(sub.app_id);
         embed.addFields({
-          name: `${i + 1}. تقديم #${sub.id} - ${app ? app.title : 'نموذج تقديم'}`,
-          value: `👤 **مقدم الطلب:** <@${sub.user_id}>\n📅 **الوقت:** <t:${sub.submitted_at}:R>`
+          name: t(lang, 'admin.applications.pending_row_name', { i: i + 1, id: sub.id, title: app ? app.title : t(lang, 'admin.applications.default_form_name') }),
+          value: t(lang, 'admin.applications.pending_row_value', { user: sub.user_id, time: sub.submitted_at })
         });
       });
 
@@ -83,9 +92,9 @@ module.exports = {
 
         const embed = new EmbedBuilder()
           .setColor(config.colors.primary)
-          .setTitle('⭐ نقاط مراجعة التقديمات')
-          .setDescription(`👤 **العضو:** ${target} (\`${target.tag}\`)\n🎯 **إجمالي النقاط:** \`${points}\` نقطة`)
-          .setFooter({ text: 'تمنح النقاط تلقائياً عند مراجعة وقبول/رفض طلبات التقديم.' })
+          .setTitle(t(lang, 'admin.applications.points_title'))
+          .setDescription(t(lang, 'admin.applications.points_desc', { user: target, tag: target.tag, points }))
+          .setFooter({ text: t(lang, 'admin.applications.points_footer') })
           .setTimestamp();
 
         return interaction.reply({ embeds: [embed] });
@@ -97,7 +106,7 @@ module.exports = {
         db.setUserApplicationPoints(guildId, target.id, points);
 
         return interaction.reply({
-          content: `✅ تم تعيين نقاط مراجعة التقديمات للعضو ${target} لتصبح **${points}** نقطة بنجاح.`
+          content: t(lang, 'admin.applications.set_success', { user: target, points })
         });
       }
 
@@ -106,7 +115,7 @@ module.exports = {
         db.resetApplicationPoints(guildId, target.id);
 
         return interaction.reply({
-          content: `🔄 تم تصفير وإعادة تعيين نقاط مراجعة التقديمات للعضو ${target} بنجاح.`
+          content: t(lang, 'admin.applications.reset_user_success', { user: target })
         });
       }
 
@@ -114,23 +123,24 @@ module.exports = {
         db.resetApplicationPoints(guildId);
 
         return interaction.reply({
-          content: `⚠️ تم تصفير وإعادة تعيين جميع نقاط مراجعة التقديمات لجميع الأعضاء في السيرفر بنجاح.`
+          content: t(lang, 'admin.applications.reset_server_success')
         });
       }
     }
   },
 
   async executePrefix(message, args) {
+    const lang = getGuildLang(message.guild.id);
     if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-      return message.reply('❌ ليس لديك صلاحية لإدارة التقديمات.');
+      return message.reply(t(lang, 'admin.applications.prefix_no_perm'));
     }
 
     const sub = args[0]?.toLowerCase();
     if (sub === 'pending') {
       const pendingList = db.getPendingSubmissions(message.guild.id);
-      return message.reply(`📋 يوجد حالياً **${pendingList ? pendingList.length : 0}** طلب تقديم قيد الانتظار.`);
+      return message.reply(t(lang, 'admin.applications.prefix_pending_count', { count: pendingList ? pendingList.length : 0 }));
     }
 
-    message.reply('استخدم الأوامر التفاعلية: `/applications pending` أو `/applications points list`');
+    message.reply(t(lang, 'admin.applications.prefix_use_slash'));
   }
 };

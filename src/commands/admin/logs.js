@@ -1,6 +1,8 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, EmbedBuilder } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
+const dictAdmin = require('../../lang/dict-admin');
 
 // 13 Category definitions (identical to dashboard logs section)
 const LOG_CATEGORIES = {
@@ -167,16 +169,16 @@ async function deleteLogsChannels(guild) {
   return deleted;
 }
 
-function buildStatusEmbed(guild, logsConfig, settings) {
+function buildStatusEmbed(guild, logsConfig, settings, lang) {
   const enabledCount = Object.values(logsConfig).filter(c => c && (c.enabled === true || c.enabled === 1 || c.enabled === '1')).length;
   const embed = new EmbedBuilder()
     .setColor(config.colors.primary)
-    .setTitle(`📜 سجلات السيرفر الشاملة | ${guild.name}`)
-    .setDescription('نظام تتبع جميع الأحداث في السيرفر مع الفاعل والتفاصيل فورياً')
+    .setTitle(t(lang, 'admin.logs.status_title', { guild: guild.name }))
+    .setDescription(t(lang, 'admin.logs.status_desc'))
     .addFields(
-      { name: '📊 الحالة العامة', value: settings.logs_enabled === 0 ? '🔴 معطلة' : '🟢 مفعلة', inline: true },
-      { name: '✅ السجلات المفعلة', value: `${enabledCount} / ${TOTAL_LOGS}`, inline: true },
-      { name: '📁 الأقسام', value: `13 قسم`, inline: true }
+      { name: t(lang, 'admin.logs.f_general'), value: settings.logs_enabled === 0 ? t(lang, 'admin.logs.v_off') : t(lang, 'admin.logs.v_on'), inline: true },
+      { name: t(lang, 'admin.logs.f_enabled'), value: `${enabledCount} / ${TOTAL_LOGS}`, inline: true },
+      { name: t(lang, 'admin.logs.f_sections'), value: t(lang, 'admin.logs.sections_value'), inline: true }
     );
 
   const catLines = Object.keys(LOG_CATEGORIES).map(k => {
@@ -184,15 +186,22 @@ function buildStatusEmbed(guild, logsConfig, settings) {
     const chId = settings['log_channel_' + k];
     const chStr = chId ? `<#${chId}>` : '`—`';
     const anyEnabled = Object.keys(logsConfig).some(id => logsConfig[id] && logsConfig[id].enabled && categoryMatchesEvent(k, id));
-    return `${cat.icon} ${cat.title} — ${chStr} ${anyEnabled ? '✅' : '⬜'}`;
+    return `${cat.icon} ${t(lang, 'admin.logs.cat.' + k)} — ${chStr} ${anyEnabled ? '✅' : '⬜'}`;
   });
-  embed.addFields({ name: '📁 قنوات الأقسام (13)', value: catLines.join('\n').slice(0, 1024) || '—' });
-  embed.setFooter({ text: 'Droplet Logs • سجلات السيرفر' }).setTimestamp();
+  embed.addFields({ name: t(lang, 'admin.logs.f_channels'), value: catLines.join('\n').slice(0, 1024) || '—' });
+  embed.setFooter({ text: t(lang, 'admin.logs.footer') }).setTimestamp();
   return embed;
 }
 
 function buildCategoryChoices() {
-  return Object.keys(LOG_CATEGORIES).map(k => ({ name: `${LOG_CATEGORIES[k].icon} ${LOG_CATEGORIES[k].title}`, value: k }));
+  return Object.keys(LOG_CATEGORIES).map(k => ({
+    name: `${LOG_CATEGORIES[k].icon} ${dictAdmin.en['admin.logs.cat.' + k]}`,
+    value: k
+  }));
+}
+
+function catTitle(lang, key) {
+  return t(lang, 'admin.logs.cat.' + key);
 }
 
 module.exports = {
@@ -201,92 +210,109 @@ module.exports = {
   aliases: ['سجلات', 'لوق', 'سجل'],
   data: new SlashCommandBuilder()
     .setName('logs')
-    .setDescription('نظام سجلات السيرفر الشاملة (Audit Logs)')
+    .setDescription('Comprehensive server logs system (Audit Logs)')
+
     .addSubcommand(sub =>
       sub.setName('setup')
-        .setDescription('إنشاء قنوات السجلات تلقائياً بالسيرفر')
+        .setDescription('Create log channels automatically in the server')
+
         .addStringOption(opt =>
           opt.setName('mode')
-            .setDescription('نظام الإنشاء')
+            .setDescription('Creation mode')
+
             .setRequired(true)
             .addChoices(
-              { name: 'قنوات عادية (قناة لكل قسم)', value: 'grouped' },
-              { name: 'قنوات مفصلة (قناة لكل نوع سجل)', value: 'detailed' }
+              { name: 'Normal channels (one per section)', value: 'grouped' },
+              { name: 'Detailed channels (one per log type)', value: 'detailed' }
             )
         )
     )
     .addSubcommand(sub =>
       sub.setName('channel')
-        .setDescription('تحديد القناة الافتراضية لقسم سجلات')
+        .setDescription('Set the default channel for a log section')
+
         .addStringOption(opt =>
           opt.setName('category')
-            .setDescription('قسم السجلات')
+            .setDescription('The logs section')
+
             .setRequired(true)
             .addChoices(...buildCategoryChoices())
         )
         .addChannelOption(opt =>
           opt.setName('channel')
-            .setDescription('القناة التي ستُرسل فيها السجلات')
+            .setDescription('The channel logs will be sent in')
+
             .addChannelTypes(ChannelType.GuildText)
             .setRequired(true)
         )
     )
     .addSubcommand(sub =>
       sub.setName('enable')
-        .setDescription('تفعيل جميع سجلات قسم معين')
+        .setDescription('Enable all logs of a section')
+
         .addStringOption(opt =>
           opt.setName('category')
-            .setDescription('قسم السجلات')
+            .setDescription('The logs section')
+
             .setRequired(true)
             .addChoices(...buildCategoryChoices())
         )
     )
     .addSubcommand(sub =>
       sub.setName('disable')
-        .setDescription('تعطيل جميع سجلات قسم معين')
+        .setDescription('Disable all logs of a section')
+
         .addStringOption(opt =>
           opt.setName('category')
-            .setDescription('قسم السجلات')
+            .setDescription('The logs section')
+
             .setRequired(true)
             .addChoices(...buildCategoryChoices())
         )
     )
     .addSubcommand(sub =>
       sub.setName('toggle')
-        .setDescription('تفعيل أو تعطيل السجلات بالكامل')
+        .setDescription('Enable or disable all logs')
+
         .addStringOption(opt =>
           opt.setName('state')
-            .setDescription('حالة السجلات')
+            .setDescription('Logs state')
+
             .setRequired(true)
             .addChoices(
-              { name: '✅ تفعيل', value: 'on' },
-              { name: '❌ تعطيل', value: 'off' }
+              { name: '✅ Enable', value: 'on' },
+              { name: '❌ Disable', value: 'off' }
             )
         )
     )
     .addSubcommand(sub =>
       sub.setName('list')
-        .setDescription('عرض إعدادات وحالة سجلات السيرفر')
+        .setDescription('Show server log settings and status')
+
     )
     .addSubcommand(sub =>
       sub.setName('test')
-        .setDescription('إرسال سجل تجريبي لقسم معين للتأكد من العمل')
+        .setDescription('Send a test log to a section to verify it works')
+
         .addStringOption(opt =>
           opt.setName('category')
-            .setDescription('قسم السجلات')
+            .setDescription('The logs section')
+
             .setRequired(true)
             .addChoices(...buildCategoryChoices())
         )
     )
     .addSubcommand(sub =>
       sub.setName('delete-channels')
-        .setDescription('حذف كاتيجوري سجلات Droplet وجميع القنوات بداخلها وتعطيل السجلات')
+        .setDescription('Delete the Droplet logs category, all channels and disable logs')
+
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية الأدمن.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'admin.common.no_admin'), flags: 64 });
     }
 
     const sub = interaction.options.getSubcommand();
@@ -301,10 +327,14 @@ module.exports = {
 
         const embed = new EmbedBuilder()
           .setColor(config.colors.success)
-          .setTitle('✅ تم إنشاء قنوات السجلات بنجاح')
-          .setDescription(`تم إنشاء **${created.length}** قناة سجلات داخل كاتيجوري **${LOGS_CATEGORY_NAME}** بنظام: **${mode === 'grouped' ? 'قنوات عادية (قناة لكل قسم)' : 'قنوات مفصلة (قناة لكل نوع سجل)'}**\n\nتم تفعيل وتوزيع جميع السجلات تلقائياً 🎉`)
-          .addFields({ name: '📁 القنوات المنشأة', value: created.slice(0, 15).map(c => `<#${c.id}>`).join('، ') + (created.length > 15 ? ` و${created.length - 15} أخرى` : '') })
-          .setFooter({ text: 'Droplet Logs • سجلات السيرفر' })
+          .setTitle(t(lang, 'admin.logs.setup_title'))
+          .setDescription(t(lang, 'admin.logs.setup_desc', {
+            count: created.length,
+            category: LOGS_CATEGORY_NAME,
+            mode: t(lang, mode === 'grouped' ? 'admin.logs.mode_grouped' : 'admin.logs.mode_detailed')
+          }))
+          .addFields({ name: t(lang, 'admin.logs.f_created'), value: created.slice(0, 15).map(c => `<#${c.id}>`).join('، ') + (created.length > 15 ? t(lang, 'admin.logs.and_more', { n: created.length - 15 }) : '') })
+          .setFooter({ text: t(lang, 'admin.logs.footer') })
           .setTimestamp();
         await interaction.editReply({ embeds: [embed] });
 
@@ -316,8 +346,8 @@ module.exports = {
         const cat = LOG_CATEGORIES[category];
         const embed = new EmbedBuilder()
           .setColor(config.colors.success)
-          .setTitle('✅ تم تحديد قناة السجلات')
-          .setDescription(`${cat.icon} سجلات **${cat.title}** ستُرسل الآن في: <#${channel.id}>`)
+          .setTitle(t(lang, 'admin.logs.channel_title'))
+          .setDescription(t(lang, 'admin.logs.channel_desc', { icon: cat.icon, title: catTitle(lang, category), channel: channel.id }))
           .setTimestamp();
         await interaction.reply({ embeds: [embed] });
 
@@ -337,8 +367,8 @@ module.exports = {
 
         const embed = new EmbedBuilder()
           .setColor(sub === 'enable' ? config.colors.success : config.colors.danger)
-          .setTitle(sub === 'enable' ? '✅ تم تفعيل سجلات القسم' : '❌ تم تعطيل سجلات القسم')
-          .setDescription(`${cat.icon} ${sub === 'enable' ? 'تم تفعيل' : 'تم تعطيل'} **${count}** سجل في قسم **${cat.title}**`)
+          .setTitle(t(lang, sub === 'enable' ? 'admin.logs.enable_title' : 'admin.logs.disable_title'))
+          .setDescription(t(lang, sub === 'enable' ? 'admin.logs.enable_desc' : 'admin.logs.disable_desc', { icon: cat.icon, count, title: catTitle(lang, category) }))
           .setTimestamp();
         await interaction.reply({ embeds: [embed] });
 
@@ -348,17 +378,15 @@ module.exports = {
 
         const embed = new EmbedBuilder()
           .setColor(state === 'on' ? config.colors.success : config.colors.danger)
-          .setTitle(state === 'on' ? '✅ تم تفعيل نظام السجلات' : '❌ تم تعطيل نظام السجلات')
-          .setDescription(state === 'on'
-            ? '📜 سيتم الآن تسجيل جميع الأحداث المفعلة في قنوات السجلات'
-            : '📜 تم إيقاف تسجيل جميع السجلات بالكامل')
+          .setTitle(t(lang, state === 'on' ? 'admin.logs.toggle_on_title' : 'admin.logs.toggle_off_title'))
+          .setDescription(t(lang, state === 'on' ? 'admin.logs.toggle_on_desc' : 'admin.logs.toggle_off_desc'))
           .setTimestamp();
         await interaction.reply({ embeds: [embed] });
 
       } else if (sub === 'list') {
         const settings = db.getGuildSettings(guildId) || {};
         const logsConfig = getLogsConfig(guildId);
-        await interaction.reply({ embeds: [buildStatusEmbed(guild, logsConfig, settings)] });
+        await interaction.reply({ embeds: [buildStatusEmbed(guild, logsConfig, settings, lang)] });
 
       } else if (sub === 'test') {
         await interaction.deferReply({ flags: 64 });
@@ -371,15 +399,19 @@ module.exports = {
         const testEventId = TEST_EVENT_IDS[category] || (category + '_test');
 
         await sendServerLog(guild, testEventId, category, {
-          title: `${cat.icon} سجل تجريبي — ${cat.title}`,
-          desc: `هذا سجل تجريبي للتأكد من عمل نظام السجلات في قسم **${cat.title}**.\nإذا تشاهد هذه الرسالة فالنظام يعمل بنجاح ✅`,
-          footer: 'Droplet Logs • رسالة تجريبية'
+          title: t(lang, 'admin.logs.test_title', { icon: cat.icon, title: catTitle(lang, category) }),
+          desc: t(lang, 'admin.logs.test_desc', { title: catTitle(lang, category) }),
+          footer: t(lang, 'admin.logs.test_footer')
         });
 
         const embed = new EmbedBuilder()
           .setColor(config.colors.success)
-          .setTitle('✅ تم إرسال السجل التجريبي')
-          .setDescription(`${cat.icon} تم إرسال سجل تجريبي لقسم **${cat.title}**${settings['log_channel_' + category] ? ` إلى: <#${settings['log_channel_' + category]}>` : ''}`)
+          .setTitle(t(lang, 'admin.logs.test_sent_title'))
+          .setDescription(t(lang, 'admin.logs.test_sent_desc', {
+            icon: cat.icon,
+            title: catTitle(lang, category),
+            channel: settings['log_channel_' + category] ? t(lang, 'admin.logs.test_sent_channel', { channel: settings['log_channel_' + category] }) : ''
+          }))
           .setTimestamp();
         await interaction.editReply({ embeds: [embed] });
 
@@ -389,39 +421,45 @@ module.exports = {
 
         const embed = new EmbedBuilder()
           .setColor(config.colors.warning)
-          .setTitle('🗑️ تم حذف قنوات السجلات')
-          .setDescription(`تم حذف كاتيجوري **${LOGS_CATEGORY_NAME}** و **${deleted}** قناة بداخلها، وتم تعطيل نظام السجلات.`)
+          .setTitle(t(lang, 'admin.logs.delete_title'))
+          .setDescription(t(lang, 'admin.logs.delete_desc', { category: LOGS_CATEGORY_NAME, count: deleted }))
           .setTimestamp();
         await interaction.editReply({ embeds: [embed] });
       }
     } catch (err) {
       console.error('Logs command error:', err);
-      const reply = { content: '❌ حدث خطأ أثناء تنفيذ الأمر: ' + err.message, flags: 64 };
+      const reply = { content: t(lang, 'admin.logs.error', { err: err.message }), flags: 64 };
       if (interaction.deferred) await interaction.editReply(reply).catch(() => {});
       else await interaction.reply(reply).catch(() => {});
     }
   },
 
   async executePrefix(message, args) {
+    const lang = getGuildLang(message.guild.id);
     if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return message.reply('❌ لا تملك صلاحية الأدمن.');
+      return message.reply(t(lang, 'admin.common.no_admin'));
     }
 
     const guild = message.guild;
     const guildId = guild.id;
     const action = (args[0] || '').toLowerCase();
+    const sections = Object.keys(LOG_CATEGORIES).join('، ');
 
     try {
       if (action === 'setup') {
         const mode = (args[1] || 'grouped').toLowerCase() === 'detailed' ? 'detailed' : 'grouped';
-        const msg = await message.reply('⏳ جاري إنشاء قنوات السجلات...');
+        const msg = await message.reply(t(lang, 'admin.logs.prefix_creating'));
         const created = await runSetup(guild, mode);
 
         const embed = new EmbedBuilder()
           .setColor(config.colors.success)
-          .setTitle('✅ تم إنشاء قنوات السجلات بنجاح')
-          .setDescription(`تم إنشاء **${created.length}** قناة سجلات داخل كاتيجوري **${LOGS_CATEGORY_NAME}** بنظام: **${mode === 'grouped' ? 'قنوات عادية' : 'قنوات مفصلة'}**\n\nتم تفعيل وتوزيع جميع السجلات تلقائياً 🎉`)
-          .addFields({ name: '📁 القنوات المنشأة', value: created.slice(0, 15).map(c => `<#${c.id}>`).join('، ') + (created.length > 15 ? ` و${created.length - 15} أخرى` : '') })
+          .setTitle(t(lang, 'admin.logs.setup_title'))
+          .setDescription(t(lang, 'admin.logs.setup_prefix_desc', {
+            count: created.length,
+            category: LOGS_CATEGORY_NAME,
+            mode: t(lang, mode === 'grouped' ? 'admin.logs.mode_grouped_short' : 'admin.logs.mode_detailed_short')
+          }))
+          .addFields({ name: t(lang, 'admin.logs.f_created'), value: created.slice(0, 15).map(c => `<#${c.id}>`).join('، ') + (created.length > 15 ? t(lang, 'admin.logs.and_more', { n: created.length - 15 }) : '') })
           .setTimestamp();
         await msg.edit({ content: '', embeds: [embed] });
 
@@ -429,16 +467,16 @@ module.exports = {
         const categoryKey = (args[1] || '').toLowerCase();
         const channel = message.mentions.channels.first();
         if (!LOG_CATEGORIES[categoryKey] || !channel) {
-          return message.reply(`❌ الاستخدام الصحيح: \`#logs channel <القسم> #روم\`\n📁 الأقسام: ${Object.keys(LOG_CATEGORIES).join('، ')}`);
+          return message.reply(t(lang, 'admin.logs.prefix_channel_usage', { sections }));
         }
         db.updateGuildSetting(guildId, 'log_channel_' + categoryKey, channel.id);
         const cat = LOG_CATEGORIES[categoryKey];
-        message.reply(`✅ ${cat.icon} سجلات **${cat.title}** ستُرسل الآن في: <#${channel.id}>`);
+        message.reply(t(lang, 'admin.logs.prefix_channel_set', { icon: cat.icon, title: catTitle(lang, categoryKey), channel: channel.id }));
 
       } else if (action === 'enable' || action === 'disable') {
         const categoryKey = (args[1] || '').toLowerCase();
         if (!LOG_CATEGORIES[categoryKey]) {
-          return message.reply(`❌ الاستخدام الصحيح: \`#logs ${action} <القسم>\`\n📁 الأقسام: ${Object.keys(LOG_CATEGORIES).join('، ')}`);
+          return message.reply(t(lang, 'admin.logs.prefix_enable_usage', { action, sections }));
         }
         const cat = LOG_CATEGORIES[categoryKey];
         const logsConfig = getLogsConfig(guildId);
@@ -450,64 +488,53 @@ module.exports = {
           }
         }
         saveLogsConfig(guildId, logsConfig);
-        message.reply(`${action === 'enable' ? '✅ تم تفعيل' : '❌ تم تعطيل'} **${count}** سجل في قسم **${cat.title}**`);
+        message.reply(t(lang, action === 'enable' ? 'admin.logs.prefix_enabled' : 'admin.logs.prefix_disabled', { count, title: catTitle(lang, categoryKey), icon: cat.icon }));
 
       } else if (action === 'on' || action === 'off') {
         db.updateGuildSetting(guildId, 'logs_enabled', action === 'on' ? 1 : 0);
-        message.reply(action === 'on' ? '✅ تم تفعيل نظام السجلات بالكامل 📜' : '❌ تم تعطيل نظام السجلات بالكامل 📜');
+        message.reply(t(lang, action === 'on' ? 'admin.logs.prefix_on' : 'admin.logs.prefix_off'));
 
       } else if (action === 'list') {
         const settings = db.getGuildSettings(guildId) || {};
         const logsConfig = getLogsConfig(guildId);
-        message.reply({ embeds: [buildStatusEmbed(guild, logsConfig, settings)] });
+        message.reply({ embeds: [buildStatusEmbed(guild, logsConfig, settings, lang)] });
 
       } else if (action === 'test') {
         const categoryKey = (args[1] || '').toLowerCase();
         if (!LOG_CATEGORIES[categoryKey]) {
-          return message.reply(`❌ الاستخدام الصحيح: \`#logs test <القسم>\`\n📁 الأقسام: ${Object.keys(LOG_CATEGORIES).join('، ')}`);
+          return message.reply(t(lang, 'admin.logs.prefix_test_usage', { sections }));
         }
         const cat = LOG_CATEGORIES[categoryKey];
         const { sendServerLog } = require('../../utils/serverLogger');
         await sendServerLog(guild, categoryKey === 'members' ? 'member_join' : categoryKey === 'messages' ? 'msg_delete' : categoryKey === 'roles' ? 'role_create' : categoryKey === 'voice' ? 'vc_join' : categoryKey + '_test', categoryKey, {
-          title: `${cat.icon} سجل تجريبي — ${cat.title}`,
-          desc: `هذا سجل تجريبي للتأكد من عمل نظام السجلات في قسم **${cat.title}**.\nإذا تشاهد هذه الرسالة فالنظام يعمل بنجاح ✅`,
-          footer: 'Droplet Logs • رسالة تجريبية'
+          title: t(lang, 'admin.logs.test_title', { icon: cat.icon, title: catTitle(lang, categoryKey) }),
+          desc: t(lang, 'admin.logs.test_desc', { title: catTitle(lang, categoryKey) }),
+          footer: t(lang, 'admin.logs.test_footer')
         });
-        message.reply(`✅ ${cat.icon} تم إرسال سجل تجريبي لقسم **${cat.title}**`);
+        message.reply(t(lang, 'admin.logs.prefix_test_sent', { icon: cat.icon, title: catTitle(lang, categoryKey) }));
 
       } else if (action === 'delete' || action === 'delete-channels') {
-        const msg = await message.reply('⏳ جاري حذف قنوات السجلات...');
+        const msg = await message.reply(t(lang, 'admin.logs.prefix_deleting'));
         const deleted = await deleteLogsChannels(guild);
-        await msg.edit(`🗑️ تم حذف كاتيجوري **${LOGS_CATEGORY_NAME}** و **${deleted}** قناة، وتعطيل السجلات.`);
+        await msg.edit(t(lang, 'admin.logs.prefix_deleted', { category: LOGS_CATEGORY_NAME, count: deleted }));
 
       } else {
         const helpEmbed = new EmbedBuilder()
           .setColor(config.colors.primary)
-          .setTitle('📜 أوامر سجلات السيرفر الشاملة')
-          .setDescription('نظام تتبع جميع الأحداث في السيرفر — 105 سجل في 13 قسم')
+          .setTitle(t(lang, 'admin.logs.help_title'))
+          .setDescription(t(lang, 'admin.logs.help_desc'))
           .addFields(
-            { name: '⚙️ الإعداد', value: [
-              '`logs setup` — إنشاء قنوات السجلات تلقائياً (عادية)',
-              '`logs setup detailed` — إنشاء قنوات مفصلة',
-              '`logs channel <قسم> #روم` — تحديد قناة قسم',
-              '`logs delete` — حذف قنوات السجلات'
-            ].join('\n'), inline: false },
-            { name: '🎛️ التحكم', value: [
-              '`logs on / logs off` — تفعيل/تعطيل السجلات',
-              '`logs enable <قسم>` — تفعيل سجلات قسم',
-              '`logs disable <قسم>` — تعطيل سجلات قسم',
-              '`logs test <قسم>` — سجل تجريبي',
-              '`logs list` — عرض حالة السجلات'
-            ].join('\n'), inline: false },
-            { name: '📁 الأقسام (13)', value: Object.keys(LOG_CATEGORIES).map(k => `${LOG_CATEGORIES[k].icon} ${LOG_CATEGORIES[k].title}`).join('، ') }
+            { name: t(lang, 'admin.logs.help_setup'), value: t(lang, 'admin.logs.help_setup_value'), inline: false },
+            { name: t(lang, 'admin.logs.help_control'), value: t(lang, 'admin.logs.help_control_value'), inline: false },
+            { name: t(lang, 'admin.logs.help_sections'), value: Object.keys(LOG_CATEGORIES).map(k => `${LOG_CATEGORIES[k].icon} ${catTitle(lang, k)}`).join('، ') }
           )
-          .setFooter({ text: 'يمكنك إدارة كل سجل على حدة من لوحة التحكم الويب' })
+          .setFooter({ text: t(lang, 'admin.logs.help_footer') })
           .setTimestamp();
         message.reply({ embeds: [helpEmbed] });
       }
     } catch (err) {
       console.error('Logs prefix command error:', err);
-      message.reply('❌ حدث خطأ: ' + err.message).catch(() => {});
+      message.reply(t(lang, 'admin.logs.prefix_error', { err: err.message })).catch(() => {});
     }
   }
 };

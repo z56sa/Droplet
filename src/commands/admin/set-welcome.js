@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
 const db = require('../../database');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'set-welcome',
@@ -7,31 +8,36 @@ module.exports = {
   aliases: ['ترحيب'],
   data: new SlashCommandBuilder()
     .setName('set-welcome')
-    .setDescription('إعداد نظام الترحيب')
+    .setDescription('Configure the welcome system')
+
     .addChannelOption(opt =>
       opt.setName('channel')
-        .setDescription('روم إرسال الترحيب')
+        .setDescription('The welcome message channel')
+
         .addChannelTypes(ChannelType.GuildText)
         .setRequired(true)
     )
     .addStringOption(opt =>
       opt.setName('message')
-        .setDescription('رسالة الترحيب المخصصة ({user}, {server}, {memberCount})')
+        .setDescription('Custom welcome message ({user}, {server}, {memberCount})')
+
         .setRequired(false)
     )
     .addBooleanOption(opt =>
       opt.setName('image')
-        .setDescription('تفعيل أو تعطيل بطاقة الصورة المصممة (Canvas)')
+        .setDescription('Enable or disable the designed image card (Canvas)')
+
         .setRequired(false)
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild.id);
     // 1. التأجيل الفوري لمنع خطأ انتهاء المهلة (3 ثواني)
     await interaction.deferReply({ flags: 64 });
 
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return interaction.editReply({ content: '❌ لا تملك صلاحية الأدمن.' });
+      return interaction.editReply({ content: t(lang, 'admin.common.no_admin') });
     }
 
     const channel = interaction.options.getChannel('channel');
@@ -58,21 +64,25 @@ module.exports = {
 
       // 3. الرد النهائي الآمن
       await interaction.editReply({
-        content: `✅ تم تحديث إعدادات الترحيب بنجاح!\n📍 الروم: <#${channel.id}>\n🖼️ بطاقة الترحيب المصممة: **${image === false ? 'معطلة' : 'مفعلة'}**`
+        content: t(lang, 'admin.setwelcome.updated', {
+          channel: channel.id,
+          state: t(lang, image === false ? 'admin.setwelcome.state_off' : 'admin.setwelcome.state_on')
+        })
       });
     } catch (err) {
       console.error('خطأ في إعدادات الترحيب:', err);
-      await interaction.editReply({ content: '❌ حدث خطأ أثناء حفظ إعدادات الترحيب في قاعدة البيانات.' });
+      await interaction.editReply({ content: t(lang, 'admin.setwelcome.db_error') });
     }
   },
 
   async executePrefix(message, args) {
+    const lang = getGuildLang(message.guild.id);
     if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return message.reply('❌ لا تملك صلاحية الأدمن.');
+      return message.reply(t(lang, 'admin.common.no_admin'));
     }
 
     const channel = message.mentions.channels.first();
-    if (!channel) return message.reply('❌ يرجى منشن الروم. مثال: `#set-welcome #welcome`');
+    if (!channel) return message.reply(t(lang, 'admin.setwelcome.prefix_need_mention'));
 
     try {
       if (typeof db.setGuildSetting === 'function') {
@@ -80,10 +90,10 @@ module.exports = {
       } else if (typeof db.updateGuildSetting === 'function') {
         db.updateGuildSetting(message.guild.id, 'welcome_channel', channel.id);
       }
-      message.reply(`✅ تم تعيين روم الترحيب: <#${channel.id}>`);
+      message.reply(t(lang, 'admin.setwelcome.prefix_set', { channel: channel.id }));
     } catch (err) {
       console.error('خطأ في إعدادات الترحيب (Prefix):', err);
-      message.reply('❌ حدث خطأ أثناء حفظ روم الترحيب.');
+      message.reply(t(lang, 'admin.setwelcome.prefix_save_error'));
     }
   }
 };

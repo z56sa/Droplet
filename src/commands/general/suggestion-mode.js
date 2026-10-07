@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'suggestion-mode',
@@ -7,24 +8,24 @@ module.exports = {
   aliases: ['نمط-الاقتراحات'],
   data: new SlashCommandBuilder()
     .setName('suggestion-mode')
-    .setDescription('تحديد نمط الاقتراحات')
+    .setDescription('Set the suggestions style')
     .addStringOption(opt =>
       opt.setName('mode')
-        .setDescription('النمط')
+        .setDescription('The style')
         .setRequired(true)
         .addChoices(
-          { name: 'إيمبد مع تصويت', value: 'embed' },
-          { name: 'عادي', value: 'normal' }
+          { name: 'Embed with voting', value: 'embed' },
+          { name: 'Plain', value: 'normal' }
         )
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية إدارة السيرفر.', flags: 64 });
+      return interaction.reply({ content: t(interaction.guild.id, 'general.suggestion-mode.no_perm'), flags: 64 });
     }
     const mode = interaction.options.getString('mode');
     db.updateGuildSetting(interaction.guild.id, 'suggestion_mode', mode);
-    return interaction.reply({ content: '✅ تم تعيين نمط الاقتراحات إلى: ' + mode });
+    return interaction.reply({ content: t(interaction.guild.id, 'general.suggestion-mode.done', { mode }) });
   }
 };

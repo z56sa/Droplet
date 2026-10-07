@@ -3,16 +3,21 @@
 // منشئ سجلات التذاكر بتصميم HTML حديث وداكن (Dark Modern HTML Transcript)
 // ========================================================
 const { AttachmentBuilder } = require('discord.js');
+const { getGuildLang, t } = require('./lang');
 
 async function generateHtmlTranscript(channel, options = {}) {
   const limit = options.limit || 100;
   const messages = await channel.messages.fetch({ limit }).catch(() => null);
   if (!messages) return null;
 
+  const lang = options.lang || getGuildLang(channel.guild?.id);
+  const locale = lang === 'AR' ? 'ar-SA' : 'en-US';
+  const dir = lang === 'AR' ? 'rtl' : 'ltr';
+
   const sortedMessages = Array.from(messages.values()).sort((a, b) => a.createdTimestamp - b.createdTimestamp);
   const guildName = channel.guild?.name || 'Server';
   const channelName = channel.name;
-  const generatedAt = new Date().toLocaleString('ar-SA', { timeZone: 'UTC', dateStyle: 'full', timeStyle: 'medium' });
+  const generatedAt = new Date().toLocaleString(locale, { timeZone: 'UTC', dateStyle: 'full', timeStyle: 'medium' });
 
   let messageRows = '';
 
@@ -20,7 +25,7 @@ async function generateHtmlTranscript(channel, options = {}) {
     const isBot = msg.author.bot;
     const authorName = escapeHtml(msg.author.username);
     const authorAvatar = msg.author.displayAvatarURL({ dynamic: true, size: 64 }) || 'https://cdn.discordapp.com/embed/avatars/0.png';
-    const timestamp = new Date(msg.createdTimestamp).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+    const timestamp = new Date(msg.createdTimestamp).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
     const content = escapeHtml(msg.cleanContent || msg.content || '');
 
     let attachmentsHtml = '';
@@ -63,13 +68,13 @@ async function generateHtmlTranscript(channel, options = {}) {
   }
 
   const html = `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="${lang === 'AR' ? 'ar' : 'en'}" dir="${dir}">
 <head>
   <meta charset="UTF-8">
-  <title>سجل تذكرة - #${escapeHtml(channelName)}</title>
+  <title>${escapeHtml(t(lang, 'events.transcript.title', { channel: channelName }))}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: #0f111a; color: #e2e8f0; padding: 24px; direction: rtl; }
+    body { background-color: #0f111a; color: #e2e8f0; padding: 24px; direction: ${dir}; }
     .container { max-width: 900px; margin: 0 auto; background: #161926; border-radius: 16px; border: 1px solid #2d3748; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     .header-bar { background: linear-gradient(135deg, #6b21a8, #3b82f6); padding: 24px; color: white; display: flex; justify-content: space-between; align-items: center; }
     .header-bar h1 { font-size: 20px; font-weight: 800; }
@@ -83,18 +88,18 @@ async function generateHtmlTranscript(channel, options = {}) {
   <div class="container">
     <div class="header-bar">
       <div>
-        <h1>🎫 سجل التذكرة: #${escapeHtml(channelName)}</h1>
-        <p>السيرفر: ${escapeHtml(guildName)} | عدد الرسائل: ${sortedMessages.length}</p>
+        <h1>${escapeHtml(t(lang, 'events.transcript.header', { channel: channelName }))}</h1>
+        <p>${escapeHtml(t(lang, 'events.transcript.meta', { guild: guildName, n: sortedMessages.length }))}</p>
       </div>
       <div>
         <span style="background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 8px; font-size: 11px;">${generatedAt}</span>
       </div>
     </div>
     <div class="messages-list">
-      ${messageRows || '<p style="text-align: center; color: #64748b;">لا توجد رسائل في هذه التذكرة.</p>'}
+      ${messageRows || `<p style="text-align: center; color: #64748b;">${escapeHtml(t(lang, 'events.transcript.empty'))}</p>`}
     </div>
     <div class="footer-bar">
-      تم إنشاء هذا السجل تلقائياً بواسطة بوت Droplet • جميع الحقوق محفوظة ©
+      ${escapeHtml(t(lang, 'events.transcript.footer'))}
     </div>
   </div>
 </body>

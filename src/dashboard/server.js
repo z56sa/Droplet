@@ -9574,17 +9574,17 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <h4 class="font-black text-white text-sm">لغة البوت</h4>
                                 </div>
 
-                                <input type="hidden" name="bot_language" id="inpHiddenLang" value="${settings.bot_language || 'AR'}">
+                                <input type="hidden" name="bot_language" id="inpHiddenLang" value="${settings.bot_language || 'EN'}">
 
                                 <div class="grid grid-cols-3 gap-2.5 text-center">
                                     <!-- IQ / AR -->
-                                    <button type="button" onclick="selectBotLanguage('AR', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${(settings.bot_language || 'AR') === 'AR' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
+                                    <button type="button" onclick="selectBotLanguage('AR', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${(settings.bot_language || 'EN') === 'AR' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
                                         <span class="text-xs font-black">IQ</span>
                                         <span class="text-[10px] font-bold text-white">AR</span>
                                     </button>
 
                                     <!-- US / EN -->
-                                    <button type="button" onclick="selectBotLanguage('EN', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'EN' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
+                                    <button type="button" onclick="selectBotLanguage('EN', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${(settings.bot_language || 'EN') === 'EN' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
                                         <span class="text-xs font-black">US</span>
                                         <span class="text-[10px] font-bold text-white">EN</span>
                                     </button>

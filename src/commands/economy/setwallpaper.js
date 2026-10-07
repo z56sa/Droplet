@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const db = require('../../database');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'setwallpaper',
@@ -17,13 +18,13 @@ module.exports = {
   async execute(interaction) {
     const url = interaction.options.getString('url').trim();
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return interaction.reply({ content: '❌ يرجى إدخال رابط صورة صالح يبدأ بـ `https://`', flags: 64 });
+      return interaction.reply({ content: t(interaction.guild.id, 'economy.setwallpaper.invalid_url'), flags: 64 });
     }
 
     db.setWallpaper(interaction.user.id, interaction.guild.id, url);
 
     await interaction.reply({
-      content: `🖼️ **${interaction.user.username}**, تم تعيين خلفية بروفايلك بنجاح! 🎉\nاكتب **\`#star\`** أو **\`#profile\`** لمشاهدة بطاقتك الجديدة.`
+      content: t(interaction.guild.id, 'economy.setwallpaper.success', { name: interaction.user.username })
     });
   },
 
@@ -34,13 +35,13 @@ module.exports = {
     }
 
     if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
-      return message.reply('❌ يرجى إدخال رابط الصورة بعد الأمر أو إرفاق صورة مع الرسالة!\nمثال: `#setwallpaper https://...`');
+      return message.reply(t(message.guild.id, 'economy.setwallpaper.prefix_invalid'));
     }
 
     db.setWallpaper(message.author.id, message.guild.id, url);
 
     await message.reply({
-      content: `🖼️ **${message.author.username}**, تم تعيين خلفية بروفايلك بنجاح! 🎉\nاكتب **\`#star\`** أو **\`#profile\`** لمشاهدة بطاقتك الجديدة.`
+      content: t(message.guild.id, 'economy.setwallpaper.success', { name: message.author.username })
     });
   }
 };

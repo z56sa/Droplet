@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } = require('discord.js');
 const db = require('../../database');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'set',
@@ -7,107 +8,125 @@ module.exports = {
   aliases: ['ضبط', 'اعداد'],
   data: new SlashCommandBuilder()
     .setName('set')
-    .setDescription('إعدادات وتخصيص البوت ولوحات الإدارة')
+    .setDescription('Bot settings and admin panels')
+
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     // 1. /set message
     .addSubcommand(sub =>
       sub.setName('message')
-        .setDescription('إنشاء لوحة تسجيل الحضور والانصراف للإدارة (Login / Logout Panel)')
+        .setDescription('Create a staff check-in/out panel (Login / Logout Panel)')
+
         .addChannelOption(opt =>
           opt.setName('channel')
-            .setDescription('القناة المراد إرسال لوحة التسجيل فيها')
+            .setDescription('The channel to send the panel in')
+
             .addChannelTypes(ChannelType.GuildText)
             .setRequired(true)
         )
         .addBooleanOption(opt =>
           opt.setName('banner')
-            .setDescription('إظهار البانر الجمالي للوحة الحضور؟')
+            .setDescription('Show the decorative panel banner?')
+
             .setRequired(false)
         )
         .addStringOption(opt =>
           opt.setName('banner_url')
-            .setDescription('رابط مخصص لصورة البانر (اختياري)')
+            .setDescription('Custom banner image URL (optional)')
+
             .setRequired(false)
         )
         .addStringOption(opt =>
           opt.setName('title')
-            .setDescription('عنوان اللوحة (افتراضي: لوحة تسجيل حضور وانصراف الإدارة)')
+            .setDescription('Panel title')
+
             .setRequired(false)
         )
         .addStringOption(opt =>
           opt.setName('description')
-            .setDescription('نص الوصف والتعليمات داخل اللوحة')
+            .setDescription('Description and instructions text inside the panel')
+
             .setRequired(false)
         )
     )
     // 2. /set name
     .addSubcommand(sub =>
       sub.setName('name')
-        .setDescription('تغيير اسم البوت مباشرة في هذا السيرفر أو عالمياً')
+        .setDescription('Change the bot name in this server or globally')
+
         .addStringOption(opt =>
           opt.setName('new_name')
-            .setDescription('الاسم الجديد للبوت')
+            .setDescription('The new bot name')
+
             .setMinLength(2)
             .setMaxLength(32)
             .setRequired(true)
         )
         .addBooleanOption(opt =>
           opt.setName('global')
-            .setDescription('تغيير الاسم في الديسكورد بالكامل أم في هذا السيرفر فقط؟')
+            .setDescription('Change the name across Discord or only in this server?')
+
             .setRequired(false)
         )
     )
     // 3. /set avatar
     .addSubcommand(sub =>
       sub.setName('avatar')
-        .setDescription('تغيير الصورة الشخصية أو شعار البوت')
+        .setDescription('Change the bot profile picture')
+
         .addAttachmentOption(opt =>
           opt.setName('image_file')
-            .setDescription('ارفع ملف الصورة الجديدة للبوت')
+            .setDescription('Upload the new bot image file')
+
             .setRequired(false)
         )
         .addStringOption(opt =>
           opt.setName('image_url')
-            .setDescription('أو ضع رابط صورة مباشر (URL)')
+            .setDescription('Or paste a direct image URL')
+
             .setRequired(false)
         )
     )
     // 4. /set state
     .addSubcommand(sub =>
       sub.setName('state')
-        .setDescription('تغيير حالة التواجد والنشاط للبوت')
+        .setDescription('Change the bot presence and activity')
+
         .addStringOption(opt =>
           opt.setName('status')
-            .setDescription('حالة التواجد (Online / Idle / DND / Invisible)')
+            .setDescription('Presence status (Online / Idle / DND / Invisible)')
+
             .setRequired(true)
             .addChoices(
-              { name: '🟢 متصل (Online)', value: 'online' },
-              { name: '🌙 خامل (Idle)', value: 'idle' },
-              { name: '🔴 ممنوع الإزعاج (Do Not Disturb)', value: 'dnd' },
-              { name: '⚪ مخفي (Invisible)', value: 'invisible' }
+              { name: '🟢 Online', value: 'online' },
+              { name: '🌙 Idle', value: 'idle' },
+              { name: '🔴 Do Not Disturb', value: 'dnd' },
+              { name: '⚪ Invisible', value: 'invisible' }
             )
         )
         .addStringOption(opt =>
           opt.setName('activity_text')
-            .setDescription('النص الظاهر بجانب الحالة (مثال: حماية السيرفر وإدارة الدعم)')
+            .setDescription('The text shown next to the status')
+
             .setRequired(false)
         )
         .addStringOption(opt =>
           opt.setName('activity_type')
-            .setDescription('نوع النشاط')
+            .setDescription('Activity type')
+
             .setRequired(false)
             .addChoices(
-              { name: '🎮 يلعب (Playing)', value: 'Playing' },
-              { name: '👀 يشاهد (Watching)', value: 'Watching' },
-              { name: '🎧 يستمع إلى (Listening)', value: 'Listening' },
-              { name: '🏆 يتنافس في (Competing)', value: 'Competing' }
+              { name: '🎮 Playing', value: 'Playing' },
+              { name: '👀 Watching', value: 'Watching' },
+              { name: '🎧 Listening', value: 'Listening' },
+              { name: '🏆 Competing', value: 'Competing' }
             )
         )
     ),
 
   async execute(interaction, client) {
+    const lang = getGuildLang(interaction.guild.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return interaction.reply({ content: '❌ هذا الأمر مخصص لمالكي ومسؤولي السيرفر فقط (Administrator).', flags: 64 });
+      return interaction.reply({ content: t(lang, 'admin.set.no_perm'), flags: 64 });
     }
 
     const sub = interaction.options.getSubcommand();
@@ -118,12 +137,8 @@ module.exports = {
       const channel = interaction.options.getChannel('channel');
       const showBanner = interaction.options.getBoolean('banner') ?? true;
       const customBanner = interaction.options.getString('banner_url');
-      const title = interaction.options.getString('title') || '📋 لوحة تسجيل حضور وانصراف الإدارة | Staff Shift';
-      const desc = interaction.options.getString('description') || 
-        'مرحباً بكم يا أعضاء طاقم الإدارة 🫡\n\n' +
-        '• لبدء فترة عملك واستقبال تذاكر ورومات الدعم، اضغط على زر **تسجيل الدخول (Login)** 🟢\n' +
-        '• عند انتهاء فترة دوامك، اضغط على زر **تسجيل الخروج (Logout)** 🔴 لحفظ ساعاتك ونقاطك بدقة.\n\n' +
-        '⚠️ **ملاحظة:** يتم تسجيل خروجك تلقائياً إذا خرجت من الديسكورد لمنع الساعات الوهمية.';
+      const title = interaction.options.getString('title') || t(lang, 'admin.set.def_title');
+      const desc = interaction.options.getString('description') || t(lang, 'admin.set.def_desc');
 
       const settings = db.getGuildSettings(guildId);
       const bannerImg = (customBanner && customBanner.trim() !== '') ? customBanner.trim() : (settings.staff_banner_url && settings.staff_banner_url.trim() !== '' ? settings.staff_banner_url.trim() : null);
@@ -142,12 +157,12 @@ module.exports = {
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId('staff_login_btn')
-          .setLabel('تسجيل الدخول | Login')
+          .setLabel(t(lang, 'admin.set.login_label'))
           .setEmoji('🟢')
           .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
           .setCustomId('staff_logout_btn')
-          .setLabel('تسجيل الخروج | Logout')
+          .setLabel(t(lang, 'admin.set.logout_label'))
           .setEmoji('🔴')
           .setStyle(ButtonStyle.Danger)
       );
@@ -161,11 +176,11 @@ module.exports = {
         });
 
         return interaction.reply({
-          content: `✅ **تم إنشاء وإرسال لوحة تسجيل الحضور والانصراف بنجاح في القناة:** <#${channel.id}>`,
+          content: t(lang, 'admin.set.panel_sent', { channel: channel.id }),
           flags: 64
         });
       } catch (err) {
-        return interaction.reply({ content: `❌ تعذر إرسال الرسالة في القناة: ${err.message}`, flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.set.send_fail', { err: err.message }), flags: 64 });
       }
     }
 
@@ -178,18 +193,18 @@ module.exports = {
       if (isGlobal) {
         try {
           await client.user.setUsername(newName);
-          return interaction.editReply({ content: `✅ تم تغيير اسم البوت في الديسكورد بالكامل إلى: **${newName}**` });
+          return interaction.editReply({ content: t(lang, 'admin.set.name_global', { name: newName }) });
         } catch (err) {
-          return interaction.editReply({ content: `❌ فشل تغيير اسم البوت عالمياً (قد يكون هناك حد يومي من ديسكورد): ${err.message}` });
+          return interaction.editReply({ content: t(lang, 'admin.set.name_global_fail', { err: err.message }) });
         }
       } else {
         try {
           const me = interaction.guild.members.me || await interaction.guild.members.fetchMe();
           await me.setNickname(newName);
           db.updateGuildSettings(guildId, { bot_nickname: newName });
-          return interaction.editReply({ content: `✅ تم تغيير اسم البوت في سيرفر **${interaction.guild.name}** إلى: **${newName}**` });
+          return interaction.editReply({ content: t(lang, 'admin.set.name_server', { guild: interaction.guild.name, name: newName }) });
         } catch (err) {
-          return interaction.editReply({ content: `❌ فشل تغيير اسم البوت في السيرفر: ${err.message}` });
+          return interaction.editReply({ content: t(lang, 'admin.set.name_server_fail', { err: err.message }) });
         }
       }
     }
@@ -202,18 +217,18 @@ module.exports = {
       const finalUrl = attachment ? attachment.url : imgUrl;
 
       if (!finalUrl) {
-        return interaction.editReply({ content: '❌ يرجى رفع ملف صورة أو تزويد رابط مباشر للصورة.' });
+        return interaction.editReply({ content: t(lang, 'admin.set.avatar_need') });
       }
 
       try {
         await client.user.setAvatar(finalUrl);
         db.updateGuildSettings(guildId, { bot_avatar: finalUrl });
         return interaction.editReply({
-          content: `✅ **تم تحديث الصورة الشخصية وشعار البوت بنجاح!**`,
+          content: t(lang, 'admin.set.avatar_done'),
           embeds: [new EmbedBuilder().setColor('#10b981').setImage(finalUrl)]
         });
       } catch (err) {
-        return interaction.editReply({ content: `❌ فشل تغيير صورة البوت (تأكد من الرابط أو قد تجاوزت حد التغيير المؤقت بديسكورد): ${err.message}` });
+        return interaction.editReply({ content: t(lang, 'admin.set.avatar_fail', { err: err.message }) });
       }
     }
 
@@ -243,10 +258,10 @@ module.exports = {
 
         client.user.setPresence(presenceOptions);
         return interaction.editReply({
-          content: `✅ **تم تحديث حالة البوت بنجاح!**\n• الحالة: \`${status}\`\n• النشاط: \`${activityType} ${activityText || '(بدون نص)'}\``
+          content: t(lang, 'admin.set.state_done', { status, type: activityType, text: activityText || t(lang, 'admin.set.state_none') })
         });
       } catch (err) {
-        return interaction.editReply({ content: `❌ فشل تحديث حالة البوت: ${err.message}` });
+        return interaction.editReply({ content: t(lang, 'admin.set.state_fail', { err: err.message }) });
       }
     }
   }

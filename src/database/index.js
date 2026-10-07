@@ -662,7 +662,7 @@ try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_about TEXT DEFAULT '';"
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_avatar TEXT DEFAULT '';"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_banner TEXT DEFAULT '';"); } catch(e) {}
 // إعدادات البوت العامة وتصفير السجلات (General Settings & Punishment Auto-Clear)
-try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_language TEXT DEFAULT 'AR';"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_language TEXT DEFAULT 'EN';"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN auto_clear_punishments INTEGER DEFAULT 0;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN auto_clear_period TEXT DEFAULT 'week';"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN auto_clear_types TEXT DEFAULT 'all';"); } catch(e) {}

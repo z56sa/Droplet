@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'set-autorole',
@@ -7,39 +8,43 @@ module.exports = {
   aliases: ['اوتورول', 'رتبة_تلقائية'],
   data: new SlashCommandBuilder()
     .setName('set-autorole')
-    .setDescription('تعيين الرتبة التلقائية للأعضاء الجدد')
+    .setDescription('Set the auto-role for new members')
+
     .addRoleOption(opt =>
       opt.setName('role')
-        .setDescription('الرتبة المراد تعيينها (اتركه فارغاً للإلغاء)')
+        .setDescription('The role to set (leave empty to cancel)')
+
         .setRequired(false)
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية الأدمن.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'admin.common.no_admin'), flags: 64 });
     }
 
     const role = interaction.options.getRole('role');
 
     if (!role) {
       db.updateGuildSetting(interaction.guild.id, 'autorole_id', null);
-      return interaction.reply('✅ تم إلغاء وتعطيل الرتبة التلقائية.');
+      return interaction.reply(t(lang, 'admin.setautorole.disabled'));
     }
 
     db.updateGuildSetting(interaction.guild.id, 'autorole_id', role.id);
-    await interaction.reply({ content: `✅ تم تعيين الرتبة التلقائية للأعضاء الجدد: **${role.name}** (<@&${role.id}>)` });
+    await interaction.reply({ content: t(lang, 'admin.setautorole.set', { name: role.name, id: role.id }) });
   },
 
   async executePrefix(message, args) {
+    const lang = getGuildLang(message.guild.id);
     if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return message.reply('❌ لا تملك صلاحية الأدمن.');
+      return message.reply(t(lang, 'admin.common.no_admin'));
     }
 
     const role = message.mentions.roles.first() || (args[0] ? message.guild.roles.cache.get(args[0]) : null);
-    if (!role) return message.reply('❌ يرجى منشن الرتبة. مثال: `#set-autorole @Member`');
+    if (!role) return message.reply(t(lang, 'admin.setautorole.prefix_need_mention'));
 
     db.updateGuildSetting(message.guild.id, 'autorole_id', role.id);
-    message.reply(`✅ تم تعيين الرتبة التلقائية: **${role.name}**`);
+    message.reply(t(lang, 'admin.setautorole.prefix_set', { name: role.name }));
   }
 };

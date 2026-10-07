@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'leaderboard',
@@ -23,7 +24,7 @@ module.exports = {
     const type = interaction.options.getString('type') || 'xp';
     const settings = db.getGuildSettings(interaction.guild.id);
     if (type === 'xp' && settings.leveling_enabled === 0) {
-      return interaction.reply({ content: '❌ نظام المستويات واللفل معطل في هذا السيرفر حالياً.', ephemeral: true });
+      return interaction.reply({ content: t(interaction.guild.id, 'economy.leaderboard.disabled'), ephemeral: true });
     }
     const embed = await this.buildEmbed(interaction.guild, type);
     await interaction.reply({ embeds: [embed] });
@@ -33,43 +34,44 @@ module.exports = {
     const type = args[0]?.toLowerCase() === 'credits' || args[0]?.toLowerCase() === 'credit' || args[0]?.toLowerCase() === 'star' || args[0]?.toLowerCase() === 'coins' ? 'credits' : 'xp';
     const settings = db.getGuildSettings(message.guild.id);
     if (type === 'xp' && settings.leveling_enabled === 0) {
-      return message.reply('❌ نظام المستويات واللفل معطل في هذا السيرفر حالياً.');
+      return message.reply(t(message.guild.id, 'economy.leaderboard.disabled'));
     }
     const embed = await this.buildEmbed(message.guild, type);
     await message.reply({ embeds: [embed] });
   },
 
   async buildEmbed(guild, type) {
+    const lang = getGuildLang(guild.id);
     const embed = new EmbedBuilder().setColor(config.colors?.primary || '#5865F2').setTimestamp();
 
     if (type === 'xp') {
       const topUsers = db.getLeaderboard(guild.id, 10);
-      embed.setTitle(`🏆 توب المتصدرين في المستويات | ${guild.name}`);
+      embed.setTitle(t(lang, 'economy.leaderboard.title_xp', { guild: guild.name }));
 
       if (!topUsers || topUsers.length === 0) {
-        embed.setDescription('لا توجد بيانات تفاعل بعد في هذا السيرفر.');
+        embed.setDescription(t(lang, 'economy.leaderboard.empty_xp'));
         return embed;
       }
 
       const list = topUsers.map((u, i) => {
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `**#${i + 1}**`;
-        return `${medal} <@${u.user_id}> • **المستوى ${u.level || 1}** (${(u.xp || 0).toLocaleString()} XP)`;
+        return `${medal} <@${u.user_id}> • ` + t(lang, 'economy.leaderboard.row_xp', { level: u.level || 1, xp: (u.xp || 0).toLocaleString() });
       }).join('\n');
 
       embed.setDescription(list);
     } else {
       const topUsers = db.getCoinsLeaderboard(guild.id, 10);
-      embed.setTitle(`⭐ توب الأثرياء في Star Coin | ${guild.name}`);
+      embed.setTitle(t(lang, 'economy.leaderboard.title_coins', { guild: guild.name }));
 
       if (!topUsers || topUsers.length === 0) {
-        embed.setDescription('لا توجد بيانات أرصدة بعد.');
+        embed.setDescription(t(lang, 'economy.leaderboard.empty_coins'));
         return embed;
       }
 
       const list = topUsers.map((u, i) => {
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `**#${i + 1}**`;
         const coins = u.coins || u.credits || 0;
-        return `${medal} <@${u.user_id}> • **${coins.toLocaleString()}** كريدت 🪙`;
+        return `${medal} <@${u.user_id}> • ` + t(lang, 'economy.leaderboard.row_coins', { coins: coins.toLocaleString() });
       }).join('\n');
 
       embed.setDescription(list);

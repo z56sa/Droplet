@@ -3,6 +3,7 @@ const db = require('../../database');
 const embedUtil = require('../../utils/embed');
 const config = require('../../config.json');
 const { askAI } = require('../../utils/ai');
+const { getGuildLang, t } = require('../../utils/lang');
 
 const spamMap = new Map();
 
@@ -64,7 +65,7 @@ function createInteractionShim(message, args, client, commandName) {
     deleteReply: async () => { if (replyMsg) await replyMsg.delete().catch(() => {}); },
     fetchReply: async () => replyMsg,
     showModal: async () => {
-      await message.reply({ content: '⚠️ هذا الأمر يحتاج نافذة، استخدمه كـ / بدل الاختصار.' }).catch(() => {});
+      await message.reply({ content: t(message.guild.id, 'events.prefix.modal_only') }).catch(() => {});
     },
     options: {
       getString: () => (args.length ? args.join(' ') : null),
@@ -158,7 +159,7 @@ module.exports = {
             'critical'
           );
           const warning = await message.channel.send({
-            content: `⚠️ ${message.author} تم حظر المحتوى تلقائياً لحماية السيرفر والبيانات.`
+            content: t(guildId, 'events.automod.security', { mention: `${message.author}` })
           }).catch(() => null);
           if (warning) setTimeout(() => warning.delete().catch(() => {}), 7000);
           return;
@@ -266,20 +267,20 @@ module.exports = {
           try {
             await message.delete().catch(() => {});
             const action = settings.automod_action || 'warn';
-            let actionText = 'تحذير';
+            let actionText = t(guildId, 'events.automod.action_warn');
 
             if (action === 'timeout_5m') {
-              await message.member?.timeout(5 * 60 * 1000, 'Auto-Mod: استخدام كلمات محظورة').catch(() => {});
-              actionText = 'عزل مؤقت (5 دقائق)';
+              await message.member?.timeout(5 * 60 * 1000, t(guildId, 'events.automod.audit_badword')).catch(() => {});
+              actionText = t(guildId, 'events.automod.action_5m');
             } else if (action === 'timeout_1h') {
-              await message.member?.timeout(60 * 60 * 1000, 'Auto-Mod: استخدام كلمات محظورة').catch(() => {});
-              actionText = 'عزل مؤقت (ساعة)';
+              await message.member?.timeout(60 * 60 * 1000, t(guildId, 'events.automod.audit_badword')).catch(() => {});
+              actionText = t(guildId, 'events.automod.action_1h');
             } else if (action === 'kick') {
-              await message.member?.kick('Auto-Mod: استخدام كلمات محظورة').catch(() => {});
-              actionText = 'طرد من السيرفر';
+              await message.member?.kick(t(guildId, 'events.automod.audit_badword')).catch(() => {});
+              actionText = t(guildId, 'events.automod.action_kick');
             }
 
-            await tempWarn(`⚠️ **الرقابة التلقائية | Auto-Mod:** يا ${message.author}، تم حذف رسالتك لاحتوائها على كلمات غير مسموح بها! (${actionText})`, 5000);
+            await tempWarn(t(guildId, 'events.automod.badword', { user: message.author, action: actionText }), 5000);
 
             if (settings.log_channel) {
               const logCh = message.guild.channels.cache.get(settings.log_channel);
@@ -287,12 +288,12 @@ module.exports = {
                 logCh.send({
                   embeds: [new EmbedBuilder()
                     .setColor('#E74C3C')
-                    .setTitle('🛡️ Auto-Mod | رصد كلمة محظورة')
+                    .setTitle(t(guildId, 'events.automod.log_badword'))
                     .addFields(
-                      { name: '👤 العضو', value: `${message.author.tag} (${message.author.id})`, inline: true },
-                      { name: '💬 الروم', value: `<#${message.channel.id}>`, inline: true },
-                      { name: '⚖️ الإجراء المتخذ', value: actionText, inline: true },
-                      { name: '📄 نص الرسالة', value: '```' + message.content.substring(0, 1000) + '```', inline: false }
+                      { name: t(guildId, 'events.automod.f_member'), value: `${message.author.tag} (${message.author.id})`, inline: true },
+                      { name: t(guildId, 'events.automod.f_channel'), value: `<#${message.channel.id}>`, inline: true },
+                      { name: t(guildId, 'events.automod.f_action'), value: actionText, inline: true },
+                      { name: t(guildId, 'events.automod.f_text'), value: '```' + message.content.substring(0, 1000) + '```', inline: false }
                     )
                     .setTimestamp()
                   ]
@@ -311,8 +312,8 @@ module.exports = {
         const totalMentions = message.mentions.users.size + message.mentions.roles.size;
         if (totalMentions >= mentionLimit) {
           await message.delete().catch(() => {});
-          await message.member?.timeout(5 * 60 * 1000, 'Auto-Mod: منشن جماعي مفرط').catch(() => {});
-          await tempWarn(`⚠️ **Auto-Mod:** تم حذف رسالة ${message.author} وعزله 5 دقائق لتجاوز حد المنشن المسموح (${totalMentions}/${mentionLimit})!`, 6000);
+          await message.member?.timeout(5 * 60 * 1000, t(guildId, 'events.automod.audit_mention')).catch(() => {});
+          await tempWarn(t(guildId, 'events.automod.mass_mention', { user: message.author, got: totalMentions, limit: mentionLimit }), 6000);
           return;
         }
       }
@@ -323,7 +324,7 @@ module.exports = {
           const upperCount = letters.replace(/[^A-Z]/g, '').length;
           if (upperCount / letters.length > 0.7) {
             await message.delete().catch(() => {});
-            await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، يرجى عدم الكتابة بالحروف الكبيرة (Caps Lock) بشكل مفرط!`);
+            await tempWarn(t(guildId, 'events.automod.caps', { user: message.author }));
             return;
           }
         }
@@ -336,7 +337,7 @@ module.exports = {
         const totalEmojis = customEmojis + unicodeEmojis;
         if (totalEmojis > maxEmojis) {
           await message.delete().catch(() => {});
-          await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، تم حذف رسالتك لتجاوز حد الإيموجيات المسموح (${totalEmojis}/${maxEmojis})!`);
+          await tempWarn(t(guildId, 'events.automod.emoji', { user: message.author, got: totalEmojis, max: maxEmojis }));
           return;
         }
       }
@@ -345,7 +346,7 @@ module.exports = {
         const maxLines = settings.max_lines || 8;
         if (message.content.split('\n').length > maxLines) {
           await message.delete().catch(() => {});
-          await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، يرجى عدم النزول بأسطر متعددة في رسالة واحدة!`);
+          await tempWarn(t(guildId, 'events.automod.lines', { user: message.author }));
           return;
         }
       }
@@ -354,7 +355,7 @@ module.exports = {
         const spoilerMatches = (message.content.match(/\|\|.*?\|\|/g) || []).length;
         if (spoilerMatches >= 3) {
           await message.delete().catch(() => {});
-          await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، يمنع الاستخدام المفرط لعلامات السبويلر (Spoilers)!`);
+          await tempWarn(t(guildId, 'events.automod.spoilers', { user: message.author }));
           return;
         }
       }
@@ -363,7 +364,7 @@ module.exports = {
         const zalgoRegex = /[̀-ͯ҉᷀-᷿⃐-⃿︠-︯]{3,}/;
         if (zalgoRegex.test(message.content)) {
           await message.delete().catch(() => {});
-          await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، يمنع إرسال النصوص المشوهة والرموز الغريبة (Zalgo Text)!`);
+          await tempWarn(t(guildId, 'events.automod.zalgo', { user: message.author }));
           return;
         }
       }
@@ -373,20 +374,20 @@ module.exports = {
         const wordRepeatRegex = /\b(\w+)\s+\1\s+\1\s+\1\b/i;
         if (charRepeatRegex.test(message.content) || wordRepeatRegex.test(message.content)) {
           await message.delete().catch(() => {});
-          await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، يمنع تكرار نفس الحروف أو الكلمات بشكل مفرط!`);
+          await tempWarn(t(guildId, 'events.automod.repeat', { user: message.author }));
           return;
         }
       }
 
       if (settings.anti_stickers && message.stickers && message.stickers.size > 0) {
         await message.delete().catch(() => {});
-        await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، إرسال الملصقات غير مسموح به حالياً!`);
+        await tempWarn(t(guildId, 'events.automod.stickers', { user: message.author }));
         return;
       }
 
       if (settings.anti_long_messages && message.content.length > 1000) {
         await message.delete().catch(() => {});
-        await tempWarn(`⚠️ **Auto-Mod:** يا ${message.author}، تم حذف رسالتك لتجاوزها الحد الأقصى للأحرف!`);
+        await tempWarn(t(guildId, 'events.automod.long', { user: message.author }));
         return;
       }
     }
@@ -396,7 +397,7 @@ module.exports = {
       const linkRegex = /(https?:\/\/[^\s]+)|(discord\.(gg|io|me|li)\/[^\s]+)|(discord\.com\/invite\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9-]+\.(com|net|org|xyz|gg|tk|ml|ga|cf|gq)\b)/i;
       if (linkRegex.test(message.content)) {
         await message.delete().catch(err => console.error('فشل حذف الرابط (تأكد من صلاحية Manage Messages):', err));
-        await tempWarn(`🚫 **تم حذف الرابط تلقائياً!** يمنع نشر الروابط في السيرفر يا ${message.author}!`, 5000);
+        await tempWarn(t(guildId, 'events.automod.link', { user: message.author }), 5000);
         return;
       }
     }
@@ -406,7 +407,7 @@ module.exports = {
       const inviteRegex = /(https?:\/\/)?(www\.)?(discord\.(gg|io|me|li)|discordapp\.com\/invite|discord\.com\/invite)\/[a-zA-Z0-9\-._]+/i;
       if (inviteRegex.test(message.content)) {
         await message.delete().catch(err => console.error('فشل حذف دعوة الديسكورد:', err));
-        await tempWarn(`🔗 **تم حذف الدعوة!** ممنوع نشر دعوات السيرفرات الأخرى يا ${message.author}!`, 5000);
+        await tempWarn(t(guildId, 'events.automod.invite', { user: message.author }), 5000);
         return;
       }
     }
@@ -433,7 +434,7 @@ module.exports = {
       if (userSpam.count >= 4) {
         for (const msg of userSpam.messages) await msg.delete().catch(() => {});
         await message.member?.timeout(60 * 1000, 'Anti-Spam Protection').catch(() => {});
-        await tempWarn(`⚠️ تم إسكات ${message.author} لمدة دقيقة وحذف الرسائل المتكررة (Anti-Spam).`, 6000);
+        await tempWarn(t(guildId, 'events.automod.spam', { user: message.author }), 6000);
         spamMap.delete(userId);
         return;
       }
@@ -462,7 +463,7 @@ module.exports = {
             } catch (e) {}
 
             if (settings.level_up_msg_enabled !== 0) {
-              const rawMsg = settings.level_message || '🎉 مبروك يا [user]! لقد ارتفع مستواك إلى **المستوى [level]**! 🚀';
+              const rawMsg = settings.level_message || t(guildId, 'events.levelup.default');
               const mention = `<@${message.author.id}>`;
               const formattedMsg = rawMsg
                 .replace(/[\[{](user|mention)[\]}]/gi, mention)
@@ -472,12 +473,12 @@ module.exports = {
 
               const levelEmbed = new EmbedBuilder()
                 .setColor(config.colors?.primary || '#9333ea')
-                .setAuthor({ name: 'ترقية مستوى جديد! (Level Up) 🎉', iconURL: message.guild.iconURL() || undefined })
+                .setAuthor({ name: t(guildId, 'events.levelup.author'), iconURL: message.guild.iconURL() || undefined })
                 .setDescription(formattedMsg)
                 .setThumbnail(message.author.displayAvatarURL({ dynamic: true, size: 256 }))
                 .addFields(
-                  { name: '🎖️ المستوى الجديد', value: '`Level ' + level + '`', inline: true },
-                  { name: '👤 العضو', value: mention, inline: true }
+                  { name: t(guildId, 'events.levelup.f_level'), value: '`Level ' + level + '`', inline: true },
+                  { name: t(guildId, 'events.levelup.f_member'), value: mention, inline: true }
                 )
                 .setFooter({ text: `${message.guild.name} • Leveling System` })
                 .setTimestamp();
@@ -633,12 +634,13 @@ module.exports = {
       if (content.length > 0) {
         const { buildSuggestionEmbed, buildSuggestionComponents } = require('../../utils/suggestionBuilder');
         const suggCode = Math.random().toString(36).substring(2, 11);
+        const suggLang = getGuildLang(guildId);
 
         const suggEmbed = buildSuggestionEmbed({
           user: message.author, content, title: null, code: suggCode,
-          status: 'pending', upvotes: 0, downvotes: 0, createdAt: Date.now()
+          status: 'pending', upvotes: 0, downvotes: 0, createdAt: Date.now(), lang: suggLang
         });
-        const components = buildSuggestionComponents({ upvotes: 0, downvotes: 0 });
+        const components = buildSuggestionComponents({ upvotes: 0, downvotes: 0, lang: suggLang });
 
         await message.delete().catch(() => {});
         const sentMsg = await message.channel.send({ embeds: [suggEmbed], components }).catch(() => null);
@@ -646,7 +648,7 @@ module.exports = {
         if (sentMsg) {
           if (settings.suggestions_auto_thread !== 0) {
             sentMsg.startThread({
-              name: `مناقشة اقتراح #${message.author.username}`.slice(0, 95),
+              name: t(suggLang, 'general.suggest.thread_default', { user: message.author.username }).slice(0, 95),
               autoArchiveDuration: 1440
             }).catch(() => {});
           }
@@ -695,7 +697,7 @@ module.exports = {
     } catch (error) {
       console.error(`[CMD ERROR] ${commandName}:`, error);
       message.reply({
-        embeds: [embedUtil.error('خطأ', 'حدث خطأ أثناء محاولة تنفيذ هذا الأمر.')]
+        embeds: [embedUtil.error(t(guildId, 'events.common.cmd_exec_error_title'), t(guildId, 'events.common.cmd_exec_error_desc'))]
       }).catch(() => {});
     }
   }

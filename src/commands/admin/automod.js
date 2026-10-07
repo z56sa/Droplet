@@ -1,61 +1,71 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('automod')
-    .setDescription('إدارة وتخصيص منظومة الرقابة التلقائية الذكية (Auto-Mod)')
+    .setDescription('Manage the smart auto-moderation system (Auto-Mod)')
+
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addSubcommand(sub =>
       sub.setName('status')
-        .setDescription('عرض الحالة الشاملة لكافة فلاتر الرقابة التلقائية')
+        .setDescription('Show the status of all auto-moderation filters')
+
     )
     .addSubcommand(sub =>
       sub.setName('badwords')
-        .setDescription('إعداد فلتر الكلمات المحظورة والشتم')
-        .addBooleanOption(opt => opt.setName('enable').setDescription('تفعيل أو تعطيل الفلتر').setRequired(true))
-        .addStringOption(opt => opt.setName('words').setDescription('الكلمات مفصولة بفاصلة (مثال: كلمة1, كلمة2)').setRequired(false))
+        .setDescription('Configure the blocked-words filter')
+
+        .addBooleanOption(opt => opt.setName('enable').setDescription('Enable or disable the filter').setRequired(true))
+        .addStringOption(opt => opt.setName('words').setDescription('Words separated by comma (e.g. word1, word2)').setRequired(false))
         .addStringOption(opt =>
           opt.setName('action')
-            .setDescription('نوع العقوبة')
+            .setDescription('Punishment type')
+
             .setRequired(false)
             .addChoices(
-              { name: 'تحذير فقط (Warn)', value: 'warn' },
-              { name: 'عزل مؤقت 5 دقائق (Timeout 5m)', value: 'timeout_5m' },
-              { name: 'عزل مؤقت ساعة (Timeout 1h)', value: 'timeout_1h' },
-              { name: 'طرد فوري (Kick)', value: 'kick' }
+              { name: 'Warn only', value: 'warn' },
+              { name: 'Timeout 5 minutes', value: 'timeout_5m' },
+              { name: 'Timeout 1 hour', value: 'timeout_1h' },
+              { name: 'Instant kick', value: 'kick' }
             )
         )
     )
     .addSubcommand(sub =>
       sub.setName('mentions')
-        .setDescription('إعداد منع المنشن الجماعي والمفرط')
-        .addBooleanOption(opt => opt.setName('enable').setDescription('تفعيل أو تعطيل').setRequired(true))
-        .addIntegerOption(opt => opt.setName('limit').setDescription('الحد الأقصى للمنشن بالرسالة (افتراضي: 4)').setMinValue(2).setMaxValue(20).setRequired(false))
+        .setDescription('Configure mass-mention prevention')
+
+        .addBooleanOption(opt => opt.setName('enable').setDescription('Enable or disable').setRequired(true))
+        .addIntegerOption(opt => opt.setName('limit').setDescription('Max mentions per message (default: 4)').setMinValue(2).setMaxValue(20).setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('caps')
-        .setDescription('إعداد منع الحروف الكبيرة (Caps Lock)')
-        .addBooleanOption(opt => opt.setName('enable').setDescription('تفعيل أو تعطيل').setRequired(true))
+        .setDescription('Configure caps lock prevention')
+
+        .addBooleanOption(opt => opt.setName('enable').setDescription('Enable or disable').setRequired(true))
     )
     .addSubcommand(sub =>
       sub.setName('emojis')
-        .setDescription('إعداد منع سبام الإيموجيات')
-        .addBooleanOption(opt => opt.setName('enable').setDescription('تفعيل أو تعطيل').setRequired(true))
-        .addIntegerOption(opt => opt.setName('limit').setDescription('الحد الأقصى للإيموجيات بالرسالة (افتراضي: 5)').setMinValue(2).setMaxValue(30).setRequired(false))
+        .setDescription('Configure emoji spam prevention')
+
+        .addBooleanOption(opt => opt.setName('enable').setDescription('Enable or disable').setRequired(true))
+        .addIntegerOption(opt => opt.setName('limit').setDescription('Max emojis per message (default: 5)').setMinValue(2).setMaxValue(30).setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('lines')
-        .setDescription('إعداد منع سبام الأسطر المتكررة')
-        .addBooleanOption(opt => opt.setName('enable').setDescription('تفعيل أو تعطيل').setRequired(true))
-        .addIntegerOption(opt => opt.setName('limit').setDescription('الحد الأقصى للأسطر بالرسالة (افتراضي: 8)').setMinValue(3).setMaxValue(50).setRequired(false))
+        .setDescription('Configure repeated-lines spam prevention')
+
+        .addBooleanOption(opt => opt.setName('enable').setDescription('Enable or disable').setRequired(true))
+        .addIntegerOption(opt => opt.setName('limit').setDescription('Max lines per message (default: 8)').setMinValue(3).setMaxValue(50).setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('whitelist')
-        .setDescription('تحديد رتبة أو روم مستثنى من الرقابة التلقائية')
-        .addRoleOption(opt => opt.setName('role').setDescription('الرتبة المستثناة').setRequired(false))
-        .addChannelOption(opt => opt.setName('channel').setDescription('الروم المستثنى').setRequired(false))
+        .setDescription('Set a role or channel exempt from auto-moderation')
+
+        .addRoleOption(opt => opt.setName('role').setDescription('The exempt role').setRequired(false))
+        .addChannelOption(opt => opt.setName('channel').setDescription('The exempt channel').setRequired(false))
     ),
 
   name: 'automod',
@@ -64,12 +74,13 @@ module.exports = {
   aliases: ['رقابة', 'اوتومود'],
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild.id);
     const sub = interaction.options.getSubcommand();
     const guildId = interaction.guild.id;
     const settings = db.getGuildSettings(guildId);
 
     if (sub === 'status') {
-      const embed = buildStatusEmbed(settings, interaction.guild);
+      const embed = buildStatusEmbed(settings, interaction.guild, lang);
       return interaction.reply({ embeds: [embed] });
     }
 
@@ -83,7 +94,11 @@ module.exports = {
       if (action !== null) db.updateGuildSetting(guildId, 'automod_action', action);
 
       return interaction.reply({
-        content: `✅ **تم تحديث فلتر الكلمات المحظورة بنجاح!**\nالحالة: ${enable ? '🟢 مفعل' : '🔴 معطل'}${words ? `\nالكلمات: \`${words}\`` : ''}${action ? `\nالإجراء: \`${action}\`` : ''}`,
+        content: t(lang, 'admin.automod.badwords_updated', {
+          state: enable ? t(lang, 'admin.automod.state_on') : t(lang, 'admin.automod.state_off'),
+          words: words ? t(lang, 'admin.automod.words_part', { words }) : '',
+          action: action ? t(lang, 'admin.automod.action_part', { action }) : ''
+        }),
         flags: 64
       });
     }
@@ -96,7 +111,10 @@ module.exports = {
       if (limit !== null) db.updateGuildSetting(guildId, 'max_mentions', limit);
 
       return interaction.reply({
-        content: `✅ **تم تحديث منع المنشن الجماعي!**\nالحالة: ${enable ? '🟢 مفعل' : '🔴 معطل'}\nالحد: **${limit || settings.max_mentions || 4} منشن**`,
+        content: t(lang, 'admin.automod.mentions_updated', {
+          state: enable ? t(lang, 'admin.automod.state_on') : t(lang, 'admin.automod.state_off'),
+          limit: limit || settings.max_mentions || 4
+        }),
         flags: 64
       });
     }
@@ -105,7 +123,9 @@ module.exports = {
       const enable = interaction.options.getBoolean('enable');
       db.updateGuildSetting(guildId, 'anti_caps', enable ? 1 : 0);
       return interaction.reply({
-        content: `✅ **تم ${enable ? 'تفعيل 🟢' : 'تعطيل 🔴'} منع الحروف الكبيرة (Caps Lock)!**`,
+        content: t(lang, 'admin.automod.caps_updated', {
+          state: enable ? t(lang, 'admin.automod.enabled_word') : t(lang, 'admin.automod.disabled_word')
+        }),
         flags: 64
       });
     }
@@ -118,7 +138,10 @@ module.exports = {
       if (limit !== null) db.updateGuildSetting(guildId, 'max_emojis', limit);
 
       return interaction.reply({
-        content: `✅ **تم تحديث منع سبام الإيموجيات!**\nالحالة: ${enable ? '🟢 مفعل' : '🔴 معطل'}\nالحد: **${limit || settings.max_emojis || 5} إيموجي**`,
+        content: t(lang, 'admin.automod.emojis_updated', {
+          state: enable ? t(lang, 'admin.automod.state_on') : t(lang, 'admin.automod.state_off'),
+          limit: limit || settings.max_emojis || 5
+        }),
         flags: 64
       });
     }
@@ -131,7 +154,10 @@ module.exports = {
       if (limit !== null) db.updateGuildSetting(guildId, 'max_lines', limit);
 
       return interaction.reply({
-        content: `✅ **تم تحديث منع سبام الأسطر!**\nالحالة: ${enable ? '🟢 مفعل' : '🔴 معطل'}\nالحد: **${limit || settings.max_lines || 8} أسطر**`,
+        content: t(lang, 'admin.automod.lines_updated', {
+          state: enable ? t(lang, 'admin.automod.state_on') : t(lang, 'admin.automod.state_off'),
+          limit: limit || settings.max_lines || 8
+        }),
         flags: 64
       });
     }
@@ -144,72 +170,76 @@ module.exports = {
       if (channel) db.updateGuildSetting(guildId, 'automod_whitelist_channel', channel.id);
 
       return interaction.reply({
-        content: `✅ **تم تحديث الاستثناءات:**\n${role ? `👑 الرتبة المستثناة: <@&${role.id}>\n` : ''}${channel ? `💬 الروم المستثنى: <#${channel.id}>` : ''}`,
+        content: t(lang, 'admin.automod.whitelist_updated', {
+          role: role ? t(lang, 'admin.automod.whitelist_role_part', { id: role.id }) : '',
+          channel: channel ? t(lang, 'admin.automod.whitelist_channel_part', { id: channel.id }) : ''
+        }),
         flags: 64
       });
     }
   },
 
   async executePrefix(message, args) {
+    const lang = getGuildLang(message.guild.id);
     if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return message.reply('❌ هذا الأمر مخصص للمشرفين فقط.');
+      return message.reply(t(lang, 'admin.automod.prefix_no_perm'));
     }
     const settings = db.getGuildSettings(message.guild.id);
-    const embed = buildStatusEmbed(settings, message.guild);
+    const embed = buildStatusEmbed(settings, message.guild, lang);
     return message.reply({ embeds: [embed] });
   }
 };
 
-function buildStatusEmbed(settings, guild) {
-  const wlRole = settings.automod_whitelist_role ? `<@&${settings.automod_whitelist_role}>` : '`المشرفين فقط`';
-  const wlChan = settings.automod_whitelist_channel ? `<#${settings.automod_whitelist_channel}>` : '`كل الرومات خاضعة للرقابة`';
+function buildStatusEmbed(settings, guild, lang) {
+  const wlRole = settings.automod_whitelist_role ? `<@&${settings.automod_whitelist_role}>` : t(lang, 'admin.automod.wl_default_role');
+  const wlChan = settings.automod_whitelist_channel ? `<#${settings.automod_whitelist_channel}>` : t(lang, 'admin.automod.wl_default_channel');
 
   return new EmbedBuilder()
     .setColor('#5865F2')
-    .setTitle('🛡️ لوحة معلومات الرقابة التلقائية (Auto-Mod Pro)')
-    .setDescription(`إليك الحالة الحالية لكافة فلاتر الرقابة الذكية في **${guild.name}**:`)
+    .setTitle(t(lang, 'admin.automod.status_title'))
+    .setDescription(t(lang, 'admin.automod.status_desc', { guild: guild.name }))
     .addFields(
       {
-        name: '🚫 منع الروابط (Anti-Link)',
-        value: settings.anti_link ? '🟢 **مفعل**' : '🔴 **معطل**',
+        name: t(lang, 'admin.automod.f_antilink'),
+        value: settings.anti_link ? t(lang, 'admin.automod.v_on') : t(lang, 'admin.automod.v_off'),
         inline: true
       },
       {
-        name: '⚡ منع السبام (Anti-Spam)',
-        value: settings.anti_spam ? '🟢 **مفعل**' : '🔴 **معطل**',
+        name: t(lang, 'admin.automod.f_antispam'),
+        value: settings.anti_spam ? t(lang, 'admin.automod.v_on') : t(lang, 'admin.automod.v_off'),
         inline: true
       },
       {
-        name: '🤬 فلتر الكلمات المحظورة',
-        value: settings.bad_words_enabled ? `🟢 **مفعل** (الإجراء: \`${settings.automod_action || 'warn'}\`)` : '🔴 **معطل**',
+        name: t(lang, 'admin.automod.f_badwords'),
+        value: settings.bad_words_enabled ? t(lang, 'admin.automod.v_badwords_on', { action: settings.automod_action || 'warn' }) : t(lang, 'admin.automod.v_off'),
         inline: true
       },
       {
-        name: '📢 منع المنشن الجماعي',
-        value: settings.anti_mass_mention ? `🟢 **مفعل** (الحد: ${settings.max_mentions || 4})` : '🔴 **معطل**',
+        name: t(lang, 'admin.automod.f_mentions'),
+        value: settings.anti_mass_mention ? t(lang, 'admin.automod.v_limit_on', { limit: settings.max_mentions || 4 }) : t(lang, 'admin.automod.v_off'),
         inline: true
       },
       {
-        name: '🔤 منع الحروف الكبيرة (Caps)',
-        value: settings.anti_caps ? '🟢 **مفعل** (>70%)' : '🔴 **معطل**',
+        name: t(lang, 'admin.automod.f_caps'),
+        value: settings.anti_caps ? t(lang, 'admin.automod.v_caps_on') : t(lang, 'admin.automod.v_off'),
         inline: true
       },
       {
-        name: '😀 منع سبام الإيموجي',
-        value: settings.anti_emoji_spam ? `🟢 **مفعل** (الحد: ${settings.max_emojis || 5})` : '🔴 **معطل**',
+        name: t(lang, 'admin.automod.f_emojis'),
+        value: settings.anti_emoji_spam ? t(lang, 'admin.automod.v_limit_on', { limit: settings.max_emojis || 5 }) : t(lang, 'admin.automod.v_off'),
         inline: true
       },
       {
-        name: '📜 منع سبام الأسطر',
-        value: settings.anti_line_spam ? `🟢 **مفعل** (الحد: ${settings.max_lines || 8})` : '🔴 **معطل**',
+        name: t(lang, 'admin.automod.f_lines'),
+        value: settings.anti_line_spam ? t(lang, 'admin.automod.v_limit_on', { limit: settings.max_lines || 8 }) : t(lang, 'admin.automod.v_off'),
         inline: true
       },
       {
-        name: '👑 الاستثناءات (Whitelist)',
-        value: `• الرتبة: ${wlRole}\n• الروم: ${wlChan}`,
+        name: t(lang, 'admin.automod.f_whitelist'),
+        value: t(lang, 'admin.automod.v_whitelist', { role: wlRole, channel: wlChan }),
         inline: false
       }
     )
-    .setFooter({ text: 'Droplet Auto-Mod System • التعديل متاح أيضاً عبر لوحة الويب' })
+    .setFooter({ text: t(lang, 'admin.automod.footer') })
     .setTimestamp();
 }

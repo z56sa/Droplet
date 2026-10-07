@@ -5,34 +5,35 @@
  */
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { t } = require('./lang');
 
 const STATUS_CONFIG = {
   pending: {
-    label: 'معلّق',
+    labelKey: 'suggest.status.pending',
     emoji: '⏳',
     color: '#eab308', // Amber / Gold
     barColor: 'green'
   },
   considered: {
-    label: 'قيد الدراسة',
+    labelKey: 'suggest.status.considered',
     emoji: '🔍',
     color: '#3b82f6', // Blue
     barColor: 'blue'
   },
   accepted: {
-    label: 'مقبول',
+    labelKey: 'suggest.status.accepted',
     emoji: '✅',
     color: '#22c55e', // Green
     barColor: 'green'
   },
   rejected: {
-    label: 'مرفوض',
+    labelKey: 'suggest.status.rejected',
     emoji: '❌',
     color: '#ef4444', // Red
     barColor: 'red'
   },
   implemented: {
-    label: 'منفّذ',
+    labelKey: 'suggest.status.implemented',
     emoji: '🚀',
     color: '#8b5cf6', // Purple
     barColor: 'purple'
@@ -82,9 +83,11 @@ function buildSuggestionEmbed({
   downvotes = 0,
   createdAt = Date.now(),
   reviewerId = null,
-  reason = null
+  reason = null,
+  lang = 'EN'
 }) {
   const statusInfo = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
+  const statusLabel = t(lang, statusInfo.labelKey);
   const timeSeconds = Math.floor(new Date(createdAt).getTime() / 1000);
   const displayCode = code || (typeof createdAt === 'number' ? createdAt.toString(36) : Math.random().toString(36).substring(2, 9));
 
@@ -103,9 +106,9 @@ function buildSuggestionEmbed({
 
   // Footer block: Status + Votes count + Progress bar
   const progressBar = buildProgressBar(upvotes, downvotes);
-  let statusLine = `**الحالة:** ${statusInfo.label} ${statusInfo.emoji}`;
+  let statusLine = `${t(lang, 'suggest.widget.status')} ${statusLabel} ${statusInfo.emoji}`;
   if (reviewerId) {
-    statusLine += ` · بواسطة <@${reviewerId}>`;
+    statusLine += t(lang, 'suggest.widget.by', { id: reviewerId });
   }
 
   // استخدام علامات LTR (\u200E) لعزل الأرقام والإيموجيات حتى لا يعكسها ديسكورد العربي من اليمين لليسار
@@ -119,14 +122,14 @@ function buildSuggestionEmbed({
   ];
 
   if (reason) {
-    footerBlock.push(`💬 **ملاحظة الإدارة:** ${reason}`);
+    footerBlock.push(t(lang, 'suggest.widget.note', { reason }));
   }
 
   const fullDescription = `${headerLines}\n──────────────────────────────\n\n${bodyText}\n\n${footerBlock.join('\n')}`;
 
   const embed = new EmbedBuilder()
     .setColor(statusInfo.color)
-    .setTitle('💡 اقتراح جديد')
+    .setTitle(t(lang, 'suggest.widget.title'))
     .setDescription(fullDescription)
     .setTimestamp(new Date(createdAt));
 
@@ -145,7 +148,8 @@ function buildSuggestionEmbed({
 function buildSuggestionComponents({
   upvotes = 0,
   downvotes = 0,
-  disabled = false
+  disabled = false,
+  lang = 'EN'
 }) {
   // Row 1: Vote buttons (Thumbs Up Success, Thumbs Down Danger)
   const voteRow = new ActionRowBuilder().addComponents(
@@ -167,19 +171,19 @@ function buildSuggestionComponents({
   const staffRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId('sugg_accept_btn')
-      .setLabel('قبول')
+      .setLabel(t(lang, 'suggest.button.accept'))
       .setEmoji('✅')
       .setStyle(ButtonStyle.Success)
       .setDisabled(disabled),
     new ButtonBuilder()
       .setCustomId('sugg_reject_btn')
-      .setLabel('رفض')
+      .setLabel(t(lang, 'suggest.button.reject'))
       .setEmoji('❌')
       .setStyle(ButtonStyle.Danger)
       .setDisabled(disabled),
     new ButtonBuilder()
       .setCustomId('sugg_consider_btn')
-      .setLabel('قيد الدراسة')
+      .setLabel(t(lang, 'suggest.button.consider'))
       .setEmoji('🔍')
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(disabled)

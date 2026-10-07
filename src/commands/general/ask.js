@@ -1,6 +1,7 @@
 const { GoogleGenAI } = require('@google/genai');
 const { SlashCommandBuilder } = require('discord.js');
 const https = require('https');
+const { t } = require('../../utils/lang');
 require('dotenv').config();
 
 let aiClient = null;
@@ -77,10 +78,9 @@ function needsLiveBrowsing(text) {
     return PHRASE_KEYWORDS.some(p => lower.includes(p));
 }
 
-const Droplet_SYSTEM_INSTRUCTION = `
-أنت المساعد الذكي الرسمي المدمج داخل بوت الديسكورد العربي "Droplet" (دروبلت).
-صفتك: متحدث لبق، ذكي، سريع البديهة، مطلع على الإنترنت، وتتحدث باللغة العربية الفصحى الواضحة والودية مع لمسة احترافية وممتعة.
-`;
+function getSystemInstruction(langOrGuildId = 'EN') {
+    return t(langOrGuildId, 'general.ask.system_instruction');
+}
 
 // النماذج بالترتيب: الأساسي ثم الاحتياطي. تأكد من أسمائها في Google AI Studio
 const MODELS = [
@@ -91,7 +91,8 @@ const MODELS = [
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-async function generateWithRetry(ai, prompt) {
+async function generateWithRetry(ai, prompt, langOrGuildId = 'EN') {
+    const systemInstruction = getSystemInstruction(langOrGuildId);
     let lastError;
     for (const model of MODELS) {
         for (let attempt = 0; attempt < 3; attempt++) {
@@ -99,7 +100,7 @@ async function generateWithRetry(ai, prompt) {
                 const response = await ai.models.generateContent({
                     model,
                     contents: prompt,
-                    config: { systemInstruction: Droplet_SYSTEM_INSTRUCTION }
+                    config: { systemInstruction }
                 });
                 const text = response && response.text;
                 if (text && text.trim()) return text.trim();
@@ -123,17 +124,17 @@ async function generateWithRetry(ai, prompt) {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ask')
-        .setDescription('اسأل دروبلت أي سؤال')
+        .setDescription('Ask Droplet anything')
         .addStringOption(opt =>
             opt.setName('question')
-                .setDescription('سؤالك')
+                .setDescription('Your question')
                 .setRequired(true)),
 
     async execute(interaction) {
         const question = interaction.options.getString('question');
         const ai = getClient();
         if (!ai) {
-            return interaction.reply({ content: '❌ مفتاح Gemini غير مضبوط في ملف .env', ephemeral: true });
+            return interaction.reply({ content: t(interaction.guild.id, 'general.ask.no_key'), ephemeral: true });
         }
 
         await interaction.deferReply();
@@ -143,16 +144,16 @@ module.exports = {
             if (needsLiveBrowsing(question)) {
                 const results = await searchWeb(question);
                 if (results) {
-                    prompt = `معلومات حديثة من الإنترنت:\n- ${results}\n\nاستعن بها للإجابة على السؤال التالي:\n${question}`;
+                    prompt = t(interaction.guild.id, 'general.ask.web_context', { results, question });
                 }
             }
 
-            const answer = await generateWithRetry(ai, prompt);
+            const answer = await generateWithRetry(ai, prompt, interaction.guild.id);
             // حد رسالة ديسكورد 2000 حرف
             await interaction.editReply(answer.length > 2000 ? answer.slice(0, 1997) + '...' : answer);
         } catch (err) {
             console.error('[ask] error:', err);
-            await interaction.editReply('⚠️ تعذّر الحصول على إجابة الآن، حاول مرة أخرى بعد قليل.');
+            await interaction.editReply(t(interaction.guild.id, 'general.ask.fetch_error'));
         }
     },
 

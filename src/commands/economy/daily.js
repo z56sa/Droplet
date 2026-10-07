@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
 
 const COOLDOWNS = new Map();
 
@@ -22,6 +23,7 @@ module.exports = {
   },
 
   async handleDaily(user, guildId, reply) {
+    const lang = getGuildLang(guildId);
     const userData = db.getUser(user.id, guildId);
     const now = Date.now();
     const cooldown = 24 * 60 * 60 * 1000;
@@ -33,9 +35,9 @@ module.exports = {
       const m = Math.floor((remaining % 3600000) / 60000);
       const embed = new EmbedBuilder()
         .setColor('#e74c3c')
-        .setTitle('⏰ انتهت مكافأتك اليومية!')
-        .setDescription(`المكافأة التالية خلال:\n⌛ **${h} ساعة و${m} دقيقة**`)
-        .setFooter({ text: 'عد قريباً!' })
+        .setTitle(t(lang, 'economy.daily.cooldown_title'))
+        .setDescription(t(lang, 'economy.daily.cooldown_desc', { h, m }))
+        .setFooter({ text: t(lang, 'economy.daily.cooldown_footer') })
         .setTimestamp();
       return reply({ embeds: [embed] });
     }
@@ -53,10 +55,10 @@ module.exports = {
     // حساب المكافأة
     let reward = 200;
     let bonusText = '';
-    if (streak >= 100) { reward = 1200; bonusText = '🏆 **مكافأة 100 يوم متتالي!** (x6)'; }
-    else if (streak >= 30) { reward = 700; bonusText = '🌟 **مكافأة 30 يوم متتالي!** (x3.5)'; }
-    else if (streak >= 7) { reward = 500; bonusText = '🔥 **مكافأة 7 أيام متتالية!** (x2.5)'; }
-    else if (streak >= 3) { reward = 300; bonusText = '✨ **مكافأة 3 أيام متتالية!** (+100)'; }
+    if (streak >= 100) { reward = 1200; bonusText = t(lang, 'economy.daily.bonus_100'); }
+    else if (streak >= 30) { reward = 700; bonusText = t(lang, 'economy.daily.bonus_30'); }
+    else if (streak >= 7) { reward = 500; bonusText = t(lang, 'economy.daily.bonus_7'); }
+    else if (streak >= 3) { reward = 300; bonusText = t(lang, 'economy.daily.bonus_3'); }
 
     // تحديث قاعدة البيانات
     db.addCoins(user.id, guildId, reward);
@@ -68,14 +70,14 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor('#f1c40f')
-      .setTitle('💰 مكافأتك اليومية!')
+      .setTitle(t(lang, 'economy.daily.title'))
       .setThumbnail(user.displayAvatarURL({ dynamic: true }))
       .addFields(
-        { name: '🎁 المكافأة', value: `\`+${reward}\` ⭐ Star Coin`, inline: true },
-        { name: '💳 رصيدك الجديد', value: `\`${(newUserData.coins || newUserData.credits || 0).toLocaleString()}\` ⭐`, inline: true },
-        { name: `🔥 الـ Streak: ${streak} يوم`, value: streakBar, inline: false }
+        { name: t(lang, 'economy.daily.field_reward'), value: `\`+${reward}\` ⭐ Star Coin`, inline: true },
+        { name: t(lang, 'economy.daily.field_new_balance'), value: `\`${(newUserData.coins || newUserData.credits || 0).toLocaleString()}\` ⭐`, inline: true },
+        { name: t(lang, 'economy.daily.field_streak', { streak }), value: streakBar, inline: false }
       )
-      .setFooter({ text: nextStreakTarget ? `🎯 ${nextStreakTarget - streak} يوم متبقٍ للمكافأة التالية` : '🏆 أنت على القمة!' })
+      .setFooter({ text: nextStreakTarget ? t(lang, 'economy.daily.footer_next', { left: nextStreakTarget - streak }) : t(lang, 'economy.daily.footer_top') })
       .setTimestamp();
 
     if (bonusText) embed.setDescription(bonusText);

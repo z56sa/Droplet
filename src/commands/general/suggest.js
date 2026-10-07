@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const db = require('../../database');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -18,12 +19,12 @@ module.exports = {
         .setDescription('تصنيف الاقتراح')
         .setRequired(false)
         .addChoices(
-          { name: '💡 عام', value: 'عام' },
-          { name: '🎉 فعاليات ومسابقات', value: 'فعاليات' },
-          { name: '🎖️ رتب وأدوار', value: 'رتب' },
-          { name: '💬 قنوات ورومات', value: 'رومات' },
-          { name: '🤖 ميزات البوت', value: 'بوت' },
-          { name: '⚠️ شكوى أو بلاغ', value: 'شكوى' }
+          { name: '💡 General', value: 'عام' },
+          { name: '🎉 Events', value: 'فعاليات' },
+          { name: '🎖️ Roles', value: 'رتب' },
+          { name: '💬 Channels', value: 'رومات' },
+          { name: '🤖 Bot features', value: 'بوت' },
+          { name: '⚠️ Complaint', value: 'شكوى' }
         )),
 
   name: 'suggest',
@@ -52,7 +53,7 @@ module.exports = {
 
     const settings = db.getGuildSettings(guild.id);
     if (settings.suggestions_enabled === 0) {
-      return safeReply('❌ نظام الاقتراحات معطل حالياً في هذا السيرفر.');
+      return safeReply(t(guild.id, 'general.suggest.disabled'));
     }
 
     let content = '';
@@ -65,7 +66,7 @@ module.exports = {
       category = interactionOrMessage.options.getString('category') || 'عام';
     } else {
       if (!args || args.length === 0) {
-        return safeReply('❌ يرجى كتابة محتوى الاقتراح بعد الأمر! مثال: `#suggest إضافة روم للألعاب`');
+        return safeReply(t(guild.id, 'general.suggest.no_content'));
       }
       content = args.join(' ');
     }
@@ -74,11 +75,12 @@ module.exports = {
     const targetChannel = guild.channels.cache.get(channelId) || await guild.channels.fetch(channelId).catch(() => null);
 
     if (!targetChannel || !targetChannel.isTextBased()) {
-      return safeReply('❌ لم يتم تعيين قناة صالحة لنشر الاقتراحات في إعدادات الداشبورد.');
+      return safeReply(t(guild.id, 'general.suggest.no_channel'));
     }
 
     const { buildSuggestionEmbed, buildSuggestionComponents } = require('../../utils/suggestionBuilder');
     const suggCode = Math.random().toString(36).substring(2, 11);
+    const lang = getGuildLang(guild.id);
 
     const suggEmbed = buildSuggestionEmbed({
       user,
@@ -88,12 +90,14 @@ module.exports = {
       status: 'pending',
       upvotes: 0,
       downvotes: 0,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      lang
     });
 
     const components = buildSuggestionComponents({
       upvotes: 0,
-      downvotes: 0
+      downvotes: 0,
+      lang
     });
 
     try {
@@ -101,7 +105,7 @@ module.exports = {
 
       if (settings.suggestions_auto_thread !== 0) {
         sentMsg.startThread({
-          name: title ? `مناقشة: ${title}`.slice(0, 95) : `مناقشة اقتراح #${user.username}`.slice(0, 95),
+          name: title ? t(guild.id, 'general.suggest.thread_title', { title: title.slice(0, 90) }) : t(guild.id, 'general.suggest.thread_default', { user: user.username }),
           autoArchiveDuration: 1440
         }).catch(() => {});
       }
@@ -116,10 +120,10 @@ module.exports = {
         category: category
       });
 
-      return safeReply(`✅ تم إرسال اقتراحك بنجاح ونشره في <#${targetChannel.id}>!`);
+      return safeReply(t(guild.id, 'general.suggest.sent', { channel: targetChannel.id }));
     } catch (err) {
       console.error('Error posting suggestion:', err);
-      return safeReply('❌ حدث خطأ أثناء إرسال الاقتراح، يرجى التأكد من صلاحيات البوت في القناة.');
+      return safeReply(t(guild.id, 'general.suggest.error'));
     }
   }
 };

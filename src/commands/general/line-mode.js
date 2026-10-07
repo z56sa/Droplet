@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'line-mode',
@@ -7,24 +8,24 @@ module.exports = {
   aliases: ['نمط-الخط'],
   data: new SlashCommandBuilder()
     .setName('line-mode')
-    .setDescription('تحديد نمط الخط')
+    .setDescription('Set the line style')
     .addStringOption(opt =>
       opt.setName('mode')
-        .setDescription('النمط')
+        .setDescription('The style')
         .setRequired(true)
         .addChoices(
-          { name: 'رسالة عادية', value: 'line' },
-          { name: 'إيمبد', value: 'embed' }
+          { name: 'Plain message', value: 'line' },
+          { name: 'Embed', value: 'embed' }
         )
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية إدارة السيرفر.', flags: 64 });
+      return interaction.reply({ content: t(interaction.guild.id, 'general.line-mode.no_perm'), flags: 64 });
     }
     const mode = interaction.options.getString('mode');
     db.updateGuildSetting(interaction.guild.id, 'autoline_mode', mode);
-    return interaction.reply({ content: '✅ تم تعيين نمط الخط إلى: ' + mode });
+    return interaction.reply({ content: t(interaction.guild.id, 'general.line-mode.done', { mode }) });
   }
 };

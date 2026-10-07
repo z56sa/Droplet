@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'set-verification',
@@ -8,50 +9,57 @@ module.exports = {
   aliases: ['تحقق', 'توثيق', 'verification', 'verify-setup'],
   data: new SlashCommandBuilder()
     .setName('set-verification')
-    .setDescription('إعداد وتفعيل نظام التحقق التفاعلي في السيرفر')
+    .setDescription('Set up the interactive verification system')
+
     .addChannelOption(opt =>
       opt.setName('channel')
-        .setDescription('روم التحقق الذي ستظهر به رسالة وبانر التوثيق')
+        .setDescription('The verification channel for the banner')
+
         .addChannelTypes(ChannelType.GuildText)
         .setRequired(true)
     )
     .addRoleOption(opt =>
       opt.setName('role')
-        .setDescription('الرتبة التي ستعطى للعضو تلقائياً بعد إتمام التحقق')
+        .setDescription('The role granted automatically after verification')
+
         .setRequired(true)
     )
     .addStringOption(opt =>
       opt.setName('type')
-        .setDescription('نوع التحقق المطلوب')
+        .setDescription('The required verification type')
+
         .addChoices(
-          { name: '🔘 زر فوري بنقرة واحدة (Instant Button)', value: 'button' },
-          { name: '🔢 عملية حسابية لمنع البوتات (Math Captcha)', value: 'captcha' },
-          { name: '🔤 كود نصي عشوائي (Text Code Captcha)', value: 'code' }
+          { name: '🔘 Instant one-click button', value: 'button' },
+          { name: '🔢 Math captcha against bots', value: 'captcha' },
+          { name: '🔤 Random text code', value: 'code' }
         )
         .setRequired(false)
     )
     .addRoleOption(opt =>
       opt.setName('unverified_role')
-        .setDescription('رتبة غير الموثق لإخفاء الرومات (تُسحب بعد التوثيق - اختياري)')
+        .setDescription('Unverified role to hide channels (removed after verification, optional)')
+
         .setRequired(false)
     )
     .addStringOption(opt =>
       opt.setName('message')
-        .setDescription('رسالة الترحيب والشروط داخل بانر التحقق')
+        .setDescription('Welcome message inside the verification banner')
+
         .setRequired(false)
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return interaction.reply({ content: '❌ هذا الأمر مخصص لإدارة السيرفر فقط.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'admin.setverification.admin_only'), flags: 64 });
     }
 
     const channel = interaction.options.getChannel('channel');
     const verifiedRole = interaction.options.getRole('role');
     const unverifiedRole = interaction.options.getRole('unverified_role');
     const type = interaction.options.getString('type') || 'button';
-    const customMessage = interaction.options.getString('message') || 'أهلاً بك في سيرفرنا! 🛡️\n\nللوصول إلى جميع القنوات والفعاليات والتحدث مع الأعضاء، يرجى الضغط على الزر أدناه لتأكيد هويتك وتفعيل حسابك فوراً.';
+    const customMessage = interaction.options.getString('message') || t(lang, 'admin.setverification.default_message');
 
     // حفظ الإعدادات في قاعدة البيانات
     db.updateGuildSetting(interaction.guild.id, 'verification_enabled', 1);
@@ -66,48 +74,53 @@ module.exports = {
     // بناء بانر التحقق الفخم
     const embed = new EmbedBuilder()
       .setColor('#2ed573')
-      .setTitle(`🛡️ نظام التحقق والأمان | ${interaction.guild.name}`)
+      .setTitle(t(lang, 'admin.setverification.embed_title', { guild: interaction.guild.name }))
       .setDescription(customMessage)
       .addFields(
-        { name: '✨ الرتبة الممنوحة', value: `<@&${verifiedRole.id}>`, inline: true },
-        { name: '🔒 نوع الحماية', value: type === 'captcha' ? '🔢 كود كابتشا أمني' : '⚡ توثيق فوري بنقرة واحدة', inline: true }
+        { name: t(lang, 'admin.setverification.field_role'), value: `<@&${verifiedRole.id}>`, inline: true },
+        { name: t(lang, 'admin.setverification.field_type'), value: type === 'captcha' ? t(lang, 'admin.setverification.type_captcha') : t(lang, 'admin.setverification.type_button'), inline: true }
       )
       .setImage('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=960&q=80')
-      .setFooter({ text: 'Droplet Security & Verification Gate' })
+      .setFooter({ text: t(lang, 'admin.setverification.footer') })
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId('btn_start_verification')
-        .setLabel('✅ اضغط هنا للتحقق | Verify')
+        .setLabel(t(lang, 'admin.setverification.button_label'))
         .setStyle(ButtonStyle.Success)
     );
 
     try {
       await channel.send({ embeds: [embed], components: [row] });
       await interaction.reply({
-        content: `✅ تم إعداد وتفعيل نظام التحقق بنجاح وإرسال البانر إلى القناة <#${channel.id}>!\n🎯 الرتبة المفعلة: **${verifiedRole.name}**\n⚙️ نوع الفحص: **${type === 'captcha' ? 'كود كابتشا رقمي' : 'زر فوري'}**`,
+        content: t(lang, 'admin.setverification.success', {
+          channel: channel.id,
+          role: verifiedRole.name,
+          type: type === 'captcha' ? t(lang, 'admin.setverification.type_captcha_long') : t(lang, 'admin.setverification.type_button_long')
+        }),
         flags: 64
       });
     } catch (err) {
       console.error('فشل إرسال رسالة التحقق:', err);
       await interaction.reply({
-        content: `❌ حدث خطأ أثناء إرسال البانر إلى القناة. تأكد من أن البوت يملك صلاحيات إرسال الرسائل وتضمين الروابط في <#${channel.id}>.`,
+        content: t(lang, 'admin.setverification.send_error', { channel: channel.id }),
         flags: 64
       });
     }
   },
 
   async executePrefix(message, args) {
+    const lang = getGuildLang(message.guild.id);
     if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return message.reply('❌ هذا الأمر مخصص لإدارة السيرفر فقط.');
+      return message.reply(t(lang, 'admin.setverification.admin_only'));
     }
 
     const channel = message.mentions.channels.first() || message.channel;
     const role = message.mentions.roles.first();
 
     if (!role) {
-      return message.reply('❌ يرجى منشن الرتبة الممنوحة للموثقين. مثال:\n`#set-verification #قناة-التحقق @Member` أو استخدم أمر السلاش `/set-verification`.');
+      return message.reply(t(lang, 'admin.setverification.prefix_need_role'));
     }
 
     db.updateGuildSetting(message.guild.id, 'verification_enabled', 1);
@@ -117,24 +130,24 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor('#2ed573')
-      .setTitle(`🛡️ نظام التحقق والأمان | ${message.guild.name}`)
-      .setDescription('أهلاً بك في سيرفرنا! 🛡️\n\nللوصول إلى جميع القنوات والفعاليات والتحدث مع الأعضاء، يرجى الضغط على الزر أدناه لتأكيد هويتك وتفعيل حسابك فوراً.')
+      .setTitle(t(lang, 'admin.setverification.embed_title', { guild: message.guild.name }))
+      .setDescription(t(lang, 'admin.setverification.prefix_default_desc'))
       .addFields(
-        { name: '✨ الرتبة الممنوحة', value: `<@&${role.id}>`, inline: true },
-        { name: '🔒 حالة الحماية', value: '🟢 نشطة ومفعلة', inline: true }
+        { name: t(lang, 'admin.setverification.field_role'), value: `<@&${role.id}>`, inline: true },
+        { name: t(lang, 'admin.setverification.field_status'), value: t(lang, 'admin.setverification.status_active'), inline: true }
       )
       .setImage('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=960&q=80')
-      .setFooter({ text: 'Droplet Security & Verification Gate' })
+      .setFooter({ text: t(lang, 'admin.setverification.footer') })
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId('btn_start_verification')
-        .setLabel('✅ اضغط هنا للتحقق | Verify')
+        .setLabel(t(lang, 'admin.setverification.button_label'))
         .setStyle(ButtonStyle.Success)
     );
 
     await channel.send({ embeds: [embed], components: [row] });
-    await message.reply(`✅ تم تفعيل وإرسال بانر التحقق إلى القناة <#${channel.id}> برتبة **${role.name}**!`);
+    await message.reply(t(lang, 'admin.setverification.prefix_success', { channel: channel.id, role: role.name }));
   }
 };

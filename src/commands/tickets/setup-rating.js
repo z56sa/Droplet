@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'setup-rating',
@@ -7,16 +8,18 @@ module.exports = {
   aliases: ['تقييم-تذاكر'],
   data: new SlashCommandBuilder()
     .setName('setup-rating')
-    .setDescription('تفعيل نظام التقييم في التذاكر')
-    .addBooleanOption(opt => opt.setName('enabled').setDescription('تفعيل أو تعطيل').setRequired(true))
+    .setDescription('Enable the ticket rating system')
+
+    .addBooleanOption(opt => opt.setName('enabled').setDescription('Enable or disable').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية الأدمن.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'tickets.common.no_admin'), flags: 64 });
     }
     const enabled = interaction.options.getBoolean('enabled');
     db.updateGuildSetting(interaction.guild.id, 'ticket_rating_enabled', enabled ? 1 : 0);
-    return interaction.reply({ content: enabled ? '✅ تم تفعيل تقييم التذاكر.' : '❌ تم تعطيل تقييم التذاكر.' });
+    return interaction.reply({ content: enabled ? t(lang, 'tickets.setuprating.enabled') : t(lang, 'tickets.setuprating.disabled') });
   }
 };

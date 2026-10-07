@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const config = require('../../config.json');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'ping',
@@ -10,16 +11,16 @@ module.exports = {
     .setDescription('عرض سرعة استجابة البوت (Ping)'),
 
   async execute(interaction, client) {
-    const sent = await interaction.reply({ content: 'جاري القياس...', withResponse: true });
+    const sent = await interaction.reply({ content: t(interaction.guild.id, 'general.ping.measuring'), withResponse: true });
     const latency = sent.createdTimestamp - interaction.createdTimestamp;
     const apiLatency = Math.round(client.ws.ping);
 
     const embed = new EmbedBuilder()
       .setColor(config.colors.primary)
-      .setTitle('🏓 سرعة الاستجابة (Pong!)')
+      .setTitle(t(interaction.guild.id, 'general.ping.title'))
       .addFields(
-        { name: '📡 زمن الاستجابة (Latency)', value: `\`${latency}ms\``, inline: true },
-        { name: '🌐 سرعة اتصال الديسكورد (API)', value: `\`${apiLatency}ms\``, inline: true }
+        { name: t(interaction.guild.id, 'general.ping.field_latency'), value: `\`${latency}ms\``, inline: true },
+        { name: t(interaction.guild.id, 'general.ping.field_api'), value: `\`${apiLatency}ms\``, inline: true }
       )
       .setTimestamp();
 
@@ -27,16 +28,16 @@ module.exports = {
   },
 
   async executePrefix(message, args, client) {
-    const sent = await message.reply('جاري القياس...');
+    const sent = await message.reply(t(message.guild.id, 'general.ping.measuring'));
     const latency = sent.createdTimestamp - message.createdTimestamp;
     const apiLatency = Math.round(client.ws.ping);
 
     const embed = new EmbedBuilder()
       .setColor(config.colors.primary)
-      .setTitle('🏓 سرعة الاستجابة (Pong!)')
+      .setTitle(t(message.guild.id, 'general.ping.title'))
       .addFields(
-        { name: '📡 زمن الاستجابة (Latency)', value: `\`${latency}ms\``, inline: true },
-        { name: '🌐 سرعة اتصال الديسكورد (API)', value: `\`${apiLatency}ms\``, inline: true }
+        { name: t(message.guild.id, 'general.ping.field_latency'), value: `\`${latency}ms\``, inline: true },
+        { name: t(message.guild.id, 'general.ping.field_api'), value: `\`${apiLatency}ms\``, inline: true }
       )
       .setTimestamp();
 

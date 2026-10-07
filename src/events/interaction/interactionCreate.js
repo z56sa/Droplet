@@ -1,4 +1,5 @@
 const autoHealer = require('../../services/aiAutoHealer');
+const { t } = require('../../utils/lang');
 const { ChannelType, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, AttachmentBuilder, StringSelectMenuBuilder, UserSelectMenuBuilder } = require('discord.js');
 const db = require('../../database');
 const embedUtil = require('../../utils/embed');
@@ -15,7 +16,7 @@ module.exports = {
       if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
         if (!command) {
-          return interaction.reply({ content: '❌ هذا الأمر غير مسجل حالياً.', flags: 64 }).catch(() => { });
+          return interaction.reply({ content: t(interaction.guildId, 'events.common.cmd_not_found'), flags: 64 }).catch(() => { });
         }
 
         // فحص الأوامر المعطلة من لوحة الداشبورد
@@ -25,7 +26,7 @@ module.exports = {
             const disabledCmds = JSON.parse(gSettings?.disabled_commands || '[]');
             const slashName = '/' + interaction.commandName;
             if (disabledCmds.includes(slashName) || disabledCmds.includes(interaction.commandName)) {
-              return interaction.reply({ content: '❌ هذا الأمر معطّل في هذا السيرفر من قبل الإدارة.', flags: 64 }).catch(() => {});
+              return interaction.reply({ content: t(interaction.guildId, 'events.common.cmd_disabled'), flags: 64 }).catch(() => {});
             }
 
             // فحص إعدادات الصلاحيات والقنوات المخصصة للأمر
@@ -40,7 +41,7 @@ module.exports = {
                 const hasRole = interaction.member.roles.cache.some(r => cfg.allowedRoles.includes(r.id));
                 const isAdmin = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
                 if (!hasRole && !isAdmin) {
-                  return interaction.reply({ content: '❌ ليس لديك الرتبة المسموح لها بتشغيل هذا الأمر.', flags: 64 }).catch(() => {});
+                  return interaction.reply({ content: t(interaction.guildId, 'events.common.cmd_no_role'), flags: 64 }).catch(() => {});
                 }
               }
               // فحص القنوات المسموح فيها
@@ -49,7 +50,7 @@ module.exports = {
                                   interaction.member.permissions.has(PermissionFlagsBits.ManageGuild);
                 if (!isAdminCh && !cfg.allowedChannels.includes(interaction.channelId)) {
                   const allowedList = cfg.allowedChannels.map(id => `<#${id}>`).join(', ');
-                  return interaction.reply({ content: `❌ لا يمكن تشغيل هذا الأمر هنا. القنوات المسموح بها: ${allowedList}`, flags: 64 }).catch(() => {});
+                  return interaction.reply({ content: t(interaction.guildId, 'events.common.cmd_wrong_channel', { channels: allowedList }), flags: 64 }).catch(() => {});
                 }
               }
             }
@@ -60,7 +61,7 @@ module.exports = {
           await command.execute(interaction, client);
         } catch (error) {
           logger.error(`خطأ أثناء تنفيذ أمر السلاش ${interaction.commandName}:`, error);
-          const errorEmbed = embedUtil.error('حدث خطأ', 'حدث خطأ غير متوقع أثناء محاولة تنفيذ هذا الأمر.');
+          const errorEmbed = embedUtil.error(t(interaction.guildId, 'events.common.slash_error_title'), t(interaction.guildId, 'events.common.slash_error_desc'));
           if (interaction.replied || interaction.deferred) {
             await interaction.followUp({ embeds: [errorEmbed], flags: 64 }).catch(() => { });
           } else {
@@ -109,15 +110,15 @@ module.exports = {
         if (rrData) {
           const role = interaction.guild.roles.cache.get(rrData.role_id);
           if (!role) {
-            return interaction.editReply({ content: '❌ لم يتم العثور على الرتبة المحددة.' });
+            return interaction.editReply({ content: t(interaction.guildId, 'events.rr.not_found') });
           }
 
           if (interaction.member.roles.cache.has(role.id)) {
             await interaction.member.roles.remove(role);
-            return interaction.editReply({ content: `✅ تمت إزالة رتبة **${role.name}** منك.` });
+            return interaction.editReply({ content: t(interaction.guildId, 'events.rr.removed', { role: role.name }) });
           } else {
             await interaction.member.roles.add(role);
-            return interaction.editReply({ content: `✅ تم إعطاؤك رتبة **${role.name}** بنجاح.` });
+            return interaction.editReply({ content: t(interaction.guildId, 'events.rr.added', { role: role.name }) });
           }
         }
         return;
@@ -131,7 +132,7 @@ module.exports = {
         const voteType = interaction.customId === 'sugg_upvote' ? 'up' : 'down';
         const res = db.voteSuggestion(interaction.message.id, interaction.user.id, voteType);
         if (!res) {
-          return interaction.editReply({ content: '❌ تعذر العثور على بيانات هذا الاقتراح في قاعدة البيانات.' });
+          return interaction.editReply({ content: t(interaction.guildId, 'suggest.vote.not_found') });
         }
 
         const sugg = db.getSuggestion(interaction.message.id);
@@ -140,7 +141,7 @@ module.exports = {
         // تحديث إيمبد الاقتراح بنسبة التصويت وشريط التقدم الحي
         try {
           const suggAuthor = sugg ? await client.users.fetch(sugg.user_id).catch(() => null) : null;
-          const userObj = suggAuthor || { tag: 'عضو', username: 'عضو' };
+          const userObj = suggAuthor || { tag: t(interaction.guildId, 'suggest.unknown_member'), username: t(interaction.guildId, 'suggest.unknown_member') };
 
           const updatedEmbed = buildSuggestionEmbed({
             user: userObj,
@@ -152,7 +153,8 @@ module.exports = {
             downvotes: res.downvotesCount,
             createdAt: sugg?.created_at ? sugg.created_at * 1000 : interaction.message.createdTimestamp,
             reviewerId: sugg?.reviewed_by || null,
-            reason: sugg?.status_reason || null
+            reason: sugg?.status_reason || null,
+            lang: interaction.guildId
           });
 
           // الحفاظ على أزرار التصويت والإدارة بنفس الحالة
@@ -160,7 +162,8 @@ module.exports = {
           const newComponents = buildSuggestionComponents({
             upvotes: res.upvotesCount,
             downvotes: res.downvotesCount,
-            disabled: isClosed
+            disabled: isClosed,
+            lang: interaction.guildId
           });
 
           await interaction.message.edit({ embeds: [updatedEmbed], components: newComponents }).catch(() => {});
@@ -168,8 +171,8 @@ module.exports = {
           console.error('[Suggestion Vote Edit Error]:', e);
         }
 
-        const actionText = res.action === 'removed' ? 'إلغاء تصويتك' : (voteType === 'up' ? 'تسجيل تأييدك 👍' : 'تسجيل معارضتك 👎');
-        return interaction.editReply({ content: `✅ تم ${actionText} بنجاح!` });
+        const actionText = res.action === 'removed' ? t(interaction.guildId, 'suggest.vote.action_removed') : (voteType === 'up' ? t(interaction.guildId, 'suggest.vote.action_up') : t(interaction.guildId, 'suggest.vote.action_down'));
+        return interaction.editReply({ content: t(interaction.guildId, 'suggest.vote.done', { action: actionText }) });
       }
 
       // 2.1.1 التعامل مع قبول أو رفض أو دراسة الاقتراح إدارياً (Suggestion Staff Decision)
@@ -179,17 +182,17 @@ module.exports = {
                                interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers);
 
         if (!isStaffOrAdmin) {
-          return interaction.reply({ content: '❌ هذا الإجراء مخصص لإدارة ومشرفي السيرفر فقط.', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'suggest.staff.only'), flags: 64 });
         }
 
         let actionType = 'accept';
-        let modalTitle = '✅ قبول الاقتراح رسمياً';
+        let modalTitle = t(interaction.guildId, 'suggest.modal.accept_title');
         if (interaction.customId === 'sugg_reject_btn') {
           actionType = 'reject';
-          modalTitle = '❌ رفض الاقتراح';
+          modalTitle = t(interaction.guildId, 'suggest.modal.reject_title');
         } else if (interaction.customId === 'sugg_consider_btn') {
           actionType = 'consider';
-          modalTitle = '🔍 وضع الاقتراح قيد الدراسة';
+          modalTitle = t(interaction.guildId, 'suggest.modal.consider_title');
         }
 
         const modal = new ModalBuilder()
@@ -199,9 +202,9 @@ module.exports = {
         const isRequired = actionType === 'reject';
         const reasonInput = new TextInputBuilder()
           .setCustomId('sugg_decision_reason')
-          .setLabel(actionType === 'accept' ? 'ملاحظة القبول (اختياري):' : (actionType === 'reject' ? 'سبب الرفض:' : 'ملاحظات قيد الدراسة (اختياري):'))
+          .setLabel(actionType === 'accept' ? t(interaction.guildId, 'suggest.modal.label_accept') : (actionType === 'reject' ? t(interaction.guildId, 'suggest.modal.label_reject') : t(interaction.guildId, 'suggest.modal.label_consider')))
           .setStyle(TextInputStyle.Paragraph)
-          .setPlaceholder(actionType === 'accept' ? 'اكتب ملاحظة للإدارة أو صاحب الاقتراح...' : (actionType === 'reject' ? 'اكتب سبب عدم إمكانية تطبيق الاقتراح...' : 'اكتب ملاحظة حول كيفية وتفاصيل دراسة الفكرة...'))
+          .setPlaceholder(actionType === 'accept' ? t(interaction.guildId, 'suggest.modal.ph_accept') : (actionType === 'reject' ? t(interaction.guildId, 'suggest.modal.ph_reject') : t(interaction.guildId, 'suggest.modal.ph_consider')))
           .setRequired(isRequired)
           .setMaxLength(500);
 
@@ -213,7 +216,7 @@ module.exports = {
       if (interaction.isButton() && interaction.customId === 'gw_enter_btn') {
         const gw = db.getGiveaway(interaction.message.id);
         if (!gw || gw.status !== 'active') {
-          return interaction.reply({ content: '❌ هذا السحب منتهي أو غير متوفر حالياً.', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.gw.ended'), flags: 64 });
         }
 
         const entries = db.getGiveawayEntries(interaction.message.id);
@@ -224,28 +227,28 @@ module.exports = {
           const confirmRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
               .setCustomId(`gw_leave_confirm_${interaction.message.id}`)
-              .setLabel('نعم، تأكيد إلغاء المشاركة')
+              .setLabel(t(interaction.guildId, 'events.gw.leave_confirm_label'))
               .setStyle(ButtonStyle.Danger)
               .setEmoji('🗑️'),
             new ButtonBuilder()
               .setCustomId('gw_leave_cancel')
-              .setLabel('تراجع والبقاء في السحب')
+              .setLabel(t(interaction.guildId, 'events.gw.leave_cancel_label'))
               .setStyle(ButtonStyle.Secondary)
           );
 
           return interaction.reply({
-            content: `⚠️ **هل أنت متأكد من رغبتك في إلغاء مشاركتك في سحب: ${gw.prize}؟**\nإذا قمت بالإلغاء ستفقد فرصتك في الفوز!`,
+            content: t(interaction.guildId, 'events.gw.leave_confirm_text', { prize: gw.prize }),
             components: [confirmRow],
             flags: 64
           });
         }
 
         if (gw.required_role && !interaction.member.roles.cache.has(gw.required_role)) {
-          return interaction.reply({ content: `❌ لا يمكنك المشاركة، يجب أن تمتلك رتبة <@&${gw.required_role}> للمشاركة في هذا السحب.`, flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.gw.need_role', { role: gw.required_role }), flags: 64 });
         }
 
         const res = db.addGiveawayEntry(interaction.message.id, interaction.user.id);
-        return interaction.reply({ content: `🎉 تم اشتراكك في سحب **${gw.prize}** بنجاح! إجمالي المشاركين الآن: ${res.count}`, flags: 64 });
+        return interaction.reply({ content: t(interaction.guildId, 'events.gw.joined', { prize: gw.prize, count: res.count }), flags: 64 });
       }
 
       // تأكيد إلغاء المشاركة (من الداشبورد أو أمر السلاش)
@@ -263,11 +266,11 @@ module.exports = {
               const newRow = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                   .setCustomId('join_giveaway')
-                  .setLabel(`🎉 اشتراك (${res.count})`)
+                  .setLabel(t(interaction.guildId, 'events.gw.join_btn', { count: res.count }))
                   .setStyle(ButtonStyle.Success),
                 new ButtonBuilder()
                   .setCustomId('view_giveaway_entries')
-                  .setLabel('👥 المشتركين')
+                  .setLabel(t(interaction.guildId, 'events.gw.entries_btn'))
                   .setStyle(ButtonStyle.Secondary)
               );
               await originalMsg.edit({ components: [newRow] }).catch(() => {});
@@ -276,7 +279,7 @@ module.exports = {
         }
 
         return interaction.update({
-          content: `🗑️ **تم إلغاء اشتراكك بنجاح** من سحب **${gw ? gw.prize : 'القيف أواي'}**. إجمالي المشاركين الآن: ${res.count}`,
+          content: t(interaction.guildId, 'events.gw.left', { prize: gw ? gw.prize : t(interaction.guildId, 'events.gw.untitled'), count: res.count }),
           components: []
         });
       }
@@ -284,7 +287,7 @@ module.exports = {
       // التراجع عن إلغاء المشاركة
       if (interaction.isButton() && interaction.customId === 'gw_leave_cancel') {
         return interaction.update({
-          content: '✅ **تم التراجع!** ما زلت مشاركاً في السحب، نتمنى لك التوفيق! 🍀',
+          content: t(interaction.guildId, 'events.gw.leave_cancelled'),
           components: []
         });
       }
@@ -297,14 +300,14 @@ module.exports = {
         const settings = db.getGuildSettings(interaction.guild.id);
         const roleId = settings.verify_role || settings.verification_role;
         if (!roleId) {
-          return interaction.reply({ content: '❌ لم يتم تحديد رتبة التفعيل بعد في إعدادات السيرفر.', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.verify.no_role'), flags: 64 });
         }
         const verifiedRole = interaction.guild.roles.cache.get(roleId) || await interaction.guild.roles.fetch(roleId).catch(() => null);
         if (!verifiedRole) {
-          return interaction.reply({ content: '❌ لم يتم العثور على رتبة التحقق. يرجى مراجعة إعدادات الرتب.', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.verify.role_missing'), flags: 64 });
         }
         if (interaction.member.roles.cache.has(verifiedRole.id)) {
-          return interaction.reply({ content: '✅ أنت موثق ومفعل مسبقاً ولديك حق الوصول لجميع القنوات!', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.verify.already'), flags: 64 });
         }
 
         // فحص عمر الحساب (Anti-Alt Check)
@@ -312,7 +315,7 @@ module.exports = {
           const accountAgeDays = (Date.now() - interaction.user.createdTimestamp) / (1000 * 60 * 60 * 24);
           if (accountAgeDays < settings.anti_alt_days) {
             return interaction.reply({
-              content: `❌ **عذراً، حسابك حديث جداً!**\nيتطلب السيرفر أن يكون عمر الحساب **${settings.anti_alt_days} يوم** على الأقل للتوثيق (عمر حسابك الحالي: ${Math.floor(accountAgeDays)} يوم).`,
+              content: t(interaction.guildId, 'events.verify.young', { days: settings.anti_alt_days, age: Math.floor(accountAgeDays) }),
               flags: 64
             });
           }
@@ -324,12 +327,12 @@ module.exports = {
           const answer = num1 + num2;
           const modal = new ModalBuilder()
             .setCustomId(`captcha_verify_${answer}`)
-            .setTitle('🔢 التحقق الأمني - أثبت أنك لست بوت!');
+            .setTitle(t(interaction.guildId, 'events.verify.captcha_title'));
           const captchaInput = new TextInputBuilder()
             .setCustomId('captcha_answer')
-            .setLabel(`⚡ احسب: ${num1} + ${num2} = ?`)
+            .setLabel(t(interaction.guildId, 'events.verify.captcha_label', { a: num1, b: num2 }))
             .setStyle(TextInputStyle.Short)
-            .setPlaceholder('أدخل الجواب بالأرقام...')
+            .setPlaceholder(t(interaction.guildId, 'events.verify.captcha_ph'))
             .setRequired(true)
             .setMinLength(1)
             .setMaxLength(3);
@@ -342,10 +345,10 @@ module.exports = {
 
           const modal = new ModalBuilder()
             .setCustomId(`code_verify_${code}`)
-            .setTitle('🔤 التحقق الأمني - كود التأكيد');
+            .setTitle(t(interaction.guildId, 'events.verify.code_title'));
           const codeInput = new TextInputBuilder()
             .setCustomId('code_answer')
-            .setLabel(`اكتب هذا الكود بالضبط: [ ${code} ]`)
+            .setLabel(t(interaction.guildId, 'events.verify.code_label', { code }))
             .setStyle(TextInputStyle.Short)
             .setPlaceholder(code)
             .setRequired(true)
@@ -370,11 +373,11 @@ module.exports = {
                 logCh.send({
                   embeds: [new EmbedBuilder()
                     .setColor('#2ECC71')
-                    .setTitle('✅ توثيق وتفعيل عضو جديد')
+                    .setTitle(t(interaction.guildId, 'events.verify.log_title'))
                     .addFields(
-                      { name: '👤 العضو', value: `${interaction.user.tag} (${interaction.user.id})`, inline: true },
-                      { name: '🎖️ الرتبة الممنوحة', value: `${verifiedRole.name}`, inline: true },
-                      { name: '📅 تاريخ الإنضمام', value: `<t:${Math.floor(interaction.member.joinedTimestamp / 1000)}:R>`, inline: true }
+                      { name: t(interaction.guildId, 'events.verify.log_member'), value: `${interaction.user.tag} (${interaction.user.id})`, inline: true },
+                      { name: t(interaction.guildId, 'events.verify.log_role'), value: `${verifiedRole.name}`, inline: true },
+                      { name: t(interaction.guildId, 'events.verify.log_joined'), value: `<t:${Math.floor(interaction.member.joinedTimestamp / 1000)}:R>`, inline: true }
                     )
                     .setTimestamp()
                   ]
@@ -383,11 +386,11 @@ module.exports = {
             }
 
             return interaction.editReply({
-              content: `🎉 **تم تفعيلك بنجاح!**\nتم منحك رتبة **${verifiedRole.name}** وأصبح بإمكانك الوصول الكامل لجميع قنوات السيرفر. استمتع! 🚀`
+              content: t(interaction.guildId, 'events.verify.done', { role: verifiedRole.name })
             });
           } catch (err) {
             logger.error('فشل في إعطاء رتبة التحقق:', err);
-            return interaction.editReply({ content: '❌ حدث خطأ أثناء إعطاء رتبة التحقق. تأكد من أن رتبة البوت أعلى من الرتبة المراد إعطاؤها.' });
+            return interaction.editReply({ content: t(interaction.guildId, 'events.verify.role_error') });
           }
         }
       }
@@ -422,11 +425,11 @@ module.exports = {
                   logCh.send({
                     embeds: [new EmbedBuilder()
                       .setColor('#2ECC71')
-                      .setTitle('✅ توثيق عضو جديد')
+                      .setTitle(t(interaction.guildId, 'events.verify.log_title2'))
                       .addFields(
-                        { name: '👤 العضو', value: `${interaction.user.tag} (${interaction.user.id})`, inline: true },
-                        { name: '🔒 النوع', value: isCode ? 'كود نصي' : 'كابتشا حسابية', inline: true },
-                        { name: '📅 عمر الحساب', value: `<t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>`, inline: true }
+                        { name: t(interaction.guildId, 'events.verify.log_member'), value: `${interaction.user.tag} (${interaction.user.id})`, inline: true },
+                        { name: t(interaction.guildId, 'events.verify.log_type'), value: isCode ? t(interaction.guildId, 'events.verify.type_code') : t(interaction.guildId, 'events.verify.type_captcha'), inline: true },
+                        { name: t(interaction.guildId, 'events.verify.log_age'), value: `<t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>`, inline: true }
                       )
                       .setTimestamp()
                     ]
@@ -435,15 +438,15 @@ module.exports = {
               }
 
               return interaction.editReply({
-                content: `✅ **إجابة صحيحة!** تم التحقق من هويتك بنجاح يا ${interaction.member}!\nأصبح بإمكانك الوصول الكامل لجميع قنوات السيرفر. 🎉`
+                content: t(interaction.guildId, 'events.verify.correct', { member: interaction.member })
               });
             } catch {
-              return interaction.editReply({ content: '❌ حدث خطأ أثناء إعطاء الرتبة. تواصل مع الإدارة.' });
+              return interaction.editReply({ content: t(interaction.guildId, 'events.verify.role_error2') });
             }
           }
         } else {
           return interaction.editReply({
-            content: `❌ **إجابة خاطئة!** يرجى الضغط على زر التحقق مجدداً والمحاولة مرة أخرى.`
+            content: t(interaction.guildId, 'events.verify.wrong')
           });
         }
       }
@@ -453,7 +456,7 @@ module.exports = {
         await interaction.deferReply({ flags: 64 }).catch(() => { });
         const giveaway = db.getGiveaway(interaction.message.id);
         if (!giveaway || giveaway.ended) {
-          return interaction.editReply({ content: '❌ هذا القيف أواي قد انتهى بالفعل!' });
+          return interaction.editReply({ content: t(interaction.guildId, 'events.gwpro.ended') });
         }
 
         const entries = db.getGiveawayEntries(interaction.message.id);
@@ -463,23 +466,23 @@ module.exports = {
           const confirmRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
               .setCustomId(`slash_gw_leave_confirm_${interaction.message.id}`)
-              .setLabel('نعم، تأكيد إلغاء المشاركة')
+              .setLabel(t(interaction.guildId, 'events.gw.leave_confirm_label'))
               .setStyle(ButtonStyle.Danger)
               .setEmoji('🗑️'),
             new ButtonBuilder()
               .setCustomId('gw_leave_cancel')
-              .setLabel('تراجع والبقاء في السحب')
+              .setLabel(t(interaction.guildId, 'events.gw.leave_cancel_label'))
               .setStyle(ButtonStyle.Secondary)
           );
 
           return interaction.editReply({
-            content: `⚠️ **هل أنت متأكد من رغبتك في إلغاء مشاركتك في سحب: ${giveaway.prize}؟**\nإذا قمت بالإلغاء ستفقد فرصتك في الفوز!`,
+            content: t(interaction.guildId, 'events.gw.leave_confirm_text', { prize: giveaway.prize }),
             components: [confirmRow]
           });
         } else {
           if (giveaway.required_role && !interaction.member.roles.cache.has(giveaway.required_role)) {
             return interaction.editReply({
-              content: `❌ **عذراً، لا تستوفي شرط الرتبة!**\nتحتاج إلى رتبة <@&${giveaway.required_role}> للاشتراك في هذا السحب.`
+              content: t(interaction.guildId, 'events.gwpro.need_role', { role: giveaway.required_role })
             });
           }
 
@@ -487,7 +490,7 @@ module.exports = {
             const ageDays = (Date.now() - interaction.user.createdTimestamp) / (1000 * 60 * 60 * 24);
             if (ageDays < giveaway.min_account_age) {
               return interaction.editReply({
-                content: `❌ **عمر حسابك غير كافٍ!**\nيجب أن يكون عمر حسابك **${giveaway.min_account_age} يوم** على الأقل (عمر حسابك الحالي: ${Math.floor(ageDays)} يوم).`
+                content: t(interaction.guildId, 'events.gwpro.low_age', { min: giveaway.min_account_age, age: Math.floor(ageDays) })
               });
             }
           }
@@ -496,7 +499,7 @@ module.exports = {
             const userDb = db.getUser(interaction.user.id, interaction.guild.id);
             if ((userDb.level || 0) < giveaway.min_level) {
               return interaction.editReply({
-                content: `❌ **مستواك الحالي غير كافٍ!**\nتحتاج إلى المستوى **${giveaway.min_level}** للاشتراك (مستواك الحالي: Level ${userDb.level || 0}).`
+                content: t(interaction.guildId, 'events.gwpro.low_level', { min: giveaway.min_level, level: userDb.level || 0 })
               });
             }
           }
@@ -508,17 +511,17 @@ module.exports = {
           const newRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
               .setCustomId('join_giveaway')
-              .setLabel(`🎉 اشتراك (${newEntries.length})`)
+              .setLabel(t(interaction.guildId, 'events.gw.join_btn', { count: newEntries.length }))
               .setStyle(ButtonStyle.Success),
             new ButtonBuilder()
               .setCustomId('view_giveaway_entries')
-              .setLabel('👥 المشتركين')
+              .setLabel(t(interaction.guildId, 'events.gw.entries_btn'))
               .setStyle(ButtonStyle.Secondary)
           );
           await interaction.message.edit({ components: [newRow] }).catch(() => { });
 
           return interaction.editReply({
-            content: `🎉 **تم تسجيل اشتراكك بنجاح في السحب!** 🍀${hasBonus ? '\n🔥 **ميزة:** لديك فرصة فوز مضاعفة (x2) بفضل رتبتك المميزة!' : ''}`
+            content: t(interaction.guildId, 'events.gwpro.joined', { bonus: hasBonus ? t(interaction.guildId, 'events.gwpro.bonus') : '' })
           });
         }
       }
@@ -528,18 +531,18 @@ module.exports = {
         await interaction.deferReply({ flags: 64 }).catch(() => { });
         const giveaway = db.getGiveaway(interaction.message.id);
         if (!giveaway) {
-          return interaction.editReply({ content: '❌ لم يتم العثور على القيف أواي.' });
+          return interaction.editReply({ content: t(interaction.guildId, 'events.gwpro.not_found') });
         }
         const entries = db.getGiveawayEntries(interaction.message.id);
         if (entries.length === 0) {
-          return interaction.editReply({ content: '👥 لا يوجد أي مشتركين في هذا السحب حتى الآن.' });
+          return interaction.editReply({ content: t(interaction.guildId, 'events.gwpro.no_entries') });
         }
 
         const topEntries = entries.slice(0, 30).map((id, i) => `${i + 1}. <@${id}>`).join('\n');
-        const countText = entries.length > 30 ? `\n... و ${entries.length - 30} مشترك آخرين.` : '';
+        const countText = entries.length > 30 ? t(interaction.guildId, 'events.gwpro.entries_more', { n: entries.length - 30 }) : '';
 
         return interaction.editReply({
-          content: `📊 **إجمالي المشتركين في السحب (${entries.length} مشترك):**\n\n${topEntries}${countText}`
+          content: t(interaction.guildId, 'events.gwpro.entries_list', { count: entries.length, list: topEntries, more: countText })
         });
       }
 
@@ -588,7 +591,7 @@ module.exports = {
 
         if (existingTicket) {
           return interaction.editReply({
-            content: `❌ لديك تذكرة مفتوحة بالفعل: <#${existingTicket.id}>`
+            content: t(interaction.guildId, 'events.ticket.exists', { channel: existingTicket.id })
           });
         }
 
@@ -770,7 +773,7 @@ module.exports = {
         const ticketData = db.getTicket(interaction.channel.id);
 
         if (!ticketData) {
-          return interaction.reply({ content: '❌ لا يمكن تنفيذ الإجراء: هذه القناة ليست تذكرة نشطة.', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.ticket.action_not_ticket'), flags: 64 });
         }
 
         // A. Close with Reason
@@ -781,9 +784,9 @@ module.exports = {
 
           const reasonInput = new TextInputBuilder()
             .setCustomId('ticket_close_reason_input')
-            .setLabel('سبب الإغلاق / Reason for closing:')
+            .setLabel(t(interaction.guildId, 'events.ticket.close_label'))
             .setStyle(TextInputStyle.Paragraph)
-            .setPlaceholder('اكتب سبب إغلاق التذكرة (اختياري)...')
+            .setPlaceholder(t(interaction.guildId, 'events.ticket.close_ph'))
             .setRequired(false)
             .setMaxLength(500);
 
@@ -795,12 +798,12 @@ module.exports = {
         if (action === 'action_add_user') {
           const userSelect = new UserSelectMenuBuilder()
             .setCustomId('ticket_user_add_select')
-            .setPlaceholder('اختر العضو لإضافته إلى التذكرة...')
+            .setPlaceholder(t(interaction.guildId, 'events.ticket.add_user_ph'))
             .setMinValues(1)
             .setMaxValues(1);
 
           return interaction.reply({
-            content: '👤 **اختر العضو الذي ترغب في إضافته إلى هذه التذكرة:**',
+            content: t(interaction.guildId, 'events.ticket.add_user_prompt'),
             components: [new ActionRowBuilder().addComponents(userSelect)],
             flags: 64
           });
@@ -812,20 +815,20 @@ module.exports = {
           try {
             const ticketOwner = await client.users.fetch(ticketData.user_id).catch(() => null);
             if (!ticketOwner) {
-              return interaction.editReply({ content: '❌ تعذر العثور على صاحب التذكرة.' });
+              return interaction.editReply({ content: t(interaction.guildId, 'events.ticket.owner_not_found') });
             }
 
             const reminderEmbed = new EmbedBuilder()
               .setColor('#06070a')
-              .setTitle('🔔 تذكير بخصوص تذكرتك المفتوحة')
-              .setDescription(`مرحباً **${ticketOwner.username}**!\nفريق الدعم الفني في سيرفر **${interaction.guild.name}** بانتظار ردك في التذكرة: <#${interaction.channel.id}>`)
+              .setTitle(t(interaction.guildId, 'events.ticket.reminder_title'))
+              .setDescription(t(interaction.guildId, 'events.ticket.reminder_desc', { user: ticketOwner.username, guild: interaction.guild.name, channel: interaction.channel.id }))
               .setTimestamp();
 
             await ticketOwner.send({ embeds: [reminderEmbed] });
-            await interaction.channel.send({ content: `✉️ تم إرسال تذكير في الخاص إلى صاحب التذكرة: <@${ticketData.user_id}>` });
-            return interaction.editReply({ content: '✅ تم إرسال التذكير في الخاص بنجاح!' });
+            await interaction.channel.send({ content: t(interaction.guildId, 'events.ticket.reminder_sent', { user: ticketData.user_id }) });
+            return interaction.editReply({ content: t(interaction.guildId, 'events.ticket.reminder_done') });
           } catch (e) {
-            return interaction.editReply({ content: '❌ تعذر إرسال التذكير في الخاص (قد يكون خاص العضو مقفلاً).' });
+            return interaction.editReply({ content: t(interaction.guildId, 'events.ticket.reminder_fail') });
           }
         }
 
@@ -837,15 +840,15 @@ module.exports = {
             const transcriptResult = await generateHtmlTranscript(interaction.channel);
             if (transcriptResult?.attachment) {
               await interaction.user.send({
-                content: `📄 **نسخة من سجل التذكرة:** \`#${interaction.channel.name}\` في سيرفر **${interaction.guild.name}**`,
+                content: t(interaction.guildId, 'events.ticket.copy_content', { channel: interaction.channel.name, guild: interaction.guild.name }),
                 files: [transcriptResult.attachment]
               }).catch(() => {});
-              return interaction.editReply({ content: '✅ تم إرسال نسخة من سجل التذكرة (Transcript HTML) إلى رسائلك الخاصة!' });
+              return interaction.editReply({ content: t(interaction.guildId, 'events.ticket.copy_done') });
             } else {
-              return interaction.editReply({ content: '❌ تعذر استخراج سجل التذكرة.' });
+              return interaction.editReply({ content: t(interaction.guildId, 'events.ticket.copy_fail') });
             }
           } catch (e) {
-            return interaction.editReply({ content: '❌ حدث خطأ أثناء تجهيز نسخة السجل.' });
+            return interaction.editReply({ content: t(interaction.guildId, 'events.ticket.copy_error') });
           }
         }
       }
@@ -863,10 +866,10 @@ module.exports = {
             ReadMessageHistory: true,
             EmbedLinks: true
           });
-          await interaction.channel.send({ content: `➕ تمت إضافة <@${targetUserId}> إلى هذه التذكرة بواسطة ${interaction.user}.` });
-          return interaction.editReply({ content: `✅ تمت إضافة <@${targetUserId}> بنجاح إلى التذكرة.` });
+          await interaction.channel.send({ content: t(interaction.guildId, 'events.ticket.user_added', { user: targetUserId, staff: interaction.user }) });
+          return interaction.editReply({ content: t(interaction.guildId, 'events.ticket.user_added_ok', { user: targetUserId }) });
         } catch (e) {
-          return interaction.editReply({ content: '❌ فشل تعديل صلاحيات القناة لإضافة العضو.' });
+          return interaction.editReply({ content: t(interaction.guildId, 'events.ticket.user_add_fail') });
         }
       }
 
@@ -888,11 +891,11 @@ module.exports = {
         }
 
         if (!isStaff) {
-          return interaction.reply({ content: '❌ هذا الزر مخصص لطاقم الدعم الفني والإدارة فقط.', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.ticket.claim_staff'), flags: 64 });
         }
 
         if (ticketData?.claimed_by) {
-          return interaction.reply({ content: `⚠️ هذه التذكرة مستلمة بالفعل بواسطة: <@${ticketData.claimed_by}>`, flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.ticket.claim_taken', { user: ticketData.claimed_by }), flags: 64 });
         }
 
         db.claimTicket(interaction.channel.id, interaction.user.id);
@@ -924,7 +927,7 @@ module.exports = {
 
         const claimEmbed = new EmbedBuilder()
           .setColor('#10b981')
-          .setDescription(`💼 **تم استلام التذكرة بواسطة ${interaction.user} وسيتابع معك الآن.**`)
+          .setDescription(t(interaction.guildId, 'events.ticket.claimed', { user: interaction.user }))
           .setTimestamp();
 
         await interaction.reply({ embeds: [claimEmbed] });
@@ -937,7 +940,7 @@ module.exports = {
         const isClaimerOrAdmin = ticketData?.claimed_by === interaction.user.id || interaction.member.permissions.has(PermissionFlagsBits.Administrator);
 
         if (!isClaimerOrAdmin) {
-          return interaction.reply({ content: '❌ لا يمكنك إلغاء استلام التذكرة إلا إذا كنت أنت المستلم أو مسؤول بالسيرفر.', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.ticket.unclaim_no_perm'), flags: 64 });
         }
 
         db.unclaimTicket(interaction.channel.id);
@@ -955,7 +958,7 @@ module.exports = {
             .setStyle(ButtonStyle.Secondary)
         );
 
-        await interaction.reply({ content: `↩️ قام ${interaction.user} بإلغاء استلام التذكرة، وأصبحت متاحة لفريق الدعم.` });
+        await interaction.reply({ content: t(interaction.guildId, 'events.ticket.unclaimed', { user: interaction.user }) });
         return interaction.message.edit({ components: [claimRow] }).catch(() => {});
       }
 
@@ -999,7 +1002,7 @@ module.exports = {
             const targetMsg = await suggChannel.messages.fetch(sugg.message_id).catch(() => null);
             if (targetMsg) {
               const suggAuthor = await client.users.fetch(sugg.user_id).catch(() => null);
-              const userObj = suggAuthor || { tag: 'عضو', username: 'عضو' };
+              const userObj = suggAuthor || { tag: t(interaction.guildId, 'suggest.unknown_member'), username: t(interaction.guildId, 'suggest.unknown_member') };
 
               let upvotesList = [];
               let downvotesList = [];
@@ -1016,7 +1019,8 @@ module.exports = {
                 downvotes: downvotesList.length,
                 createdAt: sugg.created_at ? sugg.created_at * 1000 : targetMsg.createdTimestamp,
                 reviewerId: interaction.user.id,
-                reason: reason
+                reason: reason,
+                lang: interaction.guildId
               });
 
               // إذا تم القبول أو الرفض النهائي، نقفل الأزرار؛ إذا كانت قيد الدراسة تبقى الأزرار مفعلة
@@ -1024,7 +1028,8 @@ module.exports = {
               const newComponents = buildSuggestionComponents({
                 upvotes: upvotesList.length,
                 downvotes: downvotesList.length,
-                disabled: isFinal
+                disabled: isFinal,
+                lang: interaction.guildId
               });
 
               await targetMsg.edit({ embeds: [updatedEmbed], components: newComponents });
@@ -1039,9 +1044,9 @@ module.exports = {
           const owner = await client.users.fetch(sugg.user_id).catch(() => null);
           if (owner) {
             const statusTitles = {
-              accepted: '🎉 تم قبول اقتراحك!',
-              rejected: '📌 تم رفض اقتراحك',
-              considered: '🔍 اقتراحك الآن قيد الدراسة!'
+              accepted: t(interaction.guildId, 'suggest.notify.accepted'),
+              rejected: t(interaction.guildId, 'suggest.notify.rejected'),
+              considered: t(interaction.guildId, 'suggest.notify.considered')
             };
             const statusColors = {
               accepted: '#22c55e',
@@ -1050,16 +1055,16 @@ module.exports = {
             };
             const notifyEmbed = new EmbedBuilder()
               .setColor(statusColors[newStatus] || '#9333ea')
-              .setTitle(statusTitles[newStatus] || '📌 تحديث بخصوص اقتراحك')
-              .setDescription(`مرحباً **${owner.username}**!\nقام فريق الإدارة بمراجعة اقتراحك في سيرفر **${interaction.guild.name}**:\n\n**الاقتراح:** ${sugg.content.slice(0, 300)}\n**الحالة الجديدة:** \`${newStatus}\`\n**التعليق/السبب:** \`${reason}\``)
+              .setTitle(statusTitles[newStatus] || t(interaction.guildId, 'suggest.notify.default'))
+              .setDescription(t(interaction.guildId, 'suggest.notify.desc', { user: owner.username, guild: interaction.guild.name, content: sugg.content.slice(0, 300), status: newStatus, reason }))
               .setTimestamp();
             await owner.send({ embeds: [notifyEmbed] }).catch(() => {});
           }
         } catch (e) {}
 
-        const actionLabels = { accept: 'قبول', reject: 'رفض', consider: 'وضع الاقتراح قيد الدراسة' };
+        const actionLabels = { accept: t(interaction.guildId, 'suggest.button.accept'), reject: t(interaction.guildId, 'suggest.button.reject'), consider: t(interaction.guildId, 'suggest.action.consider_label') };
         return interaction.editReply({
-          content: `✅ تم ${actionLabels[actionType]} بنجاح وتحديث حالته وشريط التصويت وإشعار صاحب الاقتراح.`
+          content: t(interaction.guildId, 'suggest.action.done', { action: actionLabels[actionType] })
         });
       }
 
@@ -1068,7 +1073,7 @@ module.exports = {
       // ==========================================
       if (interaction.isModalSubmit() && interaction.customId === 'modal_close_ticket_reason') {
         await interaction.deferReply().catch(() => {});
-        const reason = interaction.fields.getTextInputValue('ticket_close_reason_input') || 'لم يتم تقديم سبب';
+        const reason = interaction.fields.getTextInputValue('ticket_close_reason_input') || t(interaction.guildId, 'events.ticket.close_no_reason');
         const ticketData = db.getTicket(interaction.channel.id);
         const settings = db.getGuildSettings(interaction.guild.id);
         const staffClaimerId = ticketData?.claimed_by || null;
@@ -1110,7 +1115,9 @@ module.exports = {
         const openTimeFormatted = formatFullDateTime(createdDateObj);
         const closeTimeFormatted = formatFullDateTime(closedDateObj);
 
-        const closeReasonText = (reason && reason.trim() !== 'لم يتم تقديم سبب' && reason.trim() !== 'No reason provided') ? reason : 'No reason provided';
+        const noReasonEn = t('EN', 'events.ticket.close_no_reason');
+        const noReasonAr = t('AR', 'events.ticket.close_no_reason');
+        const closeReasonText = (reason && reason.trim() !== noReasonAr && reason.trim() !== noReasonEn) ? reason : t(interaction.guildId, 'events.ticket.close_no_reason');
 
         // إرسال اللوق لقناة السجلات (Exact 1:1 match to Wicks screenshot)
         const logChannelId = settings.ticket_log_channel || settings.log_channel;
@@ -1157,9 +1164,9 @@ module.exports = {
             if (ticketOwner) {
               const ratingEmbed = new EmbedBuilder()
                 .setColor('#06070a')
-                .setTitle('⭐ تقييم تجربة الدعم الفني')
-                .setDescription(`مرحباً **${ticketOwner.username}**!\nتم إغلاق تذكرتك في سيرفر **${interaction.guild.name}**.\nسبب الإغلاق: \`${reason}\`\n\nتجد مرفقاً سجل التذكرة الكامل (Transcript HTML).\nيرجى تقييم مستوى الخدمة ومساعدة فريق الدعم بالضغط على النجوم أدناه:`)
-                .setFooter({ text: 'تقييمك يساعدنا على تحسين وتطوير الخدمة دائماً!' })
+                .setTitle(t(interaction.guildId, 'events.ticket.rating_title'))
+                .setDescription(t(interaction.guildId, 'events.ticket.rating_desc', { user: ticketOwner.username, guild: interaction.guild.name, reason }))
+                .setFooter({ text: t(interaction.guildId, 'events.ticket.rating_footer') })
                 .setTimestamp();
 
               const ratingRow = new ActionRowBuilder().addComponents(
@@ -1167,7 +1174,7 @@ module.exports = {
                 new ButtonBuilder().setCustomId(`rate_ticket_2_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel('⭐ 2').setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder().setCustomId(`rate_ticket_3_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel('⭐ 3').setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder().setCustomId(`rate_ticket_4_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel('⭐ 4').setStyle(ButtonStyle.Primary),
-                new ButtonBuilder().setCustomId(`rate_ticket_5_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel('⭐ 5 ممتاز').setStyle(ButtonStyle.Success)
+                new ButtonBuilder().setCustomId(`rate_ticket_5_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel(t(interaction.guildId, 'events.ticket.rate_5')).setStyle(ButtonStyle.Success)
               );
 
               const userFiles = transcriptResult?.attachment ? [transcriptResult.attachment] : [];
@@ -1176,7 +1183,7 @@ module.exports = {
           } catch (e) {}
         }
 
-        await interaction.editReply({ content: '🔒 **تم إغلاق التذكرة بنجاح وجاري حذف القناة...**' });
+        await interaction.editReply({ content: t(interaction.guildId, 'events.ticket.closed') });
 
         setTimeout(async () => {
           try {
@@ -1195,12 +1202,12 @@ module.exports = {
           const buffer = Buffer.from(trans.html_content, 'utf-8');
           const attachment = new AttachmentBuilder(buffer, { name: `transcript-${ticketChannelId}.html` });
           return interaction.reply({
-            content: '📄 **سجل التذكرة الكامل (Transcript HTML):**',
+            content: t(interaction.guildId, 'events.ticket.view_transcript'),
             files: [attachment],
             flags: 64
           });
         } else {
-          return interaction.reply({ content: '❌ لم يتم العثور على ملف السجل المحفوظ.', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.ticket.transcript_missing'), flags: 64 });
         }
       }
 
@@ -1209,23 +1216,23 @@ module.exports = {
         await interaction.deferReply({ flags: 64 }).catch(() => { });
         const settings = db.getGuildSettings(interaction.guild.id);
         if (!settings.verify_role) {
-          return interaction.editReply({ content: '❌ لم يتم تحديد رتبة التوثيق في لوحة التحكم بعد.' });
+          return interaction.editReply({ content: t(interaction.guildId, 'events.verify2.no_role') });
         }
 
         const role = interaction.guild.roles.cache.get(settings.verify_role);
         if (!role) {
-          return interaction.editReply({ content: '❌ الرتبة المحددة غير موجودة بالسيرفر.' });
+          return interaction.editReply({ content: t(interaction.guildId, 'events.verify2.role_missing') });
         }
 
         if (interaction.member.roles.cache.has(role.id)) {
-          return interaction.editReply({ content: '✅ حسابك موثق بالفعل وتمتلك الرتبة مسبقاً!' });
+          return interaction.editReply({ content: t(interaction.guildId, 'events.verify2.already') });
         }
 
         try {
           await interaction.member.roles.add(role);
-          return interaction.editReply({ content: `🎉 تم توثيق حسابك بنجاح! تم منحك رتبة **@${role.name}** وفتح قنوات السيرفر.` });
+          return interaction.editReply({ content: t(interaction.guildId, 'events.verify2.done', { role: role.name }) });
         } catch (err) {
-          return interaction.editReply({ content: '❌ حدث خطأ أثناء محاولة منحك الرتبة. تأكد من أن رتبة البوت أعلى من رتبة التوثيق.' });
+          return interaction.editReply({ content: t(interaction.guildId, 'events.verify2.error') });
         }
       }
 
@@ -1239,13 +1246,13 @@ module.exports = {
 
         const modal = new ModalBuilder()
           .setCustomId(`modal_review_${rating}_${ticketId}_${staffId}_${guildId}`)
-          .setTitle(`⭐ تقييمك: ${rating} من 5 نجوم`);
+          .setTitle(t(interaction.guildId, 'events.ticket.rate_title', { rating }));
 
         const commentInput = new TextInputBuilder()
           .setCustomId('review_comment')
-          .setLabel('ملاحظتك أو رأيك في الدعم الفني (اختياري):')
+          .setLabel(t(interaction.guildId, 'events.ticket.rate_label'))
           .setStyle(TextInputStyle.Paragraph)
-          .setPlaceholder('اكتب أي ملاحظة أو رسالة لفريق الإدارة والدعم الفني...')
+          .setPlaceholder(t(interaction.guildId, 'events.ticket.rate_ph'))
           .setRequired(false)
           .setMaxLength(500);
 
@@ -1263,7 +1270,7 @@ module.exports = {
         const ticketId = parts[3];
         const staffId = parts[4] !== '0' ? parts[4] : null;
         const guildId = parts[5] || interaction.guildId;
-        const comment = interaction.fields.getTextInputValue('review_comment') || 'بدون تعليق إضافي';
+        const comment = interaction.fields.getTextInputValue('review_comment') || t(interaction.guildId, 'events.ticket.rate_no_comment');
 
         if (db.addTicketRating) {
           db.addTicketRating(guildId, ticketId, interaction.user.id, staffId || 'staff', rating, comment);
@@ -1278,12 +1285,12 @@ module.exports = {
             const starsEmoji = '⭐'.repeat(rating) + '☆'.repeat(5 - rating);
             const feedbackEmbed = new EmbedBuilder()
               .setColor(rating >= 4 ? (config.colors.success || '#10b981') : (rating === 3 ? (config.colors.warning || '#f59e0b') : (config.colors.danger || '#ef4444')))
-              .setTitle('⭐ تقييم جديد لخدمة الدعم الفني والتذاكر')
+              .setTitle(t(interaction.guildId, 'events.ticket.feedback_title'))
               .addFields(
-                { name: '👤 العضو المقيم', value: `<@${interaction.user.id}> (\`${interaction.user.tag}\`)`, inline: true },
-                { name: '👮 الموظف المسؤول', value: staffId ? `<@${staffId}>` : 'فريق الدعم', inline: true },
-                { name: '📊 مستوى التقييم', value: `\`${starsEmoji}\` (${rating}/5)`, inline: true },
-                { name: '💬 التعليق والملاحظات', value: `\`\`\`${comment}\`\`\`` }
+                { name: t(interaction.guildId, 'events.ticket.feedback_member'), value: `<@${interaction.user.id}> (\`${interaction.user.tag}\`)`, inline: true },
+                { name: t(interaction.guildId, 'events.ticket.feedback_staff'), value: staffId ? `<@${staffId}>` : t(interaction.guildId, 'events.ticket.feedback_team'), inline: true },
+                { name: t(interaction.guildId, 'events.ticket.feedback_level'), value: `\`${starsEmoji}\` (${rating}/5)`, inline: true },
+                { name: t(interaction.guildId, 'events.ticket.feedback_comment'), value: `\`\`\`${comment}\`\`\`` }
               )
               .setFooter({ text: targetGuild.name, iconURL: targetGuild.iconURL({ dynamic: true }) || undefined })
               .setTimestamp();
@@ -1292,7 +1299,7 @@ module.exports = {
           }
         }
 
-        return interaction.editReply({ content: '🌟 **تم إرسال تقييمك بنجاح للإدارة!** شكراً جزيلاً لوقتك وملاحظاتك القيمة.' });
+        return interaction.editReply({ content: t(interaction.guildId, 'events.ticket.feedback_done') });
       }
 
       // ==========================================
@@ -1307,14 +1314,14 @@ module.exports = {
         const app = db.getApplication(appId);
 
         if (!app || app.status !== 'open') {
-          return interaction.reply({ content: '❌ استمارة التقديم هذه غير متاحة أو تم إغلاقها.', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.app.closed'), flags: 64 });
         }
 
         let questions = [];
         try {
           questions = typeof app.questions === 'string' ? JSON.parse(app.questions) : app.questions;
         } catch (e) {
-          questions = [{ text: 'ما هو سبب تقديمك؟', type: 'paragraph' }];
+          questions = [{ text: t(interaction.guildId, 'events.app.q_fallback'), type: 'paragraph' }];
         }
 
         const modal = new ModalBuilder()
@@ -1322,7 +1329,7 @@ module.exports = {
           .setTitle(`📝 ${app.title.slice(0, 40)}`);
 
         questions.slice(0, 5).forEach((q, idx) => {
-          const qText = typeof q === 'object' ? (q.text || `السؤال ${idx + 1}`) : String(q);
+          const qText = typeof q === 'object' ? (q.text || t(interaction.guildId, 'events.app.q_default', { n: idx + 1 })) : String(q);
           const isShort = typeof q === 'object' && q.type === 'short';
 
           const input = new TextInputBuilder()
@@ -1344,7 +1351,7 @@ module.exports = {
         const app = db.getApplication(appId);
 
         if (!app) {
-          return interaction.editReply({ content: '❌ لم يتم العثور على نموذج التقديم.' });
+          return interaction.editReply({ content: t(interaction.guildId, 'events.app.not_found') });
         }
 
         let questions = [];
@@ -1356,8 +1363,8 @@ module.exports = {
 
         const answers = [];
         questions.slice(0, 5).forEach((q, idx) => {
-          const qText = typeof q === 'object' ? (q.text || `السؤال ${idx + 1}`) : String(q);
-          const ans = interaction.fields.getTextInputValue(`q_${idx}`) || 'لا توجد إجابة';
+          const qText = typeof q === 'object' ? (q.text || t(interaction.guildId, 'events.app.q_default', { n: idx + 1 })) : String(q);
+          const ans = interaction.fields.getTextInputValue(`q_${idx}`) || t(interaction.guildId, 'events.app.no_answer');
           answers.push({ question: qText, answer: ans });
         });
 
@@ -1370,15 +1377,15 @@ module.exports = {
           if (logChan) {
             const reviewEmbed = new EmbedBuilder()
               .setColor('#9333ea')
-              .setTitle(`📋 طلب تقديم جديد: ${app.title} (#${submission.id})`)
-              .setDescription(`👤 **مقدم الطلب:** ${interaction.user} (\`${interaction.user.tag}\`)\n🆔 **الآيدي:** \`${interaction.user.id}\`\n📅 **تاريخ التقديم:** <t:${submission.submitted_at}:F>`)
+              .setTitle(t(interaction.guildId, 'events.app.review_title', { title: app.title, id: submission.id }))
+              .setDescription(t(interaction.guildId, 'events.app.review_desc', { user: interaction.user, tag: interaction.user.tag, id: interaction.user.id, ts: submission.submitted_at }))
               .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
-              .setFooter({ text: `نموذج #${app.id} • بانتظار قرار الإدارة` })
+              .setFooter({ text: t(interaction.guildId, 'events.app.review_footer', { app: app.id }) })
               .setTimestamp();
 
             answers.forEach((item, i) => {
               reviewEmbed.addFields({
-                name: `❓ ${i + 1}. ${item.question}`,
+                name: t(interaction.guildId, 'events.app.field_q', { i: i + 1, q: item.question }),
                 value: `\`\`\`${item.answer.slice(0, 1000)}\`\`\``
               });
             });
@@ -1386,15 +1393,15 @@ module.exports = {
             const actionRow = new ActionRowBuilder().addComponents(
               new ButtonBuilder()
                 .setCustomId(`btn_app_accept_${submission.id}`)
-                .setLabel('قبول ✅')
+                .setLabel(t(interaction.guildId, 'events.app.btn_accept'))
                 .setStyle(ButtonStyle.Success),
               new ButtonBuilder()
                 .setCustomId(`btn_app_reject_${submission.id}`)
-                .setLabel('رفض ❌')
+                .setLabel(t(interaction.guildId, 'events.app.btn_reject'))
                 .setStyle(ButtonStyle.Danger),
               new ButtonBuilder()
                 .setCustomId(`btn_app_review_${submission.id}`)
-                .setLabel('مراجعة 🔍')
+                .setLabel(t(interaction.guildId, 'events.app.btn_review'))
                 .setStyle(ButtonStyle.Secondary)
             );
 
@@ -1403,7 +1410,7 @@ module.exports = {
         }
 
         return interaction.editReply({
-          content: `✅ **تم استلام طلب تقديمك بنجاح!**\nتم إرسال إجاباتك إلى إدارة السيرفر لمراجعتها، وسيتم إشعارك بالنتيجة فور اتخاذ القرار.`
+          content: t(interaction.guildId, 'events.app.received')
         });
       }
 
@@ -1413,7 +1420,7 @@ module.exports = {
         const submission = db.getSubmission(subId);
 
         if (!submission) {
-          return interaction.reply({ content: '❌ لم يتم العثور على بيانات هذا الطلب.', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.app.sub_missing'), flags: 64 });
         }
 
         const app = db.getApplication(submission.app_id);
@@ -1422,14 +1429,14 @@ module.exports = {
                         (reviewerRole && interaction.member.roles.cache.has(reviewerRole));
 
         if (!hasPerm) {
-          return interaction.reply({ content: '❌ ليس لديك صلاحية لمراجعة هذا الطلب.', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.app.no_perm_review'), flags: 64 });
         }
 
         const oldEmbed = interaction.message.embeds[0];
         const updatedEmbed = EmbedBuilder.from(oldEmbed)
           .setColor('#eab308')
-          .setTitle(oldEmbed.title.replace(/\[.*\]/, '').trim() + ' [قيد المراجعة 🔍]')
-          .addFields({ name: '🔍 قيد المراجعة بواسطة', value: `${interaction.user} (<t:${Math.floor(Date.now() / 1000)}:R>)`, inline: false });
+          .setTitle(oldEmbed.title.replace(/\[.*\]/, '').trim() + t(interaction.guildId, 'events.app.suffix_review'))
+          .addFields({ name: t(interaction.guildId, 'events.app.field_review'), value: `${interaction.user} (<t:${Math.floor(Date.now() / 1000)}:R>)`, inline: false });
 
         return interaction.update({ embeds: [updatedEmbed] });
       }
@@ -1440,7 +1447,7 @@ module.exports = {
         const submission = db.getSubmission(subId);
 
         if (!submission || submission.status !== 'pending') {
-          return interaction.reply({ content: '⚠️ هذا الطلب تمت مراجعته مسبقاً!', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.app.already'), flags: 64 });
         }
 
         const app = db.getApplication(submission.app_id);
@@ -1449,7 +1456,7 @@ module.exports = {
                         (reviewerRole && interaction.member.roles.cache.has(reviewerRole));
 
         if (!hasPerm) {
-          return interaction.reply({ content: '❌ ليس لديك صلاحية لمراجعة وقبول التقديمات.', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.app.no_perm_accept'), flags: 64 });
         }
 
         await interaction.deferUpdate().catch(() => { });
@@ -1471,8 +1478,8 @@ module.exports = {
           applicantUser.send({
             embeds: [new EmbedBuilder()
               .setColor('#10b981')
-              .setTitle('🎉 تهانينا! تم قبول طلب تقديمك')
-              .setDescription(`تمت الموافقة على طلب تقديمك على **${app ? app.title : 'الرتبة'}** في سيرفر **${interaction.guild.name}**.\nنتمنى لك كل التوفيق والتميز! 🌟`)
+              .setTitle(t(interaction.guildId, 'events.app.dm_accept_title'))
+              .setDescription(t(interaction.guildId, 'events.app.dm_accept_desc', { title: app ? app.title : t(interaction.guildId, 'events.app.rank_fallback'), guild: interaction.guild.name }))
               .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL({ dynamic: true }) || undefined })
               .setTimestamp()
             ]
@@ -1482,8 +1489,8 @@ module.exports = {
         const oldEmbed = interaction.message.embeds[0];
         const updatedEmbed = EmbedBuilder.from(oldEmbed)
           .setColor('#10b981')
-          .setTitle(oldEmbed.title.replace(/\[.*\]/, '').trim() + ' [مقبول ✅]')
-          .addFields({ name: '✨ تم القبول بواسطة', value: `${interaction.user} (<t:${Math.floor(Date.now() / 1000)}:R>)`, inline: false });
+          .setTitle(oldEmbed.title.replace(/\[.*\]/, '').trim() + t(interaction.guildId, 'events.app.suffix_accepted'))
+          .addFields({ name: t(interaction.guildId, 'events.app.field_accepted'), value: `${interaction.user} (<t:${Math.floor(Date.now() / 1000)}:R>)`, inline: false });
 
         return interaction.editReply({ embeds: [updatedEmbed], components: [] });
       }
@@ -1494,7 +1501,7 @@ module.exports = {
         const submission = db.getSubmission(subId);
 
         if (!submission || submission.status !== 'pending') {
-          return interaction.reply({ content: '⚠️ هذا الطلب تمت مراجعته مسبقاً!', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.app.already'), flags: 64 });
         }
 
         const app = db.getApplication(submission.app_id);
@@ -1503,18 +1510,18 @@ module.exports = {
                         (reviewerRole && interaction.member.roles.cache.has(reviewerRole));
 
         if (!hasPerm) {
-          return interaction.reply({ content: '❌ ليس لديك صلاحية لمراجعة ورفض التقديمات.', flags: 64 });
+          return interaction.reply({ content: t(interaction.guildId, 'events.app.no_perm_reject'), flags: 64 });
         }
 
         const modal = new ModalBuilder()
           .setCustomId(`modal_reject_reason_${subId}`)
-          .setTitle('سبب رفض الطلب 📝');
+          .setTitle(t(interaction.guildId, 'events.app.reject_title'));
 
         const reasonInput = new TextInputBuilder()
           .setCustomId('reject_reason')
-          .setLabel('اكتب سبب الرفض لإرساله للعضو')
+          .setLabel(t(interaction.guildId, 'events.app.reject_label'))
           .setStyle(TextInputStyle.Paragraph)
-          .setPlaceholder('مثال: عدم استيفاء الشروط المطلوبة حالياً...')
+          .setPlaceholder(t(interaction.guildId, 'events.app.reject_ph'))
           .setRequired(false)
           .setMaxLength(500);
 
@@ -1529,10 +1536,10 @@ module.exports = {
         const submission = db.getSubmission(subId);
 
         if (!submission || submission.status !== 'pending') {
-          return interaction.editReply({ content: '⚠️ هذا الطلب تمت مراجعته مسبقاً!' });
+          return interaction.editReply({ content: t(interaction.guildId, 'events.app.already') });
         }
 
-        const reason = interaction.fields.getTextInputValue('reject_reason') || 'لم يتم تحديد سبب إضافي';
+        const reason = interaction.fields.getTextInputValue('reject_reason') || t(interaction.guildId, 'events.app.reject_default');
         const app = db.getApplication(submission.app_id);
 
         db.updateSubmissionStatus(subId, 'rejected', interaction.user.id);
@@ -1544,8 +1551,8 @@ module.exports = {
           applicantUser.send({
             embeds: [new EmbedBuilder()
               .setColor('#ef4444')
-              .setTitle('❌ نعتذر منك! تم رفض طلب التقديم')
-              .setDescription(`نأسف لإبلاغك بأنه لم يتم قبول طلب تقديمك على **${app ? app.title : 'الرتبة'}** في سيرفر **${interaction.guild.name}**.\n\n📌 **سبب الرفض:**\n\`\`\`${reason}\`\`\`\nشكراً جزيلاً لاهتمامك ووقتك!`)
+              .setTitle(t(interaction.guildId, 'events.app.dm_reject_title'))
+              .setDescription(t(interaction.guildId, 'events.app.dm_reject_desc', { title: app ? app.title : t(interaction.guildId, 'events.app.rank_fallback'), guild: interaction.guild.name, reason }))
               .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL({ dynamic: true }) || undefined })
               .setTimestamp()
             ]
@@ -1564,10 +1571,10 @@ module.exports = {
                 const oldEmbed = targetMsg.embeds[0];
                 const updatedEmbed = EmbedBuilder.from(oldEmbed)
                   .setColor('#ef4444')
-                  .setTitle(oldEmbed.title.replace(/\[.*\]/, '').trim() + ' [مرفوض ❌]')
+                  .setTitle(oldEmbed.title.replace(/\[.*\]/, '').trim() + t(interaction.guildId, 'events.app.suffix_rejected'))
                   .addFields(
-                    { name: '🚫 تم الرفض بواسطة', value: `${interaction.user} (<t:${Math.floor(Date.now() / 1000)}:R>)`, inline: true },
-                    { name: '📝 سبب الرفض', value: `\`\`\`${reason}\`\`\``, inline: false }
+                    { name: t(interaction.guildId, 'events.app.field_rejected'), value: `${interaction.user} (<t:${Math.floor(Date.now() / 1000)}:R>)`, inline: true },
+                    { name: t(interaction.guildId, 'events.app.field_reason'), value: `\`\`\`${reason}\`\`\``, inline: false }
                   );
                 await targetMsg.edit({ embeds: [updatedEmbed], components: [] });
               }
@@ -1575,7 +1582,7 @@ module.exports = {
           }
         }
 
-        return interaction.editReply({ content: `✅ تم رفض الطلب بنجاح وإرسال السبب للعضو في الخاص.` });
+        return interaction.editReply({ content: t(interaction.guildId, 'events.app.rejected_ok') });
       }
 
       // ==========================================
@@ -1613,7 +1620,7 @@ module.exports = {
 
           if (!isStaff) {
             return interaction.editReply({
-              content: '❌ هذا الزر مخصص لطاقم الإدارة والمشرفين فقط!'
+              content: t(interaction.guildId, 'events.shift.staff_only')
             });
           }
 
@@ -1628,19 +1635,19 @@ module.exports = {
             if (!result.success && result.error === 'already_active') {
               const startedAt = result.shift?.start_time || Math.floor(Date.now() / 1000);
               return interaction.editReply({
-                content: `⚠️ أنت مسجل دخول بالفعل وفي الخدمة حالياً منذ <t:${startedAt}:R>!`
+                content: t(interaction.guildId, 'events.shift.already_in', { ts: startedAt })
               });
             }
 
             const nowUnix = Math.floor(Date.now() / 1000);
             const loginEmbed = new EmbedBuilder()
               .setColor('#10b981')
-              .setTitle('🟢 تسجيل دخول إداري جديد (Shift Started)')
+              .setTitle(t(interaction.guildId, 'events.shift.login_title'))
               .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
               .addFields(
-                { name: '👤 الإداري', value: `${interaction.user} (\`${interaction.user.tag}\`)`, inline: true },
-                { name: '🆔 الأيدي', value: `\`${interaction.user.id}\``, inline: true },
-                { name: '⏰ وقت البداية', value: `<t:${nowUnix}:F>\n(<t:${nowUnix}:R>)`, inline: false }
+                { name: t(interaction.guildId, 'events.shift.f_admin'), value: `${interaction.user} (\`${interaction.user.tag}\`)`, inline: true },
+                { name: t(interaction.guildId, 'events.shift.f_id'), value: `\`${interaction.user.id}\``, inline: true },
+                { name: t(interaction.guildId, 'events.shift.f_start'), value: `<t:${nowUnix}:F>\n(<t:${nowUnix}:R>)`, inline: false }
               )
               .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL({ dynamic: true }) || undefined })
               .setTimestamp();
@@ -1650,7 +1657,7 @@ module.exports = {
             }
 
             return interaction.editReply({
-              content: `✅ **تم تسجيل بداية دوامك بنجاح!**\nالوقت: <t:${nowUnix}:T>. بالتوفيق في خدمة الأعضاء 🫡`
+              content: t(interaction.guildId, 'events.shift.login_ok', { ts: nowUnix })
             });
           }
 
@@ -1659,26 +1666,28 @@ module.exports = {
             const result = db.endStaffShift(interaction.guild.id, interaction.user.id, 'user');
             if (!result.success && result.error === 'not_active') {
               return interaction.editReply({
-                content: '❌ أنت لست مسجلاً في الخدمة حالياً! اضغط على زر **تسجيل الدخول** لبدء دوامك أولاً.'
+                content: t(interaction.guildId, 'events.shift.not_active')
               });
             }
 
             const durationHours = Math.floor(result.duration / 3600);
             const durationMins = Math.floor((result.duration % 3600) / 60);
             const durationSecs = result.duration % 60;
-            const durationStr = `${durationHours > 0 ? `${durationHours} ساعة و ` : ''}${durationMins} دقيقة و ${durationSecs} ثانية`;
+            const durationStr = durationHours > 0
+              ? t(interaction.guildId, 'events.shift.dur_h', { h: durationHours, m: durationMins, s: durationSecs })
+              : t(interaction.guildId, 'events.shift.dur_m', { m: durationMins, s: durationSecs });
 
             const logoutEmbed = new EmbedBuilder()
               .setColor('#ef4444')
-              .setTitle('🔴 تسجيل خروج إداري (Shift Ended)')
+              .setTitle(t(interaction.guildId, 'events.shift.logout_title'))
               .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
               .addFields(
-                { name: '👤 الإداري', value: `${interaction.user} (\`${interaction.user.tag}\`)`, inline: true },
-                { name: '⏱️ مدة التواجد', value: `\`${durationStr}\``, inline: true },
-                { name: '⭐ النقاط المكتسبة', value: `+${result.pointsEarned} نقطة`, inline: true },
-                { name: '⏰ البداية', value: `<t:${result.startTime}:T>`, inline: true },
-                { name: '⏰ النهاية', value: `<t:${result.endTime}:T>`, inline: true },
-                { name: '📌 نوع الخروج', value: 'يدوي (بواسطة الإداري)', inline: true }
+                { name: t(interaction.guildId, 'events.shift.f_admin'), value: `${interaction.user} (\`${interaction.user.tag}\`)`, inline: true },
+                { name: t(interaction.guildId, 'events.shift.f_duration'), value: `\`${durationStr}\``, inline: true },
+                { name: t(interaction.guildId, 'events.shift.f_points'), value: t(interaction.guildId, 'events.shift.points_val', { n: result.pointsEarned }), inline: true },
+                { name: t(interaction.guildId, 'events.shift.f_start2'), value: `<t:${result.startTime}:T>`, inline: true },
+                { name: t(interaction.guildId, 'events.shift.f_end'), value: `<t:${result.endTime}:T>`, inline: true },
+                { name: t(interaction.guildId, 'events.shift.f_exit_type'), value: t(interaction.guildId, 'events.shift.exit_manual'), inline: true }
               )
               .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL({ dynamic: true }) || undefined })
               .setTimestamp();
@@ -1688,13 +1697,13 @@ module.exports = {
             }
 
             return interaction.editReply({
-              content: `🛑 **تم تسجيل خروجك بنجاح!**\n⏱️ إجمالي مدة خدمتك اليوم: **${durationStr}**\n⭐ نقاط إضافية: **+${result.pointsEarned}** نقطة.\nشكراً لجهودك وعملك المتميز! 👏`
+              content: t(interaction.guildId, 'events.shift.logout_ok', { dur: durationStr, pts: result.pointsEarned })
             });
           }
         } catch (shiftErr) {
           logger.error('[STAFF SHIFT ERROR]', shiftErr);
           if (shiftDeferred) {
-            await interaction.editReply({ content: '❌ حدث خطأ غير متوقع، يرجى المحاولة لاحقاً.' }).catch(() => {});
+            await interaction.editReply({ content: t(interaction.guildId, 'events.common.unexpected') }).catch(() => {});
           }
         }
       }

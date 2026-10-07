@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'come',
@@ -12,7 +13,7 @@ module.exports = {
 
   async execute(interaction) {
     const user = interaction.options.getUser('user');
-    await user.send({ content: '📢 طلب المشرف حضورك إلى: <#' + interaction.channel.id + '> في سيرفر ' + interaction.guild.name }).catch(() => {});
-    return interaction.reply({ content: '✅ تم إرسال طلب الحضور بنجاح!' });
+    await user.send({ content: t(interaction.guild.id, 'general.come.dm', { channel: interaction.channel.id, guild: interaction.guild.name }) }).catch(() => {});
+    return interaction.reply({ content: t(interaction.guild.id, 'general.come.sent') });
   }
 };

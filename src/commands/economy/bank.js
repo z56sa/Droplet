@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const db = require('../../database');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'bank',
@@ -27,6 +28,7 @@ module.exports = {
   },
 
   async handleBank(user, guildId, sub, amountArg, reply) {
+    const lang = getGuildLang(guildId);
     // تأكد أن عمود bank_balance موجود
     try {
       db.db.prepare('ALTER TABLE users ADD COLUMN bank_balance INTEGER DEFAULT 0').run();
@@ -39,14 +41,14 @@ module.exports = {
     if (sub === 'balance') {
       const embed = new EmbedBuilder()
         .setColor('#3498db')
-        .setTitle(`🏦 حساب ${user.username} البنكي`)
+        .setTitle(t(lang, 'economy.bank.title_balance', { name: user.username }))
         .setThumbnail(user.displayAvatarURL({ dynamic: true }))
         .addFields(
-          { name: '👛 المحفظة', value: `\`${wallet.toLocaleString()}\` ⭐`, inline: true },
-          { name: '🏦 البنك', value: `\`${bank.toLocaleString()}\` ⭐`, inline: true },
-          { name: '💎 الإجمالي', value: `\`${(wallet + bank).toLocaleString()}\` ⭐`, inline: true }
+          { name: t(lang, 'economy.bank.field_wallet'), value: `\`${wallet.toLocaleString()}\` ⭐`, inline: true },
+          { name: t(lang, 'economy.bank.field_bank'), value: `\`${bank.toLocaleString()}\` ⭐`, inline: true },
+          { name: t(lang, 'economy.bank.field_total'), value: `\`${(wallet + bank).toLocaleString()}\` ⭐`, inline: true }
         )
-        .setFooter({ text: 'المال في البنك آمن من الخسارة في المراهنات!' })
+        .setFooter({ text: t(lang, 'economy.bank.footer') })
         .setTimestamp();
       return reply({ embeds: [embed] });
     }
@@ -55,42 +57,42 @@ module.exports = {
     const amount = isAll ? (sub === 'deposit' ? wallet : bank) : parseInt(amountArg);
 
     if (isNaN(amount) || amount <= 0)
-      return reply({ content: '❌ أدخل مبلغاً صحيحاً أو اكتب `all`.', flags: 64 });
+      return reply({ content: t(lang, 'economy.bank.invalid_amount'), flags: 64 });
 
     if (sub === 'deposit') {
       try {
         const res = db.depositBank(user.id, guildId, amount);
         const embed = new EmbedBuilder().setColor('#27ae60')
-          .setTitle('✅ تم الإيداع في البنك')
+          .setTitle(t(lang, 'economy.bank.deposit_title'))
           .addFields(
-            { name: '💰 تم إيداع', value: `\`${amount.toLocaleString()}\` ⭐`, inline: true },
-            { name: '👛 المحفظة', value: `\`${res.wallet.toLocaleString()}\` ⭐`, inline: true },
-            { name: '🏦 البنك', value: `\`${res.bank.toLocaleString()}\` ⭐`, inline: true }
+            { name: t(lang, 'economy.bank.deposit_field'), value: `\`${amount.toLocaleString()}\` ⭐`, inline: true },
+            { name: t(lang, 'economy.bank.field_wallet'), value: `\`${res.wallet.toLocaleString()}\` ⭐`, inline: true },
+            { name: t(lang, 'economy.bank.field_bank'), value: `\`${res.bank.toLocaleString()}\` ⭐`, inline: true }
           ).setTimestamp();
         return reply({ embeds: [embed] });
       } catch (err) {
         if (err.message === 'INSUFFICIENT_WALLET') {
-          return reply({ content: `❌ ليس في محفظتك كافٍ! لديك \`${wallet.toLocaleString()}\` ⭐`, flags: 64 });
+          return reply({ content: t(lang, 'economy.bank.deposit_insufficient', { wallet: wallet.toLocaleString() }), flags: 64 });
         }
-        return reply({ content: '❌ حدث خطأ أثناء عملية الإيداع.', flags: 64 });
+        return reply({ content: t(lang, 'economy.bank.deposit_error'), flags: 64 });
       }
 
     } else if (sub === 'withdraw') {
       try {
         const res = db.withdrawBank(user.id, guildId, amount);
         const embed = new EmbedBuilder().setColor('#e67e22')
-          .setTitle('✅ تم السحب من البنك')
+          .setTitle(t(lang, 'economy.bank.withdraw_title'))
           .addFields(
-            { name: '💰 تم سحب', value: `\`${amount.toLocaleString()}\` ⭐`, inline: true },
-            { name: '👛 المحفظة', value: `\`${res.wallet.toLocaleString()}\` ⭐`, inline: true },
-            { name: '🏦 البنك', value: `\`${res.bank.toLocaleString()}\` ⭐`, inline: true }
+            { name: t(lang, 'economy.bank.withdraw_field'), value: `\`${amount.toLocaleString()}\` ⭐`, inline: true },
+            { name: t(lang, 'economy.bank.field_wallet'), value: `\`${res.wallet.toLocaleString()}\` ⭐`, inline: true },
+            { name: t(lang, 'economy.bank.field_bank'), value: `\`${res.bank.toLocaleString()}\` ⭐`, inline: true }
           ).setTimestamp();
         return reply({ embeds: [embed] });
       } catch (err) {
         if (err.message === 'INSUFFICIENT_BANK') {
-          return reply({ content: `❌ ليس في بنكك كافٍ! لديك \`${bank.toLocaleString()}\` ⭐ في البنك.`, flags: 64 });
+          return reply({ content: t(lang, 'economy.bank.withdraw_insufficient', { bank: bank.toLocaleString() }), flags: 64 });
         }
-        return reply({ content: '❌ حدث خطأ أثناء عملية السحب.', flags: 64 });
+        return reply({ content: t(lang, 'economy.bank.withdraw_error'), flags: 64 });
       }
     }
   }

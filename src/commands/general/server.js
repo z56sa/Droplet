@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ChannelType } = require('discord.js');
 const config = require('../../config.json');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'server',
@@ -28,16 +29,16 @@ module.exports = {
 
     return new EmbedBuilder()
       .setColor(config.colors.primary)
-      .setTitle(`🏰 معلومات السيرفر: ${guild.name}`)
+      .setTitle(t(guild.id, 'general.server.title', { guild: guild.name }))
       .setThumbnail(guild.iconURL({ dynamic: true, size: 256 }))
       .addFields(
-        { name: '🆔 أيدي السيرفر', value: `\`${guild.id}\``, inline: true },
-        { name: '👑 مالك السيرفر', value: owner ? `<@${owner.id}>` : 'غير معروف', inline: true },
-        { name: '📅 تاريخ الإنشاء', value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:R>`, inline: true },
-        { name: '👥 عدد الأعضاء', value: `\`${guild.memberCount}\` عضو`, inline: true },
-        { name: '👑 عدد الرتب', value: `\`${guild.roles.cache.size}\` رتبة`, inline: true },
-        { name: '🚀 مستوى التعزيز (Boost)', value: `المستوى ${guild.premiumTier} (${guild.premiumSubscriptionCount || 0} بوست)`, inline: true },
-        { name: '💬 القنوات والرومات', value: `💬 كتابية: \`${textChannels}\` | 🔊 صوتية: \`${voiceChannels}\` | 📁 تصنيفات: \`${categories}\``, inline: false }
+        { name: t(guild.id, 'general.server.field_id'), value: `\`${guild.id}\``, inline: true },
+        { name: t(guild.id, 'general.server.field_owner'), value: owner ? `<@${owner.id}>` : t(guild.id, 'general.server.unknown'), inline: true },
+        { name: t(guild.id, 'general.server.field_created'), value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:R>`, inline: true },
+        { name: t(guild.id, 'general.server.field_members'), value: t(guild.id, 'general.server.members_value', { n: guild.memberCount }), inline: true },
+        { name: t(guild.id, 'general.server.field_roles'), value: t(guild.id, 'general.server.roles_value', { n: guild.roles.cache.size }), inline: true },
+        { name: t(guild.id, 'general.server.field_boost'), value: t(guild.id, 'general.server.boost_value', { tier: guild.premiumTier, count: guild.premiumSubscriptionCount || 0 }), inline: true },
+        { name: t(guild.id, 'general.server.field_channels'), value: t(guild.id, 'general.server.channels_value', { t: textChannels, v: voiceChannels, c: categories }), inline: false }
       )
       .setTimestamp();
   }

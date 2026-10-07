@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'auto-responder',
@@ -8,27 +9,32 @@ module.exports = {
   aliases: ['رد_تلقائي', 'autoresponder'],
   data: new SlashCommandBuilder()
     .setName('auto-responder')
-    .setDescription('إدارة نظام الرد التلقائي')
+    .setDescription('Manage the auto-reply system')
+
     .addSubcommand(sub =>
       sub.setName('add')
-        .setDescription('إضافة رد تلقائي جديد')
-        .addStringOption(opt => opt.setName('word').setDescription('الكلمة التي عند كتابتها يرد البوت').setRequired(true))
-        .addStringOption(opt => opt.setName('reply').setDescription('رد البوت').setRequired(true))
+        .setDescription('Add a new auto-reply')
+
+        .addStringOption(opt => opt.setName('word').setDescription('The word that triggers the bot reply').setRequired(true))
+        .addStringOption(opt => opt.setName('reply').setDescription('The bot reply').setRequired(true))
     )
     .addSubcommand(sub =>
       sub.setName('list')
-        .setDescription('عرض قائمة الردود التلقائية في السيرفر')
+        .setDescription('Show the server auto-reply list')
+
     )
     .addSubcommand(sub =>
       sub.setName('delete')
-        .setDescription('حذف رد تلقائي بواسطة رقمه (ID)')
-        .addIntegerOption(opt => opt.setName('id').setDescription('رقم الرد التلقائي').setRequired(true))
+        .setDescription('Delete an auto-reply by its number (ID)')
+
+        .addIntegerOption(opt => opt.setName('id').setDescription('The auto-reply number').setRequired(true))
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية إدارة السيرفر.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'common.no_manage_perm'), flags: 64 });
     }
 
     const sub = interaction.options.getSubcommand();
@@ -42,10 +48,10 @@ module.exports = {
 
       const embed = new EmbedBuilder()
         .setColor(config.colors.success)
-        .setTitle('✅ تم إضافة الرد التلقائي بنجاح')
+        .setTitle(t(lang, 'admin.autoresponder.add_title'))
         .addFields(
-          { name: '💬 عند كتابة:', value: `\`${word}\``, inline: true },
-          { name: '🤖 سيرد البوت بـ:', value: reply, inline: true }
+          { name: t(lang, 'admin.autoresponder.add_when'), value: `\`${word}\``, inline: true },
+          { name: t(lang, 'admin.autoresponder.add_reply'), value: reply, inline: true }
         )
         .setTimestamp();
 
@@ -53,16 +59,16 @@ module.exports = {
     } else if (sub === 'list') {
       const list = db.getAutoResponders(guildId);
       if (!list || list.length === 0) {
-        return interaction.reply({ content: '❌ لا توجد أي ردود تلقائية مضافة في هذا السيرفر بعد.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.autoresponder.list_empty'), flags: 64 });
       }
 
       const embed = new EmbedBuilder()
         .setColor(config.colors.primary)
-        .setTitle(`📋 قائمة الردود التلقائية | ${interaction.guild.name}`)
+        .setTitle(t(lang, 'admin.autoresponder.list_title', { guild: interaction.guild.name }))
         .setDescription(
-          list.map(r => `**#${r.id}** | الكلمة: \`${r.trigger_word}\` ➡️ الرد: ${r.reply_text}`).join('\n\n')
+          list.map(r => t(lang, 'admin.autoresponder.list_row', { id: r.id, word: r.trigger_word, reply: r.reply_text })).join('\n\n')
         )
-        .setFooter({ text: 'لحذف أي رد استخدم /auto-responder delete مع رقم الرد' })
+        .setFooter({ text: t(lang, 'admin.autoresponder.list_footer') })
         .setTimestamp();
 
       await interaction.reply({ embeds: [embed] });
@@ -71,9 +77,9 @@ module.exports = {
       const result = db.deleteAutoResponder(id, guildId);
 
       if (result.changes > 0) {
-        await interaction.reply({ content: `✅ تم حذف الرد التلقائي رقم **#${id}** بنجاح.` });
+        await interaction.reply({ content: t(lang, 'admin.autoresponder.deleted', { id }) });
       } else {
-        await interaction.reply({ content: `❌ لم يتم العثور على رد تلقائي يحمل الرقم **#${id}**.`, flags: 64 });
+        await interaction.reply({ content: t(lang, 'admin.autoresponder.not_found', { id }), flags: 64 });
       }
     }
   }

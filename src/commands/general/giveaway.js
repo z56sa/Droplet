@@ -2,6 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder
 const ms = require('ms');
 const db = require('../../database');
 const config = require('../../config.json');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'giveaway',
@@ -9,35 +10,36 @@ module.exports = {
   aliases: ['قيف_اواي', 'سحب', 'giveaways'],
   data: new SlashCommandBuilder()
     .setName('giveaway')
-    .setDescription('إدارة سحوبات القيف أواي المتقدمة')
+    .setDescription('Manage advanced giveaways')
     .addSubcommand(sub =>
       sub.setName('start')
-        .setDescription('بدء قيف أواي جديد مع شروط ومكافآت اختيارية')
-        .addStringOption(opt => opt.setName('duration').setDescription('مدة القيف أواي (مثال: 10m, 1h, 1d)').setRequired(true))
-        .addStringOption(opt => opt.setName('prize').setDescription('الجائزة').setRequired(true))
-        .addIntegerOption(opt => opt.setName('winners').setDescription('عدد الفائزين (افتراضي: 1)').setMinValue(1).setMaxValue(20).setRequired(false))
-        .addChannelOption(opt => opt.setName('channel').setDescription('روم القيف أواي').addChannelTypes(ChannelType.GuildText).setRequired(false))
-        .addRoleOption(opt => opt.setName('required_role').setDescription('رتبة إجبارية للمشاركة').setRequired(false))
-        .addIntegerOption(opt => opt.setName('min_level').setDescription('أدنى مستوى مطلوب للاشتراك').setMinValue(1).setRequired(false))
-        .addIntegerOption(opt => opt.setName('min_account_age').setDescription('الحد الأدنى لعمر الحساب بالأيام (Anti-Alt)').setMinValue(1).setRequired(false))
-        .addRoleOption(opt => opt.setName('extra_role').setDescription('رتبة مميزة تمنح فرصة فوز مضاعفة (x2)').setRequired(false))
+        .setDescription('Start a new giveaway with optional requirements and perks')
+        .addStringOption(opt => opt.setName('duration').setDescription('Giveaway duration (e.g. 10m, 1h, 1d)').setRequired(true))
+        .addStringOption(opt => opt.setName('prize').setDescription('The prize').setRequired(true))
+        .addIntegerOption(opt => opt.setName('winners').setDescription('Number of winners (default: 1)').setMinValue(1).setMaxValue(20).setRequired(false))
+        .addChannelOption(opt => opt.setName('channel').setDescription('Giveaway channel').addChannelTypes(ChannelType.GuildText).setRequired(false))
+        .addRoleOption(opt => opt.setName('required_role').setDescription('Role required to enter').setRequired(false))
+        .addIntegerOption(opt => opt.setName('min_level').setDescription('Minimum level required to enter').setMinValue(1).setRequired(false))
+        .addIntegerOption(opt => opt.setName('min_account_age').setDescription('Minimum account age in days (Anti-Alt)').setMinValue(1).setRequired(false))
+        .addRoleOption(opt => opt.setName('extra_role').setDescription('Bonus role that grants double winning chance (x2)').setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('end')
-        .setDescription('إنهاء قيف أواي حالي واختيار الفائز فوراً')
-        .addStringOption(opt => opt.setName('message_id').setDescription('أيدي رسالة القيف أواي').setRequired(true))
+        .setDescription('End a running giveaway and pick a winner instantly')
+        .addStringOption(opt => opt.setName('message_id').setDescription('Giveaway message ID').setRequired(true))
     )
     .addSubcommand(sub =>
       sub.setName('reroll')
-        .setDescription('إعادة السحب واختيار فائز جديد')
-        .addStringOption(opt => opt.setName('message_id').setDescription('أيدي رسالة القيف أواي').setRequired(true))
-        .addIntegerOption(opt => opt.setName('winners').setDescription('عدد الفائزين الجدد المراد سحبهم').setMinValue(1).setRequired(false))
+        .setDescription('Reroll and pick a new winner')
+        .addStringOption(opt => opt.setName('message_id').setDescription('Giveaway message ID').setRequired(true))
+        .addIntegerOption(opt => opt.setName('winners').setDescription('Number of new winners to draw').setMinValue(1).setRequired(false))
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
   async execute(interaction, client) {
+    const gid = interaction.guild.id;
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية إدارة السيرفر (Manage Server).', flags: 64 });
+      return interaction.reply({ content: t(gid, 'general.giveaway.no_perm'), flags: 64 });
     }
 
     const sub = interaction.options.getSubcommand();
@@ -54,7 +56,7 @@ module.exports = {
 
       const durationMs = ms(durationStr);
       if (!durationMs || durationMs < 5000) {
-        return interaction.reply({ content: '❌ المدة المحددة غير صحيحة. استخدم صيغة مثل: `10m`, `1h`, `2d`.', flags: 64 });
+        return interaction.reply({ content: t(gid, 'general.giveaway.invalid_duration'), flags: 64 });
       }
 
       const endsAt = Date.now() + durationMs;
@@ -62,33 +64,33 @@ module.exports = {
 
       // بناء الشروط في الوصف
       const reqList = [];
-      if (requiredRole) reqList.push(`• 🛡️ **الرتبة المطلوبة:** <@&${requiredRole.id}>`);
-      if (minLevel > 0) reqList.push(`• ⭐ **المستوى الأدنى:** \`Lv.${minLevel}\``);
-      if (minAccountAge > 0) reqList.push(`• 📅 **عمر الحساب:** \`${minAccountAge} يوم أو أكثر\``);
-      if (extraRole) reqList.push(`• 🔥 **فرصة مضاعفة (x2):** <@&${extraRole.id}>`);
+      if (requiredRole) reqList.push(t(gid, 'general.giveaway.req_role', { role: `<@&${requiredRole.id}>` }));
+      if (minLevel > 0) reqList.push(t(gid, 'general.giveaway.req_level', { level: minLevel }));
+      if (minAccountAge > 0) reqList.push(t(gid, 'general.giveaway.req_age', { days: minAccountAge }));
+      if (extraRole) reqList.push(t(gid, 'general.giveaway.req_extra', { role: `<@&${extraRole.id}>` }));
 
       const embed = new EmbedBuilder()
         .setColor('#5865F2')
-        .setTitle(`🎉 **سحب قيف أواي: ${prize}** 🎉`)
+        .setTitle(t(gid, 'general.giveaway.embed_title', { prize }))
         .setDescription([
-          `اضغط على زر **🎉 اشتراك** للدخول في السحب فورياً!`,
-          `\n🏆 **عدد الفائزين:** \`${winnersCount}\``,
-          `⏰ **ينتهي في:** <t:${endsTimestamp}:R> (<t:${endsTimestamp}:F>)`,
-          `👤 **مستضاف بواسطة:** ${interaction.user}`,
-          reqList.length > 0 ? `\n📌 **شروط ومميزات الاشتراك:**\n${reqList.join('\n')}` : ''
+          t(gid, 'general.giveaway.embed_line_join'),
+          t(gid, 'general.giveaway.embed_line_winners', { count: winnersCount }),
+          t(gid, 'general.giveaway.embed_line_ends', { ts: endsTimestamp }),
+          t(gid, 'general.giveaway.embed_line_host', { user: `${interaction.user}` }),
+          reqList.length > 0 ? t(gid, 'general.giveaway.embed_req_header', { reqs: reqList.join('\n') }) : ''
         ].filter(Boolean).join('\n'))
         .setThumbnail('https://cdn-icons-png.flaticon.com/512/3112/3112946.png')
-        .setFooter({ text: 'Droplet Giveaways • انقر للاشتراك أو المغادرة' })
+        .setFooter({ text: t(gid, 'general.giveaway.embed_footer') })
         .setTimestamp(endsAt);
 
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId('join_giveaway')
-          .setLabel('🎉 اشتراك (0)')
+          .setLabel(t(gid, 'general.giveaway.btn_join', { count: 0 }))
           .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
           .setCustomId('view_giveaway_entries')
-          .setLabel('👥 المشتركين')
+          .setLabel(t(gid, 'general.giveaway.btn_entries'))
           .setStyle(ButtonStyle.Secondary)
       );
 
@@ -107,7 +109,7 @@ module.exports = {
         extraRole ? extraRole.id : null
       );
 
-      await interaction.reply({ content: `✅ **تم إطلاق القيف أواي بنجاح في:** <#${channel.id}>`, flags: 64 });
+      await interaction.reply({ content: t(gid, 'general.giveaway.launched', { channel: `<#${channel.id}>` }), flags: 64 });
 
       // تشغيل المؤقت
       setTimeout(() => {
@@ -119,11 +121,11 @@ module.exports = {
       const giveaway = db.getGiveaway(messageId);
 
       if (!giveaway || giveaway.ended) {
-        return interaction.reply({ content: '❌ هذا القيف أواي غير موجود أو انتهى مسبقاً.', flags: 64 });
+        return interaction.reply({ content: t(gid, 'general.giveaway.end_not_found'), flags: 64 });
       }
 
       await this.finishGiveaway(messageId, client);
-      await interaction.reply({ content: '✅ تم إنهاء القيف أواي واختيار الفائزين بنجاح.', flags: 64 });
+      await interaction.reply({ content: t(gid, 'general.giveaway.end_done'), flags: 64 });
 
     } else if (sub === 'reroll') {
       const messageId = interaction.options.getString('message_id');
@@ -131,7 +133,7 @@ module.exports = {
       const giveaway = db.getGiveaway(messageId);
 
       if (!giveaway) {
-        return interaction.reply({ content: '❌ لم يتم العثور على القيف أواي المطلوب.', flags: 64 });
+        return interaction.reply({ content: t(gid, 'general.giveaway.reroll_not_found'), flags: 64 });
       }
 
       const count = customWinnersCount || giveaway.winners_count || 1;
@@ -139,16 +141,16 @@ module.exports = {
       const channel = client.channels.cache.get(giveaway.channel_id);
 
       if (!winners || winners.length === 0) {
-        return interaction.reply({ content: '❌ لا يوجد مشتركون مؤهلون متاحون لإعادة السحب.', flags: 64 });
+        return interaction.reply({ content: t(gid, 'general.giveaway.reroll_empty'), flags: 64 });
       }
 
       const winnersText = winners.map(w => `<@${w}>`).join(', ');
       if (channel) {
         await channel.send({
-          content: `🎲 **إعادة السحب (Reroll)!**\n🎉 الفائز الجديد بالجائزة **${giveaway.prize}** هو: ${winnersText}! 🥳\nمبارك لك! تواصل مع <@${giveaway.hosted_by}> لاستلام جائزتك.`
+          content: t(giveaway.guild_id, 'general.giveaway.reroll_announce', { prize: giveaway.prize, winners: winnersText, host: `<@${giveaway.hosted_by}>` })
         });
       }
-      await interaction.reply({ content: `✅ تم إعادة السحب واختيار الفائز: ${winnersText}`, flags: 64 });
+      await interaction.reply({ content: t(gid, 'general.giveaway.reroll_done', { winners: winnersText }), flags: 64 });
     }
   },
 
@@ -157,6 +159,7 @@ module.exports = {
     if (!giveaway || giveaway.status === 'ended') return;
 
     db.endGiveaway(messageId);
+    const gid = giveaway.guild_id;
     const channel = client.channels.cache.get(giveaway.channel_id);
     if (!channel) return;
 
@@ -168,28 +171,28 @@ module.exports = {
     if (!winners || winners.length === 0) {
       const endedEmbed = new EmbedBuilder()
         .setColor('#E74C3C')
-        .setTitle(`🎉 **انتهى السحب: ${giveaway.prize}**`)
-        .setDescription('❌ **لم يشترك عدد كافٍ من الأعضاء المؤهلين، تم إلغاء السحب.**')
-        .setFooter({ text: 'Droplet Giveaways • انتهى السحب' })
+        .setTitle(t(gid, 'general.giveaway.finish_ended_title', { prize: giveaway.prize }))
+        .setDescription(t(gid, 'general.giveaway.finish_ended_cancelled'))
+        .setFooter({ text: t(gid, 'general.giveaway.finish_ended_footer') })
         .setTimestamp();
 
       if (message) {
         await message.edit({ embeds: [endedEmbed], components: [] }).catch(() => { });
       }
-      return channel.send(`⚠️ انتهى وقت القيف أواي على **${giveaway.prize}** دون وجود مشتركين مؤهلين.`);
+      return channel.send(t(gid, 'general.giveaway.finish_no_entries', { prize: giveaway.prize }));
     }
 
     const winnersMention = winners.map(w => `<@${w}>`).join(', ');
 
     const endedEmbed = new EmbedBuilder()
       .setColor('#2ECC71')
-      .setTitle(`🎊 **انتهى القيف أواي: ${giveaway.prize}** 🎊`)
+      .setTitle(t(gid, 'general.giveaway.finish_win_title', { prize: giveaway.prize }))
       .setDescription([
-        `🏆 **الفائزون بالجائزة:** ${winnersMention}`,
-        `👤 **مستضاف بواسطة:** <@${hostId}>`
+        t(gid, 'general.giveaway.finish_winners_line', { winners: winnersMention }),
+        t(gid, 'general.giveaway.finish_host_line', { host: `<@${hostId}>` })
       ].join('\n'))
       .setThumbnail('https://cdn-icons-png.flaticon.com/512/3112/3112946.png')
-      .setFooter({ text: 'مبروك للفائزين! 🎉' })
+      .setFooter({ text: t(gid, 'general.giveaway.finish_congrats_footer') })
       .setTimestamp();
 
     if (message) {
@@ -198,7 +201,7 @@ module.exports = {
 
     // إرسال إعلان الفوز
     await channel.send({
-      content: `🥳 **ألف مبروك ${winnersMention}!** لقد فزتم بسحب **${giveaway.prize}**! 🎁\nتواصلوا مع المستضيف <@${hostId}> لتستلم الجائزة.`
+      content: t(gid, 'general.giveaway.finish_announce', { winners: winnersMention, prize: giveaway.prize, host: `<@${hostId}>` })
     });
 
     // إرسال رسالة خاصة DMs للفائزين
@@ -208,8 +211,8 @@ module.exports = {
         if (user) {
           const dmEmbed = new EmbedBuilder()
             .setColor('#2ECC71')
-            .setTitle('🎁 مبروك! لقد فزت في سحب القيف أواي!')
-            .setDescription(`🎉 تهانينا يا **${user.username}**! لقد فزت بـ **${giveaway.prize}** في سيرفر **${channel.guild.name}**!\n\n👑 **المستضيف:** <@${hostId}>\n💬 **القناة:** <#${channel.id}>`)
+            .setTitle(t(gid, 'general.giveaway.dm_title'))
+            .setDescription(t(gid, 'general.giveaway.dm_desc', { user: user.username, prize: giveaway.prize, guild: channel.guild.name, host: `<@${hostId}>`, channel: `<#${channel.id}>` }))
             .setTimestamp();
           await user.send({ embeds: [dmEmbed] }).catch(() => { });
         }

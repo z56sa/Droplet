@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const db = require('../../database');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'balance',
@@ -17,6 +18,7 @@ module.exports = {
   async execute(interaction) {
     const target = interaction.options.getUser('user') || interaction.user;
     const guildId = interaction.guild.id;
+    const lang = getGuildLang(guildId);
     const userData = db.getUser(target.id, guildId);
     const balance = userData.coins || 0;
     const level = userData.level || 1;
@@ -25,16 +27,16 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setColor('#9333EA')
       .setAuthor({ 
-        name: `الحساب المالي لـ ${target.username}`, 
+        name: t(lang, 'economy.balance.author', { name: target.username }), 
         iconURL: target.displayAvatarURL({ dynamic: true }) 
       })
       .setThumbnail(target.displayAvatarURL({ dynamic: true }))
       .addFields(
-        { name: '🪙 الرصيد (Gold)', value: `\`${balance.toLocaleString()}\` 🪙`, inline: true },
-        { name: '⭐ المستوى (Level)', value: `\`${level}\``, inline: true },
-        { name: '✨ نقاط الخبرة (XP)', value: `\`${xp.toLocaleString()}\``, inline: true }
+        { name: t(lang, 'economy.balance.field_balance'), value: `\`${balance.toLocaleString()}\` 🪙`, inline: true },
+        { name: t(lang, 'economy.balance.field_level'), value: `\`${level}\``, inline: true },
+        { name: t(lang, 'economy.balance.field_xp'), value: `\`${xp.toLocaleString()}\``, inline: true }
       )
-      .setFooter({ text: 'Droplet Economy System • الحفظ الدائم نشط 🛡️', iconURL: interaction.guild.iconURL({ dynamic: true }) })
+      .setFooter({ text: t(lang, 'economy.balance.footer'), iconURL: interaction.guild.iconURL({ dynamic: true }) })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
@@ -46,6 +48,7 @@ module.exports = {
       message.author;
 
     const guildId = message.guild.id;
+    const lang = getGuildLang(guildId);
     const userData = db.getUser(target.id, guildId);
     const balance = userData.coins || 0;
     const level = userData.level || 1;
@@ -54,16 +57,16 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setColor('#9333EA')
       .setAuthor({ 
-        name: `الحساب المالي لـ ${target.username}`, 
+        name: t(lang, 'economy.balance.author', { name: target.username }), 
         iconURL: target.displayAvatarURL({ dynamic: true }) 
       })
       .setThumbnail(target.displayAvatarURL({ dynamic: true }))
       .addFields(
-        { name: '🪙 الرصيد (Gold)', value: `\`${balance.toLocaleString()}\` 🪙`, inline: true },
-        { name: '⭐ المستوى (Level)', value: `\`${level}\``, inline: true },
-        { name: '✨ نقاط الخبرة (XP)', value: `\`${xp.toLocaleString()}\``, inline: true }
+        { name: t(lang, 'economy.balance.field_balance'), value: `\`${balance.toLocaleString()}\` 🪙`, inline: true },
+        { name: t(lang, 'economy.balance.field_level'), value: `\`${level}\``, inline: true },
+        { name: t(lang, 'economy.balance.field_xp'), value: `\`${xp.toLocaleString()}\``, inline: true }
       )
-      .setFooter({ text: 'Droplet Economy System • الحفظ الدائم نشط 🛡️', iconURL: message.guild.iconURL({ dynamic: true }) })
+      .setFooter({ text: t(lang, 'economy.balance.footer'), iconURL: message.guild.iconURL({ dynamic: true }) })
       .setTimestamp();
 
     await message.reply({ embeds: [embed] });

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'task',
@@ -8,48 +9,55 @@ module.exports = {
   aliases: ['مهام', 'مهمة', 'tasks'],
   data: new SlashCommandBuilder()
     .setName('task')
-    .setDescription('📋 نظام مهام الإدارة والمكافآت (Staff Tasks & Points)')
+    .setDescription('Staff tasks and rewards system (Staff Tasks & Points)')
+
     .addSubcommand(sub =>
       sub.setName('add')
-        .setDescription('➕ إنشاء مهمة إدارية جديدة')
-        .addStringOption(opt => opt.setName('title').setDescription('عنوان المهمة').setRequired(true))
-        .addStringOption(opt => opt.setName('description').setDescription('تفاصيل المهمة المطلوبة').setRequired(true))
-        .addIntegerOption(opt => opt.setName('points').setDescription('النقاط المكتسبة عند الإنجاز (افتراضي: 50)').setMinValue(1).setRequired(false))
-        .addUserOption(opt => opt.setName('assign').setDescription('تخصيص المهمة لإداري معين (اتركه فارغاً لجميع الستاف)').setRequired(false))
+        .setDescription('Create a new staff task')
+
+        .addStringOption(opt => opt.setName('title').setDescription('The task title').setRequired(true))
+        .addStringOption(opt => opt.setName('description').setDescription('The required task details').setRequired(true))
+        .addIntegerOption(opt => opt.setName('points').setDescription('Points earned on completion (default: 50)').setMinValue(1).setRequired(false))
+        .addUserOption(opt => opt.setName('assign').setDescription('Assign to a specific admin (empty = all staff)').setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('list')
-        .setDescription('📋 عرض قائمة المهام الإدارية الحالية')
+        .setDescription('Show the current staff tasks')
+
         .addStringOption(opt =>
           opt.setName('status')
-            .setDescription('حالة المهام')
+            .setDescription('Task status filter')
+
             .setRequired(false)
             .addChoices(
-              { name: 'المهام المعلقة (Pending)', value: 'pending' },
-              { name: 'المهام المكتملة (Completed)', value: 'completed' },
-              { name: 'جميع المهام', value: 'all' }
+              { name: 'Pending tasks', value: 'pending' },
+              { name: 'Completed tasks', value: 'completed' },
+              { name: 'All tasks', value: 'all' }
             )
         )
     )
     .addSubcommand(sub =>
       sub.setName('done')
-        .setDescription('✅ تسجيل إنجاز مهمة واستلام نقاطها')
-        .addIntegerOption(opt => opt.setName('id').setDescription('رقم معرف المهمة (Task ID)').setMinValue(1).setRequired(true))
+        .setDescription('Mark a task as done and claim its points')
+
+        .addIntegerOption(opt => opt.setName('id').setDescription('The task ID').setMinValue(1).setRequired(true))
     )
     .addSubcommand(sub =>
       sub.setName('cancel')
-        .setDescription('❌ إلغاء مهمة إدارية')
-        .addIntegerOption(opt => opt.setName('id').setDescription('رقم معرف المهمة (Task ID)').setMinValue(1).setRequired(true))
+        .setDescription('Cancel a staff task')
+
+        .addIntegerOption(opt => opt.setName('id').setDescription('The task ID').setMinValue(1).setRequired(true))
     ),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild.id);
     const sub = interaction.options.getSubcommand();
     const guildId = interaction.guild.id;
 
     // ─── Add Task ───
     if (sub === 'add') {
       if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-        return interaction.reply({ content: '❌ هذا الأمر مخصص للمسؤولين فقط.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.task.managers_only'), flags: 64 });
       }
 
       const title = interaction.options.getString('title');
@@ -58,18 +66,18 @@ module.exports = {
       const assigned = interaction.options.getUser('assign');
 
       const res = db.addStaffTask(guildId, title, desc, assigned ? assigned.id : null, points, interaction.user.username);
-      const taskId = res?.lastInsertRowid || 'جديد';
+      const taskId = res?.lastInsertRowid || t(lang, 'admin.task.id_new');
 
       const embed = new EmbedBuilder()
         .setColor('#3b82f6')
-        .setTitle(`📋 تم إنشاء مهمة إدارية جديدة #${taskId}`)
+        .setTitle(t(lang, 'admin.task.created_title', { id: taskId }))
         .addFields(
-          { name: '📌 عنوان المهمة', value: `\`${title}\``, inline: false },
-          { name: '📝 التفاصيل', value: desc, inline: false },
-          { name: '⭐ النقاط والمكافأة', value: `\`${points}\` نقطة`, inline: true },
-          { name: '👤 مخصصة لـ', value: assigned ? `<@${assigned.id}>` : 'متاحة لجميع طاقم الإدارة', inline: true }
+          { name: t(lang, 'admin.task.f_title'), value: `\`${title}\``, inline: false },
+          { name: t(lang, 'admin.task.f_details'), value: desc, inline: false },
+          { name: t(lang, 'admin.task.f_points'), value: t(lang, 'admin.task.f_points_v', { n: points }), inline: true },
+          { name: t(lang, 'admin.task.f_assigned'), value: assigned ? `<@${assigned.id}>` : t(lang, 'admin.task.assigned_all'), inline: true }
         )
-        .setFooter({ text: `أنشئت بواسطة ${interaction.user.username} • Droplet Tasks` })
+        .setFooter({ text: t(lang, 'admin.task.footer', { user: interaction.user.username }) })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
@@ -81,26 +89,26 @@ module.exports = {
       const tasks = db.getStaffTasks(guildId, statusFilter === 'all' ? null : statusFilter);
 
       if (!tasks || tasks.length === 0) {
-        return interaction.reply({ content: '📭 لا توجد مهام إدارية مسجلة حالياً بهذا الفلتر.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.task.list_empty'), flags: 64 });
       }
 
       const statusIcons = {
-        pending: '⏳ معلقة',
-        completed: '✅ مكتملة',
-        cancelled: '❌ ملغية'
+        pending: t(lang, 'admin.task.status_pending'),
+        completed: t(lang, 'admin.task.status_completed'),
+        cancelled: t(lang, 'admin.task.status_cancelled')
       };
 
-      const lines = tasks.slice(0, 15).map(t => {
-        const assignedStr = t.assigned_to ? `<@${t.assigned_to}>` : 'الجميع';
-        const stStr = statusIcons[t.status] || t.status;
-        return `**#${t.id} - ${t.title}** [${stStr}]\n> 📝 ${t.description}\n> ⭐ المكافأة: \`${t.points}\` نقطة | 👤 لـ: ${assignedStr}`;
+      const lines = tasks.slice(0, 15).map(tk => {
+        const assignedStr = tk.assigned_to ? `<@${tk.assigned_to}>` : t(lang, 'admin.task.list_assigned_all');
+        const stStr = statusIcons[tk.status] || tk.status;
+        return t(lang, 'admin.task.list_row', { id: tk.id, title: tk.title, status: stStr, desc: tk.description, points: tk.points, assigned: assignedStr });
       });
 
       const embed = new EmbedBuilder()
         .setColor('#8b5cf6')
-        .setTitle('📋 قائمة المهام الإدارية (Staff Tasks)')
+        .setTitle(t(lang, 'admin.task.list_title'))
         .setDescription(lines.join('\n\n'))
-        .setFooter({ text: 'لإكمال مهمة واستلام نقاطها: /task done <id>' })
+        .setFooter({ text: t(lang, 'admin.task.list_footer') })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
@@ -112,7 +120,7 @@ module.exports = {
       const result = db.completeStaffTask(taskId, guildId, interaction.user.id);
 
       if (!result.success) {
-        return interaction.reply({ content: `❌ يتعذر إكمال المهمة: ${result.reason || 'المهمة غير موجودة'}`, flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.task.cant_complete', { reason: result.reason || t(lang, 'admin.task.reason_unknown') }), flags: 64 });
       }
 
       // التحقق من ترقية تلقائية محتملة
@@ -122,16 +130,16 @@ module.exports = {
         for (const r of promo.allEligible) {
           if (!interaction.member.roles.cache.has(r.role_id)) {
             await interaction.member.roles.add(r.role_id).catch(() => {});
-            promoMsg += `\n🎖️ **تهانينا! تمت ترقيتك تلقائياً إلى رتبة <@&${r.role_id}>!**`;
+            promoMsg += t(lang, 'admin.task.promoted', { id: r.role_id });
           }
         }
       }
 
       const embed = new EmbedBuilder()
         .setColor('#10b981')
-        .setTitle('🎉 تم إنجاز المهمة بنجاح!')
-        .setDescription(`قام الإداري <@${interaction.user.id}> بإنجاز المهمة:\n**#${taskId} - ${result.task.title}**\n\n⭐ حصل على: \`+${result.points}\` نقطة مكافأة!${promoMsg}`)
-        .setFooter({ text: 'Droplet Staff Task System' })
+        .setTitle(t(lang, 'admin.task.done_title'))
+        .setDescription(t(lang, 'admin.task.done_desc', { id: interaction.user.id, task: taskId, title: result.task.title, points: result.points, promo: promoMsg }))
+        .setFooter({ text: t(lang, 'admin.task.done_footer') })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
@@ -140,17 +148,17 @@ module.exports = {
     // ─── Cancel Task ───
     if (sub === 'cancel') {
       if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-        return interaction.reply({ content: '❌ هذا الأمر مخصص للمسؤولين فقط.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.task.managers_only'), flags: 64 });
       }
 
       const taskId = interaction.options.getInteger('id');
       const res = db.cancelStaffTask(taskId, guildId);
 
       if (!res || res.changes === 0) {
-        return interaction.reply({ content: `⚠️ لم يتم العثور على المهمة #${taskId}.`, flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.task.not_found', { id: taskId }), flags: 64 });
       }
 
-      return interaction.reply({ content: `✅ تم إلغاء المهمة #${taskId} بنجاح.` });
+      return interaction.reply({ content: t(lang, 'admin.task.cancelled', { id: taskId }) });
     }
   }
 };

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'kick',
@@ -8,38 +9,40 @@ module.exports = {
   aliases: ['طرد'],
   data: new SlashCommandBuilder()
     .setName('kick')
-    .setDescription('طرد عضو من السيرفر')
-    .addUserOption(opt => opt.setName('target').setDescription('العضو المراد طرده').setRequired(true))
-    .addStringOption(opt => opt.setName('reason').setDescription('سبب الطرد').setRequired(false))
+    .setDescription('Kick a member from the server')
+
+    .addUserOption(opt => opt.setName('target').setDescription('The member to kick').setRequired(true))
+    .addStringOption(opt => opt.setName('reason').setDescription('Kick reason').setRequired(false))
     .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild?.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.KickMembers))
-      return interaction.reply({ content: '❌ ليس لديك صلاحية طرد الأعضاء.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'moderation.kick.no_perm'), flags: 64 });
 
     await interaction.deferReply({ flags: 64 }).catch(() => {});
 
     const targetUser = interaction.options.getUser('target');
-    const reason = interaction.options.getString('reason') || 'لم يُذكر سبب';
+    const reason = interaction.options.getString('reason') || t(lang, 'moderation.kick.default_reason');
     const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
 
-    if (!member) return interaction.editReply({ content: '❌ العضو غير موجود في السيرفر.' });
-    if (!member.kickable) return interaction.editReply({ content: '❌ لا أستطيع طرد هذا العضو.' });
-    if (member.id === interaction.user.id) return interaction.editReply({ content: '❌ لا تستطيع طرد نفسك!' });
+    if (!member) return interaction.editReply({ content: t(lang, 'moderation.kick.not_found') });
+    if (!member.kickable) return interaction.editReply({ content: t(lang, 'moderation.kick.not_kickable') });
+    if (member.id === interaction.user.id) return interaction.editReply({ content: t(lang, 'moderation.kick.self') });
 
     // DM قبل الطرد
     const dmEmbed = new EmbedBuilder()
       .setColor(config.colors?.warning || '#f39c12')
-      .setTitle(`👢 تم طردك من ${interaction.guild.name}`)
+      .setTitle(t(lang, 'moderation.kick.dm_title', { guild: interaction.guild.name }))
       .addFields(
-        { name: '📋 السبب', value: reason, inline: false },
-        { name: '👮 بواسطة', value: interaction.user.tag, inline: true }
+        { name: t(lang, 'moderation.kick.field_reason'), value: reason, inline: false },
+        { name: t(lang, 'moderation.kick.field_by'), value: interaction.user.tag, inline: true }
       )
-      .setFooter({ text: 'يمكنك الانضمام مجدداً إذا كان لديك رابط دعوة صالح' })
+      .setFooter({ text: t(lang, 'moderation.kick.dm_footer') })
       .setTimestamp();
 
     await member.send({ embeds: [dmEmbed] }).catch(() => {});
-    await member.kick(`${reason} | بواسطة: ${interaction.user.tag}`);
+    await member.kick(t(lang, 'moderation.kick.audit_by', { reason, tag: interaction.user.tag }));
 
     if (db.recordStaffAction) {
       db.recordStaffAction(interaction.guild.id, interaction.user.id, 'kick', targetUser.id, reason);
@@ -47,12 +50,12 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor(config.colors?.warning || '#f39c12')
-      .setTitle('👢 تم الطرد بنجاح')
+      .setTitle(t(lang, 'moderation.kick.title'))
       .setThumbnail(targetUser.displayAvatarURL({ dynamic: true }))
       .addFields(
-        { name: '👤 العضو', value: `${targetUser.tag} (\`${targetUser.id}\`)`, inline: true },
-        { name: '👮 المشرف', value: interaction.user.tag, inline: true },
-        { name: '📋 السبب', value: reason, inline: false }
+        { name: t(lang, 'moderation.kick.field_member'), value: `${targetUser.tag} (\`${targetUser.id}\`)`, inline: true },
+        { name: t(lang, 'moderation.kick.field_mod'), value: interaction.user.tag, inline: true },
+        { name: t(lang, 'moderation.kick.field_reason'), value: reason, inline: false }
       )
       .setTimestamp();
 
@@ -62,27 +65,28 @@ module.exports = {
   },
 
   async executePrefix(message, args) {
+    const lang = getGuildLang(message.guild?.id);
     if (!message.member.permissions.has(PermissionFlagsBits.KickMembers))
-      return message.reply('❌ ليس لديك صلاحية طرد الأعضاء.');
+      return message.reply(t(lang, 'moderation.kick.no_perm'));
 
     const targetUser = message.mentions.users.first() ||
       (args[0] ? await message.client.users.fetch(args[0]).catch(() => null) : null);
-    if (!targetUser) return message.reply('❌ حدد العضو.');
+    if (!targetUser) return message.reply(t(lang, 'moderation.kick.prefix_target'));
 
-    const reason = args.slice(1).join(' ') || 'لم يُذكر سبب';
+    const reason = args.slice(1).join(' ') || t(lang, 'moderation.kick.default_reason');
     const member = await message.guild.members.fetch(targetUser.id).catch(() => null);
-    if (!member || !member.kickable) return message.reply('❌ لا أستطيع طرد هذا العضو.');
+    if (!member || !member.kickable) return message.reply(t(lang, 'moderation.kick.not_kickable'));
 
-    await member.send(`👢 تم طردك من **${message.guild.name}**\n📋 **السبب:** ${reason}`).catch(() => {});
-    await member.kick(`${reason} | بواسطة: ${message.author.tag}`);
+    await member.send(t(lang, 'moderation.kick.prefix_dm', { guild: message.guild.name, reason })).catch(() => {});
+    await member.kick(t(lang, 'moderation.kick.audit_by', { reason, tag: message.author.tag }));
 
     const embed = new EmbedBuilder()
       .setColor(config.colors?.warning || '#f39c12')
-      .setTitle('👢 تم الطرد بنجاح')
+      .setTitle(t(lang, 'moderation.kick.title'))
       .addFields(
-        { name: '👤 العضو', value: targetUser.tag, inline: true },
-        { name: '👮 بواسطة', value: message.author.tag, inline: true },
-        { name: '📋 السبب', value: reason, inline: false }
+        { name: t(lang, 'moderation.kick.field_member'), value: targetUser.tag, inline: true },
+        { name: t(lang, 'moderation.kick.field_by'), value: message.author.tag, inline: true },
+        { name: t(lang, 'moderation.kick.field_reason'), value: reason, inline: false }
       )
       .setTimestamp();
 

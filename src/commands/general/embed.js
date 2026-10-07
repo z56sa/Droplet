@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChannelType } = require('discord.js');
 const config = require('../../config.json');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'embed',
@@ -43,7 +44,7 @@ module.exports = {
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageMessages)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية إدارة الرسائل.', flags: 64 });
+      return interaction.reply({ content: t(interaction.guild.id, 'general.say.no_perm'), flags: 64 });
     }
 
     const channel = interaction.options.getChannel('channel');
@@ -68,6 +69,6 @@ module.exports = {
     if (thumbnail) embed.setThumbnail(thumbnail);
 
     await channel.send({ embeds: [embed] });
-    await interaction.reply({ content: `✅ تم إرسال رسالة الـ Embed بنجاح في القناة: <#${channel.id}>`, flags: 64 });
+    await interaction.reply({ content: t(interaction.guild.id, 'general.embed.sent', { channel: channel.id }), flags: 64 });
   }
 };

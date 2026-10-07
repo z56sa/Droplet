@@ -2,6 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('disc
 const ms = require('ms');
 const db = require('../../database');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'jail',
@@ -9,29 +10,34 @@ module.exports = {
   aliases: ['سجن', 'حبس', 'unjail', 'فك_سجن'],
   data: new SlashCommandBuilder()
     .setName('jail')
-    .setDescription('نظام سجن وعزل الأعضاء المخالفين')
+    .setDescription('Jail and isolate violating members')
+
     .addSubcommand(sub =>
       sub.setName('add')
-        .setDescription('سجن عضو وعزله في روم ورتبة السجن')
-        .addUserOption(opt => opt.setName('target').setDescription('العضو المراد سجنه').setRequired(true))
-        .addStringOption(opt => opt.setName('duration').setDescription('مدة السجن (مثال: 30m, 2h, 1d) - اتركه فارغاً لدائم').setRequired(false))
-        .addStringOption(opt => opt.setName('reason').setDescription('سبب السجن').setRequired(false))
+        .setDescription('Jail a member in the jail channel and role')
+
+        .addUserOption(opt => opt.setName('target').setDescription('The member to jail').setRequired(true))
+        .addStringOption(opt => opt.setName('duration').setDescription('Jail duration (e.g. 30m, 2h, 1d) — empty for permanent').setRequired(false))
+        .addStringOption(opt => opt.setName('reason').setDescription('Jail reason').setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('remove')
-        .setDescription('فك سجن عضو وإعادة رتبه السابقة')
-        .addUserOption(opt => opt.setName('target').setDescription('العضو').setRequired(true))
-        .addStringOption(opt => opt.setName('reason').setDescription('سبب فك السجن').setRequired(false))
+        .setDescription('Unjail a member and restore previous roles')
+
+        .addUserOption(opt => opt.setName('target').setDescription('The member').setRequired(true))
+        .addStringOption(opt => opt.setName('reason').setDescription('Unjail reason').setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('list')
-        .setDescription('عرض قائمة المسجونين حالياً في السيرفر')
+        .setDescription('Show currently jailed members')
+
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild?.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
-      return interaction.reply({ content: '❌ ليس لديك صلاحية إدارة الأعضاء أو سجنهم.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'moderation.jail.no_perm'), flags: 64 });
     }
 
     const sub = interaction.options.getSubcommand();
@@ -41,16 +47,19 @@ module.exports = {
     if (sub === 'list') {
       const jailedList = db.getGuildJailedUsers(guild.id);
       if (!jailedList || jailedList.length === 0) {
-        return interaction.reply({ content: '🕊️ لا يوجد أي أعضاء مسجونين حالياً في السيرفر.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'moderation.jail.list_empty'), flags: 64 });
       }
 
       const embed = new EmbedBuilder()
         .setColor('#e74c3c')
-        .setTitle(`🔒 قائمة الأعضاء المسجونين (${jailedList.length})`)
+        .setTitle(t(lang, 'moderation.jail.list_title', { count: jailedList.length }))
         .setDescription(
           jailedList.map((j, i) => {
-            const untilStr = j.jail_until ? `<t:${j.jail_until}:R>` : 'سجن مؤبد / دائم';
-            return `**#${i + 1}** <@${j.user_id}> | 👮 المشرف: <@${j.moderator_id}>\n📋 السبب: \`${j.reason || 'بدون سبب'}\` | ⏳ ينتهي: ${untilStr}`;
+            const untilStr = j.jail_until ? `<t:${j.jail_until}:R>` : t(lang, 'moderation.jail.list_perm');
+            return t(lang, 'moderation.jail.list_row', {
+              i: i + 1, user: j.user_id, mod: j.moderator_id,
+              reason: j.reason || t(lang, 'moderation.jail.list_no_reason'), until: untilStr
+            });
           }).join('\n\n')
         )
         .setTimestamp();
@@ -60,7 +69,7 @@ module.exports = {
 
     const targetUser = interaction.options.getUser('target');
     const member = await guild.members.fetch(targetUser.id).catch(() => null);
-    if (!member) return interaction.reply({ content: '❌ لم يتم العثور على هذا العضو في السيرفر.', flags: 64 });
+    if (!member) return interaction.reply({ content: t(lang, 'moderation.jail.not_found'), flags: 64 });
 
     // البحث عن رتبة السجن
     let jailRole = null;
@@ -72,10 +81,10 @@ module.exports = {
     }
 
     if (sub === 'add') {
-      if (member.id === interaction.user.id) return interaction.reply({ content: '❌ لا يمكنك سجن نفسك!', flags: 64 });
-      if (member.id === guild.ownerId) return interaction.reply({ content: '❌ لا يمكنك سجن مالك السيرفر!', flags: 64 });
+      if (member.id === interaction.user.id) return interaction.reply({ content: t(lang, 'moderation.jail.self'), flags: 64 });
+      if (member.id === guild.ownerId) return interaction.reply({ content: t(lang, 'moderation.jail.owner'), flags: 64 });
       if (member.roles.highest.position >= interaction.member.roles.highest.position && interaction.user.id !== guild.ownerId) {
-        return interaction.reply({ content: '❌ لا يمكنك سجن عضو رتبته أعلى منك أو مساوية لك.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'moderation.jail.higher'), flags: 64 });
       }
 
       // إذا لم تكن رتبة السجن موجودة، نقوم بإنشائها تلقائياً
@@ -84,7 +93,7 @@ module.exports = {
           jailRole = await guild.roles.create({
             name: 'Jailed',
             color: '#7f8c8d',
-            reason: 'إنشاء رتبة السجن التلقائية لـ Droplet'
+            reason: t(guild.id, 'moderation.jail.role_create_reason')
           });
           db.updateGuildSetting(guild.id, 'jail_role', jailRole.id);
 
@@ -100,7 +109,7 @@ module.exports = {
 
       if (!jailRole) {
         return interaction.reply({
-          content: '❌ لم يتم تعيين رتبة السجن! قم بإنشاء رتبة باسم `Jailed` أو حددها في الإعدادات.',
+          content: t(lang, 'moderation.jail.no_role'),
           flags: 64
         });
       }
@@ -108,12 +117,12 @@ module.exports = {
       await interaction.deferReply().catch(() => {});
 
       const durationStr = interaction.options.getString('duration');
-      const reason = interaction.options.getString('reason') || 'مخالفة قوانين السيرفر';
+      const reason = interaction.options.getString('reason') || t(lang, 'moderation.jail.default_reason');
       let jailUntil = null;
 
       if (durationStr) {
         const msVal = ms(durationStr);
-        if (!msVal) return interaction.editReply({ content: '❌ صيغة مدة غير صحيحة. استخدم: `10m`, `2h`, `1d`' });
+        if (!msVal) return interaction.editReply({ content: t(lang, 'moderation.jail.bad_duration') });
         jailUntil = Math.floor((Date.now() + msVal) / 1000);
       }
 
@@ -127,7 +136,7 @@ module.exports = {
         }
         await member.roles.add(jailRole);
       } catch (e) {
-        return interaction.editReply({ content: `❌ تعذر تعديل رتب العضو، تأكد أن رتبة البوت أعلى من رتب الأعضاء: ${e.message}` });
+        return interaction.editReply({ content: t(lang, 'moderation.jail.role_fail', { err: e.message }) });
       }
 
       db.jailUser(guild.id, member.id, interaction.user.id, reason, userRoles, jailUntil);
@@ -138,25 +147,25 @@ module.exports = {
 
       const dmEmbed = new EmbedBuilder()
         .setColor('#e74c3c')
-        .setTitle(`🔒 تم سجلك في سيرفر ${guild.name}`)
-        .setDescription(`تم تطبيق عقوبة السجن بحقك لعزلك عن السيرفر.`)
+        .setTitle(t(lang, 'moderation.jail.dm_title', { guild: guild.name }))
+        .setDescription(t(lang, 'moderation.jail.dm_desc'))
         .addFields(
-          { name: '📋 السبب', value: reason },
-          { name: '⏱️ المدة', value: durationStr ? durationStr : 'سجن غير محدد (دائم)', inline: true },
-          { name: '👮 المشرف', value: interaction.user.tag, inline: true }
+          { name: t(lang, 'moderation.jail.field_reason'), value: reason },
+          { name: t(lang, 'moderation.jail.field_duration'), value: durationStr ? durationStr : t(lang, 'moderation.jail.dm_indefinite'), inline: true },
+          { name: t(lang, 'moderation.jail.field_by'), value: interaction.user.tag, inline: true }
         )
         .setTimestamp();
       await member.send({ embeds: [dmEmbed] }).catch(() => {});
 
       const embed = new EmbedBuilder()
         .setColor('#e74c3c')
-        .setTitle('🔒 تم سجن العضو بنجاح')
+        .setTitle(t(lang, 'moderation.jail.title_add'))
         .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
         .addFields(
-          { name: '👤 المسجون', value: `${member.user.tag} (<@${member.id}>)`, inline: true },
-          { name: '👮 المشرف', value: interaction.user.tag, inline: true },
-          { name: '⏱️ المدة', value: durationStr ? durationStr : 'دائم', inline: true },
-          { name: '📋 السبب', value: reason }
+          { name: t(lang, 'moderation.jail.field_jailed'), value: `${member.user.tag} (<@${member.id}>)`, inline: true },
+          { name: t(lang, 'moderation.jail.field_by'), value: interaction.user.tag, inline: true },
+          { name: t(lang, 'moderation.jail.field_duration'), value: durationStr ? durationStr : t(lang, 'moderation.jail.permanent'), inline: true },
+          { name: t(lang, 'moderation.jail.field_reason'), value: reason }
         )
         .setTimestamp();
 
@@ -166,11 +175,11 @@ module.exports = {
     } else if (sub === 'remove') {
       const jailedRecord = db.getJailUser(guild.id, member.id);
       if (!jailedRecord && (!jailRole || !member.roles.cache.has(jailRole.id))) {
-        return interaction.reply({ content: '❌ هذا العضو ليس مسجوناً حالياً.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'moderation.jail.not_jailed'), flags: 64 });
       }
 
       await interaction.deferReply().catch(() => {});
-      const reason = interaction.options.getString('reason') || 'انتهاء العقوبة أو عفو إداري';
+      const reason = interaction.options.getString('reason') || t(lang, 'moderation.jail.default_unjail_reason');
 
       let restoredRoles = [];
       if (jailedRecord && jailedRecord.old_roles) {
@@ -196,12 +205,12 @@ module.exports = {
 
       const embed = new EmbedBuilder()
         .setColor('#2ecc71')
-        .setTitle('🔓 تم فك سجن العضو')
+        .setTitle(t(lang, 'moderation.jail.title_remove'))
         .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
         .addFields(
-          { name: '👤 العضو', value: `${member.user.tag} (<@${member.id}>)`, inline: true },
-          { name: '👮 المشرف', value: interaction.user.tag, inline: true },
-          { name: '📋 السبب', value: reason }
+          { name: t(lang, 'moderation.jail.field_member'), value: `${member.user.tag} (<@${member.id}>)`, inline: true },
+          { name: t(lang, 'moderation.jail.field_by'), value: interaction.user.tag, inline: true },
+          { name: t(lang, 'moderation.jail.field_reason'), value: reason }
         )
         .setTimestamp();
 
@@ -211,8 +220,9 @@ module.exports = {
   },
 
   async executePrefix(message, args) {
+    const lang = getGuildLang(message.guild?.id);
     if (!message.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
-      return message.reply('❌ ليس لديك صلاحية سجن الأعضاء.');
+      return message.reply(t(lang, 'moderation.jail.prefix_no_perm'));
     }
 
     const invoked = (message.content.trim().slice(1).split(/\s+/)[0] || '').toLowerCase();
@@ -229,9 +239,9 @@ module.exports = {
 
     if (invoked === 'unjail' || invoked === 'فك_سجن') {
       const targetUser = message.mentions.users.first();
-      if (!targetUser) return message.reply('❌ الاستخدام: `#unjail @user [السبب]`');
+      if (!targetUser) return message.reply(t(lang, 'moderation.jail.prefix_unjail_usage'));
       const member = await guild.members.fetch(targetUser.id).catch(() => null);
-      if (!member) return message.reply('❌ العضو غير موجود.');
+      if (!member) return message.reply(t(lang, 'moderation.jail.prefix_not_found'));
 
       const record = db.unjailUser(guild.id, member.id);
       if (jailRole && member.roles.cache.has(jailRole.id)) {
@@ -244,21 +254,21 @@ module.exports = {
         } catch (e) {}
       }
 
-      return message.reply(`🔓 تم فك سجن **${targetUser.tag}** واسترجاع رتبه بنجاح.`);
+      return message.reply(t(lang, 'moderation.jail.prefix_unjailed', { tag: targetUser.tag }));
     }
 
     const targetUser = message.mentions.users.first();
-    if (!targetUser) return message.reply('❌ الاستخدام: `#jail @user [المدة اختياري] [السبب]` أو `#unjail @user`');
+    if (!targetUser) return message.reply(t(lang, 'moderation.jail.prefix_jail_usage'));
 
     const member = await guild.members.fetch(targetUser.id).catch(() => null);
-    if (!member) return message.reply('❌ العضو غير موجود.');
+    if (!member) return message.reply(t(lang, 'moderation.jail.prefix_not_found'));
 
     if (!jailRole) {
-      return message.reply('❌ لم يتم ضبط رتبة السجن في السيرفر! استخدم `/jail add` لإنشائها وضبطها.');
+      return message.reply(t(lang, 'moderation.jail.prefix_no_role'));
     }
 
     let durationStr = null;
-    let reason = 'مخالفة القوانين';
+    let reason = t(lang, 'moderation.jail.prefix_default_reason');
     let jailUntil = null;
 
     if (args[1] && ms(args[1])) {
@@ -277,11 +287,11 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor('#e74c3c')
-      .setTitle('🔒 تم سجن العضو')
+      .setTitle(t(lang, 'moderation.jail.prefix_title_add'))
       .addFields(
-        { name: '👤 المسجون', value: targetUser.tag, inline: true },
-        { name: '⏱️ المدة', value: durationStr || 'دائم', inline: true },
-        { name: '📋 السبب', value: reason }
+        { name: t(lang, 'moderation.jail.field_jailed'), value: targetUser.tag, inline: true },
+        { name: t(lang, 'moderation.jail.field_duration'), value: durationStr || t(lang, 'moderation.jail.permanent'), inline: true },
+        { name: t(lang, 'moderation.jail.field_reason'), value: reason }
       ).setTimestamp();
 
     await message.reply({ embeds: [embed] });

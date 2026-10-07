@@ -5,6 +5,17 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { t } = require('../../utils/lang');
+
+function buildLeaderboardRows(list, langOrGuildId) {
+  return list.map((item, index) => {
+    const medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : `\`#${index + 1}\``));
+    return t(langOrGuildId, 'general.invites.lb_row', {
+      medal, user: `<@${item.user_id}>`, total: item.total,
+      regular: item.regular, leaves: item.leaves, bonus: item.bonus
+    });
+  }).join('\n');
+}
 
 module.exports = {
   name: 'invites',
@@ -12,49 +23,50 @@ module.exports = {
   aliases: ['دعوات', 'دعواتي', 'invites-lb', 'top-invites'],
   data: new SlashCommandBuilder()
     .setName('invites')
-    .setDescription('أوامر نظام متتبع الدعوات (Invite Tracker)')
+    .setDescription('Invite tracker system commands')
     .addSubcommand(sub =>
       sub.setName('show')
-        .setDescription('عرض تفاصيل دعواتك أو دعوات عضو آخر')
-        .addUserOption(opt => opt.setName('user').setDescription('العضو المراد فحص دعواته').setRequired(false))
+        .setDescription('Show your invites or another member\'s invites')
+        .addUserOption(opt => opt.setName('user').setDescription('The member to check').setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('leaderboard')
-        .setDescription('عرض لوحة متصدري الدعوات في السيرفر')
+        .setDescription('Show the server invite leaderboard')
     )
     .addSubcommand(sub =>
       sub.setName('add')
-        .setDescription('إضافة أو خصم دعوات إضافية لعضو (إدارة السيرفر فقط)')
-        .addUserOption(opt => opt.setName('user').setDescription('العضو المستهدف').setRequired(true))
-        .addIntegerOption(opt => opt.setName('amount').setDescription('عدد الدعوات (استخدم رقماً سالباً للخصم)').setRequired(true))
+        .setDescription('Add or deduct bonus invites for a member (server management only)')
+        .addUserOption(opt => opt.setName('user').setDescription('Target member').setRequired(true))
+        .addIntegerOption(opt => opt.setName('amount').setDescription('Invite count (use a negative number to deduct)').setRequired(true))
     )
     .addSubcommand(sub =>
       sub.setName('reset')
-        .setDescription('تصفير إحصائيات الدعوات لعضو أو للسيرفر كاملاً')
-        .addUserOption(opt => opt.setName('user').setDescription('العضو المراد تصفير دعواته (اتركه فارغاً للسيرفر كله)').setRequired(false))
+        .setDescription('Reset invite stats for a member or the whole server')
+        .addUserOption(opt => opt.setName('user').setDescription('Member to reset (leave empty for the whole server)').setRequired(false))
     ),
 
   async execute(interaction, client) {
+    const gid = interaction.guild.id;
     const sub = interaction.options.getSubcommand();
 
     if (sub === 'show') {
       const targetUser = interaction.options.getUser('user') || interaction.user;
       const stats = db.getInvites(interaction.guild.id, targetUser.id);
       const inviterRecord = db.getMemberInviter(interaction.guild.id, targetUser.id);
-      const inviterText = inviterRecord?.inviter_id ? `<@${inviterRecord.inviter_id}>` : (inviterRecord?.code ? `رابط خاص (\`${inviterRecord.code}\`)` : 'غير معروف (Direct / Vanity)');
+      const inviterText = inviterRecord?.inviter_id ? `<@${inviterRecord.inviter_id}>` : (inviterRecord?.code ? t(gid, 'general.invites.inviter_link', { code: inviterRecord.code }) : t(gid, 'general.invites.inviter_unknown'));
 
       const embed = new EmbedBuilder()
         .setColor(config.colors.primary || '#9333ea')
-        .setTitle(`📨 إحصائيات دعوات: ${targetUser.username}`)
+        .setTitle(t(gid, 'general.invites.show_title', { user: targetUser.username }))
         .setThumbnail(targetUser.displayAvatarURL({ dynamic: true, size: 256 }))
-        .setDescription(`إجمالي الدعوات الصافية: **${stats.total}** دعوة صالحة ✨`)
+        .setDescription(t(gid, 'general.invites.show_desc', { total: stats.total }))
         .addFields(
-          { name: '✅ دعوات حقيقية (Regular)', value: `\`${stats.regular}\``, inline: true },
-          { name: '🚪 مغادرين (Leaves)', value: `\`${stats.leaves}\``, inline: true },
-          { name: '🤖 دعوات وهمية (Fake)', value: `\`${stats.fake}\``, inline: true },
-          { name: '🎁 دعوات إضافية (Bonus)', value: `\`${stats.bonus}\``, inline: true },
-          { name: '📊 الصافي (Net)', value: `**${stats.total}**`, inline: true },
-          { name: '🔗 تمت دعوته بواسطة', value: inviterText, inline: true }
+          { name: t(gid, 'general.invites.field_regular'), value: `\`${stats.regular}\``, inline: true },
+          { name: t(gid, 'general.invites.field_leaves'), value: `\`${stats.leaves}\``, inline: true },
+          { name: t(gid, 'general.invites.field_fake'), value: `\`${stats.fake}\``, inline: true },
+          { name: t(gid, 'general.invites.field_bonus'), value: `\`${stats.bonus}\``, inline: true },
+          { name: t(gid, 'general.invites.field_net'), value: `**${stats.total}**`, inline: true },
+          { name: t(gid, 'general.invites.field_invited_by'), value: inviterText, inline: true }
         )
         .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL({ dynamic: true }) || undefined })
         .setTimestamp();
@@ -64,17 +76,14 @@ module.exports = {
     } else if (sub === 'leaderboard') {
       const topList = db.getInvitesLeaderboard(interaction.guild.id, 10);
       if (!topList || topList.length === 0) {
-        return interaction.reply({ content: '📊 لا توجد بيانات دعوات مسجلة في السيرفر حتى الآن.' });
+        return interaction.reply({ content: t(gid, 'general.invites.lb_empty') });
       }
 
-      const rows = topList.map((item, index) => {
-        const medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : `\`#${index + 1}\``));
-        return `${medal} <@${item.user_id}> ➔ **${item.total}** دعوة (✅ ${item.regular} | 🚪 ${item.leaves} | 🎁 ${item.bonus})`;
-      }).join('\n');
+      const rows = buildLeaderboardRows(topList, gid);
 
       const embed = new EmbedBuilder()
         .setColor('#eab308')
-        .setTitle(`🏆 قائمة متصدري الدعوات - ${interaction.guild.name}`)
+        .setTitle(t(gid, 'general.invites.lb_title', { guild: interaction.guild.name }))
         .setDescription(rows)
         .setFooter({ text: 'Droplet Invite Tracker' })
         .setTimestamp();
@@ -83,87 +92,85 @@ module.exports = {
 
     } else if (sub === 'add') {
       if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-        return interaction.reply({ content: '❌ هذا الأمر مخصص لإدارة السيرفر فقط (Manage Guild).', flags: 64 });
+        return interaction.reply({ content: t(gid, 'general.invites.add_no_perm'), flags: 64 });
       }
 
       const targetUser = interaction.options.getUser('user');
       const amount = interaction.options.getInteger('amount');
 
       const updated = db.addBonusInvites(interaction.guild.id, targetUser.id, amount);
-      const actionText = amount >= 0 ? `إضافة **+${amount}** دعوة إضافية` : `خصم **${amount}** دعوة`;
+      const actionText = amount >= 0 ? t(gid, 'general.invites.action_add', { amount }) : t(gid, 'general.invites.action_remove', { amount });
 
       return interaction.reply({
         embeds: [
           new EmbedBuilder()
             .setColor('#10b981')
-            .setDescription(`✅ **تم ${actionText} للعضو ${targetUser} بنجاح.**\nإجمالي رصيده الجديد: **${updated.total}** دعوة.`)
+            .setDescription(t(gid, 'general.invites.add_done', { action: actionText, user: `${targetUser}`, total: updated.total }))
         ]
       });
 
     } else if (sub === 'reset') {
       if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-        return interaction.reply({ content: '❌ يتطلب صلاحية Administrator لتصفير الدعوات.', flags: 64 });
+        return interaction.reply({ content: t(gid, 'general.invites.reset_no_perm'), flags: 64 });
       }
 
       const targetUser = interaction.options.getUser('user');
       if (targetUser) {
         db.resetInvites(interaction.guild.id, targetUser.id);
-        return interaction.reply({ content: `✅ تم تصفير جميع بيانات الدعوات للعضو ${targetUser}.` });
+        return interaction.reply({ content: t(gid, 'general.invites.reset_user_done', { user: `${targetUser}` }) });
       } else {
         db.resetInvites(interaction.guild.id);
-        return interaction.reply({ content: '✅ تم تصفير جميع بيانات الدعوات لكافة أعضاء السيرفر بنجاح.' });
+        return interaction.reply({ content: t(gid, 'general.invites.reset_all_done') });
       }
     }
   },
 
   async executePrefix(message, args) {
+    const gid = message.guild.id;
     const cmd = args[0]?.toLowerCase();
 
     if (cmd === 'lb' || cmd === 'top' || message.content.includes('top-invites') || message.content.includes('invites-lb')) {
       const topList = db.getInvitesLeaderboard(message.guild.id, 10);
-      if (!topList || topList.length === 0) return message.reply('📊 لا توجد دعوات مسجلة حتى الآن.');
+      if (!topList || topList.length === 0) return message.reply(t(gid, 'general.invites.prefix_lb_empty'));
 
-      const rows = topList.map((item, index) => {
-        const medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : `\`#${index + 1}\``));
-        return `${medal} <@${item.user_id}> ➔ **${item.total}** دعوة (✅ ${item.regular} | 🚪 ${item.leaves} | 🎁 ${item.bonus})`;
-      }).join('\n');
+      const rows = buildLeaderboardRows(topList, gid);
 
       const embed = new EmbedBuilder()
         .setColor('#eab308')
-        .setTitle(`🏆 متصدرو الدعوات - ${message.guild.name}`)
+        .setTitle(t(gid, 'general.invites.prefix_lb_title', { guild: message.guild.name }))
         .setDescription(rows)
         .setTimestamp();
       return message.reply({ embeds: [embed] });
     }
 
     if (cmd === 'add') {
-      if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) return message.reply('❌ مخصص للإدارة فقط.');
+      if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) return message.reply(t(gid, 'general.invites.prefix_add_no_perm'));
       const user = message.mentions.users.first();
       const amount = parseInt(args[2], 10);
-      if (!user || isNaN(amount)) return message.reply('❌ الاستخدام: `#invites add @user <amount>`');
+      if (!user || isNaN(amount)) return message.reply(t(gid, 'general.invites.prefix_add_usage'));
 
       const updated = db.addBonusInvites(message.guild.id, user.id, amount);
-      return message.reply(`✅ تم تعديل دعوات ${user} بمقدار ${amount}. الإجمالي الجديد: **${updated.total}**`);
+      return message.reply(t(gid, 'general.invites.prefix_add_done', { user: `${user}`, amount, total: updated.total }));
     }
 
     // Default: Show stats
     const targetUser = message.mentions.users.first() || message.author;
     const stats = db.getInvites(message.guild.id, targetUser.id);
     const inviterRecord = db.getMemberInviter(message.guild.id, targetUser.id);
-    const inviterText = inviterRecord?.inviter_id ? `<@${inviterRecord.inviter_id}>` : (inviterRecord?.code ? `رابط (\`${inviterRecord.code}\`)` : 'غير معروف');
+    const inviterText = inviterRecord?.inviter_id ? `<@${inviterRecord.inviter_id}>` : (inviterRecord?.code ? t(gid, 'general.invites.prefix_inviter_link', { code: inviterRecord.code }) : t(gid, 'general.invites.prefix_inviter_unknown'));
 
     const embed = new EmbedBuilder()
       .setColor(config.colors.primary || '#9333ea')
-      .setTitle(`📨 دعوات: ${targetUser.username}`)
+      .setTitle(t(gid, 'general.invites.prefix_show_title', { user: targetUser.username }))
       .setThumbnail(targetUser.displayAvatarURL({ dynamic: true }))
-      .setDescription(`إجمالي الدعوات: **${stats.total}** دعوة صالحة`)
+      .setDescription(t(gid, 'general.invites.prefix_show_desc', { total: stats.total }))
       .addFields(
-        { name: '✅ الحقيقية', value: `\`${stats.regular}\``, inline: true },
-        { name: '🚪 المغادرين', value: `\`${stats.leaves}\``, inline: true },
-        { name: '🤖 الوهمية', value: `\`${stats.fake}\``, inline: true },
-        { name: '🎁 الإضافية', value: `\`${stats.bonus}\``, inline: true },
-        { name: '📊 الصافي', value: `**${stats.total}**`, inline: true },
-        { name: '🔗 الداعي', value: inviterText, inline: true }
+        { name: t(gid, 'general.invites.prefix_field_regular'), value: `\`${stats.regular}\``, inline: true },
+        { name: t(gid, 'general.invites.prefix_field_leaves'), value: `\`${stats.leaves}\``, inline: true },
+        { name: t(gid, 'general.invites.prefix_field_fake'), value: `\`${stats.fake}\``, inline: true },
+        { name: t(gid, 'general.invites.prefix_field_bonus'), value: `\`${stats.bonus}\``, inline: true },
+        { name: t(gid, 'general.invites.prefix_field_net'), value: `**${stats.total}**`, inline: true },
+        { name: t(gid, 'general.invites.prefix_field_inviter'), value: inviterText, inline: true }
       )
       .setTimestamp();
 

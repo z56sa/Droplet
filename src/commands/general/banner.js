@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const config = require('../../config.json');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'banner',
@@ -21,14 +22,14 @@ module.exports = {
 
     if (!bannerURL) {
       return interaction.reply({
-        content: `❌ المستخدم **${user.username}** لا يملك بنر مخصص.`,
+        content: t(interaction.guild.id, 'general.banner.no_banner', { user: user.username }),
         flags: 64
       });
     }
 
     const embed = new EmbedBuilder()
       .setColor(config.colors.primary)
-      .setTitle(`🎨 بنر المستخدم: ${user.username}`)
+      .setTitle(t(interaction.guild.id, 'general.banner.title', { user: user.username }))
       .setImage(bannerURL)
       .setTimestamp();
 
@@ -44,12 +45,12 @@ module.exports = {
     const bannerURL = fetchedUser.bannerURL({ dynamic: true, size: 1024 });
 
     if (!bannerURL) {
-      return message.reply(`❌ المستخدم **${user.username}** لا يملك بنر مخصص.`);
+      return message.reply(t(message.guild.id, 'general.banner.no_banner', { user: user.username }));
     }
 
     const embed = new EmbedBuilder()
       .setColor(config.colors.primary)
-      .setTitle(`🎨 بنر المستخدم: ${user.username}`)
+      .setTitle(t(message.guild.id, 'general.banner.title', { user: user.username }))
       .setImage(bannerURL)
       .setTimestamp();
 

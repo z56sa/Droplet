@@ -6,6 +6,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder
 const db = require('../../database');
 const { generateHtmlTranscript } = require('../../utils/transcript');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'ticket',
@@ -13,44 +14,53 @@ module.exports = {
   aliases: ['تذكرة', 'تكت'],
   data: new SlashCommandBuilder()
     .setName('ticket')
-    .setDescription('أوامر إدارة التذاكر المتقدمة')
+    .setDescription('Advanced ticket management commands')
+
     .addSubcommand(sub =>
       sub.setName('close')
-        .setDescription('إغلاق وحفظ سجل التذكرة الحالية')
-        .addStringOption(opt => opt.setName('reason').setDescription('سبب إغلاق التذكرة').setRequired(false))
+        .setDescription('Close and save the current ticket transcript')
+
+        .addStringOption(opt => opt.setName('reason').setDescription('Ticket close reason').setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('claim')
-        .setDescription('استلام التذكرة من قبل موظف الدعم')
+        .setDescription('Claim the ticket as support staff')
+
     )
     .addSubcommand(sub =>
       sub.setName('unclaim')
-        .setDescription('إلغاء استلام التذكرة وإتاحتها للآخرين')
+        .setDescription('Unclaim the ticket and make it available to others')
+
     )
     .addSubcommand(sub =>
       sub.setName('transfer')
-        .setDescription('نقل التذكرة إلى موظف دعم آخر')
-        .addUserOption(opt => opt.setName('staff').setDescription('الموظف المراد تحويل التذكرة إليه').setRequired(true))
+        .setDescription('Transfer the ticket to another support staff member')
+
+        .addUserOption(opt => opt.setName('staff').setDescription('The staff member to transfer the ticket to').setRequired(true))
     )
     .addSubcommand(sub =>
       sub.setName('transcript')
-        .setDescription('توليد وتحميل سجل المحادثة التفاعلي (HTML Transcript)')
+        .setDescription('Generate and download the interactive transcript (HTML)')
+
     )
     .addSubcommand(sub =>
       sub.setName('add')
-        .setDescription('إضافة عضو للتذكرة الحالية')
-        .addUserOption(opt => opt.setName('user').setDescription('العضو المراد إضافته').setRequired(true))
+        .setDescription('Add a member to the current ticket')
+
+        .addUserOption(opt => opt.setName('user').setDescription('The member to add').setRequired(true))
     )
     .addSubcommand(sub =>
       sub.setName('remove')
-        .setDescription('إزالة عضو من التذكرة الحالية')
-        .addUserOption(opt => opt.setName('user').setDescription('العضو المراد إزالته').setRequired(true))
+        .setDescription('Remove a member from the current ticket')
+
+        .addUserOption(opt => opt.setName('user').setDescription('The member to remove').setRequired(true))
     ),
 
   async execute(interaction, client) {
+    const lang = getGuildLang(interaction.guild.id);
     const ticket = db.getTicket(interaction.channel.id);
     if (!ticket) {
-      return interaction.reply({ content: '❌ هذا الأمر يعمل فقط داخل قنوات التذاكر.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'tickets.common.not_in_ticket_channel'), flags: 64 });
     }
 
     const sub = interaction.options.getSubcommand();
@@ -61,7 +71,7 @@ module.exports = {
       (supportRoleId && interaction.member.roles.cache.has(supportRoleId));
 
     if (sub === 'close') {
-      const reason = interaction.options.getString('reason') || 'تم الإغلاق بواسطة أمر المشرف';
+      const reason = interaction.options.getString('reason') || t(lang, 'tickets.ticket.default_reason');
       await interaction.deferReply().catch(() => {});
 
       db.closeTicket(interaction.channel.id, interaction.user.id, reason);
@@ -69,7 +79,7 @@ module.exports = {
         db.recordStaffAction(interaction.guild.id, interaction.user.id, 'ticket_close', ticket.user_id, reason);
       }
 
-      await interaction.editReply(`🔒 **جاري توليد السجل التفاعلي وإغلاق التذكرة خلال 5 ثوانٍ...**\nالسبب: \`${reason}\``);
+      await interaction.editReply(t(lang, 'tickets.ticket.close_generating', { reason }));
 
       // توليد Transcript
       const transcriptResult = await generateHtmlTranscript(interaction.channel).catch(() => null);
@@ -86,13 +96,13 @@ module.exports = {
           if (logChannel) {
             const closeEmbed = new EmbedBuilder()
               .setColor(config.colors.danger || '#ef4444')
-              .setTitle('🔒 تم إغلاق تذكرة وحفظ السجل التفاعلي')
+              .setTitle(t(lang, 'tickets.ticket.log_title'))
               .addFields(
-                { name: '🎫 اسم الروم', value: `\`${interaction.channel.name}\``, inline: true },
-                { name: '👤 صاحب التذكرة', value: `<@${ticket.user_id}>`, inline: true },
-                { name: '👮 أغلقت بواسطة', value: `${interaction.user}`, inline: true },
-                { name: '🌐 عارض الويب', value: `[مشاهدة السجل التفاعلي مباشرة](${webUrl})`, inline: false },
-                { name: '📝 السبب', value: `\`${reason}\``, inline: false }
+                { name: t(lang, 'tickets.ticket.log_field_channel'), value: `\`${interaction.channel.name}\``, inline: true },
+                { name: t(lang, 'tickets.ticket.log_field_owner'), value: `<@${ticket.user_id}>`, inline: true },
+                { name: t(lang, 'tickets.ticket.log_field_closed_by'), value: `${interaction.user}`, inline: true },
+                { name: t(lang, 'tickets.ticket.log_field_web'), value: t(lang, 'tickets.ticket.log_web_link', { url: webUrl }), inline: false },
+                { name: t(lang, 'tickets.ticket.log_field_reason'), value: `\`${reason}\``, inline: false }
               )
               .setTimestamp();
             await logChannel.send({ embeds: [closeEmbed], files: [transcriptResult.attachment] }).catch(() => {});
@@ -106,8 +116,8 @@ module.exports = {
             const staffId = ticket.claimed_by || interaction.user.id;
             const rateEmbed = new EmbedBuilder()
               .setColor('#9333ea')
-              .setTitle('⭐ تقييم تجربة الدعم الفني')
-              .setDescription(`مرحباً **${user.username}**!\nتم إغلاق تذكرتك في سيرفر **${interaction.guild.name}**.\n\n🌐 **رابط السجل التفاعلي:** [اضغط هنا لمشاهدة التذكرة](${webUrl})\nيرجى تقييم أداء الدعم الفني بالضغط على النجوم أدناه:`)
+              .setTitle(t(lang, 'tickets.ticket.rate_title'))
+              .setDescription(t(lang, 'tickets.ticket.rate_desc', { user: user.username, guild: interaction.guild.name, url: webUrl }))
               .setTimestamp();
 
             const ratingRow = new ActionRowBuilder().addComponents(
@@ -115,7 +125,7 @@ module.exports = {
               new ButtonBuilder().setCustomId(`rate_ticket_2_${interaction.channel.id}_${staffId}_${interaction.guild.id}`).setLabel('⭐ 2').setStyle(ButtonStyle.Secondary),
               new ButtonBuilder().setCustomId(`rate_ticket_3_${interaction.channel.id}_${staffId}_${interaction.guild.id}`).setLabel('⭐ 3').setStyle(ButtonStyle.Secondary),
               new ButtonBuilder().setCustomId(`rate_ticket_4_${interaction.channel.id}_${staffId}_${interaction.guild.id}`).setLabel('⭐ 4').setStyle(ButtonStyle.Primary),
-              new ButtonBuilder().setCustomId(`rate_ticket_5_${interaction.channel.id}_${staffId}_${interaction.guild.id}`).setLabel('⭐ 5 ممتاز').setStyle(ButtonStyle.Success)
+              new ButtonBuilder().setCustomId(`rate_ticket_5_${interaction.channel.id}_${staffId}_${interaction.guild.id}`).setLabel(t(lang, 'tickets.ticket.rate_5')).setStyle(ButtonStyle.Success)
             );
 
             await user.send({ embeds: [rateEmbed], components: [ratingRow], files: [transcriptResult.attachment] }).catch(() => {});
@@ -131,9 +141,9 @@ module.exports = {
       }, 5000);
 
     } else if (sub === 'claim') {
-      if (!isStaff) return interaction.reply({ content: '❌ هذا الأمر مخصص لطاقم الدعم الفني فقط.', flags: 64 });
+      if (!isStaff) return interaction.reply({ content: t(lang, 'tickets.ticket.staff_only'), flags: 64 });
       if (ticket.claimed_by) {
-        return interaction.reply({ content: `⚠️ هذه التذكرة مستلمة بالفعل بواسطة: <@${ticket.claimed_by}>`, flags: 64 });
+        return interaction.reply({ content: t(lang, 'tickets.ticket.already_claimed', { user: ticket.claimed_by }), flags: 64 });
       }
 
       db.claimTicket(interaction.channel.id, interaction.user.id);
@@ -149,20 +159,20 @@ module.exports = {
       }).catch(() => {});
 
       return interaction.reply({
-        embeds: [new EmbedBuilder().setColor('#10b981').setDescription(`🙋‍♂️ **قام ${interaction.user} باستلام التذكرة وسيقوم بمتابعتها الآن.**`)]
+        embeds: [new EmbedBuilder().setColor('#10b981').setDescription(t(lang, 'tickets.ticket.claimed', { user: interaction.user }))]
       });
 
     } else if (sub === 'unclaim') {
-      if (!isStaff) return interaction.reply({ content: '❌ هذا الأمر مخصص لطاقم الدعم الفني فقط.', flags: 64 });
+      if (!isStaff) return interaction.reply({ content: t(lang, 'tickets.ticket.staff_only'), flags: 64 });
       if (!ticket.claimed_by) {
-        return interaction.reply({ content: '⚠️ هذه التذكرة ليست مستلمة من أحد حالياً.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'tickets.ticket.not_claimed'), flags: 64 });
       }
 
       db.unclaimTicket(interaction.channel.id);
-      return interaction.reply({ content: `↩️ قام ${interaction.user} بإلغاء استلام التذكرة، وأصبحت متاحة للجميع.` });
+      return interaction.reply({ content: t(lang, 'tickets.ticket.unclaimed', { user: interaction.user }) });
 
     } else if (sub === 'transfer') {
-      if (!isStaff) return interaction.reply({ content: '❌ هذا الأمر مخصص لطاقم الدعم الفني فقط.', flags: 64 });
+      if (!isStaff) return interaction.reply({ content: t(lang, 'tickets.ticket.staff_only'), flags: 64 });
       const targetUser = interaction.options.getUser('staff');
 
       db.transferTicket(interaction.channel.id, targetUser.id);
@@ -174,17 +184,17 @@ module.exports = {
       }).catch(() => {});
 
       return interaction.reply({
-        embeds: [new EmbedBuilder().setColor('#3b82f6').setDescription(`🔀 **تم تحويل التذكرة بنجاح إلى المسؤول ${targetUser}.**`)]
+        embeds: [new EmbedBuilder().setColor('#3b82f6').setDescription(t(lang, 'tickets.ticket.transferred', { user: targetUser }))]
       });
 
     } else if (sub === 'transcript') {
       await interaction.deferReply().catch(() => {});
       const result = await generateHtmlTranscript(interaction.channel).catch(() => null);
       if (!result) {
-        return interaction.editReply('❌ فشل في توليد السجل التفاعلي لهذه التذكرة.');
+        return interaction.editReply(t(lang, 'tickets.ticket.transcript_fail'));
       }
       return interaction.editReply({
-        content: `📄 **تفضل، تم استخراج سجل التذكرة بنجاح!**`,
+        content: t(lang, 'tickets.ticket.transcript_done'),
         files: [result.attachment]
       });
 
@@ -197,19 +207,20 @@ module.exports = {
         AttachFiles: true,
         ReadMessageHistory: true
       });
-      await interaction.editReply(`✅ تمت إضافة ${user} إلى التذكرة.`);
+      await interaction.editReply(t(lang, 'tickets.ticket.added', { user }));
     } else if (sub === 'remove') {
       await interaction.deferReply({ flags: 64 }).catch(() => { });
       const user = interaction.options.getUser('user');
       await interaction.channel.permissionOverwrites.delete(user.id);
-      await interaction.editReply(`✅ تمت إزالة ${user} من التذكرة.`);
+      await interaction.editReply(t(lang, 'tickets.ticket.removed', { user }));
     }
   },
 
   async executePrefix(message, args, client) {
+    const lang = getGuildLang(message.guild.id);
     const ticket = db.getTicket(message.channel.id);
     if (!ticket) {
-      return message.reply('❌ هذا الأمر يعمل فقط داخل قنوات التذاكر.');
+      return message.reply(t(lang, 'tickets.common.not_in_ticket_channel'));
     }
 
     const action = args[0]?.toLowerCase();
@@ -220,8 +231,8 @@ module.exports = {
       (supportRoleId && message.member.roles.cache.has(supportRoleId));
 
     if (action === 'close') {
-      const reason = args.slice(1).join(' ') || 'تم الإغلاق بأمر #ticket close';
-      await message.reply(`🔒 **سيتم حفظ السجل وحذف التذكرة خلال 5 ثوانٍ...**\nالسبب: \`${reason}\``);
+      const reason = args.slice(1).join(' ') || t(lang, 'tickets.ticket.prefix_default_reason');
+      await message.reply(t(lang, 'tickets.ticket.prefix_close_notice', { reason }));
       db.closeTicket(message.channel.id, message.author.id, reason);
 
       const transcriptResult = await generateHtmlTranscript(message.channel).catch(() => null);
@@ -237,7 +248,7 @@ module.exports = {
       }, 5000);
 
     } else if (action === 'claim') {
-      if (!isStaff) return message.reply('❌ مخصص لطاقم الدعم الفني فقط.');
+      if (!isStaff) return message.reply(t(lang, 'tickets.ticket.prefix_staff_only'));
       db.claimTicket(message.channel.id, message.author.id);
       if (db.recordStaffAction) {
         db.recordStaffAction(message.guild.id, message.author.id, 'ticket_claim', ticket?.user_id || null, 'استلام تذكرة');
@@ -249,17 +260,17 @@ module.exports = {
         AttachFiles: true,
         ReadMessageHistory: true
       }).catch(() => {});
-      message.reply(`🙋‍♂️ قام ${message.author} باستلام التذكرة.`);
+      message.reply(t(lang, 'tickets.ticket.prefix_claimed', { user: message.author }));
 
     } else if (action === 'unclaim') {
-      if (!isStaff) return message.reply('❌ مخصص لطاقم الدعم الفني فقط.');
+      if (!isStaff) return message.reply(t(lang, 'tickets.ticket.prefix_staff_only'));
       db.unclaimTicket(message.channel.id);
-      message.reply(`↩️ تم إلغاء استلام التذكرة.`);
+      message.reply(t(lang, 'tickets.ticket.prefix_unclaimed'));
 
     } else if (action === 'transfer') {
-      if (!isStaff) return message.reply('❌ مخصص لطاقم الدعم الفني فقط.');
+      if (!isStaff) return message.reply(t(lang, 'tickets.ticket.prefix_staff_only'));
       const user = message.mentions.users.first();
-      if (!user) return message.reply('❌ يرجى منشن موظف الدعم.');
+      if (!user) return message.reply(t(lang, 'tickets.ticket.prefix_need_staff_mention'));
       db.transferTicket(message.channel.id, user.id);
       await message.channel.permissionOverwrites.edit(user.id, {
         ViewChannel: true,
@@ -267,33 +278,33 @@ module.exports = {
         AttachFiles: true,
         ReadMessageHistory: true
       }).catch(() => {});
-      message.reply(`🔀 تم تحويل التذكرة إلى ${user}.`);
+      message.reply(t(lang, 'tickets.ticket.prefix_transferred', { user }));
 
     } else if (action === 'transcript') {
       const result = await generateHtmlTranscript(message.channel).catch(() => null);
       if (result) {
-        message.reply({ content: '📄 تم توليد سجل التذكرة:', files: [result.attachment] });
+        message.reply({ content: t(lang, 'tickets.ticket.prefix_transcript_done'), files: [result.attachment] });
       } else {
-        message.reply('❌ فشل في توليد السجل.');
+        message.reply(t(lang, 'tickets.ticket.prefix_transcript_fail'));
       }
 
     } else if (action === 'add') {
       const user = message.mentions.users.first();
-      if (!user) return message.reply('❌ يرجى منشن العضو.');
+      if (!user) return message.reply(t(lang, 'tickets.ticket.prefix_need_member_mention'));
       await message.channel.permissionOverwrites.edit(user.id, {
         ViewChannel: true,
         SendMessages: true,
         AttachFiles: true,
         ReadMessageHistory: true
       });
-      await message.channel.send(`✅ تمت إضافة ${user} إلى التذكرة.`);
+      await message.channel.send(t(lang, 'tickets.ticket.added', { user }));
     } else if (action === 'remove') {
       const user = message.mentions.users.first();
-      if (!user) return message.reply('❌ يرجى منشن العضو.');
+      if (!user) return message.reply(t(lang, 'tickets.ticket.prefix_need_member_mention'));
       await message.channel.permissionOverwrites.delete(user.id);
-      await message.channel.send(`✅ تمت إزالة ${user} من التذكرة.`);
+      await message.channel.send(t(lang, 'tickets.ticket.removed', { user }));
     } else {
-      message.reply('❌ الاستخدام:\n`#ticket close [reason]`\n`#ticket claim`\n`#ticket unclaim`\n`#ticket transfer @staff`\n`#ticket transcript`\n`#ticket add @user`\n`#ticket remove @user`');
+      message.reply(t(lang, 'tickets.ticket.prefix_usage'));
     }
   }
 };

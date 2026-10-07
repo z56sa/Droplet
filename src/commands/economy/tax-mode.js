@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'tax-mode',
@@ -13,18 +14,18 @@ module.exports = {
         .setDescription('النمط')
         .setRequired(true)
         .addChoices(
-          { name: 'شامل التفاصيل', value: 'all' },
-          { name: 'رقم فقط', value: 'compact' }
+          { name: 'Detailed', value: 'all' },
+          { name: 'Compact number only', value: 'compact' }
         )
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية إدارة السيرفر.', flags: 64 });
+      return interaction.reply({ content: t(interaction.guild.id, 'common.no_manage_perm'), flags: 64 });
     }
     const mode = interaction.options.getString('mode');
     db.updateGuildSetting(interaction.guild.id, 'tax_mode', mode);
-    return interaction.reply({ content: '✅ تم تعيين نمط الضريبة إلى: ' + mode });
+    return interaction.reply({ content: t(interaction.guild.id, 'economy.taxmode.set', { mode }) });
   }
 };

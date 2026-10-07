@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'autoreply-remove',
@@ -7,16 +8,18 @@ module.exports = {
   aliases: ['حذف-رد'],
   data: new SlashCommandBuilder()
     .setName('autoreply-remove')
-    .setDescription('لازالة رد تلقائي')
-    .addIntegerOption(opt => opt.setName('id').setDescription('رقم الرد').setRequired(true))
+    .setDescription('Remove an auto-reply')
+
+    .addIntegerOption(opt => opt.setName('id').setDescription('The reply number').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية إدارة السيرفر.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'common.no_manage_perm'), flags: 64 });
     }
     const id = interaction.options.getInteger('id');
     db.deleteAutoResponder(id, interaction.guild.id);
-    return interaction.reply({ content: '✅ تم حذف الرد التلقائي رقم #' + id + ' بنجاح.' });
+    return interaction.reply({ content: t(lang, 'admin.autoreplyremove.removed', { id }) });
   }
 };

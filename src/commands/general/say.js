@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'say',
@@ -12,10 +13,10 @@ module.exports = {
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageMessages)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية إدارة الرسائل.', flags: 64 });
+      return interaction.reply({ content: t(interaction.guild.id, 'general.say.no_perm'), flags: 64 });
     }
     const msg = interaction.options.getString('message');
-    await interaction.reply({ content: '✅ تم الإرسال', flags: 64 });
+    await interaction.reply({ content: t(interaction.guild.id, 'general.say.sent'), flags: 64 });
     return interaction.channel.send({ content: msg });
   }
 };

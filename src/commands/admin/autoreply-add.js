@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'autoreply-add',
@@ -7,18 +8,20 @@ module.exports = {
   aliases: ['اضف-رد'],
   data: new SlashCommandBuilder()
     .setName('autoreply-add')
-    .setDescription('لاضافة رد تلقائي')
-    .addStringOption(opt => opt.setName('word').setDescription('الكلمة المحفزة').setRequired(true))
-    .addStringOption(opt => opt.setName('reply').setDescription('رد البوت').setRequired(true))
+    .setDescription('Add an auto-reply')
+
+    .addStringOption(opt => opt.setName('word').setDescription('The trigger word').setRequired(true))
+    .addStringOption(opt => opt.setName('reply').setDescription('The bot reply').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية إدارة السيرفر.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'common.no_manage_perm'), flags: 64 });
     }
     const word = interaction.options.getString('word');
     const reply = interaction.options.getString('reply');
     db.addAutoResponder(interaction.guild.id, word, reply);
-    return interaction.reply({ content: '✅ تم إضافة الرد التلقائي بنجاح على كلمة: ' + word });
+    return interaction.reply({ content: t(lang, 'admin.autoreplyadd.added', { word }) });
   }
 };

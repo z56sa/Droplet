@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'roles',
@@ -15,8 +16,8 @@ module.exports = {
       .slice(0, 40);
     const embed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setTitle('🎖️ رتب السيرفر')
-      .setDescription(roles.join('\n') || 'لا توجد رتب.');
+      .setTitle(t(interaction.guild.id, 'general.roles.title'))
+      .setDescription(roles.join('\n') || t(interaction.guild.id, 'general.roles.empty'));
     return interaction.reply({ embeds: [embed] });
   }
 };

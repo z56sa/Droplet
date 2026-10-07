@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const config = require('../../config.json');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'user',
@@ -21,25 +22,25 @@ module.exports = {
     const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
 
     if (!member) {
-      return interaction.editReply({ content: '❌ لم يتم العثور على هذا العضو في السيرفر.' });
+      return interaction.editReply({ content: t(interaction.guild.id, 'general.user.not_found') });
     }
 
     const roles = member.roles.cache
       .filter(r => r.id !== interaction.guild.id)
       .sort((a, b) => b.position - a.position)
       .map(r => r)
-      .join(', ') || 'لا توجد رتب';
+      .join(', ') || t(interaction.guild.id, 'general.user.no_roles');
 
     const embed = new EmbedBuilder()
       .setColor(config.colors.primary || '#5865F2')
-      .setTitle(`👤 معلومات العضو: ${targetUser.tag}`)
+      .setTitle(t(interaction.guild.id, 'general.user.title', { tag: targetUser.tag }))
       .setThumbnail(targetUser.displayAvatarURL({ dynamic: true, size: 1024 }))
       .addFields(
-        { name: '🆔 الأيدي (ID)', value: `\`${targetUser.id}\``, inline: true },
-        { name: '🤖 بوت؟', value: targetUser.bot ? 'نعم' : 'لا', inline: true },
-        { name: '📅 تاريخ الإنشاء', value: `<t:${Math.floor(targetUser.createdTimestamp / 1000)}:R>`, inline: true },
-        { name: '📥 تاريخ الانضمام للسيرفر', value: member.joinedTimestamp ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>` : 'غير معروف', inline: true },
-        { name: '🏷️ الرتب', value: roles.length > 1024 ? 'عدد الرتب كبير جداً للعرض' : roles, inline: false }
+        { name: t(interaction.guild.id, 'general.user.field_id'), value: `\`${targetUser.id}\``, inline: true },
+        { name: t(interaction.guild.id, 'general.user.field_bot'), value: targetUser.bot ? t(interaction.guild.id, 'general.user.yes') : t(interaction.guild.id, 'general.user.no'), inline: true },
+        { name: t(interaction.guild.id, 'general.user.field_created'), value: `<t:${Math.floor(targetUser.createdTimestamp / 1000)}:R>`, inline: true },
+        { name: t(interaction.guild.id, 'general.user.field_joined'), value: member.joinedTimestamp ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>` : t(interaction.guild.id, 'general.server.unknown'), inline: true },
+        { name: t(interaction.guild.id, 'general.user.field_roles'), value: roles.length > 1024 ? t(interaction.guild.id, 'general.user.too_many_roles') : roles, inline: false }
       )
       .setTimestamp();
 
@@ -52,24 +53,24 @@ module.exports = {
       message.author;
 
     const member = await message.guild.members.fetch(targetUser.id).catch(() => null);
-    if (!member) return message.reply('❌ لم يتم العثور على هذا العضو.');
+    if (!member) return message.reply(t(message.guild.id, 'general.user.not_found_short'));
 
     const roles = member.roles.cache
       .filter(r => r.id !== message.guild.id)
       .sort((a, b) => b.position - a.position)
       .map(r => r)
-      .join(', ') || 'لا توجد رتب';
+      .join(', ') || t(message.guild.id, 'general.user.no_roles');
 
     const embed = new EmbedBuilder()
       .setColor(config.colors.primary || '#5865F2')
-      .setTitle(`👤 معلومات العضو: ${targetUser.tag}`)
+      .setTitle(t(message.guild.id, 'general.user.title', { tag: targetUser.tag }))
       .setThumbnail(targetUser.displayAvatarURL({ dynamic: true, size: 1024 }))
       .addFields(
-        { name: '🆔 الأيدي (ID)', value: `\`${targetUser.id}\``, inline: true },
-        { name: '🤖 بوت؟', value: targetUser.bot ? 'نعم' : 'لا', inline: true },
-        { name: '📅 تاريخ الإنشاء', value: `<t:${Math.floor(targetUser.createdTimestamp / 1000)}:R>`, inline: true },
-        { name: '📥 تاريخ الانضمام للسيرفر', value: member.joinedTimestamp ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>` : 'غير معروف', inline: true },
-        { name: '🏷️ الرتب', value: roles.length > 1024 ? 'عدد الرتب كبير جداً للعرض' : roles, inline: false }
+        { name: t(message.guild.id, 'general.user.field_id'), value: `\`${targetUser.id}\``, inline: true },
+        { name: t(message.guild.id, 'general.user.field_bot'), value: targetUser.bot ? t(message.guild.id, 'general.user.yes') : t(message.guild.id, 'general.user.no'), inline: true },
+        { name: t(message.guild.id, 'general.user.field_created'), value: `<t:${Math.floor(targetUser.createdTimestamp / 1000)}:R>`, inline: true },
+        { name: t(message.guild.id, 'general.user.field_joined'), value: member.joinedTimestamp ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>` : t(message.guild.id, 'general.server.unknown'), inline: true },
+        { name: t(message.guild.id, 'general.user.field_roles'), value: roles.length > 1024 ? t(message.guild.id, 'general.user.too_many_roles') : roles, inline: false }
       )
       .setTimestamp();
 

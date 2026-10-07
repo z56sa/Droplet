@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
 const db = require('../../database');
 const canvasUtil = require('../../utils/canvas');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'profile',
@@ -20,7 +21,7 @@ module.exports = {
 
     const targetUser = interaction.options.getUser('user') || interaction.user;
     const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
-    if (!member) return interaction.editReply('❌ العضو غير موجود في السيرفر.');
+    if (!member) return interaction.editReply(t(interaction.guild.id, 'common.member_not_found'));
 
     const userData = db.getUser(targetUser.id, interaction.guild.id);
     userData.wallpaper_url = db.getWallpaper(targetUser.id);
@@ -40,9 +41,9 @@ module.exports = {
                        message.author;
 
     const member = await message.guild.members.fetch(targetUser.id).catch(() => null);
-    if (!member) return message.reply('❌ العضو غير موجود في السيرفر.');
+    if (!member) return message.reply(t(message.guild.id, 'common.member_not_found'));
 
-    const loading = await message.reply('⏳ جاري تجهيز بطاقة البروفايل والهوية...');
+    const loading = await message.reply(t(message.guild.id, 'economy.profile.loading'));
     const userData = db.getUser(targetUser.id, message.guild.id);
     userData.wallpaper_url = db.getWallpaper(targetUser.id);
     const rankData = db.getUserRank(targetUser.id, message.guild.id) || { xp: 0, level: 0, rank: 1 };

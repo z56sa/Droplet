@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'staff',
@@ -8,55 +9,66 @@ module.exports = {
   aliases: ['ستاف', 'ادارة', 'نشاط_الادارة'],
   data: new SlashCommandBuilder()
     .setName('staff')
-    .setDescription('نظام متابعة نشاط طاقم الإدارة (Staff Activity)')
+    .setDescription('Track staff activity (Staff Activity)')
+
     .addSubcommand(sub =>
       sub.setName('stats')
-        .setDescription('عرض إحصائياتك أو إحصائيات عضو من الستاف')
-        .addUserOption(opt => opt.setName('user').setDescription('عضو الإدارة المراد فحص نشاطه').setRequired(false))
+        .setDescription('Show your or a staff member stats')
+
+        .addUserOption(opt => opt.setName('user').setDescription('The staff member to check').setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('leaderboard')
-        .setDescription('عرض لوحة شرف وترتيب الستاف الأكثر نشاطاً')
+        .setDescription('Show the most active staff leaderboard')
+
     )
     .addSubcommand(sub =>
       sub.setName('logs')
-        .setDescription('عرض آخر الإجراءات المتخذة من قبل الستاف (Action Logs)')
-        .addIntegerOption(opt => opt.setName('limit').setDescription('عدد الإجراءات المعروضة (1-20)').setMinValue(1).setMaxValue(20).setRequired(false))
+        .setDescription('Show recent staff actions (Action Logs)')
+
+        .addIntegerOption(opt => opt.setName('limit').setDescription('Number of actions shown (1-20)').setMinValue(1).setMaxValue(20).setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('goals')
-        .setDescription('عرض أهداف الستاف وإنجازاتهم')
+        .setDescription('Show staff goals and achievements')
+
     )
     .addSubcommand(sub =>
       sub.setName('reset')
-        .setDescription('إعادة تعيين إحصائيات الستاف (خاص بمالك السيرفر)')
-        .addUserOption(opt => opt.setName('user').setDescription('العضو المراد تصفير نشاطه (اتركه فارغاً لتصفير الكل)').setRequired(false))
+        .setDescription('Reset staff stats (server owner only)')
+
+        .addUserOption(opt => opt.setName('user').setDescription('The member to reset (leave empty to reset all)').setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('rank-set')
-        .setDescription('🎖️ تحديد رتبة ديسكورد كترقية تلقائية عند وصول عدد معين من النقاط')
-        .addRoleOption(opt => opt.setName('role').setDescription('رتبة ديسكورد التي ستُمنح عند الترقية').setRequired(true))
-        .addIntegerOption(opt => opt.setName('points').setDescription('عدد النقاط المطلوبة للترقية').setMinValue(1).setRequired(true))
-        .addStringOption(opt => opt.setName('name').setDescription('اسم الرتبة (اختياري)').setRequired(false))
+        .setDescription('Set a Discord role as auto-promotion at a point total')
+
+        .addRoleOption(opt => opt.setName('role').setDescription('The Discord role granted on promotion').setRequired(true))
+        .addIntegerOption(opt => opt.setName('points').setDescription('Points required for promotion').setMinValue(1).setRequired(true))
+        .addStringOption(opt => opt.setName('name').setDescription('Rank name (optional)').setRequired(false))
     )
     .addSubcommand(sub =>
       sub.setName('rank-list')
-        .setDescription('📋 عرض قائمة رتب الترقية التلقائية المضبوطة في السيرفر')
+        .setDescription('Show the configured auto-promotion ranks')
+
     )
     .addSubcommand(sub =>
       sub.setName('rank-remove')
-        .setDescription('🗑️ حذف رتبة من نظام الترقية التلقائية')
-        .addRoleOption(opt => opt.setName('role').setDescription('الرتبة المراد حذفها من نظام الترقية').setRequired(true))
+        .setDescription('Remove a role from auto-promotion')
+
+        .addRoleOption(opt => opt.setName('role').setDescription('The role to remove from promotion').setRequired(true))
     )
     .addSubcommand(sub =>
       sub.setName('points')
-        .setDescription('⭐ منح نقاط مكافأة يدوياً لأحد أعضاء الإدارة')
-        .addUserOption(opt => opt.setName('user').setDescription('عضو الإدارة المراد منحه نقاط').setRequired(true))
-        .addIntegerOption(opt => opt.setName('amount').setDescription('عدد النقاط المراد منحها').setMinValue(1).setRequired(true))
-        .addStringOption(opt => opt.setName('reason').setDescription('سبب منح النقاط').setRequired(false))
+        .setDescription('Manually grant bonus points to a staff member')
+
+        .addUserOption(opt => opt.setName('user').setDescription('The staff member to grant points').setRequired(true))
+        .addIntegerOption(opt => opt.setName('amount').setDescription('Points to grant').setMinValue(1).setRequired(true))
+        .addStringOption(opt => opt.setName('reason').setDescription('Reason for granting points').setRequired(false))
     ),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild.id);
     const sub = interaction.options.getSubcommand();
     const guildId = interaction.guild.id;
 
@@ -69,37 +81,37 @@ module.exports = {
       // حساب الترتيب في الليدربورد
       const leaderboard = db.getStaffLeaderboard(guildId, 100);
       const rankIndex = leaderboard.findIndex(s => s.user_id === targetUser.id);
-      const rankStr = rankIndex !== -1 ? `#${rankIndex + 1}` : 'غير مصنف';
+      const rankStr = rankIndex !== -1 ? `#${rankIndex + 1}` : t(lang, 'admin.staff.unranked');
 
       // فحص الإنجازات (Achievements)
       const achievements = [];
-      if (staff.tickets_closed >= 100) achievements.push('🏆 بطل التذاكر (100+)');
-      else if (staff.tickets_closed >= 25) achievements.push('🎫 خبير الدعم (25+)');
-      if (staff.mod_actions >= 50) achievements.push('🛡️ حارس السيرفر (50+ إجراء)');
-      if (staff.streak_days >= 7) achievements.push('🔥 وحش الاستمرارية (7+ أيام)');
-      if (voiceHours >= 10) achievements.push('🎙️ عملاق الرومات (10+ ساعات)');
-      if (achievements.length === 0) achievements.push('🌱 عضو ستاف جديد');
+      if (staff.tickets_closed >= 100) achievements.push(t(lang, 'admin.staff.ach_tickets100'));
+      else if (staff.tickets_closed >= 25) achievements.push(t(lang, 'admin.staff.ach_tickets25'));
+      if (staff.mod_actions >= 50) achievements.push(t(lang, 'admin.staff.ach_mod50'));
+      if (staff.streak_days >= 7) achievements.push(t(lang, 'admin.staff.ach_streak7'));
+      if (voiceHours >= 10) achievements.push(t(lang, 'admin.staff.ach_voice10'));
+      if (achievements.length === 0) achievements.push(t(lang, 'admin.staff.ach_new'));
 
       const embed = new EmbedBuilder()
         .setColor(config.colors?.primary || '#7c3aed')
-        .setTitle(`👮 إحصائيات نشاط الستاف | ${targetUser.username}`)
+        .setTitle(t(lang, 'admin.staff.stats_title', { user: targetUser.username }))
         .setThumbnail(targetUser.displayAvatarURL({ dynamic: true }))
-        .setDescription(`📊 **التقييم العام للأداء (Performance Score):** \`${score} نقطة\`\n🏆 **الترتيب في السيرفر:** \`${rankStr}\``)
+        .setDescription(t(lang, 'admin.staff.stats_desc', { score, rank: rankStr }))
         .addFields(
-          { name: '🎫 التذاكر المغلقة', value: `\`${staff.tickets_closed}\` تذكرة`, inline: true },
-          { name: '🔨 الإجراءات الإدارية', value: `\`${staff.mod_actions}\` إجراء`, inline: true },
-          { name: '💬 عدد الرسائل', value: `\`${staff.messages_count.toLocaleString()}\` رسالة`, inline: true },
-          { name: '🔊 ساعات الصوت', value: `\`${voiceHours}\` ساعة`, inline: true },
-          { name: '🔥 النشاط المتتالي (Streak)', value: `\`${staff.streak_days}\` يوم`, inline: true },
-          { name: '💰 نقاط المكافآت', value: `\`${staff.points}\` نقطة`, inline: true },
-          { 
-            name: '📋 تفاصيل العقوبات المتخذة', 
-            value: `🔨 باند: **${staff.bans_count}** | 👢 طرد: **${staff.kicks_count}** | 🔇 كتم: **${staff.mutes_count}** | ⚠️ تحذير: **${staff.warns_count}**`, 
-            inline: false 
+          { name: t(lang, 'admin.staff.f_closed'), value: t(lang, 'admin.staff.f_closed_v', { n: staff.tickets_closed }), inline: true },
+          { name: t(lang, 'admin.staff.f_mod'), value: t(lang, 'admin.staff.f_mod_v', { n: staff.mod_actions }), inline: true },
+          { name: t(lang, 'admin.staff.f_msgs'), value: t(lang, 'admin.staff.f_msgs_v', { n: staff.messages_count.toLocaleString() }), inline: true },
+          { name: t(lang, 'admin.staff.f_voice'), value: t(lang, 'admin.staff.f_voice_v', { n: voiceHours }), inline: true },
+          { name: t(lang, 'admin.staff.f_streak'), value: t(lang, 'admin.staff.f_streak_v', { n: staff.streak_days }), inline: true },
+          { name: t(lang, 'admin.staff.f_points'), value: t(lang, 'admin.staff.f_points_v', { n: staff.points }), inline: true },
+          {
+            name: t(lang, 'admin.staff.f_punish'),
+            value: t(lang, 'admin.staff.f_punish_v', { b: staff.bans_count, k: staff.kicks_count, m: staff.mutes_count, w: staff.warns_count }),
+            inline: false
           },
-          { name: '🏅 الإنجازات والألقاب', value: achievements.join(' • '), inline: false }
+          { name: t(lang, 'admin.staff.f_ach'), value: achievements.join(' • '), inline: false }
         )
-        .setFooter({ text: 'Droplet Staff Activity System • يتم التحديث تلقائياً' })
+        .setFooter({ text: t(lang, 'admin.staff.stats_footer') })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
@@ -108,20 +120,23 @@ module.exports = {
     if (sub === 'leaderboard') {
       const list = db.getStaffLeaderboard(guildId, 10);
       if (list.length === 0) {
-        return interaction.reply({ content: '📭 لا توجد بيانات نشاط مسجلة للستاف بعد.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.staff.lb_empty'), flags: 64 });
       }
 
       const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
       const lines = list.map((s, i) => {
         const vHours = (s.voice_seconds / 3600).toFixed(1);
-        return `${medals[i] || '▫️'} <@${s.user_id}>\n> 🎫 **${s.tickets_closed}** تذكرة • 🔨 **${s.mod_actions}** إجراء • 💬 **${s.messages_count}** رسالة • 🔊 **${vHours}h** صوت • 🔥 **${s.streak_days}d**\n> 📈 التقييم: **${Math.floor(s.performance_score)}** نقطة`;
+        return t(lang, 'admin.staff.lb_row', {
+          medal: medals[i] || '▫️', id: s.user_id, t: s.tickets_closed, m: s.mod_actions,
+          c: s.messages_count, v: vHours, s: s.streak_days, score: Math.floor(s.performance_score)
+        });
       });
 
       const embed = new EmbedBuilder()
         .setColor('#f59e0b')
-        .setTitle('🏆 لوحة شرف نشاط الستاف (Staff Leaderboard)')
+        .setTitle(t(lang, 'admin.staff.lb_title'))
         .setDescription(lines.join('\n\n'))
-        .setFooter({ text: 'يتم احتساب الترتيب حسب النقاط والإجراءات وساعات التواجد والتذاكر' })
+        .setFooter({ text: t(lang, 'admin.staff.lb_footer') })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
@@ -131,27 +146,31 @@ module.exports = {
       const limit = interaction.options.getInteger('limit') || 10;
       const logs = db.getStaffActionLogs(guildId, limit);
       if (logs.length === 0) {
-        return interaction.reply({ content: '📭 لا توجد سجلات إجراءات إدارية بعد.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.staff.logs_empty'), flags: 64 });
       }
 
       const actionIcons = {
-        ticket_close: '🎫 إغلاق تذكرة',
-        ban: '🔨 حظر (Ban)',
-        kick: '👢 طرد (Kick)',
-        mute: '🔇 كتم (Mute)',
-        warn: '⚠️ تحذير (Warn)'
+        ticket_close: t(lang, 'admin.staff.act_ticket_close'),
+        ban: t(lang, 'admin.staff.act_ban'),
+        kick: t(lang, 'admin.staff.act_kick'),
+        mute: t(lang, 'admin.staff.act_mute'),
+        warn: t(lang, 'admin.staff.act_warn')
       };
 
       const lines = logs.map(l => {
         const timeAgo = `<t:${l.created_at}:R>`;
-        const target = l.target_id ? `<@${l.target_id}>` : 'غير محدد';
+        const target = l.target_id ? `<@${l.target_id}>` : t(lang, 'admin.staff.log_target_unknown');
         const typeStr = actionIcons[l.action_type] || l.action_type;
-        return `• ${typeStr} بواسطة <@${l.staff_id}> ضد ${target} (${timeAgo})\n  📋 السبب: \`${l.reason || 'لم يُذكر'}\`${l.details ? ` | تفاصيل: ${l.details}` : ''}`;
+        return t(lang, 'admin.staff.log_row', {
+          type: typeStr, staff: l.staff_id, target, time: timeAgo,
+          reason: l.reason || t(lang, 'admin.staff.log_no_reason'),
+          details: l.details ? t(lang, 'admin.staff.log_details', { details: l.details }) : ''
+        });
       });
 
       const embed = new EmbedBuilder()
         .setColor(config.colors?.info || '#3b82f6')
-        .setTitle('📝 سجل الإجراءات الإدارية المباشرة (Action Logs)')
+        .setTitle(t(lang, 'admin.staff.logs_title'))
         .setDescription(lines.join('\n\n'))
         .setTimestamp();
 
@@ -161,24 +180,24 @@ module.exports = {
     if (sub === 'goals') {
       const goals = db.getStaffGoals(guildId);
       const defaultGoals = [
-        { title: 'إغلاق 20 تذكرة أسبوعياً', type: '🎫 التذاكر', target: '20 تذكرة', reward: '150 نقطة' },
-        { title: 'اتخاذ 15 إجراء إداري', type: '🔨 الإشراف', target: '15 إجراء', reward: '100 نقطة' },
-        { title: 'التواجد 10 ساعات في الرومات الصوتية', type: '🔊 الصوت', target: '10 ساعات', reward: '200 نقطة' },
-        { title: 'الحفاظ على تفاعل 7 أيام متتالية', type: '🔥 الاستمرارية', target: '7 أيام Streak', reward: '250 نقطة' }
+        { title: t(lang, 'admin.staff.goal1'), type: t(lang, 'admin.staff.goal1_type'), target: t(lang, 'admin.staff.goal1_target'), reward: t(lang, 'admin.staff.goal1_reward') },
+        { title: t(lang, 'admin.staff.goal2'), type: t(lang, 'admin.staff.goal2_type'), target: t(lang, 'admin.staff.goal2_target'), reward: t(lang, 'admin.staff.goal2_reward') },
+        { title: t(lang, 'admin.staff.goal3'), type: t(lang, 'admin.staff.goal3_type'), target: t(lang, 'admin.staff.goal3_target'), reward: t(lang, 'admin.staff.goal3_reward') },
+        { title: t(lang, 'admin.staff.goal4'), type: t(lang, 'admin.staff.goal4_type'), target: t(lang, 'admin.staff.goal4_target'), reward: t(lang, 'admin.staff.goal4_reward') }
       ];
 
       const fields = defaultGoals.map(g => ({
         name: `🎯 ${g.title}`,
-        value: `📂 النوع: **${g.type}** | الهدف: \`${g.target}\` | المكافأة: **${g.reward}**`,
+        value: t(lang, 'admin.staff.goal_field', { type: g.type, target: g.target, reward: g.reward }),
         inline: false
       }));
 
       const embed = new EmbedBuilder()
         .setColor('#10b981')
-        .setTitle('🎯 أهداف وإنجازات طاقم الإدارة (Staff Goals & Rewards)')
-        .setDescription('حقق الأهداف التالية للحصول على نقاط مكافأة وترقية تقييمك الإداري 🚀')
+        .setTitle(t(lang, 'admin.staff.goals_title'))
+        .setDescription(t(lang, 'admin.staff.goals_desc'))
         .addFields(fields)
-        .setFooter({ text: 'تُراجع وتُصرف المكافآت من قبل الإدارة العليا' })
+        .setFooter({ text: t(lang, 'admin.staff.goals_footer') })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
@@ -186,23 +205,23 @@ module.exports = {
 
     if (sub === 'reset') {
       if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-        return interaction.reply({ content: '❌ هذا الأمر مخصص لمالك ومسؤولي السيرفر فقط.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.staff.reset_admin_only'), flags: 64 });
       }
 
       const targetUser = interaction.options.getUser('user');
       if (targetUser) {
         db.resetStaffStats(guildId, targetUser.id);
-        return interaction.reply({ content: `✅ تم تصفير وإعادة تعيين إحصائيات العضو <@${targetUser.id}> بنجاح.` });
+        return interaction.reply({ content: t(lang, 'admin.staff.reset_user', { id: targetUser.id }) });
       } else {
         db.resetStaffStats(guildId);
-        return interaction.reply({ content: '✅ تم تصفير وإعادة تعيين إحصائيات جميع الستاف في هذا السيرفر بنجاح.' });
+        return interaction.reply({ content: t(lang, 'admin.staff.reset_all') });
       }
     }
 
     // ─── Rank Set ───
     if (sub === 'rank-set') {
       if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-        return interaction.reply({ content: '❌ هذا الأمر مخصص للإدارة العليا فقط.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.staff.rank_admin_only'), flags: 64 });
       }
       const role = interaction.options.getRole('role');
       const points = interaction.options.getInteger('points');
@@ -212,14 +231,14 @@ module.exports = {
 
       const embed = new EmbedBuilder()
         .setColor('#10b981')
-        .setTitle('🎖️ تم ضبط رتبة الترقية التلقائية')
+        .setTitle(t(lang, 'admin.staff.rank_set_title'))
         .addFields(
-          { name: '🏷️ الرتبة', value: `<@&${role.id}>`, inline: true },
-          { name: '⭐ النقاط المطلوبة', value: `\`${points}\` نقطة`, inline: true },
-          { name: '📝 الاسم', value: `\`${name}\``, inline: true }
+          { name: t(lang, 'admin.staff.rank_f_role'), value: `<@&${role.id}>`, inline: true },
+          { name: t(lang, 'admin.staff.rank_f_points'), value: t(lang, 'admin.staff.rank_f_points_v', { n: points }), inline: true },
+          { name: t(lang, 'admin.staff.rank_f_name'), value: t(lang, 'admin.staff.rank_f_name_v', { name }), inline: true }
         )
-        .setDescription('سيتم منح هذه الرتبة تلقائياً لأي عضو إدارة يصل لهذا العدد من النقاط.')
-        .setFooter({ text: 'Droplet Staff Auto-Promotion System' })
+        .setDescription(t(lang, 'admin.staff.rank_set_desc'))
+        .setFooter({ text: t(lang, 'admin.staff.rank_footer') })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
@@ -229,18 +248,21 @@ module.exports = {
     if (sub === 'rank-list') {
       const ranks = db.getStaffRanks(guildId);
       if (!ranks || ranks.length === 0) {
-        return interaction.reply({ content: '📭 لا توجد رتب ترقية تلقائية مضبوطة بعد.\nاستخدم `/staff rank-set` لإضافة رتبة.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.staff.rank_empty'), flags: 64 });
       }
 
       const lines = ranks.map((r, i) =>
-        `**${i + 1}.** <@&${r.role_id}> — \`${r.required_points}\` نقطة${r.rank_name ? ` (**${r.rank_name}**)` : ''}`
+        t(lang, 'admin.staff.rank_row', {
+          i: i + 1, role: r.role_id, points: r.required_points,
+          name: r.rank_name ? t(lang, 'admin.staff.rank_row_name', { name: r.rank_name }) : ''
+        })
       );
 
       const embed = new EmbedBuilder()
         .setColor('#7c3aed')
-        .setTitle('🎖️ قائمة رتب الترقية التلقائية (Staff Auto-Promotion Ranks)')
+        .setTitle(t(lang, 'admin.staff.rank_list_title'))
         .setDescription(lines.join('\n'))
-        .setFooter({ text: 'تُمنح الرتب تلقائياً عند تحقق شرط النقاط' })
+        .setFooter({ text: t(lang, 'admin.staff.rank_list_footer') })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
@@ -249,30 +271,30 @@ module.exports = {
     // ─── Rank Remove ───
     if (sub === 'rank-remove') {
       if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-        return interaction.reply({ content: '❌ هذا الأمر مخصص للإدارة العليا فقط.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.staff.rank_admin_only'), flags: 64 });
       }
       const role = interaction.options.getRole('role');
       const result = db.removeStaffRank(guildId, role.id);
 
       if (!result || result.changes === 0) {
-        return interaction.reply({ content: `⚠️ الرتبة <@&${role.id}> غير موجودة في نظام الترقيات.`, flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.staff.rank_not_found', { id: role.id }), flags: 64 });
       }
 
-      return interaction.reply({ content: `✅ تم حذف الرتبة <@&${role.id}> من نظام الترقية التلقائية بنجاح.` });
+      return interaction.reply({ content: t(lang, 'admin.staff.rank_removed', { id: role.id }) });
     }
 
     // ─── Points Award ───
     if (sub === 'points') {
       if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-        return interaction.reply({ content: '❌ هذا الأمر مخصص للإدارة العليا فقط.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.staff.rank_admin_only'), flags: 64 });
       }
       const targetUser = interaction.options.getUser('user');
       const amount = interaction.options.getInteger('amount');
-      const reason = interaction.options.getString('reason') || 'مكافأة إدارية';
+      const reason = interaction.options.getString('reason') || t(lang, 'admin.staff.points_default_reason');
 
       const updated = db.addStaffPoints(guildId, targetUser.id, amount, reason);
       if (!updated) {
-        return interaction.reply({ content: '❌ حدث خطأ أثناء منح النقاط.', flags: 64 });
+        return interaction.reply({ content: t(lang, 'admin.staff.points_error'), flags: 64 });
       }
 
       // فحص الترقية التلقائية بعد منح النقاط
@@ -286,7 +308,7 @@ module.exports = {
             for (const r of allRoles) {
               if (!member.roles.cache.has(r.role_id)) {
                 await member.roles.add(r.role_id).catch(() => {});
-                promotionStr += `\n🎖️ تمت الترقية التلقائية إلى <@&${r.role_id}>!`;
+                promotionStr += t(lang, 'admin.staff.promoted', { id: r.role_id });
               }
             }
           }
@@ -295,14 +317,14 @@ module.exports = {
 
       const embed = new EmbedBuilder()
         .setColor('#f59e0b')
-        .setTitle('⭐ تم منح نقاط المكافأة')
+        .setTitle(t(lang, 'admin.staff.points_title'))
         .addFields(
-          { name: '👤 العضو', value: `<@${targetUser.id}>`, inline: true },
-          { name: '⭐ النقاط المضافة', value: `+\`${amount}\` نقطة`, inline: true },
-          { name: '💰 إجمالي النقاط', value: `\`${updated.points}\` نقطة`, inline: true },
-          { name: '📋 السبب', value: reason, inline: false }
+          { name: t(lang, 'admin.staff.points_f_member'), value: `<@${targetUser.id}>`, inline: true },
+          { name: t(lang, 'admin.staff.points_f_added'), value: t(lang, 'admin.staff.points_f_added_v', { n: amount }), inline: true },
+          { name: t(lang, 'admin.staff.points_f_total'), value: t(lang, 'admin.staff.points_f_total_v', { n: updated.points }), inline: true },
+          { name: t(lang, 'admin.staff.points_f_reason'), value: reason, inline: false }
         )
-        .setFooter({ text: `بواسطة ${interaction.user.username} • Droplet Staff System` })
+        .setFooter({ text: t(lang, 'admin.staff.points_footer', { user: interaction.user.username }) })
         .setTimestamp();
 
       if (promotionStr) embed.setDescription(promotionStr);
@@ -312,6 +334,7 @@ module.exports = {
   },
 
   async executePrefix(message, args) {
+    const lang = getGuildLang(message.guild.id);
     const targetUser = message.mentions.users.first() || message.author;
     const staff = db.getStaffMember(message.guild.id, targetUser.id);
     const score = (staff.tickets_closed * 25) + (staff.mod_actions * 10) + (staff.messages_count * 1) + Math.floor((staff.voice_seconds / 300) * 1);
@@ -319,17 +342,17 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor('#7c3aed')
-      .setTitle(`👮 إحصائيات نشاط الستاف | ${targetUser.username}`)
+      .setTitle(t(lang, 'admin.staff.stats_title', { user: targetUser.username }))
       .setThumbnail(targetUser.displayAvatarURL({ dynamic: true }))
-      .setDescription(`📊 **تقييم الأداء:** \`${score} نقطة\`\n🔥 **النشاط المتتالي:** \`${staff.streak_days} يوم\``)
+      .setDescription(t(lang, 'admin.staff.prefix_stats_desc', { score, streak: staff.streak_days }))
       .addFields(
-        { name: '🎫 التذاكر', value: `\`${staff.tickets_closed}\``, inline: true },
-        { name: '🔨 الإجراءات', value: `\`${staff.mod_actions}\``, inline: true },
-        { name: '💬 الرسائل', value: `\`${staff.messages_count}\``, inline: true },
-        { name: '🔊 ساعات الصوت', value: `\`${voiceHours}h\``, inline: true },
-        { name: '💰 النقاط', value: `\`${staff.points}\``, inline: true }
+        { name: t(lang, 'admin.staff.prefix_f_tickets'), value: `\`${staff.tickets_closed}\``, inline: true },
+        { name: t(lang, 'admin.staff.prefix_f_actions'), value: `\`${staff.mod_actions}\``, inline: true },
+        { name: t(lang, 'admin.staff.prefix_f_messages'), value: `\`${staff.messages_count}\``, inline: true },
+        { name: t(lang, 'admin.staff.f_voice'), value: `\`${voiceHours}h\``, inline: true },
+        { name: t(lang, 'admin.staff.f_points'), value: `\`${staff.points}\``, inline: true }
       )
-      .setFooter({ text: 'استخدم /staff لعرض لوحة الشرف الكاملة وسجل الإجراءات' })
+      .setFooter({ text: t(lang, 'admin.staff.prefix_footer') })
       .setTimestamp();
 
     return message.reply({ embeds: [embed] });

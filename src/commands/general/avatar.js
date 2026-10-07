@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('../../config.json');
+const { t } = require('../../utils/lang');
 
 module.exports = {
   name: 'avatar',
@@ -20,14 +21,14 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor(config.colors.primary)
-      .setTitle(`🖼️ صورة الحساب: ${user.username}`)
+      .setTitle(t(interaction.guild.id, 'general.avatar.title', { user: user.username }))
       .setImage(avatarURL)
-      .setFooter({ text: `طلب بواسطة: ${interaction.user.tag}` })
+      .setFooter({ text: t(interaction.guild.id, 'general.avatar.footer', { tag: interaction.user.tag }) })
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setLabel('رابط الصورة المباشر')
+        .setLabel(t(interaction.guild.id, 'general.avatar.button'))
         .setURL(avatarURL)
         .setStyle(ButtonStyle.Link)
     );
@@ -44,14 +45,14 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor(config.colors.primary)
-      .setTitle(`🖼️ صورة الحساب: ${user.username}`)
+      .setTitle(t(message.guild.id, 'general.avatar.title', { user: user.username }))
       .setImage(avatarURL)
-      .setFooter({ text: `طلب بواسطة: ${message.author.tag}` })
+      .setFooter({ text: t(message.guild.id, 'general.avatar.footer', { tag: message.author.tag }) })
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setLabel('رابط الصورة المباشر')
+        .setLabel(t(message.guild.id, 'general.avatar.button'))
         .setURL(avatarURL)
         .setStyle(ButtonStyle.Link)
     );

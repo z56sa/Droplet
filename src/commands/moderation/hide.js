@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { getGuildLang, t } = require('../../utils/lang');
 
 module.exports = {
   name: 'hide',
@@ -6,12 +7,14 @@ module.exports = {
   aliases: ['اخفاء', 'هايد'],
   data: new SlashCommandBuilder()
     .setName('hide')
-    .setDescription('إخفاء الروم الحالي عن الأعضاء')
+    .setDescription('Hide the current channel from members')
+
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
   async execute(interaction) {
+    const lang = getGuildLang(interaction.guild?.id);
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
-      return interaction.reply({ content: '❌ لا تملك صلاحية إدارة القنوات.', flags: 64 });
+      return interaction.reply({ content: t(lang, 'moderation.hide.no_perm'), flags: 64 });
     }
 
     await interaction.deferReply().catch(() => { });
@@ -20,18 +23,19 @@ module.exports = {
       ViewChannel: false
     });
 
-    await interaction.editReply('👁️❌ **تم إخفاء هذا الروم عن الأعضاء بنجاح.**');
+    await interaction.editReply(t(lang, 'moderation.hide.done'));
   },
 
   async executePrefix(message) {
+    const lang = getGuildLang(message.guild?.id);
     if (!message.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
-      return message.reply('❌ لا تملك صلاحية إدارة القنوات.');
+      return message.reply(t(lang, 'moderation.hide.no_perm'));
     }
 
     await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, {
       ViewChannel: false
     });
 
-    await message.channel.send('👁️❌ **تم إخفاء هذا الروم عن الأعضاء بنجاح.**');
+    await message.channel.send(t(lang, 'moderation.hide.done'));
   }
 };
