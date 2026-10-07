@@ -1408,24 +1408,22 @@ module.exports = function (app, client) {
                 
                 <style>
                     :root {
-                        --bg-main: #060c1d;
-                        --bg-sidebar: #081026;
-                        --bg-card: #0b1530;
-                        --bg-card-hover: #101e44;
-                        --primary: #2563eb;
-                        --border: rgba(59, 130, 246, 0.28);
+                        --bg-main: #06050a;
+                        --bg-sidebar: #0a0812;
+                        --bg-card: #0f0c1b;
+                        --bg-card-hover: #161228;
+                        --primary: #7c3aed;
+                        --border: rgba(124, 58, 237, 0.25);
                     }
                     body { background-color: var(--bg-main) !important; color: #ffffff !important; font-family: 'Cairo', sans-serif !important; transition: background-color 0.3s, color 0.3s; }
                     body.light-mode { background-color: #f8f9fa !important; color: #1a1a1a !important; }
-                    body.light-mode .bg-\[\#060c1d\], body.light-mode .bg-\[\#0b1530\] { background-color: #ffffff !important; border-color: #e5e7eb !important; }
+                    body.light-mode .bg-\[\#06050a\], body.light-mode .bg-\[\#0f0c1b\] { background-color: #ffffff !important; border-color: #e5e7eb !important; }
                     body.light-mode .text-white { color: #1a1a1a !important; }
-                    body.light-mode .text-blue-200 { color: #4b5563 !important; }
-                    body.light-mode .text-blue-300 { color: #6b7280 !important; }
                     ::-webkit-scrollbar { width: 6px; height: 6px; }
-                    ::-webkit-scrollbar-track { background: #060c1d; }
-                    ::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 10px; }
+                    ::-webkit-scrollbar-track { background: #06050a; }
+                    ::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 10px; }
                     @keyframes spin { to { transform: rotate(360deg); } }
-                    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(37, 99, 235, 0.2); border-radius: 50%; border-top-color: #3b82f6; animation: spin 0.8s linear infinite; }
+                    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(124, 58, 237, 0.2); border-radius: 50%; border-top-color: #a78bfa; animation: spin 0.8s linear infinite; }
                     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
                     .toast-enter { animation: slideUp 0.3s ease-out; }
                 </style>
@@ -1485,10 +1483,10 @@ module.exports = function (app, client) {
         if (btn) {
             const allNavBtns = document.querySelectorAll('.nav-btn');
             allNavBtns.forEach(b => {
-                b.classList.remove('bg-gradient-to-r', 'from-[#00d2fe]', 'to-[#2563eb]', 'text-white', 'font-black', 'shadow-md', 'shadow-[#00d2fe]/20');
+                b.classList.remove('bg-gradient-to-r', 'from-[#7c3aed]', 'to-[#6366f1]', 'text-white', 'font-black', 'shadow-md', 'shadow-[#7c3aed]/25');
                 b.classList.add('text-gray-300', 'hover:text-white', 'hover:bg-white/5', 'font-medium');
             });
-            btn.classList.add('bg-gradient-to-r', 'from-[#00d2fe]', 'to-[#2563eb]', 'text-white', 'font-black', 'shadow-md', 'shadow-[#00d2fe]/20');
+            btn.classList.add('bg-gradient-to-r', 'from-[#7c3aed]', 'to-[#6366f1]', 'text-white', 'font-black', 'shadow-md', 'shadow-[#7c3aed]/25');
             btn.classList.remove('text-gray-300', 'hover:text-white', 'hover:bg-white/5', 'font-medium');
         }
 
@@ -2017,7 +2015,7 @@ module.exports = function (app, client) {
                                     <span class="flex items-center gap-1.5"><span>عام</span></span>
                                 </button>
                                 <div id="user_grp_general" class="space-y-1">
-                                    <button onclick="switchTab('tabOverview', this)" class="nav-btn px-3 py-2 rounded-xl bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black flex items-center justify-between shadow-md shadow-[#00d2fe]/20 w-full transition">
+                                    <button onclick="switchTab('tabOverview', this)" class="nav-btn px-3 py-2 rounded-xl bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white font-black flex items-center justify-between shadow-md shadow-[#7c3aed]/25 w-full transition">
                                         <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
                                         <span class="flex items-center gap-2"><span>نظرة عامة</span><span class="text-white">🎛️</span></span>
                                     </button>
@@ -2425,40 +2423,40 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
 
                             <!-- Quick Actions -->
-                            <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-3xl shadow-xl space-y-3 text-right">
+                            <div class="bg-[#0f0c1b] border border-indigo-500/20 p-6 rounded-3xl shadow-xl space-y-3 text-right">
                                 <h4 class="font-black text-white text-sm flex items-center justify-end gap-2"><span>الإجراءات السريعة</span><span>⚡</span></h4>
                                 <div class="space-y-2">
-                                    <a href="/dashboard/${guildId}/commands" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#00d2fe]/10 border border-[#00d2fe]/20 hover:border-[#00d2fe]/50 p-3.5 rounded-xl transition group shadow-sm">
-                                        <span class="text-[#00d2fe] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
+                                    <a href="/dashboard/${guildId}/commands" class="flex items-center justify-between bg-[#06050a] hover:bg-[#7c3aed]/10 border border-[#7c3aed]/25 hover:border-[#7c3aed]/60 p-3.5 rounded-xl transition group shadow-sm">
+                                        <span class="text-[#a78bfa] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
                                         <div class="flex items-center gap-2 text-right">
-                                            <span class="text-xs font-bold text-white group-hover:text-[#00d2fe] transition">إدارة الأوامر</span>
+                                            <span class="text-xs font-bold text-white group-hover:text-[#a78bfa] transition">إدارة الأوامر</span>
                                             <span class="text-sm">🎛️</span>
                                         </div>
                                     </a>
-                                    <a href="/dashboard/${guildId}/moderation" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#00d2fe]/10 border border-[#00d2fe]/20 hover:border-[#00d2fe]/50 p-3.5 rounded-xl transition group shadow-sm">
-                                        <span class="text-[#00d2fe] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
+                                    <a href="/dashboard/${guildId}/moderation" class="flex items-center justify-between bg-[#06050a] hover:bg-[#7c3aed]/10 border border-[#7c3aed]/25 hover:border-[#7c3aed]/60 p-3.5 rounded-xl transition group shadow-sm">
+                                        <span class="text-[#a78bfa] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
                                         <div class="flex items-center gap-2 text-right">
-                                            <span class="text-xs font-bold text-white group-hover:text-[#00d2fe] transition">إعدادات الإشراف</span>
+                                            <span class="text-xs font-bold text-white group-hover:text-[#a78bfa] transition">إعدادات الإشراف</span>
                                             <span class="text-sm">🔨</span>
                                         </div>
                                     </a>
-                                    <a href="/dashboard/${guildId}/protection" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#00d2fe]/10 border border-[#00d2fe]/20 hover:border-[#00d2fe]/50 p-3.5 rounded-xl transition group shadow-sm">
-                                        <span class="text-[#00d2fe] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
+                                    <a href="/dashboard/${guildId}/protection" class="flex items-center justify-between bg-[#06050a] hover:bg-[#7c3aed]/10 border border-[#7c3aed]/25 hover:border-[#7c3aed]/60 p-3.5 rounded-xl transition group shadow-sm">
+                                        <span class="text-[#a78bfa] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
                                         <div class="flex items-center gap-2 text-right">
-                                            <span class="text-xs font-bold text-white group-hover:text-[#00d2fe] transition">نظام الحماية</span>
+                                            <span class="text-xs font-bold text-white group-hover:text-[#a78bfa] transition">نظام الحماية</span>
                                             <span class="text-sm">🛡️</span>
                                         </div>
                                     </a>
-                                    <a href="/dashboard/${guildId}/analytics" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#00d2fe]/10 border border-[#00d2fe]/20 hover:border-[#00d2fe]/50 p-3.5 rounded-xl transition group shadow-sm">
-                                        <span class="text-[#00d2fe] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
+                                    <a href="/dashboard/${guildId}/analytics" class="flex items-center justify-between bg-[#06050a] hover:bg-[#7c3aed]/10 border border-[#7c3aed]/25 hover:border-[#7c3aed]/60 p-3.5 rounded-xl transition group shadow-sm">
+                                        <span class="text-[#a78bfa] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
                                         <div class="flex items-center gap-2 text-right">
-                                            <span class="text-xs font-bold text-white group-hover:text-[#00d2fe] transition">الإحصائيات والتحليلات</span>
+                                            <span class="text-xs font-bold text-white group-hover:text-[#a78bfa] transition">الإحصائيات والتحليلات</span>
                                             <span class="text-sm">📊</span>
                                         </div>
                                     </a>
-                                    <a href="/dashboard/${guildId}/stat-channels" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#00d2fe]/10 border border-[#00d2fe]/20 hover:border-[#00d2fe]/50 p-3.5 rounded-xl transition group shadow-sm">
+                                    <a href="/dashboard/${guildId}/stat-channels" class="flex items-center justify-between bg-[#06050a] hover:bg-[#7c3aed]/10 border border-[#7c3aed]/25 hover:border-[#7c3aed]/60 p-3.5 rounded-xl transition group shadow-sm">
                                         <span class="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">جديد</span>
-                                        <span class="flex items-center gap-2"><span>قنوات الإحصائيات</span><span class="text-white group-hover:text-[#00d2fe]">📈</span></span>
+                                        <span class="flex items-center gap-2"><span>قنوات الإحصائيات</span><span class="text-white group-hover:text-[#a78bfa]">📈</span></span>
                                     </a>
                                 </div>
                             </div>
@@ -11761,28 +11759,28 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
                 <style>
                     :root {
-                        --bg-main: #060c1d;
-                        --bg-sidebar: #081026;
-                        --bg-card: #0b1530;
-                        --bg-card-hover: #101e44;
-                        --primary: #2563eb;
-                        --border: rgba(59, 130, 246, 0.28);
+                        --bg-main: #06050a;
+                        --bg-sidebar: #0a0812;
+                        --bg-card: #0f0c1b;
+                        --bg-card-hover: #161228;
+                        --primary: #7c3aed;
+                        --border: rgba(124, 58, 237, 0.25);
                     }
                     body { background-color: var(--bg-main) !important; color: #ffffff !important; font-family: 'Cairo', sans-serif !important; }
                     ::-webkit-scrollbar { width: 6px; height: 6px; }
-                    ::-webkit-scrollbar-track { background: #060c1d; }
-                    ::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 10px; }
+                    ::-webkit-scrollbar-track { background: #06050a; }
+                    ::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 10px; }
                     .probot-card { background: var(--bg-card) !important; border: 1px solid var(--border) !important; border-radius: 20px !important; }
                     .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
                     .toggle input { opacity: 0; width: 0; height: 0; }
-                    .slider { position: absolute; cursor: pointer; inset: 0; background: #1e293b; border-radius: 24px; transition: .3s; border: 1px solid rgba(59, 130, 246, 0.3); }
+                    .slider { position: absolute; cursor: pointer; inset: 0; background: #141224; border-radius: 24px; transition: .3s; border: 1px solid rgba(124, 58, 237, 0.3); }
                     .slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 2px; bottom: 2px; background: white; border-radius: 50%; transition: .3s; }
-                    input:checked + .slider { background: #2563eb; border-color: #3b82f6; }
+                    input:checked + .slider { background: #7c3aed; border-color: #a78bfa; }
                     input:checked + .slider:before { transform: translateX(20px); }
                 </style>
                 <script src="/i18n.js"></script>
             </head>
-            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#060c1d] text-white">
+            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#06050a] text-white">
                 <header class="h-16 bg-[#081026]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-3">
                         <button type="button" onclick="window.dropletI18n.toggleLang()" class="droplet-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-blue-500/20 text-blue-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
@@ -11890,31 +11888,30 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="flex items-center gap-1.5"><span>عام</span></span>
                                 </button>
                                 <div id="grp_sub_general" class="space-y-1">
-                                    <a href="/dashboard/${guildId}" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'overview' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'overview' ? 'bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white font-black shadow-md shadow-[#7c3aed]/25' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span></span>
-                                        <span class="flex items-center gap-2"><span>نظرة عامة</span><span class="${section === 'overview' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">🎛️</span></span>
+                                        <span class="flex items-center gap-2"><span>نظرة عامة</span><span class="${section === 'overview' ? 'text-white' : 'text-white group-hover:text-[#a78bfa]'}">🎛️</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/appearance" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'appearance' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/appearance" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'appearance' ? 'bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white font-black shadow-md shadow-[#7c3aed]/25' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span></span>
-                                        <span class="flex items-center gap-2"><span>مظهر البوت</span><span class="${section === 'appearance' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">🎨</span></span>
+                                        <span class="flex items-center gap-2"><span>مظهر البوت</span><span class="${section === 'appearance' ? 'text-white' : 'text-white group-hover:text-[#a78bfa]'}">🎨</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/settings" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'settings' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/settings" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'settings' ? 'bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white font-black shadow-md shadow-[#7c3aed]/25' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span></span>
-                                        <span class="flex items-center gap-2"><span>الإعدادات</span><span class="${section === 'settings' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">⚙️</span></span>
+                                        <span class="flex items-center gap-2"><span>الإعدادات</span><span class="${section === 'settings' ? 'text-white' : 'text-white group-hover:text-[#a78bfa]'}">⚙️</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/analytics" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'analytics' || section === 'stats' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/analytics" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'analytics' || section === 'stats' ? 'bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white font-black shadow-md shadow-[#7c3aed]/25' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span></span>
-                                        <span class="flex items-center gap-2"><span>الإحصائيات</span><span class="${section === 'analytics' || section === 'stats' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">📊</span></span>
+                                        <span class="flex items-center gap-2"><span>الإحصائيات</span><span class="${section === 'analytics' || section === 'stats' ? 'text-white' : 'text-white group-hover:text-[#a78bfa]'}">📊</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/general" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'general' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/general" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'general' ? 'bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white font-black shadow-md shadow-[#7c3aed]/25' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span class="text-[9px] font-bold text-rose-400 bg-rose-950/60 px-1.5 py-0.2 rounded" data-i18n="جديد">جديد</span>
-                                        <span class="flex items-center gap-2"><span>الأوامر</span><span class="${section === 'general' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">⌨️</span></span>
+                                        <span class="flex items-center gap-2"><span>الأوامر</span><span class="${section === 'general' ? 'text-white' : 'text-white group-hover:text-[#a78bfa]'}">⌨️</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/help" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'help' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/help" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'help' ? 'bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white font-black shadow-md shadow-[#7c3aed]/25' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span></span>
-                                        <span class="flex items-center gap-2"><span>قائمة الأوامر</span><span class="${section === 'help' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">📚</span></span>
+                                        <span class="flex items-center gap-2"><span>قائمة الأوامر</span><span class="${section === 'help' ? 'text-white' : 'text-white group-hover:text-[#a78bfa]'}">📚</span></span>
                                     </a>
-
                                 </div>
                             </div>
 

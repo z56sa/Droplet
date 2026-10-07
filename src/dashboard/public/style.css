@@ -6,19 +6,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@300;400;500;700&family=JetBrains+Mono:wght@500;700&display=swap');
 
 :root {
-  --bg: #09070f;
-  --bg-elevated: #120e21;
-  --bg-card: #17122b;
-  --bg-card-hover: #1d1734;
-  --border: #241d40;
-  --border-light: #322a54;
+  --bg: #06050a;
+  --bg-elevated: #0d0a17;
+  --bg-card: #120e22;
+  --bg-card-hover: #19142e;
+  --border: #221a3b;
+  --border-light: #2d234d;
 
-  --primary: #8b5cf6;
-  --primary-dark: #6d3ff2;
-  --primary-glow: rgba(139, 92, 246, .35);
-  --accent: #c4a6ff;
+  --primary: #7c3aed;
+  --primary-dark: #6366f1;
+  --primary-glow: rgba(124, 58, 237, .25);
+  --accent: #a78bfa;
 
-  --text: #f1eefb;
+  --text: #f5f3ff;
   --text-muted: #a79fc4;
   --text-faint: #6d6489;
 
