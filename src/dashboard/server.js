@@ -378,8 +378,7 @@ module.exports = function (app, client) {
             const embed = new EmbedBuilder()
                 .setTitle('🏪 متجر السيرفر')
                 .setColor(0xf59e0b)
-                .setDescription('اشترِ عناصر حصرية بالـ Gold الذي تجمعه من النشاط في السيرفر!
-استخدم الأزرار أدناه لاستعراض وشراء العناصر المتاحة.')
+                .setDescription('اشترِ عناصر حصرية بالـ Gold الذي تجمعه من النشاط في السيرفر!\nاستخدم الأزرار أدناه لاستعراض وشراء العناصر المتاحة.')
                 .setFooter({ text: `${guild.name} • متجر السيرفر`, iconURL: guild.iconURL() })
                 .setTimestamp();
 

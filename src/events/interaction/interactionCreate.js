@@ -94,7 +94,7 @@ module.exports = {
           const shopEmbed = new EmbedBuilder()
             .setColor('#8b5cf6')
             .setTitle('🛒 متجر السيرفر التفاعلي')
-            .setDescription(`رصيدك: **${userCoins.toLocaleString()}** 🪙 ذهب\n\nطريقة الشراء عبر الأوامر السريعة:\n• لشراء رتبة خاصة: `#shop buy-role name:اسم color:#hex`\n• لشراء روم كتابي: `#shop rent-room type:text name:اسم`\n• لشراء شارة مظهر: `#shop buy-cosmetic item:badge_vip``)
+            .setDescription(`رصيدك: **${userCoins.toLocaleString()}** 🪙 ذهب\n\nطريقة الشراء عبر الأوامر السريعة:\n• لشراء رتبة خاصة: \`#shop buy-role name:اسم color:#hex\`\n• لشراء روم كتابي: \`#shop rent-room type:text name:اسم\`\n• لشراء شارة مظهر: \`#shop buy-cosmetic item:badge_vip\``)
             .setTimestamp();
 
           return interaction.editReply({ embeds: [shopEmbed] });
