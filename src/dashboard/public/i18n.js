@@ -856,7 +856,7 @@
         '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
     };
 
-    function translateString(text, dict, keys) {
+    function translateString(text, dict, keys, bounded) {
         if (!text) return text;
         const trimmed = text.trim();
         if (!trimmed) return text;
@@ -871,7 +871,8 @@
         for (let i = 0; i < keys.length; i++) {
             const key = keys[i];
             if (key.length < 2) continue;
-            if (out.indexOf(key) !== -1) out = out.split(key).join(dict[key]);
+            if (out.indexOf(key) === -1) continue;
+            out = bounded ? replaceBounded(out, key, dict[key]) : out.split(key).join(dict[key]);
         }
         if (dict === dictionary) {
             out = out.replace(/[٠-٩]/g, d => easternToArabicMap[d] || d);
@@ -971,12 +972,12 @@
         return false;
     }
 
-    function translateNodeWithDict(node, dict, keys) {
+    function translateNodeWithDict(node, dict, keys, bounded) {
         if (!node || !dict) return;
         if (isLangHandledSpan(node)) return;
         if (node.nodeType === Node.TEXT_NODE) {
             const original = node.nodeValue;
-            const next = translateString(original, dict, keys);
+            const next = translateString(original, dict, keys, bounded);
             if (next !== original) node.nodeValue = next;
             return;
         }
@@ -993,10 +994,10 @@
         }
 
         if (node.hasAttribute('placeholder')) {
-            node.setAttribute('placeholder', translateString(node.getAttribute('placeholder'), dict, keys));
+            node.setAttribute('placeholder', translateString(node.getAttribute('placeholder'), dict, keys, bounded));
         }
         if (node.hasAttribute('title')) {
-            node.setAttribute('title', translateString(node.getAttribute('title'), dict, keys));
+            node.setAttribute('title', translateString(node.getAttribute('title'), dict, keys, bounded));
         }
         if (node.hasAttribute('data-i18n')) {
             const key = node.getAttribute('data-i18n').trim();
@@ -1005,7 +1006,7 @@
             }
         }
         for (let i = 0; i < node.childNodes.length; i++) {
-            translateNodeWithDict(node.childNodes[i], dict, keys);
+            translateNodeWithDict(node.childNodes[i], dict, keys, bounded);
         }
     }
 
@@ -1118,7 +1119,7 @@
     }
 
     function translateStringWithDash(text) {
-        var out = translateString(text, dictionary, arKeysByLength);
+        var out = translateString(text, dictionary, arKeysByLength, true);
         var dashDict = getDashDict();
         var dashKeys = Object.keys(dashDict).sort(function(a, b) { return b.length - a.length; });
         for (var i = 0; i < dashKeys.length; i++) {
@@ -1185,7 +1186,7 @@
     window.dropletI18n = api;
 
     function translateNodeWithDash(node) {
-        translateNodeWithDict(node, dictionary, arKeysByLength);
+        translateNodeWithDict(node, dictionary, arKeysByLength, true);
         try {
             var dashDict = getDashDict();
             var dashKeys = Object.keys(dashDict).sort(function(a, b) { return b.length - a.length; });
