@@ -14,8 +14,10 @@
   --border-light: #2d234d;
 
   --primary: #7c3aed;
+  --primary-blue: #2563eb;
   --primary-dark: #6366f1;
   --primary-glow: rgba(124, 58, 237, .25);
+  --blue-glow: rgba(37, 99, 235, .22);
   --accent: #a78bfa;
 
   --text: #f5f3ff;
@@ -50,7 +52,7 @@ body {
   position: relative;
 }
 
-/* توهج بنفسجي خلفي ثابت — العنصر المميز للتصميم */
+/* توهج بنفسجي وأزرق خلفي ناعم ممزوج بالأسود */
 body::before {
   content: '';
   position: fixed;
@@ -72,7 +74,7 @@ body::after {
   left: -15%;
   width: 50vw;
   height: 50vw;
-  background: radial-gradient(circle, rgba(109, 63, 242, .22) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--blue-glow) 0%, transparent 70%);
   filter: blur(70px);
   pointer-events: none;
   z-index: 0;
