@@ -215,7 +215,7 @@ class StaffShiftService {
                                             .setTitle('🎖️ ترقية تلقائية لإداري!')
                                             .setDescription(`تهانينا للإداري <@${member.id}>! حصل على ترقية تلقائية إلى رتبة <@&${r.role_id}> بعد بلوغ نقاطه **${staffMember.points}** نقطة 🚀`)
                                             .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-                                            .setFooter({ text: 'ZENO Staff Auto-Promotion System' })
+                                            .setFooter({ text: 'Droplet Staff Auto-Promotion System' })
                                             .setTimestamp();
                                         await logChannel.send({ embeds: [promoEmbed] }).catch(() => {});
                                     }

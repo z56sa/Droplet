@@ -69,7 +69,7 @@ module.exports = {
           { name: '⭐ النقاط والمكافأة', value: `\`${points}\` نقطة`, inline: true },
           { name: '👤 مخصصة لـ', value: assigned ? `<@${assigned.id}>` : 'متاحة لجميع طاقم الإدارة', inline: true }
         )
-        .setFooter({ text: `أنشئت بواسطة ${interaction.user.username} • ZENO Tasks` })
+        .setFooter({ text: `أنشئت بواسطة ${interaction.user.username} • Droplet Tasks` })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
@@ -131,7 +131,7 @@ module.exports = {
         .setColor('#10b981')
         .setTitle('🎉 تم إنجاز المهمة بنجاح!')
         .setDescription(`قام الإداري <@${interaction.user.id}> بإنجاز المهمة:\n**#${taskId} - ${result.task.title}**\n\n⭐ حصل على: \`+${result.points}\` نقطة مكافأة!${promoMsg}`)
-        .setFooter({ text: 'ZENO Staff Task System' })
+        .setFooter({ text: 'Droplet Staff Task System' })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });

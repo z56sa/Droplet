@@ -219,7 +219,7 @@ module.exports = {
           { name: '📝 الاسم', value: `\`${name}\``, inline: true }
         )
         .setDescription('سيتم منح هذه الرتبة تلقائياً لأي عضو إدارة يصل لهذا العدد من النقاط.')
-        .setFooter({ text: 'ZENO Staff Auto-Promotion System' })
+        .setFooter({ text: 'Droplet Staff Auto-Promotion System' })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
@@ -302,7 +302,7 @@ module.exports = {
           { name: '💰 إجمالي النقاط', value: `\`${updated.points}\` نقطة`, inline: true },
           { name: '📋 السبب', value: reason, inline: false }
         )
-        .setFooter({ text: `بواسطة ${interaction.user.username} • ZENO Staff System` })
+        .setFooter({ text: `بواسطة ${interaction.user.username} • Droplet Staff System` })
         .setTimestamp();
 
       if (promotionStr) embed.setDescription(promotionStr);

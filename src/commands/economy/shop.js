@@ -87,7 +87,7 @@ module.exports = {
             inline: false
           }
         )
-        .setFooter({ text: 'ZENO Economy & Utility Store • تجديد الصلاحيات تلقائياً' })
+        .setFooter({ text: 'Droplet Economy & Utility Store • تجديد الصلاحيات تلقائياً' })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
@@ -137,7 +137,7 @@ module.exports = {
             { name: '🎨 اللون', value: `\`${roleColor}\``, inline: true },
             { name: '⏳ تنتهي الصلاحية', value: `<t:${expiresAt}:R>`, inline: true }
           )
-          .setFooter({ text: 'ZENO Custom Role Store' })
+          .setFooter({ text: 'Droplet Custom Role Store' })
           .setTimestamp();
 
         return interaction.editReply({ embeds: [embed] });

@@ -49,7 +49,7 @@ module.exports = {
         { name: '⏳ المدة', value: durationStr ? durationStr : 'دائم', inline: true },
         { name: '👮 بواسطة', value: interaction.user.tag, inline: true }
       )
-      .setFooter({ text: 'ZENO Security & Unban Appeal System' })
+      .setFooter({ text: 'Droplet Security & Unban Appeal System' })
       .setTimestamp();
 
     if (member) await member.send({ embeds: [dmEmbed] }).catch(() => {});

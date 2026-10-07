@@ -48,6 +48,7 @@
             border: 1px solid rgba(96, 165, 250, 0.35);
             color: #93c5fd;
         }
+        body.light-mode .droplet-badge { color: #1d4ed8 !important; background: rgba(59, 130, 246, 0.1) !important; }
         .droplet-btn-primary {
             background: linear-gradient(135deg, #60a5fa, #3b82f6);
             color: white;
@@ -183,7 +184,7 @@
             justify-content: center;
             text-decoration: none !important;
         }
-    /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 16px rgba(147, 197, 253, .35), 0 0 44px rgba(147, 197, 253, .14); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 26px rgba(191, 219, 254, .6), 0 0 70px rgba(147, 197, 253, .3); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }</style>
+    /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 16px rgba(147, 197, 253, .35), 0 0 44px rgba(147, 197, 253, .14); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 26px rgba(191, 219, 254, .6), 0 0 70px rgba(147, 197, 253, .3); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet light theme (default) */ body.light-mode { background-color:#f1f5f9 !important; color:#0f172a !important; } body.light-mode [class*="bg-[#0b0d14]"], body.light-mode [class*="bg-[#0b0e14]"] { background-color:#f1f5f9 !important; } body.light-mode [class*="bg-[#12141f]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#10121b]"], body.light-mode [class*="bg-[#151722]"], body.light-mode [class*="bg-[#121620]"], body.light-mode [class*="bg-[#161824]"], body.light-mode [class*="bg-[#1e2638]"], body.light-mode [class*="bg-[#1e0e11]"] { background-color:#ffffff !important; } body.light-mode [class*="bg-[#1c1f2e]"] { background-color:#e2e8f0 !important; } body.light-mode [class*="bg-[#06070a]"], body.light-mode [class*="bg-[#040508]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#0d0f17]"] { background-color:rgba(248,250,252,.92) !important; } body.light-mode [class*="bg-[#0f111a]"] { background-color:rgba(248,250,252,.85) !important; } body.light-mode [class*="text-white"]:not([class*="bg-blue-"]):not([class*="from-blue-"]):not([class*="bg-green-"]):not([class*="bg-red-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-black"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]) { color:#0f172a !important; } body.light-mode [class*="hover:text-white"]:hover { color:#0f172a !important; } body.light-mode [class*="text-gray-200"] { color:#334155 !important; } body.light-mode [class*="text-gray-300"] { color:#475569 !important; } body.light-mode [class*="text-gray-400"] { color:#64748b !important; } body.light-mode [class*="border-white"] { border-color:rgb(15 23 42 / .1) !important; } body.light-mode [class*="divide-"] > * + * { border-color:rgb(15 23 42 / .08) !important; } body.light-mode [class*="bg-white/"] { background-color:rgb(15 23 42 / .04) !important; } body.light-mode [class*="hover:bg-white"]:hover { background-color:rgb(15 23 42 / .06) !important; } body.light-mode [class*="text-amber-200"], body.light-mode [class*="text-amber-300"] { color:#b45309 !important; } body.light-mode [class*="text-amber-400"] { color:#d97706 !important; } body.light-mode [class*="text-emerald-300"], body.light-mode [class*="text-emerald-400"] { color:#047857 !important; } body.light-mode [class*="text-green-400"] { color:#16a34a !important; } body.light-mode [class*="text-red-400"] { color:#dc2626 !important; } body.light-mode [class*="text-blue-200"], body.light-mode [class*="text-blue-300"] { color:#1d4ed8 !important; } body.light-mode ::placeholder { color:#94a3b8 !important; } body.light-mode [class*="ring-white"] { --tw-ring-color:#cbd5e1 !important; } body.light-mode [class*="to-black"] { --tw-gradient-to:#ffffff var(--tw-gradient-to-position) !important; } body.light-mode ::-webkit-scrollbar-track { background:#e2e8f0 !important; }</style>
 
     <script>
         /* ===== Apply saved lang on page load BEFORE body parsed ===== */
@@ -226,7 +227,7 @@
     </script>
 </head>
 
-<body class="min-h-screen flex flex-col justify-between bg-[#06070a] purple-glow-bg" data-droplet-manual-lang="1">
+<body class="light-mode min-h-screen flex flex-col justify-between bg-[#06070a] purple-glow-bg" data-droplet-manual-lang="1">
 
     <!-- Header Navbar -->
     <header class="h-20 bg-[#06070a]/90 backdrop-blur-md border-b border-blue-700/20 px-6 sm:px-12 flex items-center justify-between sticky top-0 z-50">
