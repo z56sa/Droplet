@@ -374,23 +374,23 @@ module.exports = function (app, client) {
 
             const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
             const embed = new EmbedBuilder()
-                .setTitle('🏪 متجر السيرفر')
-                .setColor(0xf59e0b)
-                .setDescription('اشترِ عناصر حصرية بالـ Gold الذي تجمعه من النشاط في السيرفر!\nاستخدم الأزرار أدناه لاستعراض وشراء العناصر المتاحة.')
-                .setFooter({ text: `${guild.name} • متجر السيرفر`, iconURL: guild.iconURL() })
+                .setTitle('🏪 متجر السيرفر الرسمي | SERVER SHOP')
+                .setColor(0x7c3aed)
+                .setDescription('✨ **مرحباً بكم في متجر السيرفر الحصري!**\nيمكنك شراء رتب خاصة وقنوات صوتية وكتابية مخصصة باستخدام عملة **الذهب (Gold 🪙)** التي تجمعها من التفاعل والأوامر والداشبورد.\n\n👇 **اضغط على الأزرار بالأسفل لتصفح العناصر أو معرفة رصيدك الحالي:**')
+                .setFooter({ text: `${guild.name} • مدعوم بنظام الاقتصاد السحابي Droplet`, iconURL: guild.iconURL() })
                 .setTimestamp();
 
             const items = [];
-            if (shopSettings.customRole?.enabled) items.push(`👑 **رتبة مخصصة** — ${shopSettings.customRole.price} Gold 🪙 لمدة ${shopSettings.customRole.duration} يوم`);
-            if (shopSettings.voiceRoom?.enabled) items.push(`🔊 **روم صوتي خاص** — ${shopSettings.voiceRoom.price} Gold 🪙 لمدة ${shopSettings.voiceRoom.duration} يوم`);
-            if (shopSettings.textRoom?.enabled) items.push(`💬 **قناة كتابية خاصة** — ${shopSettings.textRoom.price} Gold 🪙 لمدة ${shopSettings.textRoom.duration} يوم`);
-            if (shopSettings.badge?.enabled) items.push(`🎖️ **شارة / لقب مخصص** — ${shopSettings.badge.price} Gold 🪙${shopSettings.badge.duration > 0 ? ` لمدة ${shopSettings.badge.duration} يوم` : ' (دائم)'}`);
+            if (shopSettings.customRole?.enabled) items.push(`👑 **رتبة مخصصة (Custom Role)**\n┗ السعر: **${shopSettings.customRole.price.toLocaleString()}** Gold 🪙 • المدة: **${shopSettings.customRole.duration}** يوم`);
+            if (shopSettings.voiceRoom?.enabled) items.push(`🔊 **روم صوتي خاص (Voice Channel)**\n┗ السعر: **${shopSettings.voiceRoom.price.toLocaleString()}** Gold 🪙 • المدة: **${shopSettings.voiceRoom.duration}** يوم`);
+            if (shopSettings.textRoom?.enabled) items.push(`💬 **قناة كتابية خاصة (Text Channel)**\n┗ السعر: **${shopSettings.textRoom.price.toLocaleString()}** Gold 🪙 • المدة: **${shopSettings.textRoom.duration}** يوم`);
+            if (shopSettings.badge?.enabled) items.push(`🎖️ **شارة / لقب مخصص (Badge)**\n┗ السعر: **${shopSettings.badge.price.toLocaleString()}** Gold 🪙 • المدة: ${shopSettings.badge.duration > 0 ? `**${shopSettings.badge.duration}** يوم` : '**دائم**'}`);
 
-            embed.addFields({ name: '🛍️ العناصر المتاحة', value: items.length ? items.join('\n') : 'لا توجد عناصر متاحة حالياً', inline: false });
+            embed.addFields({ name: '🛍️ الباقات والعناصر المتاحة للشراء فوراً', value: items.length ? items.join('\n\n') : 'لا توجد عناصر متاحة حالياً', inline: false });
 
             const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('shop_view').setLabel('🏪 تصفح المتجر').setStyle(ButtonStyle.Primary),
-                new ButtonBuilder().setCustomId('shop_balance').setLabel('💰 رصيدي').setStyle(ButtonStyle.Secondary)
+                new ButtonBuilder().setCustomId('shop_view').setLabel('🛒 تصفح وشراء العناصر').setStyle(ButtonStyle.Primary).setEmoji('🛍️'),
+                new ButtonBuilder().setCustomId('shop_balance').setLabel('🪙 رصيد محفظتي').setStyle(ButtonStyle.Success).setEmoji('💰')
             );
 
             await channel.send({ embeds: [embed], components: [row] });

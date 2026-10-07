@@ -72,33 +72,133 @@ module.exports = {
       }
 
       // 2.0 أزرار متجر السيرفر التفاعلي (Shop Embed Buttons)
-      if (interaction.isButton() && (interaction.customId === 'shop_view' || interaction.customId === 'shop_balance')) {
-        await interaction.deferReply({ flags: 64 }).catch(() => {});
+      if (interaction.isButton() && (interaction.customId === 'shop_view' || interaction.customId === 'shop_balance' || interaction.customId.startsWith('shop_buy_modal_'))) {
         const guildId = interaction.guild.id;
         const userId = interaction.user.id;
-        const userCoins = db.getCoins(userId, guildId);
+
+        // فتح نافذة شراء مباشرة عند الضغط على أزرار الشراء السريعة
+        if (interaction.customId.startsWith('shop_buy_modal_')) {
+          const itemKey = interaction.customId.replace('shop_buy_modal_', '');
+          if (itemKey === 'role') {
+            const modal = new ModalBuilder()
+              .setCustomId('modal_shop_buy_role')
+              .setTitle('👑 شراء رتبة خاصة مخصصة');
+            const nameInput = new TextInputBuilder()
+              .setCustomId('role_name')
+              .setLabel('اسم الرتبة المطلوبة')
+              .setStyle(TextInputStyle.Short)
+              .setPlaceholder('مثال: VIP Emperor')
+              .setRequired(true)
+              .setMaxLength(32);
+            const colorInput = new TextInputBuilder()
+              .setCustomId('role_color')
+              .setLabel('لون الرتبة (HEX كود يبدأ بـ #)')
+              .setStyle(TextInputStyle.Short)
+              .setPlaceholder('#7C3AED')
+              .setRequired(true)
+              .setMaxLength(7);
+            modal.addComponents(
+              new ActionRowBuilder().addComponents(nameInput),
+              new ActionRowBuilder().addComponents(colorInput)
+            );
+            return interaction.showModal(modal);
+          } else if (itemKey === 'voice') {
+            const modal = new ModalBuilder()
+              .setCustomId('modal_shop_buy_voice')
+              .setTitle('🔊 استئجار روم صوتي خاص');
+            const nameInput = new TextInputBuilder()
+              .setCustomId('voice_name')
+              .setLabel('اسم الروم الصوتي')
+              .setStyle(TextInputStyle.Short)
+              .setPlaceholder('مثال: ديوانية الأساطير')
+              .setRequired(true)
+              .setMaxLength(32);
+            modal.addComponents(new ActionRowBuilder().addComponents(nameInput));
+            return interaction.showModal(modal);
+          } else if (itemKey === 'text') {
+            const modal = new ModalBuilder()
+              .setCustomId('modal_shop_buy_text')
+              .setTitle('💬 استئجار روم كتابي خاص');
+            const nameInput = new TextInputBuilder()
+              .setCustomId('text_name')
+              .setLabel('اسم القناة الكتابية')
+              .setStyle(TextInputStyle.Short)
+              .setPlaceholder('مثال: شات-الخاص')
+              .setRequired(true)
+              .setMaxLength(32);
+            modal.addComponents(new ActionRowBuilder().addComponents(nameInput));
+            return interaction.showModal(modal);
+          }
+        }
+
+        await interaction.deferReply({ flags: 64 }).catch(() => {});
+
+        // 🌐 جلب رصيد الذهب الحي من Turso Cloud مع دمج المحلي
+        let userCoins = db.getCoins(userId, guildId);
+        try {
+          if (db.getTursoUser) {
+            const tursoData = await db.getTursoUser(userId);
+            if (tursoData && tursoData.coins !== null && tursoData.coins > userCoins) {
+              userCoins = tursoData.coins;
+            }
+          }
+        } catch (e) {}
 
         if (interaction.customId === 'shop_balance') {
           const balEmbed = new EmbedBuilder()
-            .setColor('#f59e0b')
-            .setTitle('💰 رصيدك في السيرفر')
-            .setDescription(`مرحباً ${interaction.user}، رصيدك الحالي هو:\n\n🪙 **${userCoins.toLocaleString()}** ذهب\n\nيمكنك جمع المزيد من الذهب عبر التفاعل والكتابة والأوامر اليومية!`)
+            .setColor('#2563EB')
+            .setTitle('🪙 محفظتك في Droplet | رصيد السيرفر والداشبورد')
+            .setDescription(`مرحباً ${interaction.user}، رصيدك الحالي من عملة الذهب هو:\n\n✨ **${userCoins.toLocaleString()}** Gold 🪙\n\n> 🌐 **متصل ومتزامن مع Turso Cloud والداشبورد مباشرة!**\n> 💡 يمكنك جمع المزيد عبر الراتب اليومي \`#daily\`، العمل \`#work\`، والتفاعل في الشات!`)
+            .setFooter({ text: 'Droplet Economy System • متزامن مع تورسو' })
             .setTimestamp();
           return interaction.editReply({ embeds: [balEmbed] });
         }
 
         if (interaction.customId === 'shop_view') {
           const settings = db.getGuildSettings ? db.getGuildSettings(guildId) : {};
-          let shopSettings = { customRole: { enabled: true, price: 500, duration: 30 }, textRoom: { enabled: true, price: 600, duration: 30 }, badge: { enabled: false, price: 200, duration: 0 } };
+          let shopSettings = { customRole: { enabled: true, price: 500, duration: 30 }, voiceRoom: { enabled: true, price: 800, duration: 30 }, textRoom: { enabled: true, price: 600, duration: 30 }, badge: { enabled: false, price: 200, duration: 0 } };
           try { if (settings?.shop_items) shopSettings = JSON.parse(settings.shop_items); } catch(e) {}
 
           const shopEmbed = new EmbedBuilder()
-            .setColor('#8b5cf6')
-            .setTitle('🛒 متجر السيرفر التفاعلي')
-            .setDescription(`رصيدك: **${userCoins.toLocaleString()}** 🪙 ذهب\n\nطريقة الشراء عبر الأوامر السريعة:\n• لشراء رتبة خاصة: \`#shop buy-role name:اسم color:#hex\`\n• لشراء روم كتابي: \`#shop rent-room type:text name:اسم\`\n• لشراء شارة مظهر: \`#shop buy-cosmetic item:badge_vip\``)
+            .setColor('#7C3AED')
+            .setTitle('🛒 متجر السيرفر التفاعلي الفاخر')
+            .setDescription(`مرحباً ${interaction.user}! رصيدك المتاح: **${userCoins.toLocaleString()}** Gold 🪙\n\nاضغط على الزر بالأسفل لشراء العنصر الذي تريده مباشرة بضغطة زر واحدة:`)
             .setTimestamp();
 
-          return interaction.editReply({ embeds: [shopEmbed] });
+          const buyButtons = [];
+          if (shopSettings.customRole?.enabled) {
+            shopEmbed.addFields({
+              name: '👑 رتبة مخصصة (Custom Role)',
+              value: `• السعر: **${shopSettings.customRole.price}** Gold 🪙\n• المدة: **${shopSettings.customRole.duration}** يوم\n• الميزة: تختار الاسم واللون وتُنشأ لك فوراً!`,
+              inline: false
+            });
+            buyButtons.push(new ButtonBuilder().setCustomId('shop_buy_modal_role').setLabel('👑 شراء رتبة خاصة').setStyle(ButtonStyle.Primary));
+          }
+
+          if (shopSettings.voiceRoom?.enabled) {
+            shopEmbed.addFields({
+              name: '🔊 روم صوتي خاص (Voice Channel)',
+              value: `• السعر: **${shopSettings.voiceRoom.price}** Gold 🪙\n• المدة: **${shopSettings.voiceRoom.duration}** يوم\n• الميزة: روم صوتي خاص بك مع كامل الصلاحيات!`,
+              inline: false
+            });
+            buyButtons.push(new ButtonBuilder().setCustomId('shop_buy_modal_voice').setLabel('🔊 استئجار روم صوتي').setStyle(ButtonStyle.Success));
+          }
+
+          if (shopSettings.textRoom?.enabled) {
+            shopEmbed.addFields({
+              name: '💬 روم كتابي خاص (Text Channel)',
+              value: `• السعر: **${shopSettings.textRoom.price}** Gold 🪙\n• المدة: **${shopSettings.textRoom.duration}** يوم\n• الميزة: قناة نصية خاصة لك ولأصدقائك!`,
+              inline: false
+            });
+            buyButtons.push(new ButtonBuilder().setCustomId('shop_buy_modal_text').setLabel('💬 استئجار روم كتابي').setStyle(ButtonStyle.Secondary));
+          }
+
+          const actionRows = [];
+          if (buyButtons.length > 0) {
+            actionRows.push(new ActionRowBuilder().addComponents(buyButtons.slice(0, 5)));
+          }
+
+          return interaction.editReply({ embeds: [shopEmbed], components: actionRows });
         }
         return;
       }
@@ -284,12 +384,141 @@ module.exports = {
         });
       }
 
-      // التراجع عن إلغاء المشاركة
-      if (interaction.isButton() && interaction.customId === 'gw_leave_cancel') {
-        return interaction.update({
-          content: t(interaction.guildId, 'events.gw.leave_cancelled'),
-          components: []
-        });
+      // 2.3.1 معالجة نوافذ شراء المتجر المباشرة (Shop Modal Submissions)
+      if (interaction.isModalSubmit() && interaction.customId.startsWith('modal_shop_buy_')) {
+        await interaction.deferReply({ flags: 64 }).catch(() => {});
+        const guildId = interaction.guild.id;
+        const userId = interaction.user.id;
+
+        const settings = db.getGuildSettings ? db.getGuildSettings(guildId) : {};
+        let shopSettings = { customRole: { enabled: true, price: 500, duration: 30 }, voiceRoom: { enabled: true, price: 800, duration: 30 }, textRoom: { enabled: true, price: 600, duration: 30 }, badge: { enabled: false, price: 200, duration: 0 } };
+        try { if (settings?.shop_items) shopSettings = JSON.parse(settings.shop_items); } catch(e) {}
+
+        // جلب رصيد المستخدم الحي من Turso
+        let userCoins = db.getCoins(userId, guildId);
+        try {
+          if (db.getTursoUser) {
+            const tursoData = await db.getTursoUser(userId);
+            if (tursoData && tursoData.coins !== null && tursoData.coins > userCoins) {
+              userCoins = tursoData.coins;
+            }
+          }
+        } catch(e) {}
+
+        // 1. شراء رتبة مخصصة
+        if (interaction.customId === 'modal_shop_buy_role') {
+          const price = shopSettings.customRole?.price || 500;
+          const duration = shopSettings.customRole?.duration || 30;
+          if (userCoins < price) {
+            return interaction.editReply({ content: `❌ عذراً! رصيدك غير كافٍ. المطلوب **${price.toLocaleString()}** Gold ورصيدك الحالي هو **${userCoins.toLocaleString()}** Gold 🪙.` });
+          }
+
+          const roleName = interaction.fields.getTextInputValue('role_name').trim();
+          let roleColor = interaction.fields.getTextInputValue('role_color').trim();
+          if (!/^#[0-9A-Fa-f]{6}$/.test(roleColor)) {
+            roleColor = '#7C3AED'; // Fallback to theme color
+          }
+
+          try {
+            const createdRole = await interaction.guild.roles.create({
+              name: roleName,
+              color: roleColor,
+              reason: `Custom Shop Role purchased by ${interaction.user.tag}`
+            });
+            await interaction.member.roles.add(createdRole).catch(() => {});
+
+            // خصم الرصيد محلياً وفي Turso
+            db.removeCoins(userId, guildId, price);
+            const expiresAt = Math.floor(Date.now() / 1000) + (duration * 24 * 3600);
+            db.addCustomRole(guildId, userId, createdRole.id, roleName, roleColor, null, expiresAt);
+
+            const successEmbed = new EmbedBuilder()
+              .setColor(roleColor)
+              .setTitle('🎉 تم شراء وإنشاء الرتبة بنجاح!')
+              .setDescription(`تم إنشاء رتبتك الخاصة **${roleName}** وإضافتها إلى حسابك بنجاح!\n\n• السعر المخصوم: **${price.toLocaleString()}** Gold 🪙\n• الصلاحية: **${duration}** يوم (<t:${expiresAt}:R>)\n• اللون: \`${roleColor}\``)
+              .setTimestamp();
+
+            return interaction.editReply({ embeds: [successEmbed] });
+          } catch(err) {
+            console.error('[Shop Buy Role Error]:', err);
+            return interaction.editReply({ content: `❌ حدث خطأ أثناء إنشاء الرتبة: ${err.message}` });
+          }
+        }
+
+        // 2. شراء روم صوتي خاص
+        if (interaction.customId === 'modal_shop_buy_voice') {
+          const price = shopSettings.voiceRoom?.price || 800;
+          const duration = shopSettings.voiceRoom?.duration || 30;
+          if (userCoins < price) {
+            return interaction.editReply({ content: `❌ عذراً! رصيدك غير كافٍ. المطلوب **${price.toLocaleString()}** Gold ورصيدك الحالي هو **${userCoins.toLocaleString()}** Gold 🪙.` });
+          }
+
+          const voiceName = interaction.fields.getTextInputValue('voice_name').trim();
+          try {
+            const createdCh = await interaction.guild.channels.create({
+              name: `🔊┃${voiceName}`,
+              type: ChannelType.GuildVoice,
+              permissionOverwrites: [
+                { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+                { id: userId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak, PermissionFlagsBits.ManageChannels] }
+              ],
+              reason: `Voice Channel purchased by ${interaction.user.tag}`
+            });
+
+            db.removeCoins(userId, guildId, price);
+            const expiresAt = Math.floor(Date.now() / 1000) + (duration * 24 * 3600);
+            db.addRentedChannel(guildId, userId, createdCh.id, 'voice', voiceName, expiresAt);
+
+            const successEmbed = new EmbedBuilder()
+              .setColor('#10b981')
+              .setTitle('🎉 تم استئجار الروم الصوتي بنجاح!')
+              .setDescription(`تم إنشاء الروم الصوتي الخاص بك <#${createdCh.id}> بنجاح!\n\n• السعر: **${price.toLocaleString()}** Gold 🪙\n• المدة: **${duration}** يوم (<t:${expiresAt}:R>)`)
+              .setTimestamp();
+
+            return interaction.editReply({ embeds: [successEmbed] });
+          } catch(err) {
+            console.error('[Shop Buy Voice Error]:', err);
+            return interaction.editReply({ content: `❌ حدث خطأ أثناء إنشاء الروم الصوتي: ${err.message}` });
+          }
+        }
+
+        // 3. شراء روم كتابي خاص
+        if (interaction.customId === 'modal_shop_buy_text') {
+          const price = shopSettings.textRoom?.price || 600;
+          const duration = shopSettings.textRoom?.duration || 30;
+          if (userCoins < price) {
+            return interaction.editReply({ content: `❌ عذراً! رصيدك غير كافٍ. المطلوب **${price.toLocaleString()}** Gold ورصيدك الحالي هو **${userCoins.toLocaleString()}** Gold 🪙.` });
+          }
+
+          const textName = interaction.fields.getTextInputValue('text_name').trim();
+          try {
+            const createdCh = await interaction.guild.channels.create({
+              name: `💬┃${textName}`,
+              type: ChannelType.GuildText,
+              permissionOverwrites: [
+                { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+                { id: userId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.ManageChannels] }
+              ],
+              reason: `Text Channel purchased by ${interaction.user.tag}`
+            });
+
+            db.removeCoins(userId, guildId, price);
+            const expiresAt = Math.floor(Date.now() / 1000) + (duration * 24 * 3600);
+            db.addRentedChannel(guildId, userId, createdCh.id, 'text', textName, expiresAt);
+
+            const successEmbed = new EmbedBuilder()
+              .setColor('#3b82f6')
+              .setTitle('🎉 تم استئجار الروم الكتابي بنجاح!')
+              .setDescription(`تم إنشاء الروم الكتابي الخاص بك <#${createdCh.id}> بنجاح!\n\n• السعر: **${price.toLocaleString()}** Gold 🪙\n• المدة: **${duration}** يوم (<t:${expiresAt}:R>)`)
+              .setTimestamp();
+
+            return interaction.editReply({ embeds: [successEmbed] });
+          } catch(err) {
+            console.error('[Shop Buy Text Error]:', err);
+            return interaction.editReply({ content: `❌ حدث خطأ أثناء إنشاء الروم الكتابي: ${err.message}` });
+          }
+        }
+        return;
       }
 
 
