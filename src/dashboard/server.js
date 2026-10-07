@@ -1304,7 +1304,7 @@ module.exports = function (app, client) {
 
             const userDashboardGuildsHtml = guilds.length > 0 ? guilds.map(g => `
                 <div class="bg-[#091124] border border-blue-500/20 hover:border-blue-500/40 p-4 rounded-2xl flex items-center justify-between transition group shadow-lg">
-                    <a href="/dashboard/${g.id}" class="px-5 py-2.5 bg-gradient-to-r from-[#facc15] to-[#eab308] hover:from-[#fde047] hover:to-[#f59e0b] text-black font-black text-xs rounded-xl transition shadow-lg shadow-amber-500/30 flex items-center gap-1.5 hover:scale-105">
+                    <a href="/dashboard/${g.id}" class="px-5 py-2.5 bg-gradient-to-r from-[#a855f7] to-[#2563eb] hover:from-[#c084fc] hover:to-[#3b82f6] text-white font-black text-xs rounded-xl transition shadow-lg shadow-purple-500/30 flex items-center gap-1.5 hover:scale-105">
                         <span>إدارة</span>
                         <span>⚙️</span>
                     </a>
@@ -1485,10 +1485,10 @@ module.exports = function (app, client) {
         if (btn) {
             const allNavBtns = document.querySelectorAll('.nav-btn');
             allNavBtns.forEach(b => {
-                b.classList.remove('bg-gradient-to-r', 'from-[#00d2fe]', 'to-[#2563eb]', 'text-white', 'font-black', 'shadow-md', 'shadow-[#00d2fe]/20');
+                b.classList.remove('bg-gradient-to-r', 'from-[#c084fc]', 'to-[#2563eb]', 'text-white', 'font-black', 'shadow-md', 'shadow-[#c084fc]/20');
                 b.classList.add('text-gray-300', 'hover:text-white', 'hover:bg-white/5', 'font-medium');
             });
-            btn.classList.add('bg-gradient-to-r', 'from-[#00d2fe]', 'to-[#2563eb]', 'text-white', 'font-black', 'shadow-md', 'shadow-[#00d2fe]/20');
+            btn.classList.add('bg-gradient-to-r', 'from-[#c084fc]', 'to-[#2563eb]', 'text-white', 'font-black', 'shadow-md', 'shadow-[#c084fc]/20');
             btn.classList.remove('text-gray-300', 'hover:text-white', 'hover:bg-white/5', 'font-medium');
         }
 
@@ -2017,7 +2017,7 @@ module.exports = function (app, client) {
                                     <span class="flex items-center gap-1.5"><span>عام</span></span>
                                 </button>
                                 <div id="user_grp_general" class="space-y-1">
-                                    <button onclick="switchTab('tabOverview', this)" class="nav-btn px-3 py-2 rounded-xl bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black flex items-center justify-between shadow-md shadow-[#00d2fe]/20 w-full transition">
+                                    <button onclick="switchTab('tabOverview', this)" class="nav-btn px-3 py-2 rounded-xl bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black flex items-center justify-between shadow-md shadow-[#c084fc]/20 w-full transition">
                                         <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
                                         <span class="flex items-center gap-2"><span>نظرة عامة</span><span class="text-white">🎛️</span></span>
                                     </button>
@@ -2428,37 +2428,37 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-3xl shadow-xl space-y-3 text-right">
                                 <h4 class="font-black text-white text-sm flex items-center justify-end gap-2"><span>الإجراءات السريعة</span><span>⚡</span></h4>
                                 <div class="space-y-2">
-                                    <a href="/dashboard/${guildId}/commands" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#00d2fe]/10 border border-[#00d2fe]/20 hover:border-[#00d2fe]/50 p-3.5 rounded-xl transition group shadow-sm">
-                                        <span class="text-[#00d2fe] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
+                                    <a href="/dashboard/${guildId}/commands" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#c084fc]/10 border border-[#c084fc]/20 hover:border-[#c084fc]/50 p-3.5 rounded-xl transition group shadow-sm">
+                                        <span class="text-[#c084fc] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
                                         <div class="flex items-center gap-2 text-right">
-                                            <span class="text-xs font-bold text-white group-hover:text-[#00d2fe] transition">إدارة الأوامر</span>
+                                            <span class="text-xs font-bold text-white group-hover:text-[#c084fc] transition">إدارة الأوامر</span>
                                             <span class="text-sm">🎛️</span>
                                         </div>
                                     </a>
-                                    <a href="/dashboard/${guildId}/moderation" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#00d2fe]/10 border border-[#00d2fe]/20 hover:border-[#00d2fe]/50 p-3.5 rounded-xl transition group shadow-sm">
-                                        <span class="text-[#00d2fe] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
+                                    <a href="/dashboard/${guildId}/moderation" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#c084fc]/10 border border-[#c084fc]/20 hover:border-[#c084fc]/50 p-3.5 rounded-xl transition group shadow-sm">
+                                        <span class="text-[#c084fc] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
                                         <div class="flex items-center gap-2 text-right">
-                                            <span class="text-xs font-bold text-white group-hover:text-[#00d2fe] transition">إعدادات الإشراف</span>
+                                            <span class="text-xs font-bold text-white group-hover:text-[#c084fc] transition">إعدادات الإشراف</span>
                                             <span class="text-sm">🔨</span>
                                         </div>
                                     </a>
-                                    <a href="/dashboard/${guildId}/protection" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#00d2fe]/10 border border-[#00d2fe]/20 hover:border-[#00d2fe]/50 p-3.5 rounded-xl transition group shadow-sm">
-                                        <span class="text-[#00d2fe] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
+                                    <a href="/dashboard/${guildId}/protection" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#c084fc]/10 border border-[#c084fc]/20 hover:border-[#c084fc]/50 p-3.5 rounded-xl transition group shadow-sm">
+                                        <span class="text-[#c084fc] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
                                         <div class="flex items-center gap-2 text-right">
-                                            <span class="text-xs font-bold text-white group-hover:text-[#00d2fe] transition">نظام الحماية</span>
+                                            <span class="text-xs font-bold text-white group-hover:text-[#c084fc] transition">نظام الحماية</span>
                                             <span class="text-sm">🛡️</span>
                                         </div>
                                     </a>
-                                    <a href="/dashboard/${guildId}/analytics" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#00d2fe]/10 border border-[#00d2fe]/20 hover:border-[#00d2fe]/50 p-3.5 rounded-xl transition group shadow-sm">
-                                        <span class="text-[#00d2fe] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
+                                    <a href="/dashboard/${guildId}/analytics" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#c084fc]/10 border border-[#c084fc]/20 hover:border-[#c084fc]/50 p-3.5 rounded-xl transition group shadow-sm">
+                                        <span class="text-[#c084fc] text-xs group-hover:translate-x-[-3px] transition-transform">←</span>
                                         <div class="flex items-center gap-2 text-right">
-                                            <span class="text-xs font-bold text-white group-hover:text-[#00d2fe] transition">الإحصائيات والتحليلات</span>
+                                            <span class="text-xs font-bold text-white group-hover:text-[#c084fc] transition">الإحصائيات والتحليلات</span>
                                             <span class="text-sm">📊</span>
                                         </div>
                                     </a>
-                                    <a href="/dashboard/${guildId}/stat-channels" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#00d2fe]/10 border border-[#00d2fe]/20 hover:border-[#00d2fe]/50 p-3.5 rounded-xl transition group shadow-sm">
+                                    <a href="/dashboard/${guildId}/stat-channels" class="flex items-center justify-between bg-[#060c1d] hover:bg-[#c084fc]/10 border border-[#c084fc]/20 hover:border-[#c084fc]/50 p-3.5 rounded-xl transition group shadow-sm">
                                         <span class="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">جديد</span>
-                                        <span class="flex items-center gap-2"><span>قنوات الإحصائيات</span><span class="text-white group-hover:text-[#00d2fe]">📈</span></span>
+                                        <span class="flex items-center gap-2"><span>قنوات الإحصائيات</span><span class="text-white group-hover:text-[#c084fc]">📈</span></span>
                                     </a>
                                 </div>
                             </div>
@@ -11868,17 +11868,17 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="flex items-center gap-1.5"><span>الأخيرة</span><span>🕒</span></span>
                                 </button>
                                 <div id="grp_sub_recent" class="space-y-1">
-                                    <a href="/dashboard/${guildId}/welcome" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'welcome' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/welcome" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'welcome' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
-                                        <span class="flex items-center gap-2"><span>الترحيب & المغادرة</span><span class="${section === 'welcome' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">👋</span></span>
+                                        <span class="flex items-center gap-2"><span>الترحيب & المغادرة</span><span class="${section === 'welcome' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">👋</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/autoresponder" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoresponder' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/autoresponder" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoresponder' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
-                                        <span class="flex items-center gap-2"><span>الرد التلقائي</span><span class="${section === 'autoresponder' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">💬</span></span>
+                                        <span class="flex items-center gap-2"><span>الرد التلقائي</span><span class="${section === 'autoresponder' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">💬</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/tickets" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tickets' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/tickets" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tickets' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
-                                        <span class="flex items-center gap-2"><span>نظام التذاكر</span><span class="${section === 'tickets' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">🎫</span></span>
+                                        <span class="flex items-center gap-2"><span>نظام التذاكر</span><span class="${section === 'tickets' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">🎫</span></span>
                                     </a>
                                 </div>
                             </div>
@@ -11890,29 +11890,29 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="flex items-center gap-1.5"><span>عام</span></span>
                                 </button>
                                 <div id="grp_sub_general" class="space-y-1">
-                                    <a href="/dashboard/${guildId}" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'overview' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'overview' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span></span>
-                                        <span class="flex items-center gap-2"><span>نظرة عامة</span><span class="${section === 'overview' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">🎛️</span></span>
+                                        <span class="flex items-center gap-2"><span>نظرة عامة</span><span class="${section === 'overview' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">🎛️</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/appearance" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'appearance' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/appearance" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'appearance' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span></span>
-                                        <span class="flex items-center gap-2"><span>مظهر البوت</span><span class="${section === 'appearance' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">🎨</span></span>
+                                        <span class="flex items-center gap-2"><span>مظهر البوت</span><span class="${section === 'appearance' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">🎨</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/settings" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'settings' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/settings" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'settings' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span></span>
-                                        <span class="flex items-center gap-2"><span>الإعدادات</span><span class="${section === 'settings' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">⚙️</span></span>
+                                        <span class="flex items-center gap-2"><span>الإعدادات</span><span class="${section === 'settings' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">⚙️</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/analytics" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'analytics' || section === 'stats' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/analytics" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'analytics' || section === 'stats' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span></span>
-                                        <span class="flex items-center gap-2"><span>الإحصائيات</span><span class="${section === 'analytics' || section === 'stats' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">📊</span></span>
+                                        <span class="flex items-center gap-2"><span>الإحصائيات</span><span class="${section === 'analytics' || section === 'stats' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">📊</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/general" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'general' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/general" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'general' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span class="text-[9px] font-bold text-rose-400 bg-rose-950/60 px-1.5 py-0.2 rounded" data-i18n="جديد">جديد</span>
-                                        <span class="flex items-center gap-2"><span>الأوامر</span><span class="${section === 'general' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">⌨️</span></span>
+                                        <span class="flex items-center gap-2"><span>الأوامر</span><span class="${section === 'general' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">⌨️</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/help" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'help' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/help" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'help' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span></span>
-                                        <span class="flex items-center gap-2"><span>قائمة الأوامر</span><span class="${section === 'help' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">📚</span></span>
+                                        <span class="flex items-center gap-2"><span>قائمة الأوامر</span><span class="${section === 'help' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">📚</span></span>
                                     </a>
 
                                 </div>
