@@ -41,27 +41,27 @@
             text-align: left !important;
         }
         .purple-glow-bg {
-            background: radial-gradient(circle at 50% 20%, rgba(59, 130, 246, 0.16), transparent 65%);
+            background: radial-gradient(circle at 50% 20%, rgba(96, 165, 250, 0.16), transparent 65%);
         }
         .droplet-badge {
-            background: rgba(59, 130, 246, 0.12);
-            border: 1px solid rgba(59, 130, 246, 0.35);
+            background: rgba(96, 165, 250, 0.12);
+            border: 1px solid rgba(96, 165, 250, 0.35);
             color: #93c5fd;
         }
         .droplet-btn-primary {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
             color: white;
             transition: all 0.25s ease;
-            box-shadow: 0 4px 25px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 4px 25px rgba(96, 165, 250, 0.4);
         }
         .droplet-btn-primary:hover {
-            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            background: linear-gradient(135deg, #93c5fd, #60a5fa);
             transform: translateY(-2px);
-            box-shadow: 0 8px 35px rgba(59, 130, 246, 0.6);
+            box-shadow: 0 8px 35px rgba(96, 165, 250, 0.6);
         }
         .droplet-btn-secondary {
             background-color: #0d0f17;
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            border: 1px solid rgba(96, 165, 250, 0.3);
             color: #ffffff;
             transition: all 0.25s ease;
         }
@@ -133,7 +133,7 @@
         #features {
             padding-top: 3rem !important;
             margin-top: 3rem !important;
-            border-top: 1px solid rgba(59, 130, 246, 0.18);
+            border-top: 1px solid rgba(96, 165, 250, 0.18);
         }
         #features > div {
             margin-bottom: 3rem !important;
@@ -183,7 +183,7 @@
             justify-content: center;
             text-decoration: none !important;
         }
-    </style>
+    /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 16px rgba(147, 197, 253, .35), 0 0 44px rgba(147, 197, 253, .14); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 26px rgba(191, 219, 254, .6), 0 0 70px rgba(147, 197, 253, .3); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }</style>
 
     <script>
         /* ===== Apply saved lang on page load BEFORE body parsed ===== */
@@ -229,11 +229,11 @@
 <body class="min-h-screen flex flex-col justify-between bg-[#06070a] purple-glow-bg" data-droplet-manual-lang="1">
 
     <!-- Header Navbar -->
-    <header class="h-20 bg-[#06070a]/90 backdrop-blur-md border-b border-blue-800/20 px-6 sm:px-12 flex items-center justify-between sticky top-0 z-50">
+    <header class="h-20 bg-[#06070a]/90 backdrop-blur-md border-b border-blue-700/20 px-6 sm:px-12 flex items-center justify-between sticky top-0 z-50">
         
         <!-- Logo -->
         <a href="/" class="flex items-center gap-3 group">
-            <img id="navBotAvatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Droplet" class="w-10 h-10 rounded-2xl object-cover ring-2 ring-blue-400/40 shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+            <img id="navBotAvatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Droplet" class="w-10 h-10 rounded-2xl object-cover ring-2 ring-blue-400/40 shadow-lg shadow-blue-400/20 group-hover:scale-105 transition-transform">
             <span id="navBotName" class="text-2xl font-black tracking-tight text-white">Droplet BOT</span>
         </a>
 
@@ -307,7 +307,7 @@
         <div class="w-full max-w-2xl grid grid-cols-3 gap-3 sm:gap-4 mb-20">
             <!-- Servers -->
             <div class="bg-[#0f111a]/80 backdrop-blur-md border border-blue-400/20 hover:border-blue-400/50 rounded-2xl p-4 sm:p-5 text-center transition shadow-lg shadow-black/40 group">
-                <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-lg mx-auto mb-2 group-hover:scale-110 transition-transform">
+                <div class="w-10 h-10 rounded-xl bg-blue-400/10 text-blue-400 flex items-center justify-center text-lg mx-auto mb-2 group-hover:scale-110 transition-transform">
                     🖥️
                 </div>
                 <div class="text-xl sm:text-2xl font-black text-white font-mono" id="statServers">1+</div>
@@ -345,7 +345,7 @@
         <!-- Features Section -->
         <section id="features" class="w-full max-w-5xl text-right pt-6">
             <div class="text-center mb-12">
-                <span class="text-xs font-black tracking-widest text-blue-400 uppercase bg-blue-900/50 border border-blue-700/40 px-3 py-1 rounded-full">
+                <span class="text-xs font-black tracking-widest text-blue-400 uppercase bg-blue-800/50 border border-blue-600/40 px-3 py-1 rounded-full">
                     <span class="lang-ar">مميزات حقيقية وشاملة</span>
                     <span class="lang-en">Real & Comprehensive Features</span>
                 </span>
@@ -362,7 +362,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <!-- 1. Protection -->
                 <div class="bg-[#0d0f17]/90 border border-white/5 hover:border-blue-400/40 rounded-3xl p-6 shadow-xl transition-all hover:-translate-y-1">
-                    <div class="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-2xl text-blue-400 mb-4 shadow-lg shadow-blue-800/20">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-400/20 border border-blue-400/30 flex items-center justify-center text-2xl text-blue-400 mb-4 shadow-lg shadow-blue-700/20">
                         🛡️
                     </div>
                     <h3 class="text-lg font-black text-white mb-2">
@@ -454,7 +454,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-blue-800/20 bg-[#040508] py-8 text-center text-gray-500 text-xs font-semibold">
+    <footer class="border-t border-blue-700/20 bg-[#040508] py-8 text-center text-gray-500 text-xs font-semibold">
         <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
                 <span class="lang-ar">جميع الحقوق محفوظة ©</span>
