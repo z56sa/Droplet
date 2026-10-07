@@ -186,27 +186,27 @@ module.exports = function (app, client) {
                     <form id="appealForm" class="space-y-4">
                         <div>
                             <label class="block text-xs font-bold text-gray-300 mb-1">معرف السيرفر (Server ID) *</label>
-                            <input type="text" id="guildId" required placeholder="مثال: 123456789012345678" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-400">
+                            <input type="text" id="guildId" required placeholder="مثال: 123456789012345678" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-100 focus:outline-none focus:border-blue-400">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-300 mb-1">الديسكورد آيدي الخاص بك (Your Discord ID) *</label>
-                            <input type="text" id="userId" required placeholder="مثال: 987654321098765432" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-400">
+                            <input type="text" id="userId" required placeholder="مثال: 987654321098765432" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-100 focus:outline-none focus:border-blue-400">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-300 mb-1">اسم حسابك (Username / Tag) *</label>
-                            <input type="text" id="username" required placeholder="مثال: username" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-400">
+                            <input type="text" id="username" required placeholder="مثال: username" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-100 focus:outline-none focus:border-blue-400">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-300 mb-1">سبب حظرك من السيرفر *</label>
-                            <input type="text" id="banReason" required placeholder="ما هو السبب الذي تم حظرك بسببه؟" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-400">
+                            <input type="text" id="banReason" required placeholder="ما هو السبب الذي تم حظرك بسببه؟" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-100 focus:outline-none focus:border-blue-400">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-300 mb-1">لماذا يجب على الإدارة فك حظرك؟ *</label>
-                            <textarea id="appealReason" required rows="3" placeholder="اشرح موقفك ووجهة نظرك للإدارة..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-400"></textarea>
+                            <textarea id="appealReason" required rows="3" placeholder="اشرح موقفك ووجهة نظرك للإدارة..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-100 focus:outline-none focus:border-blue-400"></textarea>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-300 mb-1">تعهدك بعدم تكرار المخالفة *</label>
-                            <input type="text" id="promise" required placeholder="أتعهد بالالتزام بالقوانين..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-400">
+                            <input type="text" id="promise" required placeholder="أتعهد بالالتزام بالقوانين..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-100 focus:outline-none focus:border-blue-400">
                         </div>
 
                         <div id="statusMsg" class="hidden p-3 rounded-xl text-sm font-semibold text-center"></div>
@@ -449,7 +449,7 @@ module.exports = function (app, client) {
                 const errText = await tokenRes.text();
                 console.error('[OAUTH ERROR] Token exchange failed:', errText);
                 return res.status(400).send(`
-                    <div style="background:#0b0d14;color:#fff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
+                    <div style="background:#0b0d14;color:#dbeafe;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
                         <h2 style="color:#ef4444;">تعذر إكمال تسجيل الدخول عبر Discord</h2>
                         <p style="color:#aaa;max-width:500px;margin-top:10px;">رسالة الخطأ من Discord: <code>${errText}</code></p>
                         <p style="color:#888;font-size:13px;margin-top:5px;">تأكد من صحة Client Secret في إعدادات البوت.</p>
@@ -634,14 +634,14 @@ module.exports = function (app, client) {
                         <img src="${w.url}" alt="${w.name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                         <div class="absolute inset-0 bg-gradient-to-t from-[#10121b] via-transparent to-black/20"></div>
                         <span class="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-[10px] font-bold text-blue-300 px-2 py-0.5 rounded-md border border-blue-400/25">${w.category}</span>
-                        ${isSelected ? '<span class="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-md">✓ مفعّل حالياً</span>' : ''}
+                        ${isSelected ? '<span class="absolute top-2 left-2 bg-emerald-500 text-green-950 text-[10px] font-black px-2 py-0.5 rounded-md shadow-md">✓ مفعّل حالياً</span>' : ''}
                     </div>
                     <div class="p-3.5 flex flex-col justify-between flex-1 text-right gap-2.5">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-mono font-bold text-amber-300">🪙 ${w.price.toLocaleString()}</span>
                             <h4 class="text-xs font-bold text-blue-100 truncate max-w-[140px]">${w.name}</h4>
                         </div>
-                        <button onclick="buyItem('identity', '${w.url}', ${w.price}, this)" class="w-full py-2 bg-gradient-to-r ${isSelected ? 'from-emerald-600 to-teal-600 cursor-default' : 'from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500'} text-white rounded-xl text-xs font-bold transition shadow-md flex items-center justify-center gap-1.5">
+                        <button onclick="buyItem('identity', '${w.url}', ${w.price}, this)" class="w-full py-2 bg-gradient-to-r ${isSelected ? 'from-emerald-600 to-teal-600 cursor-default' : 'from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500'} text-blue-950 rounded-xl text-xs font-bold transition shadow-md flex items-center justify-center gap-1.5">
                             ${isSelected ? '<span>مجهزة على بطاقتك 🪪</span>' : `<span>شراء وتجهيز (${w.price.toLocaleString()} 🪙)</span>`}
                         </button>
                     </div>
@@ -1262,7 +1262,7 @@ module.exports = function (app, client) {
 
             const userDashboardGuildsHtml = guilds.length > 0 ? guilds.map(g => `
                 <div class="bg-[#1c1f2e] border border-blue-400/15 p-4 rounded-2xl flex items-center justify-between hover:border-blue-400/40 transition group">
-                    <a href="/dashboard/${g.id}" class="px-5 py-2.5 bg-blue-400 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-blue-800/40 flex items-center gap-2">
+                    <a href="/dashboard/${g.id}" class="px-5 py-2.5 bg-blue-400 hover:bg-blue-500 text-blue-950 font-bold text-xs rounded-xl transition shadow-lg shadow-blue-800/40 flex items-center gap-2">
                         <span>⚙️ Manage Server</span>
                     </a>
                     <div class="flex items-center gap-3">
@@ -1278,7 +1278,7 @@ module.exports = function (app, client) {
                     <div class="text-4xl">🛡️</div>
                     <h4 class="text-blue-100 font-bold text-sm">No manageable servers found</h4>
                     <p class="text-gray-400 text-xs max-w-md mx-auto">To manage a server, you must be the owner or have Administrator / Manage Server permissions, and the bot must be invited.</p>
-                    <a href="https://discord.com/api/oauth2/authorize?client_id=${client?.user?.id || config.clientId}&permissions=8&scope=bot%20applications.commands" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-400 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition shadow-lg mt-2">
+                    <a href="https://discord.com/api/oauth2/authorize?client_id=${client?.user?.id || config.clientId}&permissions=8&scope=bot%20applications.commands" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-400 hover:bg-blue-500 text-blue-950 text-xs font-bold rounded-xl transition shadow-lg mt-2">
                         <span>➕ Add Bot to Server</span>
                     </a>
                 </div>
@@ -1337,7 +1337,7 @@ module.exports = function (app, client) {
 
 
             const dailyActionBoxHtml = canClaimDaily ? `
-                <button type="button" onclick="window.claimDailyReward()" id="claimDailyBtn" class="px-10 py-3.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-black text-sm rounded-2xl shadow-xl shadow-blue-800/60 hover:scale-105 transition-all cursor-pointer flex items-center gap-2 mx-auto">
+                <button type="button" onclick="window.claimDailyReward()" id="claimDailyBtn" class="px-10 py-3.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 font-black text-sm rounded-2xl shadow-xl shadow-blue-800/60 hover:scale-105 transition-all cursor-pointer flex items-center gap-2 mx-auto">
                     <span class="text-lg">🎁</span>
                     <span>استلام الرصيد اليومي</span>
                 </button>
@@ -1533,7 +1533,7 @@ module.exports = function (app, client) {
             var box = document.getElementById('dailyActionBox');
             if (box) {
                 const claimBtnLabel = _t('استلام الرصيد اليومي');
-                box.innerHTML = '<button type="button" onclick="window.claimDailyReward()" id="claimDailyBtn" class="px-10 py-3.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-black text-sm rounded-2xl shadow-xl shadow-blue-800/60 hover:scale-105 transition-all cursor-pointer flex items-center gap-2 mx-auto"><span class="text-lg">🎁</span><span>' + claimBtnLabel + '</span></button>';
+                box.innerHTML = '<button type="button" onclick="window.claimDailyReward()" id="claimDailyBtn" class="px-10 py-3.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 font-black text-sm rounded-2xl shadow-xl shadow-blue-800/60 hover:scale-105 transition-all cursor-pointer flex items-center gap-2 mx-auto"><span class="text-lg">🎁</span><span>' + claimBtnLabel + '</span></button>';
             }
             return;
         }
@@ -1943,7 +1943,7 @@ module.exports = function (app, client) {
                                         <p class="text-gray-400 text-xs mt-1.5 leading-relaxed">صوّتك يساعد البوت على الانتشار! يمكنك التصويت كل <span class="text-blue-300 font-bold">12 ساعة</span></p>
                                     </div>
                                     <a href="https://top.gg/ar/bot/${client?.user?.id || config.clientId}/vote" target="_blank"
-                                       class="inline-flex items-center gap-2 px-7 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-2xl text-sm font-black transition-all shadow-lg hover:scale-105">
+                                       class="inline-flex items-center gap-2 px-7 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-2xl text-sm font-black transition-all shadow-lg hover:scale-105">
                                         🗳️ صوّت الآن
                                     </a>
                                 </div>
@@ -1980,7 +1980,7 @@ module.exports = function (app, client) {
                                     <span class="flex items-center gap-1.5"><span>عام</span></span>
                                 </button>
                                 <div id="user_grp_general" class="space-y-1">
-                                    <button onclick="switchTab('tabOverview', this)" class="nav-btn px-3 py-2 rounded-xl bg-blue-400 text-white font-bold flex items-center justify-between shadow-md w-full transition">
+                                    <button onclick="switchTab('tabOverview', this)" class="nav-btn px-3 py-2 rounded-xl bg-blue-400 text-blue-950 font-bold flex items-center justify-between shadow-md w-full transition">
                                         <span class="w-1.5 h-1.5 rounded-full bg-blue-300"></span>
                                         <span class="flex items-center gap-2"><span>نظرة عامة</span><span class="text-blue-300">🎛️</span></span>
                                     </button>
@@ -2051,7 +2051,7 @@ module.exports = function (app, client) {
                     <!-- Server Rail (Far Right Column - Novax Style) -->
                     <div class="w-18 bg-[#05060a] border-l border-blue-400/15 py-4 px-2 flex flex-col items-center gap-3 shrink-0 overflow-y-auto select-none">
                         <!-- Home Icon Button -->
-                        <a href="/dashboard" title="الصفحة الرئيسية" class="w-12 h-12 rounded-2xl bg-blue-400/30 border border-blue-400/50 flex items-center justify-center text-blue-300 hover:text-white transition shadow-lg mb-1 group">
+                        <a href="/dashboard" title="الصفحة الرئيسية" class="w-12 h-12 rounded-2xl bg-blue-400/30 border border-blue-400/50 flex items-center justify-center text-blue-300 hover:text-blue-200 transition shadow-lg mb-1 group">
                             <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                         </a>
                         <div class="w-8 h-[1px] bg-white/5"></div>
@@ -2108,7 +2108,7 @@ module.exports = function (app, client) {
             }
             if (!botGuild) {
                 return res.status(404).send(`
-                    <div style="background:#0b0d14;color:#fff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+                    <div style="background:#0b0d14;color:#dbeafe;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
                         <h2>Bot not in this server</h2>
                         <a href="/dashboard/manage" style="color:#93c5fd;margin-top:10px;">Back to Dashboard</a>
                     </div>
@@ -2120,7 +2120,7 @@ module.exports = function (app, client) {
             const userCanManage = sessionGuilds.some(g => g.id === guildId);
             if (!userCanManage) {
                 return res.status(403).send(`
-                    <div style="background:#0b0d14;color:#fff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+                    <div style="background:#0b0d14;color:#dbeafe;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
                         <h2>You don't have admin permissions in this server</h2>
                         <p style="color:#888;">You must be the server owner or have Manage Server / Administrator permissions</p>
                         <a href="/dashboard/manage" style="color:#93c5fd;margin-top:10px;">Back to Manageable Servers</a>
@@ -2420,7 +2420,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <span class="text-sm">📊</span>
                                         </div>
                                     </a>
-                                    <a href="/dashboard/${guildId}/stat-channels" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'stat-channels' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/stat-channels" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'stat-channels' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded">جديد</span>
                                         <span class="flex items-center gap-2"><span>قنوات الإحصائيات</span><span class="text-gray-400 group-hover:text-blue-400">📈</span></span>
                                     </a>
@@ -2526,7 +2526,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         <div class="flex items-center gap-1.5 bg-[#12141f] border border-blue-400/15 p-1 rounded-xl">
             <button type="button" id="btnFilterDisabled" onclick="window.filterCmdStatus('disabled')" class="px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-blue-200 transition cursor-pointer">معطل</button>
             <button type="button" id="btnFilterEnabled" onclick="window.filterCmdStatus('enabled')" class="px-3 py-1 rounded-lg text-xs font-bold text-gray-400 hover:text-blue-200 transition cursor-pointer">مفعل</button>
-            <button type="button" id="btnFilterAll" onclick="window.filterCmdStatus('all')" class="px-3 py-1 rounded-lg text-xs font-bold bg-blue-400 text-white transition shadow cursor-pointer">الكل</button>
+            <button type="button" id="btnFilterAll" onclick="window.filterCmdStatus('all')" class="px-3 py-1 rounded-lg text-xs font-bold bg-blue-400 text-blue-950 transition shadow cursor-pointer">الكل</button>
         </div>
         <div class="flex-1 relative">
             <input type="text" id="cmdSearchInput" placeholder="...ابحث عن أمر" oninput="window.searchCommands()" class="w-full bg-[#12141f] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right pr-10">
@@ -2542,7 +2542,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             <div class="flex items-center justify-end gap-1.5 text-xs font-black text-blue-100 px-2 py-1.5 border-b border-blue-400/15 mb-1 sticky top-0 bg-[#12141f] z-10">
                 <span>الأقسام والأنظمة</span><span>📁</span>
             </div>
-            <button type="button" id="btnCatAll" onclick="window.switchCmdCategory('all')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-blue-400 text-white shadow-lg transition cursor-pointer">
+            <button type="button" id="btnCatAll" onclick="window.switchCmdCategory('all')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-blue-400 text-blue-950 shadow-lg transition cursor-pointer">
                 <span id="badgeCatAll" class="px-2 py-0.5 bg-white/20 text-blue-100 rounded-lg text-[10px] font-mono">98/98</span>
                 <span class="flex items-center gap-1.5"><span>جميع الأوامر</span><span>🌐</span></span>
             </button>
@@ -2943,7 +2943,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             '</div>' +
             '<div class="flex items-center justify-between pt-2 border-t border-blue-400/15">' +
                 '<button type="button" class="cmd-reset-btn px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 rounded-xl text-xs font-bold transition cursor-pointer" data-cmd="' + escH(cmdName) + '">\u0625\u0639\u0627\u062f\u0629 \u0636\u0628\u0637</button>' +
-                '<button type="button" class="cmd-save-btn px-4 py-1.5 bg-blue-400 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition shadow-lg cursor-pointer" data-cmd="' + escH(cmdName) + '">\u062d\u0641\u0638 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0623\u0645\u0631</button>' +
+                '<button type="button" class="cmd-save-btn px-4 py-1.5 bg-blue-400 hover:bg-blue-500 text-blue-950 rounded-xl text-xs font-bold transition shadow-lg cursor-pointer" data-cmd="' + escH(cmdName) + '">\u062d\u0641\u0638 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0623\u0645\u0631</button>' +
             '</div>' +
         '</div>';
 
@@ -3580,7 +3580,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <p class="text-[10px] text-gray-400 text-right">أضف كلمات تحتوي على كلمة محظورة لكنها مقبولة</p>
 
                                 <div class="flex items-center gap-2">
-                                    <button type="button" onclick="addWhitelistedWord()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-emerald-950/40">إضافة</button>
+                                    <button type="button" onclick="addWhitelistedWord()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-green-950 rounded-xl text-xs font-bold transition shadow-lg shadow-emerald-950/40">إضافة</button>
                                     <input type="text" id="whitelistWordInput" placeholder="اكتب كلمة مسموح بها..." class="flex-1 bg-[#0b0d14] border border-blue-400/15 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right" onkeydown="if(event.key==='Enter') addWhitelistedWord()">
                                 </div>
 
@@ -3908,7 +3908,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <h3 class="font-black text-blue-100 text-lg">تم إيقاف وحذف نظام الإعلانات والبرودكاست</h3>
                             <p class="text-gray-400 text-xs max-w-md mx-auto leading-relaxed">تم إزالة هذا القسم بالكامل من البوت بناءً على طلبكم. يمكنك استخدام رسائل الأمبد أو باقي الميزات لإدارة سيرفرك.</p>
                             <div class="pt-2">
-                                <a href="/dashboard/${guildId}/embed" class="px-5 py-2.5 bg-blue-400 hover:bg-blue-400 text-white rounded-xl text-xs font-bold transition inline-block">الانتقال إلى رسائل الأمبد 📄</a>
+                                <a href="/dashboard/${guildId}/embed" class="px-5 py-2.5 bg-blue-400 hover:bg-blue-400 text-blue-950 rounded-xl text-xs font-bold transition inline-block">الانتقال إلى رسائل الأمبد 📄</a>
                             </div>
                         </div>
                     </div>
@@ -4535,7 +4535,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <input type="text" id="wlSearchUser" placeholder="ابحث عن عضو لإضافته..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right placeholder-gray-500">
                                 </div>
                                 <div class="flex items-center gap-3">
-                                    <button type="button" onclick="addWhitelistUser('whitelist')" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-lg shadow-emerald-950/40">
+                                    <button type="button" onclick="addWhitelistUser('whitelist')" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-green-950 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-lg shadow-emerald-950/40">
                                         <span>➕</span>
                                         <span>إضافة</span>
                                     </button>
@@ -4595,7 +4595,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <input type="text" id="antiModSearchUser" placeholder="ابحث عن عضو لإضافته..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-amber-500 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right placeholder-gray-500">
                                 </div>
                                 <div class="flex items-center gap-3">
-                                    <button type="button" onclick="addWhitelistUser('antimod')" class="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                                    <button type="button" onclick="addWhitelistUser('antimod')" class="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-amber-950 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
                                         <span>إضافة</span>
                                     </button>
                                     <input type="text" id="antiModUserId" placeholder="أدخل User ID لإضافته إلى Anti Mod" class="flex-1 bg-[#0b0d14] border border-blue-400/15 focus:border-amber-500 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right font-mono placeholder-gray-500" onkeydown="if(event.key==='Enter') addWhitelistUser('antimod')">
@@ -4860,7 +4860,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <span>رسائل المغادرة</span>
                                 <span class="text-rose-400">🚪</span>
                             </button>
-                            <button type="button" onclick="switchWelcomeTab('welcome')" id="btnTabWelcome" class="px-5 py-2 rounded-xl text-xs font-bold transition bg-gradient-to-r from-blue-400 to-blue-600 text-white shadow-lg">
+                            <button type="button" onclick="switchWelcomeTab('welcome')" id="btnTabWelcome" class="px-5 py-2 rounded-xl text-xs font-bold transition bg-gradient-to-r from-blue-400 to-blue-600 text-blue-950 shadow-lg">
                                 <span>رسائل الترحيب</span>
                                 <span class="text-amber-300">👋</span>
                             </button>
@@ -4970,7 +4970,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-full md:w-auto flex justify-end">
                                         <input type="file" id="file_welcome_banner_image" accept="image/*" class="hidden" onchange="uploadImageFile(this, 'welcome_banner_image')">
                                         <input type="hidden" id="input_welcome_banner_image" name="welcome_banner_image" value="${settings.welcome_banner_image || ''}">
-                                        <button type="button" onclick="document.getElementById('file_welcome_banner_image').click()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-blue-700/30 flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
+                                        <button type="button" onclick="document.getElementById('file_welcome_banner_image').click()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-xl text-xs font-black transition shadow-lg shadow-blue-700/30 flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
                                             <span>📤</span>
                                             <span id="btn_text_welcome_banner_image">رفع الصورة</span>
                                         </button>
@@ -5226,7 +5226,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                         <!-- 1. Master Header Card (Exact to Image 1) -->
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl flex items-center justify-between shadow-xl">
-                            <button type="button" onclick="openAddAutoresponderModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                            <button type="button" onclick="openAddAutoresponderModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
                                 <span>➕</span>
                                 <span>إضافة رد تلقائي</span>
                             </button>
@@ -5291,7 +5291,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <h5 class="text-sm font-black text-blue-100">لا توجد ردود تلقائية</h5>
                                         <p class="text-xs text-gray-400">أضف ردود تلقائية للرد على كلمات أو عبارات محددة</p>
                                     </div>
-                                    <button type="button" onclick="openAddAutoresponderModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black transition inline-flex items-center gap-2 shadow-lg shadow-blue-800/40">
+                                    <button type="button" onclick="openAddAutoresponderModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-black transition inline-flex items-center gap-2 shadow-lg shadow-blue-800/40">
                                         <span>إضافة أول رد تلقائي</span>
                                     </button>
                                 </div>
@@ -5328,7 +5328,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                 <button type="button" onclick="setArMatchMode('ends')" id="btnArEnds" class="py-1.5 rounded-lg text-gray-400 hover:text-blue-200 transition">ينتهي بـ</button>
                                                 <button type="button" onclick="setArMatchMode('starts')" id="btnArStarts" class="py-1.5 rounded-lg text-gray-400 hover:text-blue-200 transition">يبدأ بـ</button>
                                                 <button type="button" onclick="setArMatchMode('exact')" id="btnArExact" class="py-1.5 rounded-lg text-gray-400 hover:text-blue-200 transition">مطابقة تامة</button>
-                                                <button type="button" onclick="setArMatchMode('contains')" id="btnArContains" class="py-1.5 rounded-lg bg-blue-500 text-white font-bold transition">يحتوي على</button>
+                                                <button type="button" onclick="setArMatchMode('contains')" id="btnArContains" class="py-1.5 rounded-lg bg-blue-500 text-blue-950 font-bold transition">يحتوي على</button>
                                             </div>
                                         </div>
 
@@ -5344,7 +5344,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                     <span>رد إيمبد</span>
                                                     <span>📄</span>
                                                 </button>
-                                                <button type="button" onclick="setArReplyType('text')" id="btnArText" class="py-2 bg-blue-500 border border-blue-400 rounded-xl text-[11px] text-white font-bold flex items-center justify-center gap-1 transition">
+                                                <button type="button" onclick="setArReplyType('text')" id="btnArText" class="py-2 bg-blue-500 border border-blue-400 rounded-xl text-[11px] text-blue-950 font-bold flex items-center justify-center gap-1 transition">
                                                     <span>رد نصي</span>
                                                     <span>💬</span>
                                                 </button>
@@ -5419,7 +5419,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- Modal Footer Buttons -->
                                 <div class="flex items-center justify-between pt-4 border-t border-blue-400/15 flex-row-reverse">
-                                    <button type="button" onclick="submitNewAutoresponder()" class="px-8 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-blue-800/40">
+                                    <button type="button" onclick="submitNewAutoresponder()" class="px-8 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-black transition shadow-lg shadow-blue-800/40">
                                         إضافة رد تلقائي
                                     </button>
                                     <button type="button" onclick="closeAddAutoresponderModal()" class="px-6 py-2.5 bg-[#0b0d14] hover:bg-white/5 border border-blue-400/15 text-gray-400 hover:text-blue-200 rounded-xl text-xs font-bold transition">
@@ -5571,7 +5571,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- 3. إعدادات لوحة ورتب التذاكر الأساسية -->
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-4 shadow-xl">
                             <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
-                                <button type="button" onclick="sendTicketPanelDirect()" class="px-4 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-700/30 flex items-center gap-2 transition cursor-pointer">
+                                <button type="button" onclick="sendTicketPanelDirect()" class="px-4 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-xl text-xs font-black shadow-lg shadow-blue-700/30 flex items-center gap-2 transition cursor-pointer">
                                     <span>📩</span>
                                     <span>إرسال اللوحة للشات الآن</span>
                                 </button>
@@ -5653,7 +5653,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <div class="w-full md:w-auto flex justify-end">
                                             <input type="file" id="file_ticket_panel_banner" accept="image/*" class="hidden" onchange="handleImageFileUpload(this, 'ticket_panel_banner')">
                                             <input type="hidden" id="input_ticket_panel_banner" name="ticket_panel_banner" value="${settings.ticket_panel_banner || ''}">
-                                            <button type="button" onclick="document.getElementById('file_ticket_panel_banner').click()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-blue-700/30 flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
+                                            <button type="button" onclick="document.getElementById('file_ticket_panel_banner').click()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-xl text-xs font-black transition shadow-lg shadow-blue-700/30 flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
                                                 <span>📤</span>
                                                 <span id="btn_text_ticket_panel_banner">رفع الخلفية</span>
                                             </button>
@@ -5696,7 +5696,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <div class="w-full md:w-auto flex justify-end">
                                             <input type="file" id="file_ticket_welcome_image" accept="image/*" class="hidden" onchange="handleImageFileUpload(this, 'ticket_welcome_image')">
                                             <input type="hidden" id="input_ticket_welcome_image" name="ticket_welcome_image" value="${settings.ticket_welcome_image || ''}">
-                                            <button type="button" onclick="document.getElementById('file_ticket_welcome_image').click()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-blue-700/30 flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
+                                            <button type="button" onclick="document.getElementById('file_ticket_welcome_image').click()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-xl text-xs font-black transition shadow-lg shadow-blue-700/30 flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
                                                 <span>📤</span>
                                                 <span id="btn_text_ticket_welcome_image">رفع الخط</span>
                                             </button>
@@ -5927,23 +5927,23 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <!-- Navigation Tabs (Exact to Versa Tab Bar) -->
                             <div class="flex items-center gap-2 bg-[#10121b] border border-blue-400/15 p-1.5 rounded-2xl">
-                                <button type="button" onclick="switchLevelTab('settings')" id="btnTabLvlSettings" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(!currentTab || currentTab === 'settings') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white'} flex items-center gap-1">
+                                <button type="button" onclick="switchLevelTab('settings')" id="btnTabLvlSettings" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(!currentTab || currentTab === 'settings') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-blue-950 shadow-md' : 'text-gray-400 hover:text-blue-200'} flex items-center gap-1">
                                     <span>الإعدادات</span>
                                     <span>⚙️</span>
                                 </button>
-                                <button type="button" onclick="switchLevelTab('text_roles')" id="btnTabLvlText" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'text_roles') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white'} flex items-center gap-1">
+                                <button type="button" onclick="switchLevelTab('text_roles')" id="btnTabLvlText" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'text_roles') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-blue-950 shadow-md' : 'text-gray-400 hover:text-blue-200'} flex items-center gap-1">
                                     <span>رتب كتابية</span>
                                     <span>📜</span>
                                 </button>
-                                <button type="button" onclick="switchLevelTab('voice_roles')" id="btnTabLvlVoice" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'voice_roles') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white'} flex items-center gap-1">
+                                <button type="button" onclick="switchLevelTab('voice_roles')" id="btnTabLvlVoice" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'voice_roles') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-blue-950 shadow-md' : 'text-gray-400 hover:text-blue-200'} flex items-center gap-1">
                                     <span>رتب صوتية</span>
                                     <span>🎵</span>
                                 </button>
-                                <button type="button" onclick="switchLevelTab('shared_roles')" id="btnTabLvlShared" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'shared_roles') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white'} flex items-center gap-1">
+                                <button type="button" onclick="switchLevelTab('shared_roles')" id="btnTabLvlShared" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'shared_roles') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-blue-950 shadow-md' : 'text-gray-400 hover:text-blue-200'} flex items-center gap-1">
                                     <span>رتب مشتركة</span>
                                     <span>✨</span>
                                 </button>
-                                <button type="button" onclick="switchLevelTab('leaderboard')" id="btnTabLvlLeaderboard" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'leaderboard') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white'} flex items-center gap-1">
+                                <button type="button" onclick="switchLevelTab('leaderboard')" id="btnTabLvlLeaderboard" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'leaderboard') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-blue-950 shadow-md' : 'text-gray-400 hover:text-blue-200'} flex items-center gap-1">
                                     <span>المتصدرين</span>
                                     <span>🏆</span>
                                 </button>
@@ -6160,7 +6160,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <div class="w-full md:w-auto flex justify-end">
                                             <input type="file" id="file_level_up_image" accept="image/*" class="hidden" onchange="uploadImageFile(this, 'level_up_image')">
                                             <input type="hidden" id="input_level_up_image" name="level_up_image" value="${settings.level_up_image || ''}">
-                                            <button type="button" onclick="document.getElementById('file_level_up_image').click()" class="px-5 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-blue-700/30 flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
+                                            <button type="button" onclick="document.getElementById('file_level_up_image').click()" class="px-5 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-xl text-xs font-black transition shadow-lg shadow-blue-700/30 flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
                                                 <span>📤</span>
                                                 <span id="btn_text_level_up_image">رفع الصورة</span>
                                             </button>
@@ -6206,7 +6206,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-5 shadow-xl">
                                 <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
                                     <div class="flex items-center gap-2">
-                                        <button type="button" onclick="openAddLevelRoleModal('text')" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                                        <button type="button" onclick="openAddLevelRoleModal('text')" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
                                             <span>➕</span>
                                             <span>إضافة رتبة</span>
                                         </button>
@@ -6238,7 +6238,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <div class="w-12 h-12 rounded-full bg-white/5 text-gray-400 flex items-center justify-center text-xl mx-auto">📜</div>
                                             <h5 class="text-xs font-bold text-gray-300">لا توجد رتب مستويات</h5>
                                             <p class="text-[10px] text-gray-500">أضف رتب لمكافأة الأعضاء النشطين</p>
-                                            <button type="button" onclick="openAddLevelRoleModal('text')" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black transition inline-flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                                            <button type="button" onclick="openAddLevelRoleModal('text')" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-black transition inline-flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
                                                 <span>إضافة أول رتبة</span>
                                             </button>
                                         </div>
@@ -6268,7 +6268,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-5 shadow-xl">
                                 <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
                                     <div class="flex items-center gap-2">
-                                        <button type="button" onclick="openAddLevelRoleModal('voice')" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                                        <button type="button" onclick="openAddLevelRoleModal('voice')" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
                                             <span>➕</span>
                                             <span>إضافة رتبة</span>
                                         </button>
@@ -6300,7 +6300,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <div class="w-12 h-12 rounded-full bg-pink-950/40 text-pink-400 flex items-center justify-center text-xl mx-auto border border-pink-500/20">🎵</div>
                                             <h5 class="text-xs font-bold text-gray-300">لا توجد رتب مستويات</h5>
                                             <p class="text-[10px] text-gray-500">أضف رتب لمكافأة الأعضاء النشطين</p>
-                                            <button type="button" onclick="openAddLevelRoleModal('voice')" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black transition inline-flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                                            <button type="button" onclick="openAddLevelRoleModal('voice')" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-black transition inline-flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
                                                 <span>إضافة أول رتبة</span>
                                             </button>
                                         </div>
@@ -6330,7 +6330,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-5 shadow-xl">
                                 <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
                                     <div class="flex items-center gap-2">
-                                        <button type="button" onclick="openAddSharedRoleModal()" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                                        <button type="button" onclick="openAddSharedRoleModal()" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
                                             <span>➕</span>
                                             <span>إضافة شرط</span>
                                         </button>
@@ -6394,7 +6394,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <div class="w-12 h-12 rounded-full bg-amber-950/40 text-amber-400 flex items-center justify-center text-xl mx-auto border border-amber-500/20">✨</div>
                                             <h5 class="text-xs font-bold text-gray-300">لا توجد رتب مشتركة</h5>
                                             <p class="text-[10px] text-gray-500">أضف شرطاً مزدوجاً يمنح رتبة عند تحقق مستوى صوتي وكتابي معاً</p>
-                                            <button type="button" onclick="openAddSharedRoleModal()" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black transition inline-flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                                            <button type="button" onclick="openAddSharedRoleModal()" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-black transition inline-flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
                                                 <span>إضافة أول شرط</span>
                                             </button>
                                         </div>
@@ -6719,7 +6719,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                         <!-- 1. Master Header Card (Exact to Image 1: نظام القيف اواي & Action Button) -->
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl flex items-center justify-between shadow-xl">
-                            <button type="button" onclick="openCreateGiveawayModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                            <button type="button" onclick="openCreateGiveawayModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
                                 <span>➕</span>
                                 <span>إنشاء قيف اواي</span>
                             </button>
@@ -6767,7 +6767,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="flex items-center gap-1.5 bg-[#0b0d14] p-1 rounded-xl border border-blue-400/15 text-xs font-bold">
                                     <button type="button" onclick="filterGiveawayTab('ended')" id="btnGwEnded" class="px-3 py-1 rounded-lg text-gray-400 hover:text-blue-200 transition">المنتهية ${(guildGiveawaysList || []).filter(g => g.status === 'ended').length}</button>
                                     <button type="button" onclick="filterGiveawayTab('active')" id="btnGwActive" class="px-3 py-1 rounded-lg text-gray-400 hover:text-blue-200 transition">النشطة ${(guildGiveawaysList || []).filter(g => g.status === 'active').length}</button>
-                                    <button type="button" onclick="filterGiveawayTab('all')" id="btnGwAll" class="px-3 py-1 rounded-lg bg-blue-500 text-white transition shadow">الكل ${(guildGiveawaysList || []).length}</button>
+                                    <button type="button" onclick="filterGiveawayTab('all')" id="btnGwAll" class="px-3 py-1 rounded-lg bg-blue-500 text-blue-950 transition shadow">الكل ${(guildGiveawaysList || []).length}</button>
                                 </div>
                             </div>
 
@@ -6797,7 +6797,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <h5 class="text-sm font-black text-blue-100">لا توجد قيف اواي بعد</h5>
                                             <p class="text-xs text-gray-400">ابدأ بإنشاء أول قيف اواي لسيرفرك!</p>
                                         </div>
-                                        <button type="button" onclick="openCreateGiveawayModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black transition inline-flex items-center gap-2 shadow-lg shadow-blue-800/40">
+                                        <button type="button" onclick="openCreateGiveawayModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-black transition inline-flex items-center gap-2 shadow-lg shadow-blue-800/40">
                                             <span>إنشاء قيف اواي</span>
                                         </button>
                                     </div>
@@ -6966,7 +6966,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- Modal Footer Buttons -->
                                 <div class="flex items-center justify-between pt-4 border-t border-blue-400/15 flex-row-reverse">
-                                    <button type="button" onclick="submitCreateGiveaway()" class="px-8 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-blue-800/40">
+                                    <button type="button" onclick="submitCreateGiveaway()" class="px-8 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-black transition shadow-lg shadow-blue-800/40">
                                         + إنشاء قيف اواي
                                     </button>
                                     <button type="button" onclick="closeCreateGiveawayModal()" class="px-6 py-2.5 bg-[#0b0d14] hover:bg-white/5 border border-blue-400/15 text-gray-400 hover:text-blue-200 rounded-xl text-xs font-bold transition">
@@ -7102,7 +7102,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                         <!-- 1. Master Header Card (Suggestions & Feedback) -->
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl flex items-center justify-between shadow-xl">
-                            <button type="button" onclick="openCreateSuggestionModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                            <button type="button" onclick="openCreateSuggestionModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
                                 <span>➕</span>
                                 <span>إضافة اقتراح جديد</span>
                             </button>
@@ -7177,7 +7177,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <button type="button" onclick="filterSuggTab('rejected')" id="btnSgRejected" class="px-3 py-1 rounded-lg text-gray-400 hover:text-blue-200 transition">المرفوضة</button>
                                     <button type="button" onclick="filterSuggTab('accepted')" id="btnSgAccepted" class="px-3 py-1 rounded-lg text-gray-400 hover:text-blue-200 transition">المقبولة</button>
                                     <button type="button" onclick="filterSuggTab('pending')" id="btnSgPending" class="px-3 py-1 rounded-lg text-gray-400 hover:text-blue-200 transition">قيد المراجعة</button>
-                                    <button type="button" onclick="filterSuggTab('all')" id="btnSgAll" class="px-3 py-1 rounded-lg bg-blue-400 text-white transition shadow">الكل</button>
+                                    <button type="button" onclick="filterSuggTab('all')" id="btnSgAll" class="px-3 py-1 rounded-lg bg-blue-400 text-blue-950 transition shadow">الكل</button>
                                 </div>
                             </div>
 
@@ -7231,7 +7231,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <h5 class="text-sm font-black text-blue-100">لا توجد اقتراحات بعد</h5>
                                             <p class="text-xs text-gray-400">كن أول من يقترح فكرة لتطوير وتحسين السيرفر!</p>
                                         </div>
-                                        <button type="button" onclick="openCreateSuggestionModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition inline-flex items-center gap-2 shadow-lg shadow-blue-800/40">
+                                        <button type="button" onclick="openCreateSuggestionModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-xl text-xs font-black transition inline-flex items-center gap-2 shadow-lg shadow-blue-800/40">
                                             <span>إضافة اقتراح</span>
                                         </button>
                                     </div>
@@ -7272,7 +7272,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
 
                                 <div class="flex items-center justify-between pt-4 border-t border-blue-400/15 flex-row-reverse">
-                                    <button type="button" onclick="submitCreateSuggestion()" class="px-8 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-blue-800/40">
+                                    <button type="button" onclick="submitCreateSuggestion()" class="px-8 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-xl text-xs font-black transition shadow-lg shadow-blue-800/40">
                                         إرسال الاقتراح
                                     </button>
                                     <button type="button" onclick="closeCreateSuggestionModal()" class="px-6 py-2.5 bg-[#0b0d14] hover:bg-white/5 border border-blue-400/15 text-gray-400 hover:text-blue-200 rounded-xl text-xs font-bold transition">
@@ -7409,7 +7409,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div class="grid grid-cols-4 gap-2">
                                     ${[0, 1, 3, 7, 14, 30, 60, 90].map(d => `
-                                    <button type="button" onclick="selectAltDays(${d}, this)" class="alt-days-btn py-2 px-3 rounded-xl border text-xs font-bold transition ${(settings.anti_alt_days || 3) == d ? 'bg-blue-700/40 border-blue-400 text-white' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white'}">
+                                    <button type="button" onclick="selectAltDays(${d}, this)" class="alt-days-btn py-2 px-3 rounded-xl border text-xs font-bold transition ${(settings.anti_alt_days || 3) == d ? 'bg-blue-700/40 border-blue-400 text-blue-950' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200'}">
                                         ${d === 0 ? 'بدون' : d + ' يوم'}
                                     </button>`).join('')}
                                 </div>
@@ -7451,13 +7451,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <input type="hidden" name="antiraid_action" id="inpAntiraidAction" value="${settings.antiraid_action || 'kick'}">
                                 <div class="grid grid-cols-3 gap-2">
-                                    <button type="button" onclick="selectRaidAction('kick', this)" class="raid-action-btn py-3 rounded-2xl border text-xs font-bold transition ${(settings.antiraid_action || 'kick') === 'kick' ? 'bg-blue-700/40 border-blue-400 text-white' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white'}">
+                                    <button type="button" onclick="selectRaidAction('kick', this)" class="raid-action-btn py-3 rounded-2xl border text-xs font-bold transition ${(settings.antiraid_action || 'kick') === 'kick' ? 'bg-blue-700/40 border-blue-400 text-blue-950' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200'}">
                                         🪓 طرد
                                     </button>
-                                    <button type="button" onclick="selectRaidAction('ban', this)" class="raid-action-btn py-3 rounded-2xl border text-xs font-bold transition ${settings.antiraid_action === 'ban' ? 'bg-blue-700/40 border-blue-400 text-white' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white'}">
+                                    <button type="button" onclick="selectRaidAction('ban', this)" class="raid-action-btn py-3 rounded-2xl border text-xs font-bold transition ${settings.antiraid_action === 'ban' ? 'bg-blue-700/40 border-blue-400 text-blue-950' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200'}">
                                         🔨 حظر
                                     </button>
-                                    <button type="button" onclick="selectRaidAction('timeout', this)" class="raid-action-btn py-3 rounded-2xl border text-xs font-bold transition ${settings.antiraid_action === 'timeout' ? 'bg-blue-700/40 border-blue-400 text-white' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white'}">
+                                    <button type="button" onclick="selectRaidAction('timeout', this)" class="raid-action-btn py-3 rounded-2xl border text-xs font-bold transition ${settings.antiraid_action === 'timeout' ? 'bg-blue-700/40 border-blue-400 text-blue-950' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200'}">
                                         ⏳ عزل
                                     </button>
                                 </div>
@@ -7682,7 +7682,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                             <p id="logs-confirm-msg" class="text-sm text-gray-300 mb-6"></p>
                             <div class="flex gap-3 justify-start">
-                                <button type="button" id="logs-confirm-ok" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition flex items-center gap-2 cursor-pointer">
+                                <button type="button" id="logs-confirm-ok" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-red-950 rounded-lg text-sm font-bold transition flex items-center gap-2 cursor-pointer">
                                     <span>تأكيد</span>
                                 </button>
                                 <button type="button" id="logs-confirm-cancel" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-blue-100 rounded-lg text-sm font-bold transition cursor-pointer">
@@ -7854,7 +7854,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex items-center gap-1.5 bg-[#0b0e14] p-1.5 rounded-xl border border-[#1e2638] w-full sm:w-auto">
                                 <button type="button" id="btnLogFilterDisabled" onclick="window.filterLogsByStatus('disabled')" class="filter-tab px-4 py-2 rounded-lg text-xs font-bold text-gray-400 hover:text-blue-200 transition cursor-pointer">المعطلة</button>
                                 <button type="button" id="btnLogFilterEnabled" onclick="window.filterLogsByStatus('enabled')" class="filter-tab px-4 py-2 rounded-lg text-xs font-bold text-gray-400 hover:text-blue-200 transition cursor-pointer">المفعلة</button>
-                                <button type="button" id="btnLogFilterAll" onclick="window.filterLogsByStatus('all')" class="filter-tab px-4 py-2 rounded-lg text-xs font-bold bg-blue-400 text-white shadow-md transition cursor-pointer">الكل</button>
+                                <button type="button" id="btnLogFilterAll" onclick="window.filterLogsByStatus('all')" class="filter-tab px-4 py-2 rounded-lg text-xs font-bold bg-blue-400 text-blue-950 shadow-md transition cursor-pointer">الكل</button>
                             </div>
 
                             <!-- Search Bar -->
@@ -7950,7 +7950,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                         <!-- Apply to All Enabled Logs Button -->
                                         <div class="pt-2">
-                                            <button type="button" onclick="window.applyCatSettingsToAll()" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-400/20 transition flex items-center justify-center gap-2 cursor-pointer">
+                                            <button type="button" onclick="window.applyCatSettingsToAll()" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 font-bold text-xs rounded-xl shadow-lg shadow-blue-400/20 transition flex items-center justify-center gap-2 cursor-pointer">
                                                 <i class="fa-solid fa-wand-magic-sparkles"></i>
                                                 <span>تطبيق على جميع السجلات المفعلة</span>
                                             </button>
@@ -8002,7 +8002,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <div class="flex items-center justify-end gap-2 pt-3 border-t border-[#1e2638]">
                                 <button type="button" onclick="window.closeEditLogModal()" class="px-4 py-2 bg-[#1e2638] hover:bg-[#28324a] text-gray-300 rounded-xl text-xs font-bold transition">إلغاء</button>
-                                <button type="button" onclick="window.saveModalLogConfig()" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg flex items-center gap-2">
+                                <button type="button" onclick="window.saveModalLogConfig()" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-xl text-xs font-bold transition shadow-lg flex items-center gap-2">
                                     <i class="fa-solid fa-floppy-disk"></i>
                                     <span>حفظ التغييرات</span>
                                 </button>
@@ -8017,7 +8017,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <i class="fa-solid fa-shield-check text-emerald-400"></i>
                                 <span>التغييرات تُحفظ تلقائياً في قاعدة البيانات</span>
                             </div>
-                            <button type="button" id="logs-btn-save" onclick="window.saveLogsConfigToServer(null, '✓ تم حفظ جميع التغييرات في قاعدة البيانات')" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-400/20 transition flex items-center gap-2 cursor-pointer">
+                            <button type="button" id="logs-btn-save" onclick="window.saveLogsConfigToServer(null, '✓ تم حفظ جميع التغييرات في قاعدة البيانات')" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 font-bold text-xs rounded-xl shadow-lg shadow-blue-400/20 transition flex items-center gap-2 cursor-pointer">
                                 <i class="fa-solid fa-floppy-disk"></i>
                                 <span>حفظ التغييرات</span>
                             </button>
@@ -8358,7 +8358,7 @@ function renderCategoriesSidebar() {
             : (enabledItems === totalItems
                 ? 'px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-mono'
                 : 'px-2 py-0.5 bg-blue-400/10 text-blue-300 border border-blue-400/20 rounded-lg text-[10px] font-mono');
-        html += '<button type="button" onclick="window.switchLogsCategory(\\'' + key + '\\')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ' + (isSel ? 'bg-blue-400 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-[#181e2c]') + '">';
+        html += '<button type="button" onclick="window.switchLogsCategory(\\'' + key + '\\')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ' + (isSel ? 'bg-blue-400 text-blue-950 shadow-lg' : 'text-gray-400 hover:text-blue-200 hover:bg-[#181e2c]') + '">';
         html += '<span class="' + badgeClass + '">' + enabledItems + '/' + totalItems + '</span>';
         html += '<span class="flex items-center gap-2"><span>' + cat.title + '</span><span>' + cat.icon + '</span></span>';
         html += '</button>';
@@ -9100,7 +9100,7 @@ console.log('[Droplet LOGS] Script loaded successfully. logsState keys:', Object
                         <!-- Header -->
                         <div class="bg-gradient-to-r from-[#1a132e] via-[#12141f] to-[#1a132e] border border-blue-400/20 p-6 rounded-3xl flex items-center justify-between shadow-2xl">
                             <div class="flex items-center gap-2">
-                                <a href="/dashboard/${guildId}/stat-channels" class="px-4 py-2 bg-blue-400 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition shadow">
+                                <a href="/dashboard/${guildId}/stat-channels" class="px-4 py-2 bg-blue-400 hover:bg-blue-500 text-blue-950 rounded-xl text-xs font-bold transition shadow">
                                     إدارة قنوات العدادات 📡
                                 </a>
                             </div>
@@ -9171,7 +9171,7 @@ console.log('[Droplet LOGS] Script loaded successfully. logsState keys:', Object
                                 <p class="text-xs text-gray-400 leading-relaxed">
                                     يمكنك الآن تفعيل **9 أنواع مختلفة** من قنوات الإحصائيات (أعضاء، بشر، بوتات، متصلين، صوتية، رتب...) تتحدث تلقائياً كل 10 دقائق من قسم قنوات الإحصائيات.
                                 </p>
-                                <a href="/dashboard/${guildId}/stat-channels" class="block text-center py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg">
+                                <a href="/dashboard/${guildId}/stat-channels" class="block text-center py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-xl text-xs font-bold transition shadow-lg">
                                     فتح مدير قنوات الإحصائيات (9 أنواع) 🚀
                                 </a>
                             </div>
@@ -9223,7 +9223,7 @@ console.log('[Droplet LOGS] Script loaded successfully. logsState keys:', Object
                                 <button type="submit" class="px-3 py-2 bg-rose-900/40 hover:bg-rose-700/50 text-rose-300 rounded-xl text-xs font-bold border border-rose-800/30 transition" title="حذف هذه القناة">🗑️</button>
                             </form>
                             ` : `
-                            <button onclick="openAddStatChannel('${type}', '${def.label}')" class="px-4 py-2 bg-blue-400 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow transition">إنشاء</button>
+                            <button onclick="openAddStatChannel('${type}', '${def.label}')" class="px-4 py-2 bg-blue-400 hover:bg-blue-500 text-blue-950 rounded-xl text-xs font-bold shadow transition">إنشاء</button>
                             `}
                         </div>
                         <div class="flex-1 text-right">
@@ -9301,7 +9301,7 @@ formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
                 </div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" onclick="closeAddStatChannel()" class="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs font-bold transition">إلغاء</button>
-                    <button type="submit" class="flex-1 py-2.5 bg-blue-400 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow transition">حفظ وإنشاء</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-blue-400 hover:bg-blue-500 text-blue-950 rounded-xl text-xs font-bold shadow transition">حفظ وإنشاء</button>
                 </div>
             </form>
         </div>
@@ -9434,7 +9434,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
 
                                 <div class="flex items-center justify-between p-4 bg-[#0b0d14] border border-blue-400/15 rounded-2xl">
-                                    <button type="button" onclick="document.getElementById('inpAvatarUrl').focus()" class="px-4 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5">
+                                    <button type="button" onclick="document.getElementById('inpAvatarUrl').focus()" class="px-4 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5">
                                         <span>🖼️</span>
                                         <span>اختر صورة</span>
                                     </button>
@@ -9457,7 +9457,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
 
                                 <div class="flex items-center justify-between p-4 bg-[#0b0d14] border border-blue-400/15 rounded-2xl">
-                                    <button type="button" onclick="document.getElementById('inpBannerUrl').focus()" class="px-4 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5">
+                                    <button type="button" onclick="document.getElementById('inpBannerUrl').focus()" class="px-4 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5">
                                         <span>🖼️</span>
                                         <span>اختر بنر</span>
                                     </button>
@@ -9542,55 +9542,55 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <div class="grid grid-cols-3 gap-2.5 text-center">
                                     <!-- IQ / AR -->
-                                    <button type="button" onclick="selectBotLanguage('AR', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${(settings.bot_language || 'AR') === 'AR' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white hover:border-blue-400/25'}">
+                                    <button type="button" onclick="selectBotLanguage('AR', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${(settings.bot_language || 'AR') === 'AR' ? 'bg-blue-700/30 border-blue-400 text-blue-950 font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200 hover:border-blue-400/25'}">
                                         <span class="text-xs font-black">IQ</span>
                                         <span class="text-[10px] font-bold text-gray-400">AR</span>
                                     </button>
 
                                     <!-- US / EN -->
-                                    <button type="button" onclick="selectBotLanguage('EN', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'EN' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white hover:border-blue-400/25'}">
+                                    <button type="button" onclick="selectBotLanguage('EN', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'EN' ? 'bg-blue-700/30 border-blue-400 text-blue-950 font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200 hover:border-blue-400/25'}">
                                         <span class="text-xs font-black">US</span>
                                         <span class="text-[10px] font-bold text-gray-400">EN</span>
                                     </button>
 
                                     <!-- TR -->
-                                    <button type="button" onclick="selectBotLanguage('TR', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'TR' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white hover:border-blue-400/25'}">
+                                    <button type="button" onclick="selectBotLanguage('TR', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'TR' ? 'bg-blue-700/30 border-blue-400 text-blue-950 font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200 hover:border-blue-400/25'}">
                                         <span class="text-xs font-black">TR</span>
                                         <span class="text-[10px] font-bold text-gray-400">TR</span>
                                     </button>
 
                                     <!-- RU -->
-                                    <button type="button" onclick="selectBotLanguage('RU', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'RU' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white hover:border-blue-400/25'}">
+                                    <button type="button" onclick="selectBotLanguage('RU', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'RU' ? 'bg-blue-700/30 border-blue-400 text-blue-950 font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200 hover:border-blue-400/25'}">
                                         <span class="text-xs font-black">RU</span>
                                         <span class="text-[10px] font-bold text-gray-400">RU</span>
                                     </button>
 
                                     <!-- ES -->
-                                    <button type="button" onclick="selectBotLanguage('ES', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'ES' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white hover:border-blue-400/25'}">
+                                    <button type="button" onclick="selectBotLanguage('ES', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'ES' ? 'bg-blue-700/30 border-blue-400 text-blue-950 font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200 hover:border-blue-400/25'}">
                                         <span class="text-xs font-black">ES</span>
                                         <span class="text-[10px] font-bold text-gray-400">ES</span>
                                     </button>
 
                                     <!-- FR -->
-                                    <button type="button" onclick="selectBotLanguage('FR', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'FR' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white hover:border-blue-400/25'}">
+                                    <button type="button" onclick="selectBotLanguage('FR', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'FR' ? 'bg-blue-700/30 border-blue-400 text-blue-950 font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200 hover:border-blue-400/25'}">
                                         <span class="text-xs font-black">FR</span>
                                         <span class="text-[10px] font-bold text-gray-400">FR</span>
                                     </button>
 
                                     <!-- DE -->
-                                    <button type="button" onclick="selectBotLanguage('DE', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'DE' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white hover:border-blue-400/25'}">
+                                    <button type="button" onclick="selectBotLanguage('DE', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'DE' ? 'bg-blue-700/30 border-blue-400 text-blue-950 font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200 hover:border-blue-400/25'}">
                                         <span class="text-xs font-black">DE</span>
                                         <span class="text-[10px] font-bold text-gray-400">DE</span>
                                     </button>
 
                                     <!-- BR / PT -->
-                                    <button type="button" onclick="selectBotLanguage('PT', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'PT' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white hover:border-blue-400/25'}">
+                                    <button type="button" onclick="selectBotLanguage('PT', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'PT' ? 'bg-blue-700/30 border-blue-400 text-blue-950 font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200 hover:border-blue-400/25'}">
                                         <span class="text-xs font-black">BR</span>
                                         <span class="text-[10px] font-bold text-gray-400">PT</span>
                                     </button>
 
                                     <!-- JP / JA -->
-                                    <button type="button" onclick="selectBotLanguage('JA', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'JA' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white hover:border-blue-400/25'}">
+                                    <button type="button" onclick="selectBotLanguage('JA', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'JA' ? 'bg-blue-700/30 border-blue-400 text-blue-950 font-black shadow-lg shadow-blue-800/50' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200 hover:border-blue-400/25'}">
                                         <span class="text-xs font-black">JP</span>
                                         <span class="text-[10px] font-bold text-gray-400">JA</span>
                                     </button>
@@ -9624,16 +9624,16 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <input type="hidden" name="auto_clear_period" id="inpClearPeriod" value="${settings.auto_clear_period || 'week'}">
                                     
                                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        <button type="button" onclick="selectClearPeriod('week', this)" class="period-btn py-3 px-4 rounded-2xl border text-xs font-bold transition ${(settings.auto_clear_period || 'week') === 'week' ? 'bg-blue-700/40 border-blue-400 text-white shadow-md' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white'}">
+                                        <button type="button" onclick="selectClearPeriod('week', this)" class="period-btn py-3 px-4 rounded-2xl border text-xs font-bold transition ${(settings.auto_clear_period || 'week') === 'week' ? 'bg-blue-700/40 border-blue-400 text-blue-950 shadow-md' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200'}">
                                             كل أسبوع
                                         </button>
-                                        <button type="button" onclick="selectClearPeriod('2weeks', this)" class="period-btn py-3 px-4 rounded-2xl border text-xs font-bold transition ${settings.auto_clear_period === '2weeks' ? 'bg-blue-700/40 border-blue-400 text-white shadow-md' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white'}">
+                                        <button type="button" onclick="selectClearPeriod('2weeks', this)" class="period-btn py-3 px-4 rounded-2xl border text-xs font-bold transition ${settings.auto_clear_period === '2weeks' ? 'bg-blue-700/40 border-blue-400 text-blue-950 shadow-md' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200'}">
                                             كل أسبوعين
                                         </button>
-                                        <button type="button" onclick="selectClearPeriod('3weeks', this)" class="period-btn py-3 px-4 rounded-2xl border text-xs font-bold transition ${settings.auto_clear_period === '3weeks' ? 'bg-blue-700/40 border-blue-400 text-white shadow-md' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white'}">
+                                        <button type="button" onclick="selectClearPeriod('3weeks', this)" class="period-btn py-3 px-4 rounded-2xl border text-xs font-bold transition ${settings.auto_clear_period === '3weeks' ? 'bg-blue-700/40 border-blue-400 text-blue-950 shadow-md' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200'}">
                                             كل 3 أسابيع
                                         </button>
-                                        <button type="button" onclick="selectClearPeriod('month', this)" class="period-btn py-3 px-4 rounded-2xl border text-xs font-bold transition ${settings.auto_clear_period === 'month' ? 'bg-blue-700/40 border-blue-400 text-white shadow-md' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-white'}">
+                                        <button type="button" onclick="selectClearPeriod('month', this)" class="period-btn py-3 px-4 rounded-2xl border text-xs font-bold transition ${settings.auto_clear_period === 'month' ? 'bg-blue-700/40 border-blue-400 text-blue-950 shadow-md' : 'bg-[#0b0d14] border-blue-400/15 text-gray-400 hover:text-blue-200'}">
                                             كل شهر
                                         </button>
                                     </div>
@@ -9721,7 +9721,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <h3 class="font-black text-blue-100 text-lg">تم إيقاف وحذف نظام النسخ الاحتياطية</h3>
                             <p class="text-gray-400 text-xs max-w-md mx-auto leading-relaxed">تم إزالة هذا القسم بالكامل من البوت بناءً على طلبكم. يمكنك استخدام باقي أنظمة الحماية والإشراف لإدارة سيرفرك بأمان.</p>
                             <div class="pt-2">
-                                <a href="/dashboard/${guildId}/protection" class="px-5 py-2.5 bg-blue-400 hover:bg-blue-400 text-white rounded-xl text-xs font-bold transition inline-block">الانتقال إلى نظام الحماية 🛡️</a>
+                                <a href="/dashboard/${guildId}/protection" class="px-5 py-2.5 bg-blue-400 hover:bg-blue-400 text-blue-950 rounded-xl text-xs font-bold transition inline-block">الانتقال إلى نظام الحماية 🛡️</a>
                             </div>
                         </div>
                     </div>
@@ -9873,7 +9873,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
 
                             <div class="flex justify-end pt-2">
-                                <button type="button" onclick="saveStaffSettingsQuick()" class="px-6 py-2.5 bg-blue-400 hover:bg-blue-500 text-white rounded-xl text-xs font-black transition shadow-lg">
+                                <button type="button" onclick="saveStaffSettingsQuick()" class="px-6 py-2.5 bg-blue-400 hover:bg-blue-500 text-blue-950 rounded-xl text-xs font-black transition shadow-lg">
                                     حفظ إعدادات الإدارة 💾
                                 </button>
                             </div>
@@ -10096,7 +10096,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <div class="bg-[#12141f] border border-blue-400/15 hover:border-blue-400/30 rounded-3xl p-6 transition space-y-4 shadow-xl">
                         <div class="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-blue-400/15">
                             <div class="flex items-center gap-2">
-                                <button type="button" onclick="sendAppPanel('${a.id}', this)" class="px-3.5 py-1.5 bg-blue-400 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow">
+                                <button type="button" onclick="sendAppPanel('${a.id}', this)" class="px-3.5 py-1.5 bg-blue-400 hover:bg-blue-500 text-blue-950 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow">
                                     <span>🚀 إرسال البانل في القناة</span>
                                 </button>
                                 <button type="button" onclick="editAppForm('${a.id}')" class="px-3 py-1.5 bg-[#1a1d2d] hover:bg-[#23273c] text-blue-300 border border-blue-400/30 rounded-xl text-xs font-bold transition">
@@ -10156,7 +10156,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- Top Header Banner -->
                         <div class="bg-gradient-to-r from-[#1a132e] via-[#12141f] to-[#1a132e] border border-blue-400/20 p-6 rounded-3xl flex items-center justify-between shadow-2xl flex-wrap gap-4">
                             <div class="flex items-center gap-3">
-                                <button type="button" onclick="openCreateAppModal()" class="px-5 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2">
+                                <button type="button" onclick="openCreateAppModal()" class="px-5 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2">
                                     <span>+ إنشاء نموذج جديد</span>
                                 </button>
                             </div>
@@ -10269,7 +10269,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <div class="flex items-center justify-end gap-3 pt-3 border-t border-blue-400/15">
                                     <button type="button" onclick="closeAppModal()" class="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-400 rounded-xl text-xs font-bold transition">إلغاء</button>
-                                    <button type="button" onclick="saveAppForm()" id="btnSaveApp" class="px-6 py-2 bg-blue-400 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition shadow-lg">حفظ النموذج 💾</button>
+                                    <button type="button" onclick="saveAppForm()" id="btnSaveApp" class="px-6 py-2 bg-blue-400 hover:bg-blue-500 text-blue-950 rounded-xl text-xs font-bold transition shadow-lg">حفظ النموذج 💾</button>
                                 </div>
                             </div>
                         </div>
@@ -10493,7 +10493,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="bg-gradient-to-r from-[#12141f] via-[#161828] to-[#12141f] border border-blue-400/30 p-4 sm:p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4">
                             <div class="flex items-center gap-2.5 flex-wrap">
                                 <button type="button" id="btnSendEmbed" onclick="if(window.sendEmbedDirect)window.sendEmbedDirect()"
-                                    class="px-6 py-3 bg-gradient-to-r from-blue-400 via-indigo-600 to-blue-500 hover:from-blue-400 hover:to-indigo-500 text-white font-black text-xs rounded-2xl shadow-lg shadow-blue-800/60 border border-blue-400/40 flex items-center gap-2 cursor-pointer transition active:scale-95">
+                                    class="px-6 py-3 bg-gradient-to-r from-blue-400 via-indigo-600 to-blue-500 hover:from-blue-400 hover:to-indigo-500 text-blue-950 font-black text-xs rounded-2xl shadow-lg shadow-blue-800/60 border border-blue-400/40 flex items-center gap-2 cursor-pointer transition active:scale-95">
                                     <span class="text-base">🚀</span>
                                     <span>إرسال للقناة الآن</span>
                                 </button>
@@ -11226,7 +11226,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <p class="text-xs text-gray-400 mb-3">شارك هذا الرابط مع الأعضاء المحظورين حتى يتمكنوا من تقديم طلبهم مباشرةً:</p>
                             <div class="flex items-center gap-2">
                                 <code class="flex-1 text-xs bg-black/40 text-blue-300 border border-blue-400/20 rounded-xl px-4 py-3 font-mono break-all">${_appealUrl}</code>
-                                <button type="button" onclick="navigator.clipboard.writeText('${_appealUrl}').then(()=>{ this.textContent='✅ تم'; setTimeout(()=>this.textContent='📋 نسخ',2000); })" class="px-3 py-2.5 bg-blue-400 hover:bg-blue-400 text-white rounded-xl text-xs font-bold transition whitespace-nowrap">📋 نسخ</button>
+                                <button type="button" onclick="navigator.clipboard.writeText('${_appealUrl}').then(()=>{ this.textContent='✅ تم'; setTimeout(()=>this.textContent='📋 نسخ',2000); })" class="px-3 py-2.5 bg-blue-400 hover:bg-blue-400 text-blue-950 rounded-xl text-xs font-bold transition whitespace-nowrap">📋 نسخ</button>
                             </div>
                         </div>
 
@@ -11249,7 +11249,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <input type="text" id="manual_unban_reason" placeholder="مثال: تمت مراجعة الحالة وقررت الإدارة فك الحظر" class="w-full bg-[#0b0d14] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-100">
                                 </div>
                             </div>
-                            <button type="button" onclick="handleManualUnban('${guildId}')" class="mt-3 px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition">
+                            <button type="button" onclick="handleManualUnban('${guildId}')" class="mt-3 px-5 py-2.5 bg-red-600 hover:bg-red-500 text-red-950 rounded-lg text-xs font-bold transition">
                                 🔓 فك الحظر الآن
                             </button>
                         </div>
@@ -11292,8 +11292,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                 <span class="text-[10px] text-gray-500 font-mono">${new Date(a.created_at * 1000).toLocaleString('ar-SA')}</span>
                                                 ${a.status === 'pending' ? `
                                                     <div class="flex gap-2">
-                                                        <button type="button" onclick="handleAppealAction(${a.id}, 'accepted', '${guildId}', '${a.user_id}')" class="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-bold transition">✅ قبول وفك الحظر</button>
-                                                        <button type="button" onclick="handleAppealAction(${a.id}, 'rejected', '${guildId}', '${a.user_id}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition">❌ رفض</button>
+                                                        <button type="button" onclick="handleAppealAction(${a.id}, 'accepted', '${guildId}', '${a.user_id}')" class="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-green-950 rounded-lg text-xs font-bold transition">✅ قبول وفك الحظر</button>
+                                                        <button type="button" onclick="handleAppealAction(${a.id}, 'rejected', '${guildId}', '${a.user_id}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-red-950 rounded-lg text-xs font-bold transition">❌ رفض</button>
                                                     </div>
                                                 ` : `<span class="text-xs text-gray-500">راجعه: ${a.reviewed_by || 'الإدارة'}</span>`}
                                             </div>
@@ -11374,7 +11374,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <input type="text" id="new_rank_name" placeholder="مثال: مشرف أول" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-100">
                                     </div>
                                 </div>
-                                <button type="button" onclick="handleAddStaffRank('${guildId}')" class="mt-3 px-4 py-2 bg-blue-400 hover:bg-blue-400 text-white rounded-lg text-xs font-bold transition">
+                                <button type="button" onclick="handleAddStaffRank('${guildId}')" class="mt-3 px-4 py-2 bg-blue-400 hover:bg-blue-400 text-blue-950 rounded-lg text-xs font-bold transition">
                                     إضافة رتبة الترقية ✅
                                 </button>
                             </div>
@@ -11578,7 +11578,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <input type="number" id="dash_role_days" value="30" min="1" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-100">
                                 </div>
                             </div>
-                            <button type="button" onclick="handleCreateDashRole('${guildId}')" class="mt-3 px-5 py-2 bg-blue-400 hover:bg-blue-400 text-white rounded-lg text-xs font-bold transition">
+                            <button type="button" onclick="handleCreateDashRole('${guildId}')" class="mt-3 px-5 py-2 bg-blue-400 hover:bg-blue-400 text-blue-950 rounded-lg text-xs font-bold transition">
                                 👑 منح الرتبة المخصصة
                             </button>
                         </div>
@@ -11596,7 +11596,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                     <span class="text-[10px] text-gray-400">&lt;@${cr.user_id}&gt;</span>
                                                 </div>
                                                 <div class="text-left">
-                                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold" style="background:${cr.role_color||'#60a5fa'};color:#fff;">${cr.role_color||'HEX'}</span>
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold" style="background:${cr.role_color||'#60a5fa'};color:#dbeafe;">${cr.role_color||'HEX'}</span>
                                                     <span class="text-[10px] text-gray-500 block mt-1">⏳ ${new Date(cr.expires_at * 1000).toLocaleDateString('ar-SA')}</span>
                                                 </div>
                                             </div>
@@ -11749,7 +11749,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 ${formFieldsHtml}
 
                                 <div class="pt-6 border-t border-blue-400/15 flex items-center justify-between flex-row-reverse${(section === 'embed' || section === 'logs' || section === 'store') ? ' hidden' : ''}">
-                                    <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-black/20 flex items-center gap-2">
+                                    <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 text-xs font-bold rounded-xl transition shadow-lg shadow-black/20 flex items-center gap-2">
                                         <span>💾</span>
                                         <span>حفظ التغييرات</span>
                                     </button>
@@ -11794,15 +11794,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="flex items-center gap-1.5"><span>الأخيرة</span><span>🕒</span></span>
                                 </button>
                                 <div id="grp_sub_recent" class="space-y-1">
-                                    <a href="/dashboard/${guildId}/welcome" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'welcome' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/welcome" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'welcome' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>الترحيب & المغادرة</span><span class="text-gray-400 group-hover:text-blue-400">👋</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/autoresponder" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoresponder' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/autoresponder" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoresponder' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>الرد التلقائي</span><span class="text-gray-400 group-hover:text-blue-400">💬</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/tickets" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tickets' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/tickets" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tickets' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>نظام التذاكر</span><span class="text-gray-400 group-hover:text-blue-400">🎫</span></span>
                                     </a>
@@ -11816,27 +11816,27 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="flex items-center gap-1.5"><span>عام</span></span>
                                 </button>
                                 <div id="grp_sub_general" class="space-y-1">
-                                    <a href="/dashboard/${guildId}" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'overview' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'overview' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span></span>
                                         <span class="flex items-center gap-2"><span>نظرة عامة</span><span class="text-gray-400 group-hover:text-blue-400">🎛️</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/appearance" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'appearance' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/appearance" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'appearance' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span></span>
                                         <span class="flex items-center gap-2"><span>مظهر البوت</span><span class="text-gray-400 group-hover:text-blue-400">🎨</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/settings" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'settings' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/settings" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'settings' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span></span>
                                         <span class="flex items-center gap-2"><span>الإعدادات</span><span class="text-gray-400 group-hover:text-blue-400">⚙️</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/analytics" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'analytics' || section === 'stats' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/analytics" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'analytics' || section === 'stats' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span></span>
                                         <span class="flex items-center gap-2"><span>الإحصائيات</span><span class="text-gray-400 group-hover:text-blue-400">📊</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/general" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'general' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/general" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'general' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="text-[9px] font-bold text-rose-400 bg-rose-950/60 px-1.5 py-0.2 rounded" data-i18n="جديد">جديد</span>
                                         <span class="flex items-center gap-2"><span>الأوامر</span><span class="text-gray-400 group-hover:text-blue-400">⌨️</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/help" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'help' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/help" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'help' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span></span>
                                         <span class="flex items-center gap-2"><span>قائمة الأوامر</span><span class="text-gray-400 group-hover:text-blue-400">📚</span></span>
                                     </a>
@@ -11851,7 +11851,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="flex items-center gap-1.5"><span>الرسائل والأمبد</span></span>
                                 </button>
                                 <div id="grp_sub_messages" class="space-y-1">
-                                    <a href="/dashboard/${guildId}/embed" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'embed' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/embed" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'embed' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                          <span></span>
                                         <span class="flex items-center gap-2"><span>رسائل الأمبد</span><span class="text-gray-400 group-hover:text-blue-400">📄</span></span>
                                     </a>
@@ -11865,27 +11865,27 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="flex items-center gap-1.5"><span>الميزات الأساسية</span></span>
                                 </button>
                                 <div id="grp_sub_core" class="space-y-1">
-                                    <a href="/dashboard/${guildId}/moderation" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'moderation' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/moderation" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'moderation' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="text-[9px] font-bold text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded" data-i18n="تحديث">تحديث</span>
                                         <span class="flex items-center gap-2"><span>الإشراف</span><span class="text-gray-400 group-hover:text-blue-400">🔨</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/levels" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'levels' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/levels" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'levels' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>المستويات & XP</span><span class="text-gray-400 group-hover:text-blue-400">🏆</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/welcome" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'welcome' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/welcome" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'welcome' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>الترحيب & المغادرة</span><span class="text-gray-400 group-hover:text-blue-400">👋</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/autoroles" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoroles' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/autoroles" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoroles' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>الرتب التلقائية</span><span class="text-gray-400 group-hover:text-blue-400">🎖️</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/giveaways" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'giveaways' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/giveaways" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'giveaways' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>قيف اواي</span><span class="text-gray-400 group-hover:text-blue-400">🎁</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/invites" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'invites' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/invites" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'invites' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>Invite Tracker</span><span class="text-gray-400 group-hover:text-blue-400">🔗</span></span>
                                     </a>
@@ -11899,15 +11899,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="flex items-center gap-1.5"><span>الإجراءات الآلية</span></span>
                                 </button>
                                 <div id="grp_sub_automations" class="space-y-1">
-                                    <a href="/dashboard/${guildId}/autoresponder" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoresponder' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/autoresponder" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoresponder' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>الرد التلقائي</span><span class="text-gray-400 group-hover:text-blue-400">💬</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/applications" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'applications' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/applications" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'applications' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="text-[9px] font-bold text-rose-400 bg-rose-950/60 px-1.5 py-0.2 rounded" data-i18n="جديد">جديد</span>
                                         <span class="flex items-center gap-2"><span>التقديمات</span><span class="text-gray-400 group-hover:text-blue-400">📝</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/suggestions" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'suggestions' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/suggestions" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'suggestions' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="text-[9px] font-bold text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded" data-i18n="جديد">جديد</span>
                                         <span class="flex items-center gap-2"><span>الاقتراحات والشكاوي</span><span class="text-gray-400 group-hover:text-blue-400">💡</span></span>
                                     </a>
@@ -11921,30 +11921,30 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="flex items-center gap-1.5"><span>الحماية والأمان</span><span class="text-blue-400">🛡️</span></span>
                                 </button>
                                 <div id="grp_sub_security" class="space-y-1">
-                                    <a href="/dashboard/${guildId}/protection" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'protection' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/protection" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'protection' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="flex items-center gap-1">
                                             <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                             <span class="text-amber-400 text-xs">👑</span>
                                         </span>
                                         <span class="flex items-center gap-2"><span>Anti Nuke (الحماية)</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/whitelist" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'whitelist' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/whitelist" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'whitelist' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>القائمة البيضاء</span><span class="text-gray-400 group-hover:text-blue-400">⚪</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/protection-logs" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'protection-logs' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/protection-logs" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'protection-logs' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="text-[9px] font-bold text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded">سجلات</span>
                                         <span class="flex items-center gap-2"><span>سجلات الأمان والإشراف</span><span class="text-gray-400 group-hover:text-blue-400">📋</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/automod" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'automod' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/automod" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'automod' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>الرقابة التلقائية</span><span class="text-gray-400 group-hover:text-blue-400">🤖</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/antiraid" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'antiraid' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/antiraid" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'antiraid' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>مكافحة الغزو</span><span class="text-gray-400 group-hover:text-blue-400">🚨</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/staff-activity" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'staff-activity' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/staff-activity" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'staff-activity' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>نشاط الإدارة</span><span class="text-gray-400 group-hover:text-blue-400">👮</span></span>
                                     </a>
@@ -11958,38 +11958,38 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="flex items-center gap-1.5"><span>إدارة السيرفر</span></span>
                                 </button>
                                 <div id="grp_sub_management" class="space-y-1">
-                                    <a href="/dashboard/${guildId}/tempvoice" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tempvoice' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/tempvoice" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tempvoice' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>الرومات المؤقتة</span><span class="text-gray-400 group-hover:text-blue-400">🕒</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/boost" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'boost' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/boost" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'boost' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>البوستات</span><span class="text-gray-400 group-hover:text-blue-400">💎</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/colors" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'colors' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/colors" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'colors' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                         <span class="flex items-center gap-2"><span>الألوان</span><span class="text-gray-400 group-hover:text-blue-400">🎨</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/logs" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'logs' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/logs" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'logs' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="text-[9px] font-bold text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded" data-i18n="تحديث">تحديث</span>
                                         <span class="flex items-center gap-2"><span>السجلات</span><span class="text-gray-400 group-hover:text-blue-400">📜</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/tickets" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tickets' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/tickets" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tickets' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="flex items-center gap-1">
                                             <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
                                             <span class="text-amber-400 text-xs">👑</span>
                                         </span>
                                         <span class="flex items-center gap-2"><span>التذاكر</span><span class="text-gray-400 group-hover:text-blue-400">🎫</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/appeals" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'appeals' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/appeals" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'appeals' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="text-[9px] font-bold text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded">جديد</span>
                                         <span class="flex items-center gap-2"><span>طلبات فك الحظر</span><span class="text-gray-400 group-hover:text-blue-400">⚖️</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/staff_system" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'staff_system' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/staff_system" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'staff_system' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="text-[9px] font-bold text-blue-400 bg-blue-800/60 px-1.5 py-0.2 rounded">جديد</span>
                                         <span class="flex items-center gap-2"><span>نظام الإدارة والترقيات</span><span class="text-gray-400 group-hover:text-blue-400">👮</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/custom_shop" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'custom_shop' ? 'bg-blue-400 text-white font-bold shadow-md' : 'text-gray-300 hover:text-white hover:bg-[#151724]'} transition group">
+                                    <a href="/dashboard/${guildId}/custom_shop" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'custom_shop' ? 'bg-blue-400 text-blue-950 font-bold shadow-md' : 'text-gray-300 hover:text-blue-200 hover:bg-[#151724]'} transition group">
                                         <span class="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded">جديد</span>
                                         <span class="flex items-center gap-2"><span>المتجر والرتب والرومات</span><span class="text-gray-400 group-hover:text-blue-400">🛒</span></span>
                                     </a>
@@ -12020,7 +12020,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <!-- Server Rail (Far Right - Novax Style) -->
                     <div class="w-18 bg-[#05060a] border-l border-blue-400/15 py-4 px-2 flex flex-col items-center gap-3 shrink-0 overflow-y-auto select-none">
                         <!-- Home Icon Button -->
-                        <a href="/dashboard" title="الصفحة الرئيسية" class="w-12 h-12 rounded-2xl bg-[#12141f] hover:bg-blue-400/30 border border-blue-400/15 hover:border-blue-400/50 flex items-center justify-center text-gray-300 hover:text-white transition shadow-lg mb-1 group">
+                        <a href="/dashboard" title="الصفحة الرئيسية" class="w-12 h-12 rounded-2xl bg-[#12141f] hover:bg-blue-400/30 border border-blue-400/15 hover:border-blue-400/50 flex items-center justify-center text-gray-300 hover:text-blue-200 transition shadow-lg mb-1 group">
                             <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                         </a>
                         <div class="w-8 h-[1px] bg-white/5"></div>
