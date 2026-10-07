@@ -1408,22 +1408,22 @@ module.exports = function (app, client) {
                 
                 <style>
                     :root {
-                        --bg-main: #040714;
-                        --bg-sidebar: #060b1b;
-                        --bg-card: #091124;
-                        --bg-card-hover: #0d1733;
+                        --bg-main: #060c1d;
+                        --bg-sidebar: #081026;
+                        --bg-card: #0b1530;
+                        --bg-card-hover: #101e44;
                         --primary: #2563eb;
-                        --border: rgba(37, 99, 235, 0.22);
+                        --border: rgba(59, 130, 246, 0.28);
                     }
                     body { background-color: var(--bg-main) !important; color: #ffffff !important; font-family: 'Cairo', sans-serif !important; transition: background-color 0.3s, color 0.3s; }
                     body.light-mode { background-color: #f8f9fa !important; color: #1a1a1a !important; }
-                    body.light-mode .bg-\[\#040714\], body.light-mode .bg-\[\#091124\] { background-color: #ffffff !important; border-color: #e5e7eb !important; }
+                    body.light-mode .bg-\[\#060c1d\], body.light-mode .bg-\[\#0b1530\] { background-color: #ffffff !important; border-color: #e5e7eb !important; }
                     body.light-mode .text-white { color: #1a1a1a !important; }
                     body.light-mode .text-blue-200 { color: #4b5563 !important; }
                     body.light-mode .text-blue-300 { color: #6b7280 !important; }
                     ::-webkit-scrollbar { width: 6px; height: 6px; }
-                    ::-webkit-scrollbar-track { background: #040714; }
-                    ::-webkit-scrollbar-thumb { background: #1d3557; border-radius: 10px; }
+                    ::-webkit-scrollbar-track { background: #060c1d; }
+                    ::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 10px; }
                     @keyframes spin { to { transform: rotate(360deg); } }
                     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(37, 99, 235, 0.2); border-radius: 50%; border-top-color: #3b82f6; animation: spin 0.8s linear infinite; }
                     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -1640,8 +1640,8 @@ module.exports = function (app, client) {
 
     <script src="/i18n.js"></script>
 </head>
-            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#040714] text-white">
-                <header class="h-16 bg-[#060b1b]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
+            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#060c1d] text-white">
+                <header class="h-16 bg-[#081026]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-3">
                         <button type="button" onclick="window.dropletI18n.toggleLang()" class="droplet-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-blue-500/20 text-blue-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
                             <span class="text-sm">🌐</span>
@@ -11759,32 +11759,31 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
                 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-                
                 <style>
                     :root {
-                        --bg-main: #040714;
-                        --bg-sidebar: #060b1b;
-                        --bg-card: #091124;
-                        --bg-card-hover: #0d1733;
+                        --bg-main: #060c1d;
+                        --bg-sidebar: #081026;
+                        --bg-card: #0b1530;
+                        --bg-card-hover: #101e44;
                         --primary: #2563eb;
-                        --border: rgba(37, 99, 235, 0.22);
+                        --border: rgba(59, 130, 246, 0.28);
                     }
                     body { background-color: var(--bg-main) !important; color: #ffffff !important; font-family: 'Cairo', sans-serif !important; }
                     ::-webkit-scrollbar { width: 6px; height: 6px; }
-                    ::-webkit-scrollbar-track { background: #040714; }
-                    ::-webkit-scrollbar-thumb { background: #1d3557; border-radius: 10px; }
-                    .probot-card { background: var(--bg-card) !important; border: 1px solid var(--border) !important; border-radius: 16px !important; }
+                    ::-webkit-scrollbar-track { background: #060c1d; }
+                    ::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 10px; }
+                    .probot-card { background: var(--bg-card) !important; border: 1px solid var(--border) !important; border-radius: 20px !important; }
                     .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
                     .toggle input { opacity: 0; width: 0; height: 0; }
-                    .slider { position: absolute; cursor: pointer; inset: 0; background: #1d3557; border-radius: 24px; transition: .3s; }
-                    .slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; }
-                    input:checked + .slider { background: #2563eb; }
+                    .slider { position: absolute; cursor: pointer; inset: 0; background: #1e293b; border-radius: 24px; transition: .3s; border: 1px solid rgba(59, 130, 246, 0.3); }
+                    .slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 2px; bottom: 2px; background: white; border-radius: 50%; transition: .3s; }
+                    input:checked + .slider { background: #2563eb; border-color: #3b82f6; }
                     input:checked + .slider:before { transform: translateX(20px); }
                 </style>
                 <script src="/i18n.js"></script>
             </head>
-            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#040714] text-white">
-                <header class="h-16 bg-[#060b1b]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
+            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#060c1d] text-white">
+                <header class="h-16 bg-[#081026]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-3">
                         <button type="button" onclick="window.dropletI18n.toggleLang()" class="droplet-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-blue-500/20 text-blue-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
                             <span class="text-sm">🌐</span>
