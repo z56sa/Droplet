@@ -381,9 +381,10 @@ module.exports = function (app, client) {
                 .setTimestamp();
 
             const items = [];
-            if (shopSettings.customRole?.enabled) items.push(`👑 **رتبة مخصصة** — ${shopSettings.customRole.price} Gold لمدة ${shopSettings.customRole.duration} يوم`);
-            if (shopSettings.textRoom?.enabled) items.push(`💬 **قناة كتابية خاصة** — ${shopSettings.textRoom.price} Gold لمدة ${shopSettings.textRoom.duration} يوم`);
-            if (shopSettings.badge?.enabled) items.push(`🎖️ **شارة / لقب مخصص** — ${shopSettings.badge.price} Gold${shopSettings.badge.duration > 0 ? ` لمدة ${shopSettings.badge.duration} يوم` : ' (دائم)'}`);
+            if (shopSettings.customRole?.enabled) items.push(`👑 **رتبة مخصصة** — ${shopSettings.customRole.price} Gold 🪙 لمدة ${shopSettings.customRole.duration} يوم`);
+            if (shopSettings.voiceRoom?.enabled) items.push(`🔊 **روم صوتي خاص** — ${shopSettings.voiceRoom.price} Gold 🪙 لمدة ${shopSettings.voiceRoom.duration} يوم`);
+            if (shopSettings.textRoom?.enabled) items.push(`💬 **قناة كتابية خاصة** — ${shopSettings.textRoom.price} Gold 🪙 لمدة ${shopSettings.textRoom.duration} يوم`);
+            if (shopSettings.badge?.enabled) items.push(`🎖️ **شارة / لقب مخصص** — ${shopSettings.badge.price} Gold 🪙${shopSettings.badge.duration > 0 ? ` لمدة ${shopSettings.badge.duration} يوم` : ' (دائم)'}`);
 
             embed.addFields({ name: '🛍️ العناصر المتاحة', value: items.length ? items.join('\n') : 'لا توجد عناصر متاحة حالياً', inline: false });
 
@@ -11521,13 +11522,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex items-center gap-3">
                                 <select id="shop_channel_id" class="flex-1 bg-[#161824] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white">
                                     <option value="">...اختر القناة</option>
-                                    ${guildChannels.filter(c => c.type === 0).map(c => `<option value="${c.id}" ${settings.shop_channel_id === c.id ? 'selected' : ''}>#${c.name}</option>`).join('')}
+                                    ${guildTextChannels.map(c => `<option value="${c.id}" ${settings.shop_channel_id === c.id ? 'selected' : ''}>#${c.name}</option>`).join('')}
                                 </select>
-                                <button type="button" onclick="sendShopEmbed('${guildId}')" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition whitespace-nowrap">
+                                <button type="button" onclick="sendShopEmbed('${guildId}')" class="px-5 py-2.5 bg-gradient-to-l from-purple-600 to-blue-500 hover:opacity-90 text-white rounded-xl text-xs font-bold transition whitespace-nowrap shadow-md">
                                     📤 إرسال المتجر للروم
                                 </button>
                             </div>
-                            <p class="text-[11px] text-gray-500 mt-2">سيتم إرسال embed تفاعلي يعرض جميع عناصر المتجر وأسعارها في القناة المختارة</p>
+                            <p class="text-[11px] text-gray-400 mt-2">سيتم إرسال embed تفاعلي يعرض جميع عناصر المتجر وأسعارها في القناة المختارة</p>
                         </div>
 
                         <!-- Shop Items Config Grid -->
@@ -11559,6 +11560,31 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
 
 
+                            <!-- Voice Room Card -->
+                            <div class="bg-[#0b1322] border border-blue-500/20 rounded-2xl overflow-hidden">
+                                <div class="bg-gradient-to-r from-purple-900/40 to-indigo-900/30 px-5 py-4 flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-2xl">🔊</span>
+                                        <div>
+                                            <h4 class="text-sm font-black text-white">روم صوتي خاص</h4>
+                                            <p class="text-[11px] text-gray-400">Voice Channel Rental</p>
+                                        </div>
+                                    </div>
+                                    <label class="toggle"><input type="checkbox" id="shop_voice_enabled" ${shopSettings.voiceRoom?.enabled ? 'checked' : ''}><span class="slider"></span></label>
+                                </div>
+                                <div class="p-5 space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-xs text-white">السعر (Gold 🪙)</label>
+                                        <input type="number" id="shop_voice_price" value="${shopSettings.voiceRoom?.price || 800}" min="1" class="w-28 bg-[#070d1d] border border-blue-500/20 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left">
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-xs text-white">المدة (أيام)</label>
+                                        <input type="number" id="shop_voice_days" value="${shopSettings.voiceRoom?.duration || 30}" min="1" class="w-28 bg-[#070d1d] border border-blue-500/20 rounded-lg px-3 py-1.5 text-xs text-white font-mono text-left">
+                                    </div>
+                                    <p class="text-[11px] text-gray-400">قناة صوتية مؤقتة خاصة باسم العضو مع صلاحيات كاملة</p>
+                                </div>
+                            </div>
+
                             <!-- Text Room Card -->
                             <div class="bg-[#0b1322] border border-blue-500/20 rounded-2xl overflow-hidden">
                                 <div class="bg-gradient-to-r from-blue-700/30 to-indigo-900/20 px-5 py-4 flex items-center justify-between">
@@ -11566,7 +11592,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="text-2xl">💬</span>
                                         <div>
                                             <h4 class="text-sm font-black text-white">قناة كتابية خاصة</h4>
-                                            <p class="text-[11px] text-white">Text Channel Rental</p>
+                                            <p class="text-[11px] text-gray-400">Text Channel Rental</p>
                                         </div>
                                     </div>
                                     <label class="toggle"><input type="checkbox" id="shop_text_enabled" ${shopSettings.textRoom?.enabled ? 'checked' : ''}><span class="slider"></span></label>
@@ -11580,18 +11606,18 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="text-xs text-white">المدة (أيام)</label>
                                         <input type="number" id="shop_text_days" value="${shopSettings.textRoom?.duration || 30}" min="1" class="w-28 bg-[#070d1d] border border-blue-500/20 rounded-lg px-3 py-1.5 text-xs text-white font-mono text-left">
                                     </div>
-                                    <p class="text-[11px] text-gray-500">قناة نصية خاصة باسم العضو مع صلاحيات مخصصة</p>
+                                    <p class="text-[11px] text-gray-400">قناة نصية خاصة باسم العضو مع صلاحيات مخصصة</p>
                                 </div>
                             </div>
 
                             <!-- Badge/Cosmetic Card -->
-                            <div class="bg-[#0b1322] border border-pink-500/20 rounded-2xl overflow-hidden">
-                                <div class="bg-gradient-to-r from-pink-900/30 to-rose-900/20 px-5 py-4 flex items-center justify-between">
+                            <div class="bg-[#0b1322] border border-purple-500/20 rounded-2xl overflow-hidden">
+                                <div class="bg-gradient-to-r from-purple-900/30 to-indigo-900/20 px-5 py-4 flex items-center justify-between">
                                     <div class="flex items-center gap-3">
                                         <span class="text-2xl">🎖️</span>
                                         <div>
                                             <h4 class="text-sm font-black text-white">شارة / لقب مخصص</h4>
-                                            <p class="text-[11px] text-white">Profile Badge / Title</p>
+                                            <p class="text-[11px] text-gray-400">Profile Badge / Title</p>
                                         </div>
                                     </div>
                                     <label class="toggle"><input type="checkbox" id="shop_badge_enabled" ${shopSettings.badge?.enabled ? 'checked' : ''}><span class="slider"></span></label>
@@ -11605,14 +11631,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="text-xs text-white">المدة (0 = دائم)</label>
                                         <input type="number" id="shop_badge_days" value="${shopSettings.badge?.duration || 0}" min="0" class="w-28 bg-[#070d1d] border border-blue-500/20 rounded-lg px-3 py-1.5 text-xs text-white font-mono text-left">
                                     </div>
-                                    <p class="text-[11px] text-gray-500">تظهر في بطاقة الهوية والبروفايل داخل الديسكورد</p>
+                                    <p class="text-[11px] text-gray-400">تظهر في بطاقة الهوية والبروفايل داخل الديسكورد</p>
                                 </div>
                             </div>
 
                         </div>
 
                         <!-- Save Button -->
-                        <button type="button" onclick="saveShopSettings('${guildId}')" class="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-xl text-sm font-black transition shadow-lg shadow-amber-900/30">
+                        <button type="button" onclick="saveShopSettings('${guildId}')" class="w-full py-3.5 bg-gradient-to-l from-purple-600 to-blue-500 hover:opacity-95 text-white rounded-xl text-sm font-black transition shadow-lg shadow-purple-900/30">
                             💾 حفظ إعدادات المتجر
                         </button>
 
@@ -11637,7 +11663,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <input type="number" id="dash_role_days" value="30" min="1" class="w-full bg-[#101c33] border border-blue-500/20 rounded-lg p-2 text-xs text-white">
                                 </div>
                             </div>
-                            <button type="button" onclick="handleCreateDashRole('${guildId}')" class="mt-3 px-5 py-2 bg-gradient-to-l from-purple-600 to-blue-500 hover:bg-gradient-to-l from-purple-600 to-blue-500 text-white rounded-lg text-xs font-bold transition">
+                            <button type="button" onclick="handleCreateDashRole('${guildId}')" class="mt-3 px-5 py-2 bg-gradient-to-l from-purple-600 to-blue-500 hover:opacity-90 text-white rounded-lg text-xs font-bold transition shadow-md">
                                 👑 منح الرتبة المخصصة
                             </button>
                         </div>
@@ -11695,7 +11721,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 });
                                 const d = await res.json();
                                 if (d.success) {
-                                    // Save the channel choice too
                                     await fetch('/api/shop/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guildId, shopItems: null, shopChannelId: channelId }) });
                                     alert('✅ تم إرسال المتجر للقناة بنجاح!');
                                     location.reload();
@@ -11707,6 +11732,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 guildId,
                                 shopItems: {
                                     customRole: { enabled: document.getElementById('shop_role_enabled')?.checked || false, price: +(document.getElementById('shop_role_price')?.value || 500), duration: +(document.getElementById('shop_role_days')?.value || 30) },
+                                    voiceRoom:  { enabled: document.getElementById('shop_voice_enabled')?.checked || false, price: +(document.getElementById('shop_voice_price')?.value || 800), duration: +(document.getElementById('shop_voice_days')?.value || 30) },
                                     textRoom:   { enabled: document.getElementById('shop_text_enabled')?.checked || false, price: +(document.getElementById('shop_text_price')?.value || 600), duration: +(document.getElementById('shop_text_days')?.value || 30) },
                                     badge:      { enabled: document.getElementById('shop_badge_enabled')?.checked || false, price: +(document.getElementById('shop_badge_price')?.value || 200), duration: +(document.getElementById('shop_badge_days')?.value || 0) }
                                 }

@@ -19,20 +19,29 @@ try {
 const numFmt = new Intl.NumberFormat('en-US');
 
 // رسم شارة فيكتور دائرية احترافية ذات إطار نيون
-function drawEmblemBadge(ctx, x, y, size, type) {
+function drawEmblemBadge(ctx, x, y, size, type, active = true) {
   ctx.save();
   ctx.translate(x, y);
 
+  if (!active) {
+    ctx.globalAlpha = 0.22;
+  }
+
   // إطار الكبسولة الزجاجية للشارة
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.07)';
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+  ctx.fillStyle = active ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.03)';
+  ctx.strokeStyle = active ? 'rgba(255, 255, 255, 0.28)' : 'rgba(255, 255, 255, 0.08)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.arc(0, 0, size, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
 
+  if (active) {
+    ctx.shadowBlur = 8;
+  }
+
   if (type === 'diamond') {
+    if (active) ctx.shadowColor = '#00f2fe';
     const grad = ctx.createLinearGradient(-size/2, -size/2, size/2, size/2);
     grad.addColorStop(0, '#00f2fe');
     grad.addColorStop(1, '#4facfe');
@@ -45,6 +54,7 @@ function drawEmblemBadge(ctx, x, y, size, type) {
     ctx.closePath();
     ctx.fill();
   } else if (type === 'crown') {
+    if (active) ctx.shadowColor = '#FFE600';
     const grad = ctx.createLinearGradient(0, -size/2, 0, size/2);
     grad.addColorStop(0, '#FFE600');
     grad.addColorStop(1, '#FF8A00');
@@ -60,6 +70,7 @@ function drawEmblemBadge(ctx, x, y, size, type) {
     ctx.closePath();
     ctx.fill();
   } else if (type === 'bolt') {
+    if (active) ctx.shadowColor = '#ff007f';
     const grad = ctx.createLinearGradient(0, -size/2, 0, size/2);
     grad.addColorStop(0, '#ff007f');
     grad.addColorStop(1, '#7928ca');
@@ -74,6 +85,7 @@ function drawEmblemBadge(ctx, x, y, size, type) {
     ctx.closePath();
     ctx.fill();
   } else if (type === 'shield') {
+    if (active) ctx.shadowColor = '#2ed573';
     const grad = ctx.createLinearGradient(0, -size/2, 0, size/2);
     grad.addColorStop(0, '#2ed573');
     grad.addColorStop(1, '#10ac84');
@@ -88,6 +100,7 @@ function drawEmblemBadge(ctx, x, y, size, type) {
     ctx.closePath();
     ctx.fill();
   } else if (type === 'star') {
+    if (active) ctx.shadowColor = '#a55eea';
     const grad = ctx.createLinearGradient(0, -size/2, 0, size/2);
     grad.addColorStop(0, '#a55eea');
     grad.addColorStop(1, '#8854d0');
@@ -397,7 +410,7 @@ const canvasUtil = {
     ctx.font = 'bold 14px sans-serif';
     ctx.fillText(`@${username} • Droplet MEMBER`, infoStartX, 238);
 
-    // كبسولة الشارات المعتمدة
+    // كبسولة الشارات المعتمدة الديناميكية
     const badgesStartX = width - 235;
     const badgesY = 205;
     
@@ -409,11 +422,18 @@ const canvasUtil = {
     ctx.fill();
     ctx.stroke();
 
-    drawEmblemBadge(ctx, badgesStartX + 10, badgesY, 13, 'diamond');
-    drawEmblemBadge(ctx, badgesStartX + 46, badgesY, 13, 'crown');
-    drawEmblemBadge(ctx, badgesStartX + 82, badgesY, 13, 'bolt');
-    drawEmblemBadge(ctx, badgesStartX + 118, badgesY, 13, 'shield');
-    drawEmblemBadge(ctx, badgesStartX + 154, badgesY, 13, 'star');
+    const memberBadges = userData.badges || {};
+    const hasOwner = Boolean(memberBadges.owner ?? (member.guild?.ownerId === member.id));
+    const hasAdmin = Boolean(memberBadges.admin ?? (member.permissions?.has('Administrator') || member.permissions?.has('ManageGuild')));
+    const hasBooster = Boolean(memberBadges.booster ?? Boolean(member.premiumSince));
+    const hasActive = Boolean(memberBadges.active ?? ((rankData.level || 1) >= 5 || (userData.streak || 0) >= 3));
+    const hasVip = Boolean(memberBadges.vip ?? ((userData.coins || 0) >= 10000 || (rankData.level || 1) >= 15));
+
+    drawEmblemBadge(ctx, badgesStartX + 10, badgesY, 13, 'crown', hasOwner);
+    drawEmblemBadge(ctx, badgesStartX + 46, badgesY, 13, 'shield', hasAdmin);
+    drawEmblemBadge(ctx, badgesStartX + 82, badgesY, 13, 'bolt', hasBooster);
+    drawEmblemBadge(ctx, badgesStartX + 118, badgesY, 13, 'star', hasActive);
+    drawEmblemBadge(ctx, badgesStartX + 154, badgesY, 13, 'diamond', hasVip);
 
     // 8. صناديق الإحصائيات الأنيقة (Stat Cards)
     const statsY = 262;
@@ -423,29 +443,44 @@ const canvasUtil = {
     const statsStartX = infoStartX;
 
     const coinsAmount = Number(userData.coins ?? userData.credits ?? 0);
-    const starText = coinsAmount >= 999999999999999 ? 'UNLIMITED' : numFmt.format(coinsAmount);
+    const coinText = coinsAmount >= 999999999999999 ? 'UNLIMITED' : numFmt.format(coinsAmount);
 
     const repAmount = Number(userData.reputation ?? userData.rep ?? 0);
 
     const stats = [
-      { label: 'STAR COIN', val: starText, color: '#FFD700', isCoin: true },
+      { label: 'GOLD COINS', val: coinText, color: '#F59E0B', isCoin: true },
       { label: 'RANK', val: `#${numFmt.format(rankData.rank || 1)}`, color: '#2ed573' },
       { label: 'REPUTATION', val: `+${numFmt.format(repAmount)} REP`, color: '#a55eea' }
     ];
 
-    function drawVectorStar(targetCtx, cx, cy, r, color) {
+    function drawVectorCoin(targetCtx, cx, cy, r) {
       targetCtx.save();
-      targetCtx.fillStyle = color;
+      // عملة ذهبية مع حلقة داخلية وحرف G
+      const coinGrad = targetCtx.createRadialGradient(cx - r*0.3, cy - r*0.3, 1, cx, cy, r);
+      coinGrad.addColorStop(0, '#FFE259');
+      coinGrad.addColorStop(1, '#FFA751');
+      targetCtx.fillStyle = coinGrad;
       targetCtx.beginPath();
-      for (let i = 0; i < 5; i++) {
-        const aOuter = (i * 4 * Math.PI) / 5 - Math.PI / 2;
-        const xO = cx + Math.cos(aOuter) * r;
-        const yO = cy + Math.sin(aOuter) * r;
-        if (i === 0) targetCtx.moveTo(xO, yO);
-        else targetCtx.lineTo(xO, yO);
-      }
-      targetCtx.closePath();
+      targetCtx.arc(cx, cy, r, 0, Math.PI * 2);
       targetCtx.fill();
+
+      targetCtx.strokeStyle = '#D97706';
+      targetCtx.lineWidth = 1.2;
+      targetCtx.stroke();
+
+      // حافة داخلية
+      targetCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      targetCtx.lineWidth = 0.8;
+      targetCtx.beginPath();
+      targetCtx.arc(cx, cy, r * 0.7, 0, Math.PI * 2);
+      targetCtx.stroke();
+
+      // حرف G ذهبي أنيق في المنتصف
+      targetCtx.fillStyle = '#78350F';
+      targetCtx.font = `bold ${Math.round(r * 1.05)}px sans-serif`;
+      targetCtx.textAlign = 'center';
+      targetCtx.textBaseline = 'middle';
+      targetCtx.fillText('🪙', cx, cy);
       targetCtx.restore();
     }
 
@@ -471,6 +506,7 @@ const canvasUtil = {
       ctx.fillStyle = '#8c96ab';
       ctx.font = 'bold 11px sans-serif';
       ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
       ctx.fillText(s.label, bx + 16, statsY + 24);
 
       // القيمة
@@ -478,10 +514,10 @@ const canvasUtil = {
       ctx.font = 'bold 17px sans-serif';
       ctx.fillText(s.val, bx + 16, statsY + 48);
 
-      // رسم النجمة الفيكتور لخانة STAR COIN
+      // أيقونة العملة الذهبية لخانة GOLD
       if (s.isCoin) {
         const textWidth = ctx.measureText(s.val).width;
-        drawVectorStar(ctx, bx + 16 + textWidth + 12, statsY + 42, 7, '#FFD700');
+        drawVectorCoin(ctx, bx + 16 + textWidth + 14, statsY + 42, 8.5);
       }
     });
 

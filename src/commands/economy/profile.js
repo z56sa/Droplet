@@ -27,6 +27,34 @@ module.exports = {
     userData.wallpaper_url = db.getWallpaper(targetUser.id);
     const rankData = db.getUserRank(targetUser.id, interaction.guild.id) || { xp: 0, level: 0, rank: 1 };
 
+    // التأكد من جلب رصيد الذهب الفعلي للمستخدم (سواء من السيرفر الحالي أو محفظته المجمعة)
+    try {
+      const rawDb = db.getDb?.();
+      if (rawDb) {
+        const sumRow = rawDb.prepare('SELECT SUM(coins) as total_coins, MAX(streak) as max_streak, MAX(reputation) as max_rep FROM users WHERE user_id = ?').get(targetUser.id);
+        if (sumRow) {
+          if (sumRow.total_coins !== null && sumRow.total_coins > (userData.coins || 0)) {
+            userData.coins = sumRow.total_coins;
+          }
+          if (sumRow.max_streak !== null && sumRow.max_streak > (userData.streak || 0)) {
+            userData.streak = sumRow.max_streak;
+          }
+          if (sumRow.max_rep !== null && sumRow.max_rep > (userData.reputation || 0)) {
+            userData.reputation = sumRow.max_rep;
+          }
+        }
+      }
+    } catch (e) {}
+
+    // بناء شارات العضو الفعلية
+    userData.badges = {
+      owner: interaction.guild.ownerId === member.id,
+      admin: member.permissions.has('Administrator') || member.permissions.has('ManageGuild'),
+      booster: Boolean(member.premiumSince),
+      active: (rankData.level || 1) >= 5 || (userData.streak || 0) >= 3,
+      vip: (userData.coins || 0) >= 10000 || (rankData.level || 1) >= 15
+    };
+
     const cardBuffer = await canvasUtil.createProfileCard(member, userData, rankData);
     const attachment = new AttachmentBuilder(cardBuffer, { name: 'profile.png' });
 
@@ -47,6 +75,34 @@ module.exports = {
     const userData = db.getUser(targetUser.id, message.guild.id);
     userData.wallpaper_url = db.getWallpaper(targetUser.id);
     const rankData = db.getUserRank(targetUser.id, message.guild.id) || { xp: 0, level: 0, rank: 1 };
+
+    // التأكد من جلب رصيد الذهب الفعلي للمستخدم (سواء من السيرفر الحالي أو محفظته المجمعة)
+    try {
+      const rawDb = db.getDb?.();
+      if (rawDb) {
+        const sumRow = rawDb.prepare('SELECT SUM(coins) as total_coins, MAX(streak) as max_streak, MAX(reputation) as max_rep FROM users WHERE user_id = ?').get(targetUser.id);
+        if (sumRow) {
+          if (sumRow.total_coins !== null && sumRow.total_coins > (userData.coins || 0)) {
+            userData.coins = sumRow.total_coins;
+          }
+          if (sumRow.max_streak !== null && sumRow.max_streak > (userData.streak || 0)) {
+            userData.streak = sumRow.max_streak;
+          }
+          if (sumRow.max_rep !== null && sumRow.max_rep > (userData.reputation || 0)) {
+            userData.reputation = sumRow.max_rep;
+          }
+        }
+      }
+    } catch (e) {}
+
+    // بناء شارات العضو الفعلية
+    userData.badges = {
+      owner: message.guild.ownerId === member.id,
+      admin: member.permissions.has('Administrator') || member.permissions.has('ManageGuild'),
+      booster: Boolean(member.premiumSince),
+      active: (rankData.level || 1) >= 5 || (userData.streak || 0) >= 3,
+      vip: (userData.coins || 0) >= 10000 || (rankData.level || 1) >= 15
+    };
 
     const cardBuffer = await canvasUtil.createProfileCard(member, userData, rankData);
     const attachment = new AttachmentBuilder(cardBuffer, { name: 'profile.png' });
