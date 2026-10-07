@@ -102,32 +102,6 @@ module.exports = {
               new ActionRowBuilder().addComponents(colorInput)
             );
             return interaction.showModal(modal);
-          } else if (itemKey === 'voice') {
-            const modal = new ModalBuilder()
-              .setCustomId('modal_shop_buy_voice')
-              .setTitle('🔊 استئجار روم صوتي خاص');
-            const nameInput = new TextInputBuilder()
-              .setCustomId('voice_name')
-              .setLabel('اسم الروم الصوتي')
-              .setStyle(TextInputStyle.Short)
-              .setPlaceholder('مثال: ديوانية الأساطير')
-              .setRequired(true)
-              .setMaxLength(32);
-            modal.addComponents(new ActionRowBuilder().addComponents(nameInput));
-            return interaction.showModal(modal);
-          } else if (itemKey === 'text') {
-            const modal = new ModalBuilder()
-              .setCustomId('modal_shop_buy_text')
-              .setTitle('💬 استئجار روم كتابي خاص');
-            const nameInput = new TextInputBuilder()
-              .setCustomId('text_name')
-              .setLabel('اسم القناة الكتابية')
-              .setStyle(TextInputStyle.Short)
-              .setPlaceholder('مثال: شات-الخاص')
-              .setRequired(true)
-              .setMaxLength(32);
-            modal.addComponents(new ActionRowBuilder().addComponents(nameInput));
-            return interaction.showModal(modal);
           }
         }
 
@@ -166,31 +140,21 @@ module.exports = {
             .setTimestamp();
 
           const buyButtons = [];
-          if (shopSettings.customRole?.enabled) {
+          if (shopSettings.customRole?.enabled !== false) {
             shopEmbed.addFields({
               name: '👑 رتبة مخصصة (Custom Role)',
-              value: `• السعر: **${shopSettings.customRole.price}** Gold 🪙\n• المدة: **${shopSettings.customRole.duration}** يوم\n• الميزة: تختار الاسم واللون وتُنشأ لك فوراً!`,
+              value: `• السعر: **${(shopSettings.customRole?.price || 500).toLocaleString()}** Gold 🪙\n• المدة: **${shopSettings.customRole?.duration || 30}** يوم\n• الميزة: تختار الاسم واللون وتُنشأ لك وتُعطى لحسابك فوراً!`,
               inline: false
             });
             buyButtons.push(new ButtonBuilder().setCustomId('shop_buy_modal_role').setLabel('👑 شراء رتبة خاصة').setStyle(ButtonStyle.Primary));
           }
 
-          if (shopSettings.voiceRoom?.enabled) {
+          if (shopSettings.badge?.enabled) {
             shopEmbed.addFields({
-              name: '🔊 روم صوتي خاص (Voice Channel)',
-              value: `• السعر: **${shopSettings.voiceRoom.price}** Gold 🪙\n• المدة: **${shopSettings.voiceRoom.duration}** يوم\n• الميزة: روم صوتي خاص بك مع كامل الصلاحيات!`,
+              name: '🎖️ شارة / لقب مخصص (Badge)',
+              value: `• السعر: **${(shopSettings.badge?.price || 200).toLocaleString()}** Gold 🪙\n• المدة: ${shopSettings.badge?.duration > 0 ? `**${shopSettings.badge.duration}** يوم` : '**دائم**'}\n• الميزة: تظهر في بروفايلك وهويتك!`,
               inline: false
             });
-            buyButtons.push(new ButtonBuilder().setCustomId('shop_buy_modal_voice').setLabel('🔊 استئجار روم صوتي').setStyle(ButtonStyle.Success));
-          }
-
-          if (shopSettings.textRoom?.enabled) {
-            shopEmbed.addFields({
-              name: '💬 روم كتابي خاص (Text Channel)',
-              value: `• السعر: **${shopSettings.textRoom.price}** Gold 🪙\n• المدة: **${shopSettings.textRoom.duration}** يوم\n• الميزة: قناة نصية خاصة لك ولأصدقائك!`,
-              inline: false
-            });
-            buyButtons.push(new ButtonBuilder().setCustomId('shop_buy_modal_text').setLabel('💬 استئجار روم كتابي').setStyle(ButtonStyle.Secondary));
           }
 
           const actionRows = [];
@@ -442,80 +406,6 @@ module.exports = {
           } catch(err) {
             console.error('[Shop Buy Role Error]:', err);
             return interaction.editReply({ content: `❌ حدث خطأ أثناء إنشاء الرتبة: ${err.message}` });
-          }
-        }
-
-        // 2. شراء روم صوتي خاص
-        if (interaction.customId === 'modal_shop_buy_voice') {
-          const price = shopSettings.voiceRoom?.price || 800;
-          const duration = shopSettings.voiceRoom?.duration || 30;
-          if (userCoins < price) {
-            return interaction.editReply({ content: `❌ عذراً! رصيدك غير كافٍ. المطلوب **${price.toLocaleString()}** Gold ورصيدك الحالي هو **${userCoins.toLocaleString()}** Gold 🪙.` });
-          }
-
-          const voiceName = interaction.fields.getTextInputValue('voice_name').trim();
-          try {
-            const createdCh = await interaction.guild.channels.create({
-              name: `🔊┃${voiceName}`,
-              type: ChannelType.GuildVoice,
-              permissionOverwrites: [
-                { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                { id: userId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak, PermissionFlagsBits.ManageChannels] }
-              ],
-              reason: `Voice Channel purchased by ${interaction.user.tag}`
-            });
-
-            db.removeCoins(userId, guildId, price);
-            const expiresAt = Math.floor(Date.now() / 1000) + (duration * 24 * 3600);
-            db.addRentedChannel(guildId, userId, createdCh.id, 'voice', voiceName, expiresAt);
-
-            const successEmbed = new EmbedBuilder()
-              .setColor('#10b981')
-              .setTitle('🎉 تم استئجار الروم الصوتي بنجاح!')
-              .setDescription(`تم إنشاء الروم الصوتي الخاص بك <#${createdCh.id}> بنجاح!\n\n• السعر: **${price.toLocaleString()}** Gold 🪙\n• المدة: **${duration}** يوم (<t:${expiresAt}:R>)`)
-              .setTimestamp();
-
-            return interaction.editReply({ embeds: [successEmbed] });
-          } catch(err) {
-            console.error('[Shop Buy Voice Error]:', err);
-            return interaction.editReply({ content: `❌ حدث خطأ أثناء إنشاء الروم الصوتي: ${err.message}` });
-          }
-        }
-
-        // 3. شراء روم كتابي خاص
-        if (interaction.customId === 'modal_shop_buy_text') {
-          const price = shopSettings.textRoom?.price || 600;
-          const duration = shopSettings.textRoom?.duration || 30;
-          if (userCoins < price) {
-            return interaction.editReply({ content: `❌ عذراً! رصيدك غير كافٍ. المطلوب **${price.toLocaleString()}** Gold ورصيدك الحالي هو **${userCoins.toLocaleString()}** Gold 🪙.` });
-          }
-
-          const textName = interaction.fields.getTextInputValue('text_name').trim();
-          try {
-            const createdCh = await interaction.guild.channels.create({
-              name: `💬┃${textName}`,
-              type: ChannelType.GuildText,
-              permissionOverwrites: [
-                { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                { id: userId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.ManageChannels] }
-              ],
-              reason: `Text Channel purchased by ${interaction.user.tag}`
-            });
-
-            db.removeCoins(userId, guildId, price);
-            const expiresAt = Math.floor(Date.now() / 1000) + (duration * 24 * 3600);
-            db.addRentedChannel(guildId, userId, createdCh.id, 'text', textName, expiresAt);
-
-            const successEmbed = new EmbedBuilder()
-              .setColor('#3b82f6')
-              .setTitle('🎉 تم استئجار الروم الكتابي بنجاح!')
-              .setDescription(`تم إنشاء الروم الكتابي الخاص بك <#${createdCh.id}> بنجاح!\n\n• السعر: **${price.toLocaleString()}** Gold 🪙\n• المدة: **${duration}** يوم (<t:${expiresAt}:R>)`)
-              .setTimestamp();
-
-            return interaction.editReply({ embeds: [successEmbed] });
-          } catch(err) {
-            console.error('[Shop Buy Text Error]:', err);
-            return interaction.editReply({ content: `❌ حدث خطأ أثناء إنشاء الروم الكتابي: ${err.message}` });
           }
         }
         return;

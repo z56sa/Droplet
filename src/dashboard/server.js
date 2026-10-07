@@ -403,10 +403,8 @@ module.exports = function (app, client) {
                 .setTimestamp();
 
             const items = [];
-            if (shopSettings.customRole?.enabled) items.push(`👑 **رتبة مخصصة (Custom Role)**\n┗ السعر: **${shopSettings.customRole.price.toLocaleString()}** Gold 🪙 • المدة: **${shopSettings.customRole.duration}** يوم`);
-            if (shopSettings.voiceRoom?.enabled) items.push(`🔊 **روم صوتي خاص (Voice Channel)**\n┗ السعر: **${shopSettings.voiceRoom.price.toLocaleString()}** Gold 🪙 • المدة: **${shopSettings.voiceRoom.duration}** يوم`);
-            if (shopSettings.textRoom?.enabled) items.push(`💬 **قناة كتابية خاصة (Text Channel)**\n┗ السعر: **${shopSettings.textRoom.price.toLocaleString()}** Gold 🪙 • المدة: **${shopSettings.textRoom.duration}** يوم`);
-            if (shopSettings.badge?.enabled) items.push(`🎖️ **شارة / لقب مخصص (Badge)**\n┗ السعر: **${shopSettings.badge.price.toLocaleString()}** Gold 🪙 • المدة: ${shopSettings.badge.duration > 0 ? `**${shopSettings.badge.duration}** يوم` : '**دائم**'}`);
+            if (shopSettings.customRole?.enabled !== false) items.push(`👑 **رتبة مخصصة (Custom Role)**\n┗ السعر: **${(shopSettings.customRole?.price || 500).toLocaleString()}** Gold 🪙 • المدة: **${shopSettings.customRole?.duration || 30}** يوم`);
+            if (shopSettings.badge?.enabled) items.push(`🎖️ **شارة / لقب مخصص (Badge)**\n┗ السعر: **${(shopSettings.badge?.price || 200).toLocaleString()}** Gold 🪙 • المدة: ${shopSettings.badge?.duration > 0 ? `**${shopSettings.badge.duration}** يوم` : '**دائم**'}`);
 
             embed.addFields({ name: '🛍️ الباقات والعناصر المتاحة للشراء فوراً', value: items.length ? items.join('\n\n') : 'لا توجد عناصر متاحة حالياً', inline: false });
 
@@ -11582,56 +11580,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
 
 
-                            <!-- Voice Room Card -->
-                            <div class="bg-[#0b1322] border border-blue-500/20 rounded-2xl overflow-hidden">
-                                <div class="bg-gradient-to-r from-purple-900/40 to-indigo-900/30 px-5 py-4 flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-2xl">🔊</span>
-                                        <div>
-                                            <h4 class="text-sm font-black text-white">روم صوتي خاص</h4>
-                                            <p class="text-[11px] text-gray-400">Voice Channel Rental</p>
-                                        </div>
-                                    </div>
-                                    <label class="toggle"><input type="checkbox" id="shop_voice_enabled" ${shopSettings.voiceRoom?.enabled ? 'checked' : ''}><span class="slider"></span></label>
-                                </div>
-                                <div class="p-5 space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <label class="text-xs text-white">السعر (Gold 🪙)</label>
-                                        <input type="number" id="shop_voice_price" value="${shopSettings.voiceRoom?.price || 800}" min="1" class="w-28 bg-[#070d1d] border border-blue-500/20 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left">
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <label class="text-xs text-white">المدة (أيام)</label>
-                                        <input type="number" id="shop_voice_days" value="${shopSettings.voiceRoom?.duration || 30}" min="1" class="w-28 bg-[#070d1d] border border-blue-500/20 rounded-lg px-3 py-1.5 text-xs text-white font-mono text-left">
-                                    </div>
-                                    <p class="text-[11px] text-gray-400">قناة صوتية مؤقتة خاصة باسم العضو مع صلاحيات كاملة</p>
-                                </div>
-                            </div>
-
-                            <!-- Text Room Card -->
-                            <div class="bg-[#0b1322] border border-blue-500/20 rounded-2xl overflow-hidden">
-                                <div class="bg-gradient-to-r from-blue-700/30 to-indigo-900/20 px-5 py-4 flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-2xl">💬</span>
-                                        <div>
-                                            <h4 class="text-sm font-black text-white">قناة كتابية خاصة</h4>
-                                            <p class="text-[11px] text-gray-400">Text Channel Rental</p>
-                                        </div>
-                                    </div>
-                                    <label class="toggle"><input type="checkbox" id="shop_text_enabled" ${shopSettings.textRoom?.enabled ? 'checked' : ''}><span class="slider"></span></label>
-                                </div>
-                                <div class="p-5 space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <label class="text-xs text-white">السعر (Gold 🪙)</label>
-                                        <input type="number" id="shop_text_price" value="${shopSettings.textRoom?.price || 600}" min="1" class="w-28 bg-[#070d1d] border border-blue-500/20 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left">
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <label class="text-xs text-white">المدة (أيام)</label>
-                                        <input type="number" id="shop_text_days" value="${shopSettings.textRoom?.duration || 30}" min="1" class="w-28 bg-[#070d1d] border border-blue-500/20 rounded-lg px-3 py-1.5 text-xs text-white font-mono text-left">
-                                    </div>
-                                    <p class="text-[11px] text-gray-400">قناة نصية خاصة باسم العضو مع صلاحيات مخصصة</p>
-                                </div>
-                            </div>
-
                             <!-- Badge/Cosmetic Card -->
                             <div class="bg-[#0b1322] border border-purple-500/20 rounded-2xl overflow-hidden">
                                 <div class="bg-gradient-to-r from-purple-900/30 to-indigo-900/20 px-5 py-4 flex items-center justify-between">
@@ -11711,17 +11659,22 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
                                 `}
                             </div>
+                        <!-- Active Items -->
+                        <div class="grid grid-cols-1 gap-4">
                             <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl">
-                                <h4 class="text-sm font-black text-emerald-300 mb-3">🎙️ الغرف المستأجرة (${rentedChannels.length})</h4>
-                                ${rentedChannels.length === 0 ? '<p class="text-xs text-gray-500">لا توجد غرف مستأجرة حالياً.</p>' : `
+                                <h4 class="text-sm font-black text-white mb-3">👑 الرتب الخاصة النشطة (${customRoles.length})</h4>
+                                ${customRoles.length === 0 ? '<p class="text-xs text-gray-500">لا توجد رتب نشطة حالياً.</p>' : `
                                     <div class="space-y-2">
-                                        ${rentedChannels.map(rc => `
+                                        ${customRoles.map(cr => `
                                             <div class="flex items-center justify-between p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl text-xs">
                                                 <div>
-                                                    <span class="font-bold text-white block">${rc.channel_type === 'voice' ? '🔊' : '💬'} ${rc.channel_name}</span>
-                                                    <span class="text-[10px] text-white">&lt;@${rc.user_id}&gt;</span>
+                                                    <span class="font-bold text-white block">${cr.role_name}</span>
+                                                    <span class="text-[10px] text-white">&lt;@${cr.user_id}&gt;</span>
                                                 </div>
-                                                <span class="text-[10px] text-gray-500 font-mono">⏳ ${new Date(rc.expires_at * 1000).toLocaleDateString(dashDateLocale(req, 'ar-SA'))}</span>
+                                                <div class="text-left">
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold" style="background:${cr.role_color||'#60a5fa'};color:#ffffff;">${cr.role_color||'HEX'}</span>
+                                                    <span class="text-[10px] text-gray-400 block mt-1">⏳ ${new Date(cr.expires_at * 1000).toLocaleDateString(dashDateLocale(req, 'ar-SA'))}</span>
+                                                </div>
                                             </div>
                                         `).join('')}
                                     </div>
@@ -11754,8 +11707,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 guildId,
                                 shopItems: {
                                     customRole: { enabled: document.getElementById('shop_role_enabled')?.checked || false, price: +(document.getElementById('shop_role_price')?.value || 500), duration: +(document.getElementById('shop_role_days')?.value || 30) },
-                                    voiceRoom:  { enabled: document.getElementById('shop_voice_enabled')?.checked || false, price: +(document.getElementById('shop_voice_price')?.value || 800), duration: +(document.getElementById('shop_voice_days')?.value || 30) },
-                                    textRoom:   { enabled: document.getElementById('shop_text_enabled')?.checked || false, price: +(document.getElementById('shop_text_price')?.value || 600), duration: +(document.getElementById('shop_text_days')?.value || 30) },
                                     badge:      { enabled: document.getElementById('shop_badge_enabled')?.checked || false, price: +(document.getElementById('shop_badge_price')?.value || 200), duration: +(document.getElementById('shop_badge_days')?.value || 0) }
                                 }
                             };
