@@ -1400,7 +1400,7 @@ module.exports = function (app, client) {
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>لوحة التحكم | ZENO BOT</title>
+                <title>لوحة التحكم | Droplet BOT</title>
                 <!-- ✅ Tailwind - يُحمَّل بدون تجميد الصفحة -->
                 <link rel="stylesheet" href="/tw.css" onerror="this.remove()">
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
