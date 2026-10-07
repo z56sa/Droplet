@@ -1030,13 +1030,78 @@
         const lang = detectLang();
         applyLayout(lang);
         if (!document.body) return lang;
-        if (isManualLangPage()) return lang;
-        // الصفحة بالأساس مكتوبة بالعربية، لذا في حال العربية لا حاجة لفحص شجرة الـ DOM كاملة
         if (lang === 'ar') return lang;
         if (lang === 'en') {
-            translateNodeWithDict(document.body, dictionary, arKeysByLength);
+            if (isManualLangPage() && !location.pathname.includes('/dashboard')) {
+                translateNodeWithDict(document.body, dictionary, arKeysByLength);
+            } else if (location.pathname.includes('/dashboard')) {
+                translateDashboardChunked();
+            } else {
+                translateNodeWithDict(document.body, dictionary, arKeysByLength);
+            }
         }
         return lang;
+    }
+
+    let dashTranslateScheduled = false;
+    function translateDashboardChunked() {
+        if (dashTranslateScheduled) return;
+        dashTranslateScheduled = true;
+        const run = function() {
+            try {
+                var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+                    acceptNode: function(node) {
+                        if (!node.nodeValue || !/[\u0600-\u06FF]/.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
+                        if (isLangHandledSpan(node)) return NodeFilter.FILTER_REJECT;
+                        return NodeFilter.FILTER_ACCEPT;
+                    }
+                });
+                var pendingNodes = [];
+                var n;
+                while ((n = walker.nextNode())) pendingNodes.push(n);
+                var chunkSize = 400;
+                var processChunk = function() {
+                    var count = 0;
+                    var node;
+                    while (count < chunkSize && pendingNodes.length) {
+                        node = pendingNodes.shift();
+                        var original = node.nodeValue;
+                        var next = translateStringWithDash(original);
+                        if (next !== original) node.nodeValue = next;
+                        count++;
+                    }
+                    if (pendingNodes.length) {
+                        setTimeout(processChunk, 0);
+                    }
+                };
+                processChunk();
+            } catch (e) {}
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', run);
+        } else {
+            setTimeout(run, 0);
+        }
+    }
+
+    function getDashDict() {
+        try {
+            if (window.DropletDashDict && typeof window.DropletDashDict === 'object') return window.DropletDashDict;
+        } catch (e) {}
+        return {};
+    }
+
+    function translateStringWithDash(text) {
+        var out = translateString(text, dictionary, arKeysByLength);
+        var dashDict = getDashDict();
+        var dashKeys = Object.keys(dashDict).sort(function(a, b) { return b.length - a.length; });
+        for (var i = 0; i < dashKeys.length; i++) {
+            var key = dashKeys[i];
+            if (key.length < 2) continue;
+            if (out.indexOf(key) !== -1) out = out.split(key).join(dashDict[key]);
+        }
+        out = out.replace(/[٠-٩]/g, function(d) { return easternToArabicMap[d] || d; });
+        return out;
     }
 
     function toggleLang() {
@@ -1093,11 +1158,41 @@
     window.DropletI18n = api;
     window.dropletI18n = api;
 
+    function translateNodeWithDash(node) {
+        translateNodeWithDict(node, dictionary, arKeysByLength);
+        try {
+            var dashDict = getDashDict();
+            var dashKeys = Object.keys(dashDict).sort(function(a, b) { return b.length - a.length; });
+            if (!dashKeys.length) return;
+            var applyDash = function(el) {
+                if (!el || isLangHandledSpan(el)) return;
+                if (el.nodeType === Node.TEXT_NODE) {
+                    var original = el.nodeValue;
+                    if (!original || !/[\u0600-\u06FF]/.test(original)) return;
+                    var out = original;
+                    for (var i = 0; i < dashKeys.length; i++) {
+                        var key = dashKeys[i];
+                        if (key.length < 2) continue;
+                        if (out.indexOf(key) !== -1) out = out.split(key).join(dashDict[key]);
+                    }
+                    out = out.replace(/[٠-٩]/g, function(d) { return easternToArabicMap[d] || d; });
+                    if (out !== original) el.nodeValue = out;
+                    return;
+                }
+                if (el.nodeType !== Node.ELEMENT_NODE) return;
+                var tag = el.tagName;
+                if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') return;
+                var kids = el.childNodes;
+                for (var j = 0; j < kids.length; j++) applyDash(kids[j]);
+            };
+            applyDash(node);
+        } catch (e) {}
+    }
+
     let observerActive = false;
     let isTranslating = false;
     function startMutationObserver() {
         if (observerActive || !('MutationObserver' in window)) return;
-        if (isManualLangPage()) return;
         const currentLang = detectLang();
         if (currentLang === 'ar') return; // الصفحة مكتوبة بالعربية أصلاً، لا داعي لمراقبة التغييرات وإعادة ترجمتها
         observerActive = true;
@@ -1118,7 +1213,7 @@
                         for (let i = 0; i < m.addedNodes.length; i++) {
                             const node = m.addedNodes[i];
                             if (node.nodeType === Node.ELEMENT_NODE || node.nodeType === Node.TEXT_NODE) {
-                                translateNodeWithDict(node, dict, keys);
+                                translateNodeWithDash(node);
                             }
                         }
                     }

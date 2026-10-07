@@ -1638,7 +1638,7 @@ module.exports = function (app, client) {
     };
     </script>
 
-    <script src="/i18n.js"></script>
+    <script src="/i18n.js"></script><script src="/i18n-dash.js"></script>
 </head>
             <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#060c1d] text-white">
                 <header class="h-16 bg-[#081026]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
@@ -2406,7 +2406,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <h4 class="font-black text-white text-sm flex items-center justify-end gap-2"><span>🏰</span><span>Server Information</span></h4>
                                 <div class="space-y-2.5 text-xs text-white">
                                     <div class="flex items-center justify-between bg-[#070d1d] p-3 rounded-xl border border-blue-500/20">
-                                        <span class="text-white font-bold font-mono">${new Date((parseInt(guildId) / 4194304 + 1420070400000)).toLocaleDateString('ar-IQ', {year:'numeric',month:'long',day:'numeric'})}</span>
+                                        <span class="text-white font-bold font-mono">${new Date((parseInt(guildId) / 4194304 + 1420070400000)).toLocaleDateString((req.cookies && req.cookies.droplet_dashboard_lang === 'en' ? 'en-US' : 'ar-IQ'), {year:'numeric',month:'long',day:'numeric'})}</span>
                                         <span>Server Creation Date</span>
                                     </div>
                                     <div class="flex items-center justify-between bg-[#070d1d] p-3 rounded-xl border border-blue-500/20">
@@ -4841,7 +4841,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="space-y-2">
                                 ${(securityLogsList && securityLogsList.length > 0) ? securityLogsList.map(log => `
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-3.5 rounded-xl flex items-center justify-between text-xs hover:border-blue-500/20 transition">
-                                        <span class="text-[10px] text-gray-500 font-mono">${new Date(log.created_at * 1000).toLocaleString('ar-SA')}</span>
+                                        <span class="text-[10px] text-gray-500 font-mono">${new Date(log.created_at * 1000).toLocaleString((req.cookies && req.cookies.droplet_dashboard_lang === 'en' ? 'en-US' : 'ar-SA'))}</span>
                                         <div class="flex items-center gap-3">
                                             <div class="text-right">
                                                 <span class="font-bold text-white block">${log.reason || log.action_type}</span>
@@ -5760,7 +5760,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status === 'open' ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/30' : 'bg-rose-950/60 text-rose-400 border border-rose-800/30'}">${t.status === 'open' ? 'مفتوحة 🟢' : 'مغلقة 🔴'}</span>
                                         <div class="text-right">
                                             <span class="font-bold text-white block">صاحب التذكرة: <span class="font-mono text-white">${t.user_id}</span></span>
-                                            <span class="text-[10px] text-white">${t.category || 'عام'} • <span class="font-mono">${new Date(t.created_at * 1000).toLocaleDateString('ar-SA')}</span></span>
+                                            <span class="text-[10px] text-white">${t.category || 'عام'} • <span class="font-mono">${new Date(t.created_at * 1000).toLocaleDateString((req.cookies && req.cookies.droplet_dashboard_lang === 'en' ? 'en-US' : 'ar-SA'))}</span></span>
                                         </div>
                                     </div>
                                 `).join('') : `
@@ -10992,7 +10992,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         if (prevFooterText) prevFooterText.textContent = footer || '';
                         if (prevTimestamp) {
                             if (showTimestamp) {
-                                prevTimestamp.textContent = '\u0627\u0644\u064a\u0648\u0645 \u0641\u064a ' + new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+                                prevTimestamp.textContent = '\u0627\u0644\u064a\u0648\u0645 \u0641\u064a ' + new Date().toLocaleTimeString((window._dropletIsEn && window._dropletIsEn() ? 'en-US' : 'ar-SA'), { hour: '2-digit', minute: '2-digit' });
                                 if (prevFooterDot) prevFooterDot.classList.toggle('hidden', !footer);
                             } else {
                                 prevTimestamp.textContent = '';
@@ -11327,7 +11327,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                 <p><span class="text-white font-bold">التعهد:</span> <span class="text-emerald-300">${a.promise || '—'}</span></p>
                                             </div>
                                             <div class="mt-4 pt-3 border-t border-blue-500/20 flex items-center justify-between">
-                                                <span class="text-[10px] text-gray-500 font-mono">${new Date(a.created_at * 1000).toLocaleString('ar-SA')}</span>
+                                                <span class="text-[10px] text-gray-500 font-mono">${new Date(a.created_at * 1000).toLocaleString((req.cookies && req.cookies.droplet_dashboard_lang === 'en' ? 'en-US' : 'ar-SA'))}</span>
                                                 ${a.status === 'pending' ? `
                                                     <div class="flex gap-2">
                                                         <button type="button" onclick="handleAppealAction(${a.id}, 'accepted', '${guildId}', '${a.user_id}')" class="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-bold transition">✅ قبول وفك الحظر</button>
@@ -11656,7 +11656,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                 </div>
                                                 <div class="text-left">
                                                     <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold" style="background:${cr.role_color||'#60a5fa'};color:#ffffff;">${cr.role_color||'HEX'}</span>
-                                                    <span class="text-[10px] text-gray-500 block mt-1">⏳ ${new Date(cr.expires_at * 1000).toLocaleDateString('ar-SA')}</span>
+                                                    <span class="text-[10px] text-gray-500 block mt-1">⏳ ${new Date(cr.expires_at * 1000).toLocaleDateString((req.cookies && req.cookies.droplet_dashboard_lang === 'en' ? 'en-US' : 'ar-SA'))}</span>
                                                 </div>
                                             </div>
                                         `).join('')}
@@ -11673,7 +11673,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                     <span class="font-bold text-white block">${rc.channel_type === 'voice' ? '🔊' : '💬'} ${rc.channel_name}</span>
                                                     <span class="text-[10px] text-white">&lt;@${rc.user_id}&gt;</span>
                                                 </div>
-                                                <span class="text-[10px] text-gray-500 font-mono">⏳ ${new Date(rc.expires_at * 1000).toLocaleDateString('ar-SA')}</span>
+                                                <span class="text-[10px] text-gray-500 font-mono">⏳ ${new Date(rc.expires_at * 1000).toLocaleDateString((req.cookies && req.cookies.droplet_dashboard_lang === 'en' ? 'en-US' : 'ar-SA'))}</span>
                                             </div>
                                         `).join('')}
                                     </div>
@@ -11782,7 +11782,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     input:checked + .slider { background: linear-gradient(135deg, #a855f7, #2563eb); border-color: #3b82f6; }
                     input:checked + .slider:before { transform: translateX(20px); }
                 /* Droplet blended headings */ h1[class*="text-white"]:not([style]), h2[class*="text-white"]:not([style]) { background:linear-gradient(90deg,#c084fc,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent !important; }</style>
-                <script src="/i18n.js"></script>
+                <script src="/i18n.js"></script><script src="/i18n-dash.js"></script>
             </head>
             <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#060c1d] text-white">
                 <header class="h-16 bg-[#081026]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
