@@ -1303,25 +1303,25 @@ module.exports = function (app, client) {
             `).join('');
 
             const userDashboardGuildsHtml = guilds.length > 0 ? guilds.map(g => `
-                <div class="bg-[#091124] border border-blue-500/20 hover:border-blue-500/40 p-4 rounded-2xl flex items-center justify-between transition group shadow-lg">
-                    <a href="/dashboard/${g.id}" class="px-5 py-2.5 bg-gradient-to-r from-[#facc15] to-[#eab308] hover:from-[#fde047] hover:to-[#f59e0b] text-black font-black text-xs rounded-xl transition shadow-lg shadow-amber-500/30 flex items-center gap-1.5 hover:scale-105">
+                <div class="bg-[#0c0916] border border-[#7c3aed]/25 hover:border-[#7c3aed]/60 p-4 rounded-2xl flex items-center justify-between transition group shadow-lg">
+                    <a href="/dashboard/${g.id}" class="px-5 py-2.5 bg-gradient-to-r from-[#7c3aed] to-[#6366f1] hover:from-[#8b5cf6] hover:to-[#4f46e5] text-white font-black text-xs rounded-xl transition shadow-lg shadow-[#7c3aed]/30 flex items-center gap-1.5 hover:scale-105">
                         <span>إدارة</span>
                         <span>⚙️</span>
                     </a>
                     <div class="flex items-center gap-3">
                         <div class="text-right">
-                            <h4 class="font-bold text-white text-sm group-hover:text-blue-400 transition truncate max-w-[160px]">${g.name}</h4>
+                            <h4 class="font-bold text-white text-sm group-hover:text-[#a78bfa] transition truncate max-w-[160px]">${g.name}</h4>
                             <span class="text-[10px] text-gray-400 font-mono">${g.id}</span>
                         </div>
-                        <img src="${g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-12 h-12 rounded-2xl bg-[#040714] object-cover ring-2 ring-blue-500/20">
+                        <img src="${g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-12 h-12 rounded-2xl bg-[#06040a] object-cover ring-2 ring-[#7c3aed]/30">
                     </div>
                 </div>
             `).join('') : `
-                <div class="col-span-full py-12 text-center space-y-3 bg-[#091124] rounded-2xl border border-dashed border-blue-500/20 p-6">
+                <div class="col-span-full py-12 text-center space-y-3 bg-[#0c0916] rounded-2xl border border-dashed border-[#7c3aed]/25 p-6">
                     <div class="text-4xl">🛡️</div>
                     <h4 class="text-white font-bold text-sm">No manageable servers found</h4>
                     <p class="text-gray-400 text-xs max-w-md mx-auto">To manage a server, you must be the owner or have Administrator / Manage Server permissions, and the bot must be invited.</p>
-                    <a href="https://discord.com/api/oauth2/authorize?client_id=${client?.user?.id || config.clientId}&permissions=8&scope=bot%20applications.commands" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-600/40 mt-2">
+                    <a href="https://discord.com/api/oauth2/authorize?client_id=${client?.user?.id || config.clientId}&permissions=8&scope=bot%20applications.commands" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#7c3aed] to-[#6366f1] hover:from-[#8b5cf6] hover:to-[#4f46e5] text-white text-xs font-bold rounded-xl transition shadow-lg shadow-[#7c3aed]/30 mt-2">
                         <span>➕ Add Bot to Server</span>
                     </a>
                 </div>
@@ -1638,29 +1638,29 @@ module.exports = function (app, client) {
 
     <script src="/i18n.js"></script>
 </head>
-            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#060c1d] text-white">
-                <header class="h-16 bg-[#081026]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
+            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#06050a] text-white">
+                <header class="h-16 bg-[#0a0714]/95 backdrop-blur-md border-b border-[#7c3aed]/25 px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-3">
-                        <button type="button" onclick="window.dropletI18n.toggleLang()" class="droplet-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-blue-500/20 text-blue-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
+                        <button type="button" onclick="window.dropletI18n.toggleLang()" class="droplet-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-[#7c3aed]/25 text-purple-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
                             <span class="text-sm">🌐</span>
                             <span class="font-black text-xs uppercase tracking-wider">EN</span>
                         </button>
                         <span class="text-gray-700">|</span>
                         <a href="/logout" data-i18n="logout" class="text-xs text-rose-400 hover:text-rose-300 font-bold transition">تسجيل الخروج</a>
                         <span class="text-gray-700">|</span>
-                        <a href="https://discord.gg/zduGPYv7pE" target="_blank" data-i18n="support_server" class="text-xs text-white hover:text-blue-100 transition">الدعم الفني</a>
+                        <a href="https://discord.gg/zduGPYv7pE" target="_blank" data-i18n="support_server" class="text-xs text-white hover:text-[#a78bfa] transition">الدعم الفني</a>
                         <span class="text-gray-700">|</span>
                     </div>
                     <div class="flex items-center gap-3">
-                        <img src="${botAvatarUrl}" class="w-8 h-8 rounded-xl object-cover ring-2 ring-blue-400/40 shadow-md shadow-blue-700/30">
+                        <img src="${botAvatarUrl}" class="w-8 h-8 rounded-xl object-cover ring-2 ring-[#7c3aed]/50 shadow-md shadow-[#7c3aed]/20">
                         <span class="font-black text-sm text-white tracking-wide hidden sm:block">Droplet</span>
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="text-right">
                             <span class="text-xs font-bold text-white block">${user.username}</span>
-                            <span class="text-[10px] text-yellow-400 font-mono">🪙 ${userCoins.toLocaleString()} Gold</span>
+                            <span class="text-[10px] text-amber-400 font-mono">🪙 ${userCoins.toLocaleString()} Gold</span>
                         </div>
-                        <img src="${userAvatar}" class="w-9 h-9 rounded-xl object-cover ring-2 ring-yellow-500/40">
+                        <img src="${userAvatar}" class="w-9 h-9 rounded-xl object-cover ring-2 ring-[#7c3aed]/50">
                     </div>
                 </header>
 
@@ -1675,15 +1675,15 @@ module.exports = function (app, client) {
                             <!-- Header Title -->
                             <div class="flex items-center justify-end gap-2 text-white font-black text-lg">
                                 <span>نظرة عامة</span>
-                                <span class="text-blue-400">🎛️</span>
+                                <span class="text-[#a78bfa]">🎛️</span>
                             </div>
 
                             <!-- Top Stats 4-Grid (Novax Exact Order & Icons: Gold / Reputation / Rank / Level) -->
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 
                                 <!-- 1. Gold (Golds / Gold) -->
-                                <div class="bg-[#080e1c] border border-blue-500/20 hover:border-blue-500/20 rounded-2xl p-4 flex items-center justify-between shadow-lg transition">
-                                    <div class="w-10 h-10 rounded-xl bg-blue-400/10 text-amber-400 flex items-center justify-center text-xl font-bold shadow-inner">🪙</div>
+                                <div class="bg-[#0a0714] border border-[#7c3aed]/25 hover:border-[#7c3aed]/50 rounded-2xl p-4 flex items-center justify-between shadow-lg transition">
+                                    <div class="w-10 h-10 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center text-xl font-bold shadow-inner">🪙</div>
                                     <div class="text-right">
                                         <span class="text-xs font-bold text-white">Gold</span>
                                         <h3 id="userCoinsDisplay" class="text-xl font-black text-white mt-0.5">${userCoins.toLocaleString()}</h3>
@@ -1691,8 +1691,8 @@ module.exports = function (app, client) {
                                 </div>
 
                                 <!-- 2. Reputation (Reputation) -->
-                                <div class="bg-[#080e1c] border border-blue-500/20 hover:border-blue-500/20 rounded-2xl p-4 flex items-center justify-between shadow-lg transition">
-                                    <div class="w-10 h-10 rounded-xl bg-blue-400/10 text-blue-400 flex items-center justify-center text-xl shadow-inner">👍</div>
+                                <div class="bg-[#0a0714] border border-[#7c3aed]/25 hover:border-[#7c3aed]/50 rounded-2xl p-4 flex items-center justify-between shadow-lg transition">
+                                    <div class="w-10 h-10 rounded-xl bg-[#7c3aed]/15 text-[#a78bfa] flex items-center justify-center text-xl shadow-inner">👍</div>
                                     <div class="text-right">
                                         <span class="text-xs font-bold text-white">Reputation</span>
                                         <h3 class="text-xl font-black text-white mt-0.5">${userStars}</h3>
@@ -1700,7 +1700,7 @@ module.exports = function (app, client) {
                                 </div>
 
                                 <!-- 3. Rank (Rank) -->
-                                <div class="bg-[#080e1c] border border-blue-500/20 hover:border-blue-500/20 rounded-2xl p-4 flex items-center justify-between shadow-lg transition">
+                                <div class="bg-[#0a0714] border border-[#7c3aed]/25 hover:border-[#7c3aed]/50 rounded-2xl p-4 flex items-center justify-between shadow-lg transition">
                                     <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl shadow-inner">🏆</div>
                                     <div class="text-right">
                                         <span class="text-xs font-bold text-white">Rank</span>
@@ -1709,8 +1709,8 @@ module.exports = function (app, client) {
                                 </div>
 
                                 <!-- 4. Level (Level) -->
-                                <div class="bg-[#080e1c] border border-blue-500/20 hover:border-blue-500/20 rounded-2xl p-4 flex items-center justify-between shadow-lg transition">
-                                    <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl shadow-inner">📈</div>
+                                <div class="bg-[#0a0714] border border-[#7c3aed]/25 hover:border-[#7c3aed]/50 rounded-2xl p-4 flex items-center justify-between shadow-lg transition">
+                                    <div class="w-10 h-10 rounded-xl bg-[#6366f1]/15 text-[#c084fc] flex items-center justify-center text-xl shadow-inner">📈</div>
                                     <div class="text-right">
                                         <span class="text-xs font-bold text-white">Level</span>
                                         <h3 class="text-xl font-black text-white mt-0.5">${userLevel}</h3>
@@ -1720,9 +1720,9 @@ module.exports = function (app, client) {
                             </div>
 
                             <!-- خوادمك المتاحة للإدارة (Servers List) -->
-                            <div class="bg-[#080e1c] border border-blue-500/20 rounded-3xl p-6 shadow-xl space-y-4">
-                                <div class="flex items-center justify-between border-b border-blue-500/20 pb-3">
-                                    <span class="text-xs text-blue-400 font-bold bg-blue-800/40 px-2.5 py-1 rounded-lg">${guilds.length} Servers</span>
+                            <div class="bg-[#0a0714] border border-[#7c3aed]/25 rounded-3xl p-6 shadow-xl space-y-4">
+                                <div class="flex items-center justify-between border-b border-[#7c3aed]/25 pb-3">
+                                    <span class="text-xs text-[#a78bfa] font-bold bg-[#7c3aed]/15 px-2.5 py-1 rounded-lg">${guilds.length} Servers</span>
                                     <h3 class="text-sm font-black text-white text-right flex items-center gap-2"><span>🛡️</span><span>Your Manageable Servers</span></h3>
                                 </div>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1731,8 +1731,8 @@ module.exports = function (app, client) {
                             </div>
 
                             <!-- Recent Gold Transactions (Recent Gold Transactions - Novax Exact Style) -->
-                            <div class="bg-[#080e1c] border border-blue-500/20 rounded-3xl p-6 shadow-xl space-y-4 text-right">
-                                <div class="flex items-center justify-between border-b border-blue-500/20 pb-3">
+                            <div class="bg-[#0a0714] border border-[#7c3aed]/25 rounded-3xl p-6 shadow-xl space-y-4 text-right">
+                                <div class="flex items-center justify-between border-b border-[#7c3aed]/25 pb-3">
                                     <span class="text-xs text-white">Transaction & Rewards Log</span>
                                     <h3 class="text-sm font-black text-white flex items-center gap-2"><span>Last 5 Gold Transactions</span><span>🪙</span></h3>
                                 </div>
@@ -1769,33 +1769,33 @@ module.exports = function (app, client) {
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     
                                     <!-- 1. الملف الشخصي (Main Profile Card) -->
-                                    <div class="bg-[#080e1c] border border-blue-500/20 rounded-3xl p-5 shadow-xl space-y-4">
-                                        <div class="flex items-center justify-between border-b border-blue-500/20 pb-3">
+                                    <div class="bg-[#0a0714] border border-[#7c3aed]/25 rounded-3xl p-5 shadow-xl space-y-4">
+                                        <div class="flex items-center justify-between border-b border-[#7c3aed]/25 pb-3">
                                             <h4 class="text-xs font-black text-white">الملف الشخصي</h4>
                                         </div>
 
                                         <!-- The Graphic Discord Card (Purple Nebula Design) -->
-                                        <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-800 via-[#101a36] to-[#0a0f26] border border-blue-500/20 p-5 shadow-2xl space-y-4">
+                                        <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#7c3aed]/40 via-[#130d24] to-[#06040a] border border-[#7c3aed]/40 p-5 shadow-2xl space-y-4">
                                             <!-- Top Header in Card -->
                                             <div class="flex items-center justify-between">
-                                                <span class="px-2.5 py-1 bg-blue-700/60 border border-blue-500/20 text-gray-300 text-[10px] font-bold rounded-lg">+0 REP</span>
+                                                <span class="px-2.5 py-1 bg-[#7c3aed]/30 border border-[#7c3aed]/30 text-purple-200 text-[10px] font-bold rounded-lg">+0 REP</span>
                                                 <div class="flex items-center gap-3">
                                                     <div class="text-right">
                                                         <h4 class="text-sm font-black text-white leading-tight">@${user.username}</h4>
                                                     </div>
-                                                    <img src="${userAvatar}" class="w-12 h-12 rounded-2xl object-cover ring-2 ring-blue-400/60 shadow-lg shadow-black/40">
+                                                    <img src="${userAvatar}" class="w-12 h-12 rounded-2xl object-cover ring-2 ring-[#7c3aed]/60 shadow-lg shadow-black/40">
                                                 </div>
                                             </div>
 
                                             <!-- About Me Box -->
-                                            <div class="bg-black/30 border border-blue-500/20 rounded-xl p-3 text-right">
+                                            <div class="bg-black/40 border border-[#7c3aed]/20 rounded-xl p-3 text-right">
                                                 <span class="text-[9px] font-bold text-white block mb-0.5">ABOUT ME</span>
-                                                <p class="text-xs text-blue-100">مرحباً بك في لوحة تحكم Droplet Bot!</p>
+                                                <p class="text-xs text-purple-200">مرحباً بك في لوحة تحكم Droplet Bot!</p>
                                             </div>
 
                                             <!-- Stats & Gold in Card -->
                                             <div class="grid grid-cols-2 gap-3 text-right">
-                                                <div class="bg-black/30 border border-blue-500/20 rounded-xl p-3 space-y-1 text-xs">
+                                                <div class="bg-black/40 border border-[#7c3aed]/20 rounded-xl p-3 space-y-1 text-xs">
                                                     <span class="text-[9px] font-bold text-white block">STATISTICS</span>
                                                     <div class="text-[11px] text-gray-300 flex items-center justify-between">
                                                         <span class="font-bold text-white">${userLevel}</span>
@@ -1806,12 +1806,12 @@ module.exports = function (app, client) {
                                                         <span>🏆 RANK:</span>
                                                     </div>
                                                     <div class="text-[11px] text-gray-300 flex items-center justify-between">
-                                                        <span class="font-bold text-blue-100 font-mono">${userXp} XP</span>
+                                                        <span class="font-bold text-purple-200 font-mono">${userXp} XP</span>
                                                         <span>✨ XP:</span>
                                                     </div>
                                                 </div>
 
-                                                <div class="bg-black/30 border border-blue-500/20 rounded-xl p-3 space-y-2 text-right">
+                                                <div class="bg-black/40 border border-[#7c3aed]/20 rounded-xl p-3 space-y-2 text-right">
                                                     <span class="text-[9px] font-bold text-white block">GOLDS</span>
                                                     <div class="flex items-center justify-end gap-1.5 text-amber-400 font-black text-sm">
                                                         <span>${userCoins.toLocaleString()}</span>
@@ -1827,29 +1827,29 @@ module.exports = function (app, client) {
                                     </div>
 
                                     <!-- 2. بطاقة الهوية (Identity / Voice & Invites Card) -->
-                                    <div class="bg-[#080e1c] border border-blue-500/20 rounded-3xl p-5 shadow-xl space-y-4">
-                                        <div class="flex items-center justify-between border-b border-blue-500/20 pb-3">
+                                    <div class="bg-[#0a0714] border border-[#7c3aed]/25 rounded-3xl p-5 shadow-xl space-y-4">
+                                        <div class="flex items-center justify-between border-b border-[#7c3aed]/25 pb-3">
                                             <h4 class="text-xs font-black text-white">بطاقة الهوية</h4>
                                         </div>
 
                                         <!-- The Graphic Identity Card -->
-                                        <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-950 via-[#0c1430] to-[#060b16] border border-indigo-500/30 p-5 shadow-2xl space-y-4">
+                                        <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#6366f1]/30 via-[#0e0a1c] to-[#06040a] border border-[#7c3aed]/30 p-5 shadow-2xl space-y-4">
                                             <div class="flex items-center justify-between">
-                                                <div class="text-left text-xs font-bold text-indigo-300 bg-indigo-950/60 border border-indigo-800/40 px-3 py-1 rounded-xl">
+                                                <div class="text-left text-xs font-bold text-purple-300 bg-[#7c3aed]/20 border border-[#7c3aed]/40 px-3 py-1 rounded-xl">
                                                     <span>INVITES: 0</span>
                                                 </div>
                                                 <div class="flex items-center gap-3">
                                                     <div class="text-right">
                                                         <h4 class="text-sm font-black text-white leading-tight">@${user.username}</h4>
-                                                        <span class="text-[10px] text-white">ID CARD</span>
+                                                        <span class="text-[10px] text-purple-200">ID CARD</span>
                                                     </div>
-                                                    <img src="${userAvatar}" class="w-12 h-12 rounded-2xl object-cover ring-2 ring-indigo-500/60 shadow-lg shadow-black/40">
+                                                    <img src="${userAvatar}" class="w-12 h-12 rounded-2xl object-cover ring-2 ring-[#7c3aed]/60 shadow-lg shadow-black/40">
                                                 </div>
                                             </div>
 
                                             <div class="grid grid-cols-2 gap-3 text-right">
-                                                <div class="bg-black/30 border border-blue-500/20 rounded-xl p-3 space-y-1">
-                                                    <div class="flex items-center justify-between text-xs text-indigo-400 font-bold mb-1">
+                                                <div class="bg-black/40 border border-[#7c3aed]/20 rounded-xl p-3 space-y-1">
+                                                    <div class="flex items-center justify-between text-xs text-[#a78bfa] font-bold mb-1">
                                                         <span>TOP #1</span>
                                                         <span>💬 TEXT</span>
                                                     </div>
@@ -1857,8 +1857,8 @@ module.exports = function (app, client) {
                                                     <div class="text-[10px] text-gray-300">STREAK: <span class="font-mono text-emerald-400">Active</span></div>
                                                 </div>
 
-                                                <div class="bg-black/30 border border-blue-500/20 rounded-xl p-3 space-y-1">
-                                                    <div class="flex items-center justify-between text-xs text-blue-400 font-bold mb-1">
+                                                <div class="bg-black/40 border border-[#7c3aed]/20 rounded-xl p-3 space-y-1">
+                                                    <div class="flex items-center justify-between text-xs text-[#a78bfa] font-bold mb-1">
                                                         <span>TOP #1</span>
                                                         <span>🎙️ VOICE</span>
                                                     </div>
@@ -1972,13 +1972,13 @@ module.exports = function (app, client) {
                             <!-- Vote Card -->
                             <div class="relative bg-[#091124] border border-blue-500/20 rounded-3xl p-6 overflow-hidden shadow-xl text-center">
                                 <div class="relative space-y-4">
-                                    <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-2xl mx-auto">🗳️</div>
+                                    <div class="w-14 h-14 rounded-2xl bg-[#7c3aed]/15 border border-[#7c3aed]/30 flex items-center justify-center text-2xl mx-auto">🗳️</div>
                                     <div>
                                         <h3 class="text-base font-black text-white">صوّت للبوت على Top.gg</h3>
                                         <p class="text-gray-400 text-xs mt-1.5 leading-relaxed">صوّتك يساعد البوت على الانتشار! يمكنك التصويت كل <span class="text-white font-bold">12 ساعة</span></p>
                                     </div>
                                     <a href="https://top.gg/ar/bot/${client?.user?.id || config.clientId}/vote" target="_blank"
-                                       class="inline-flex items-center gap-2 px-7 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-2xl text-sm font-black transition-all">
+                                       class="inline-flex items-center gap-2 px-7 py-2.5 bg-gradient-to-r from-[#7c3aed] to-[#6366f1] hover:from-[#8b5cf6] hover:to-[#4f46e5] text-white rounded-2xl text-sm font-black transition-all shadow-lg shadow-[#7c3aed]/25">
                                         🗳️ صوّت الآن
                                     </a>
                                 </div>
@@ -1988,17 +1988,17 @@ module.exports = function (app, client) {
                     </main>
 
                     <!-- Sidebar Right (Novax User Dashboard Menu with Exact Categories) -->
-                    <aside class="w-72 bg-[#060b16] border-l border-blue-500/20 flex flex-col shrink-0 h-full select-none">
+                    <aside class="w-72 bg-[#06040a] border-l border-[#7c3aed]/20 flex flex-col shrink-0 h-full select-none">
                         
                         <!-- Top Server Management Switcher Card (Novax Style) -->
                         <div class="p-3">
-                            <a href="#servers" onclick="switchTab('tabOverview')" class="bg-[#0b1322] hover:bg-[#121e38] border border-blue-500/20 rounded-2xl p-3 flex items-center justify-between shadow-lg transition group">
+                            <a href="#servers" onclick="switchTab('tabOverview')" class="bg-[#0c0916] hover:bg-[#140f24] border border-[#7c3aed]/25 rounded-2xl p-3 flex items-center justify-between shadow-lg transition group">
                                 <div class="text-white text-xs">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
                                 </div>
                                 <div class="flex items-center gap-2.5">
                                     <span class="font-bold text-white text-xs">Manage Server</span>
-                                    <div class="w-8 h-8 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-sm border border-blue-500/20">
+                                    <div class="w-8 h-8 rounded-xl bg-[#7c3aed]/15 text-[#a78bfa] flex items-center justify-center text-sm border border-[#7c3aed]/30">
                                         🗂️
                                     </div>
                                 </div>
