@@ -9,8 +9,8 @@ module.exports = {
   name: 'interactionCreate',
   async execute(interaction, client) {
     try {
-      // AI AutoHealer buttons (owner only)
       if (await autoHealer.handleInteraction(interaction)) return;
+
       // 1. التعامل مع أوامر السلاش (Slash Commands)
       if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
@@ -66,6 +66,38 @@ module.exports = {
           } else {
             await interaction.reply({ embeds: [errorEmbed], flags: 64 }).catch(() => { });
           }
+        }
+        return;
+      }
+
+      // 2.0 أزرار متجر السيرفر التفاعلي (Shop Embed Buttons)
+      if (interaction.isButton() && (interaction.customId === 'shop_view' || interaction.customId === 'shop_balance')) {
+        await interaction.deferReply({ flags: 64 }).catch(() => {});
+        const guildId = interaction.guild.id;
+        const userId = interaction.user.id;
+        const userCoins = db.getCoins(userId, guildId);
+
+        if (interaction.customId === 'shop_balance') {
+          const balEmbed = new EmbedBuilder()
+            .setColor('#f59e0b')
+            .setTitle('💰 رصيدك في السيرفر')
+            .setDescription(`مرحباً ${interaction.user}، رصيدك الحالي هو:\n\n🪙 **${userCoins.toLocaleString()}** ذهب\n\nيمكنك جمع المزيد من الذهب عبر التفاعل والكتابة والأوامر اليومية!`)
+            .setTimestamp();
+          return interaction.editReply({ embeds: [balEmbed] });
+        }
+
+        if (interaction.customId === 'shop_view') {
+          const settings = db.getGuildSettings ? db.getGuildSettings(guildId) : {};
+          let shopSettings = { customRole: { enabled: true, price: 500, duration: 30 }, textRoom: { enabled: true, price: 600, duration: 30 }, badge: { enabled: false, price: 200, duration: 0 } };
+          try { if (settings?.shop_items) shopSettings = JSON.parse(settings.shop_items); } catch(e) {}
+
+          const shopEmbed = new EmbedBuilder()
+            .setColor('#8b5cf6')
+            .setTitle('🛒 متجر السيرفر التفاعلي')
+            .setDescription(`رصيدك: **${userCoins.toLocaleString()}** 🪙 ذهب\n\nطريقة الشراء عبر الأوامر السريعة:\n• لشراء رتبة خاصة: `#shop buy-role name:اسم color:#hex`\n• لشراء روم كتابي: `#shop rent-room type:text name:اسم`\n• لشراء شارة مظهر: `#shop buy-cosmetic item:badge_vip``)
+            .setTimestamp();
+
+          return interaction.editReply({ embeds: [shopEmbed] });
         }
         return;
       }
