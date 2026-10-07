@@ -221,12 +221,11 @@ const canvasUtil = {
     ctx.fillText(`RANK #${numFmt.format(xpData.rank || 1)}`, width - 60, 80);
     ctx.fillText(`LEVEL ${numFmt.format(xpData.level || 0)}`, width - 200, 80);
 
-    const currentLevel = xpData.level || 0;
-    const currentLevelXp = Math.pow(currentLevel * 10, 2);
-    const nextLevelXp = Math.pow((currentLevel + 1) * 10, 2);
-    const neededXp = nextLevelXp - currentLevelXp;
-    const progressXp = Math.max(0, (xpData.xp || 0) - currentLevelXp);
-    const progressPercent = Math.min(1, Math.max(0.05, progressXp / (neededXp || 1)));
+    // الخبرة المخزنة هي التقدم داخل اللفل الحالي، والمطلوب = لفل * 150 + 100 (نفس معادلة addXp)
+    const currentLevel = xpData.level || 1;
+    const neededXp = Math.max(1, Math.floor(currentLevel * 150 + 100));
+    const progressXp = Math.max(0, xpData.xp || 0);
+    const progressPercent = Math.min(1, progressXp / neededXp);
 
     const barX = textStartX;
     const barY = 135;
@@ -249,7 +248,7 @@ const canvasUtil = {
     ctx.fillStyle = '#9ca3af';
     ctx.font = '16px sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`${numFmt.format(xpData.xp || 0)} / ${numFmt.format(nextLevelXp)} XP`, width - 60, 125);
+    ctx.fillText(`${numFmt.format(xpData.xp || 0)} / ${numFmt.format(neededXp)} XP`, width - 60, 125);
 
     return canvas.toBuffer('image/png');
   },
@@ -492,12 +491,11 @@ const canvasUtil = {
     const barWidth = width - 110;
     const barHeight = 24;
 
-    const currentLevel = rankData.level || 0;
-    const currentLevelXp = Math.pow(currentLevel * 10, 2);
-    const nextLevelXp = Math.max(100, Math.pow((currentLevel + 1) * 10, 2));
-    const neededXp = nextLevelXp - currentLevelXp;
-    const progressXp = Math.max(0, (rankData.xp || 0) - currentLevelXp);
-    const progressPercent = Math.min(1, Math.max(0.06, progressXp / (neededXp || 1)));
+    // الخبرة المخزنة هي التقدم داخل اللفل الحالي، والمطلوب = لفل * 150 + 100 (نفس معادلة addXp)
+    const currentLevel = rankData.level || 1;
+    const neededXp = Math.max(1, Math.floor(currentLevel * 150 + 100));
+    const progressXp = Math.max(0, rankData.xp || 0);
+    const progressPercent = Math.min(1, progressXp / neededXp);
 
     // خلفية الشريط
     ctx.fillStyle = 'rgba(20, 26, 44, 0.85)';
@@ -529,7 +527,7 @@ const canvasUtil = {
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(`XP: ${numFmt.format(rankData.xp || 0)} / ${numFmt.format(nextLevelXp)}`, barX + 14, barY + 16);
+    ctx.fillText(`XP: ${numFmt.format(rankData.xp || 0)} / ${numFmt.format(neededXp)}`, barX + 14, barY + 16);
 
     ctx.textAlign = 'right';
     const percentText = `${Math.round(progressPercent * 100)}%`;

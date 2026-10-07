@@ -1116,14 +1116,14 @@ module.exports = function (app, client) {
             SELECT u.user_id, u.guild_id, u.xp, u.level, u.coins,
                    COALESCE(p.display_name, u.user_id) as display_name,
                    COALESCE(p.avatar_url, '') as avatar_url
-            FROM users u LEFT JOIN user_profiles p ON u.user_id = p.user_id AND u.guild_id = p.guild_id
+            FROM users u LEFT JOIN user_profiles p ON u.user_id = p.user_id
             ORDER BY u.xp DESC LIMIT 100
         `).all();
         const coinsLeaderboard = rawDb.prepare(`
             SELECT u.user_id, u.guild_id, u.xp, u.level, u.coins,
                    COALESCE(p.display_name, u.user_id) as display_name,
                    COALESCE(p.avatar_url, '') as avatar_url
-            FROM users u LEFT JOIN user_profiles p ON u.user_id = p.user_id AND u.guild_id = p.guild_id
+            FROM users u LEFT JOIN user_profiles p ON u.user_id = p.user_id
             ORDER BY u.coins DESC LIMIT 100
         `).all();
         _lbCache.xp = xpLeaderboard;

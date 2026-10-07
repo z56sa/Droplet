@@ -2494,7 +2494,14 @@ module.exports = {
   getLeaderboard,
   getUserRank: (userId, guildId) => {
     const user = getUser(userId, guildId);
-    return { xp: user.xp || 0, level: user.level || 1, rank: 1 };
+    const level = user.level || 1;
+    const xp = user.xp || 0;
+    // الترتيب حسب اللفل ثم الخبرة داخل السيرفر (الخبرة المخزنة هي المتبقي داخل اللفل الحالي)
+    const row = db.prepare(`
+      SELECT COUNT(*) + 1 AS rank FROM users
+      WHERE guild_id = ? AND (level > ? OR (level = ? AND xp > ?))
+    `).get(guildId, level, level, xp);
+    return { xp, level, rank: row?.rank || 1 };
   },
   getWallpaper,
   setWallpaper,
