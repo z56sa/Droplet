@@ -1300,29 +1300,30 @@ module.exports = function (app, client) {
             const serverRailHtml = guilds.map(g => `
                 <a href="/dashboard/${g.id}" title="${g.name}" class="group relative flex items-center justify-center">
                     <img src="${g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'}" 
-                         class="w-11 h-11 rounded-2xl border border-transparent hover:border-blue-500/20 hover:rounded-xl object-cover transition-all shadow-md">
+                         class="w-11 h-11 rounded-2xl border border-blue-500/20 hover:border-blue-400 hover:rounded-xl object-cover transition-all shadow-md">
                 </a>
             `).join('');
 
             const userDashboardGuildsHtml = guilds.length > 0 ? guilds.map(g => `
-                <div class="bg-[#14233c] border border-blue-500/20 p-4 rounded-2xl flex items-center justify-between hover:border-blue-500/20 transition group">
-                    <a href="/dashboard/${g.id}" class="px-5 py-2.5 bg-blue-500 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-blue-800/40 flex items-center gap-2">
-                        <span>⚙️ Manage Server</span>
+                <div class="bg-[#091124] border border-blue-500/20 hover:border-blue-500/40 p-4 rounded-2xl flex items-center justify-between transition group shadow-lg">
+                    <a href="/dashboard/${g.id}" class="px-5 py-2.5 bg-gradient-to-r from-[#facc15] to-[#eab308] hover:from-[#fde047] hover:to-[#f59e0b] text-black font-black text-xs rounded-xl transition shadow-lg shadow-amber-500/30 flex items-center gap-1.5 hover:scale-105">
+                        <span>إدارة</span>
+                        <span>⚙️</span>
                     </a>
                     <div class="flex items-center gap-3">
                         <div class="text-right">
                             <h4 class="font-bold text-white text-sm group-hover:text-blue-400 transition truncate max-w-[160px]">${g.name}</h4>
-                            <span class="text-[10px] text-gray-500 font-mono">${g.id}</span>
+                            <span class="text-[10px] text-gray-400 font-mono">${g.id}</span>
                         </div>
-                        <img src="${g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-12 h-12 rounded-2xl bg-[#070d1d] object-cover ring-2 ring-blue-300/5">
+                        <img src="${g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-12 h-12 rounded-2xl bg-[#040714] object-cover ring-2 ring-blue-500/20">
                     </div>
                 </div>
             `).join('') : `
-                <div class="col-span-full py-12 text-center space-y-3 bg-[#0d1a2e] rounded-2xl border border-dashed border-blue-500/20 p-6">
+                <div class="col-span-full py-12 text-center space-y-3 bg-[#091124] rounded-2xl border border-dashed border-blue-500/20 p-6">
                     <div class="text-4xl">🛡️</div>
                     <h4 class="text-white font-bold text-sm">No manageable servers found</h4>
-                    <p class="text-white text-xs max-w-md mx-auto">To manage a server, you must be the owner or have Administrator / Manage Server permissions, and the bot must be invited.</p>
-                    <a href="https://discord.com/api/oauth2/authorize?client_id=${client?.user?.id || config.clientId}&permissions=8&scope=bot%20applications.commands" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition shadow-lg mt-2">
+                    <p class="text-gray-400 text-xs max-w-md mx-auto">To manage a server, you must be the owner or have Administrator / Manage Server permissions, and the bot must be invited.</p>
+                    <a href="https://discord.com/api/oauth2/authorize?client_id=${client?.user?.id || config.clientId}&permissions=8&scope=bot%20applications.commands" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-600/40 mt-2">
                         <span>➕ Add Bot to Server</span>
                     </a>
                 </div>
@@ -1409,29 +1410,27 @@ module.exports = function (app, client) {
                 
                 <style>
                     :root {
-                        --bg-main: #070d1d;
-                        --bg-sidebar: #080e1c;
-                        --bg-card: #0e1830;
-                        --bg-card-hover: #14233c;
-                        --primary: #60a5fa;
-                        --border: rgba(96, 165, 250, 0.14);
+                        --bg-main: #040714;
+                        --bg-sidebar: #060b1b;
+                        --bg-card: #091124;
+                        --bg-card-hover: #0d1733;
+                        --primary: #2563eb;
+                        --border: rgba(37, 99, 235, 0.22);
                     }
                     body { background-color: var(--bg-main) !important; color: #ffffff !important; font-family: 'Cairo', sans-serif !important; transition: background-color 0.3s, color 0.3s; }
                     body.light-mode { background-color: #f8f9fa !important; color: #1a1a1a !important; }
-                    body.light-mode .bg-\[\#070d1d\], body.light-mode .bg-\[\#070d1d\] { background-color: #f3f4f6 !important; }
-                    body.light-mode .bg-\[\#0c1526\], body.light-mode .bg-\[\#0e1830\] { background-color: #ffffff !important; border-color: #e5e7eb !important; }
+                    body.light-mode .bg-\[\#040714\], body.light-mode .bg-\[\#091124\] { background-color: #ffffff !important; border-color: #e5e7eb !important; }
                     body.light-mode .text-white { color: #1a1a1a !important; }
                     body.light-mode .text-blue-200 { color: #4b5563 !important; }
                     body.light-mode .text-blue-300 { color: #6b7280 !important; }
-                    body.light-mode .border-\[\#16345c\] { border-color: #e5e7eb !important; }
                     ::-webkit-scrollbar { width: 6px; height: 6px; }
-                    ::-webkit-scrollbar-track { background: #070d1d; }
-                    ::-webkit-scrollbar-thumb { background: #27507e; border-radius: 10px; }
+                    ::-webkit-scrollbar-track { background: #040714; }
+                    ::-webkit-scrollbar-thumb { background: #1d3557; border-radius: 10px; }
                     @keyframes spin { to { transform: rotate(360deg); } }
-                    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(96, 165, 250, 0.2); border-radius: 50%; border-top-color: #93c5fd; animation: spin 0.8s linear infinite; }
+                    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(37, 99, 235, 0.2); border-radius: 50%; border-top-color: #3b82f6; animation: spin 0.8s linear infinite; }
                     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
                     .toast-enter { animation: slideUp 0.3s ease-out; }
-                /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 22px rgba(96, 165, 250, .65), 0 0 60px rgba(59, 130, 246, .35); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 32px rgba(147, 197, 253, .85), 0 0 90px rgba(59, 130, 246, .45); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet blue text glow */ [class*="text-blue-100"], [class*="text-blue-200"], [class*="text-blue-300"] { text-shadow: 0 0 12px rgba(147, 197, 253, .4); }/* Droplet ambient background glow */ body::before { content:""; position:fixed; inset:0; pointer-events:none; background: radial-gradient(600px 300px at 85% -5%, rgba(59,130,246,.12), transparent 70%), radial-gradient(700px 350px at 10% 110%, rgba(59,130,246,.08), transparent 70%); }</style>
+                /* ROVIX glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 20px rgba(37, 99, 235, .45), 0 0 45px rgba(29, 78, 216, .25); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 30px rgba(59, 130, 246, .7), 0 0 70px rgba(37, 99, 235, .35); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(37, 99, 235, .4), 0 0 16px rgba(37, 99, 235, .2); }/* ROVIX ambient background glow */ body::before { content:""; position:fixed; inset:0; pointer-events:none; background: radial-gradient(700px 350px at 85% -5%, rgba(37, 99, 235, .10), transparent 70%), radial-gradient(800px 400px at 10% 110%, rgba(37, 99, 235, .06), transparent 70%); }</style>
             
     <script>
     function _t(text) {
@@ -1643,8 +1642,8 @@ module.exports = function (app, client) {
 
     <script src="/i18n.js"></script>
 </head>
-            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#070d1d] text-blue-100">
-                <header class="h-16 bg-[#080e1c]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
+            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#040714] text-white">
+                <header class="h-16 bg-[#060b1b]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-3">
                         <button type="button" onclick="window.dropletI18n.toggleLang()" class="droplet-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-blue-500/20 text-blue-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
                             <span class="text-sm">🌐</span>
@@ -11770,29 +11769,29 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 
                 <style>
                     :root {
-                        --bg-main: #070d1d;
-                        --bg-sidebar: #080e1c;
-                        --bg-card: #0e1830;
-                        --bg-card-hover: #14233c;
-                        --primary: #60a5fa;
-                        --border: rgba(96, 165, 250, 0.14);
+                        --bg-main: #040714;
+                        --bg-sidebar: #060b1b;
+                        --bg-card: #091124;
+                        --bg-card-hover: #0d1733;
+                        --primary: #2563eb;
+                        --border: rgba(37, 99, 235, 0.22);
                     }
                     body { background-color: var(--bg-main) !important; color: #ffffff !important; font-family: 'Cairo', sans-serif !important; }
                     ::-webkit-scrollbar { width: 6px; height: 6px; }
-                    ::-webkit-scrollbar-track { background: #070d1d; }
-                    ::-webkit-scrollbar-thumb { background: #27507e; border-radius: 10px; }
+                    ::-webkit-scrollbar-track { background: #040714; }
+                    ::-webkit-scrollbar-thumb { background: #1d3557; border-radius: 10px; }
                     .probot-card { background: var(--bg-card) !important; border: 1px solid var(--border) !important; border-radius: 16px !important; }
                     .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
                     .toggle input { opacity: 0; width: 0; height: 0; }
-                    .slider { position: absolute; cursor: pointer; inset: 0; background: #27507e; border-radius: 24px; transition: .3s; }
+                    .slider { position: absolute; cursor: pointer; inset: 0; background: #1d3557; border-radius: 24px; transition: .3s; }
                     .slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; }
-                    input:checked + .slider { background: #60a5fa; }
+                    input:checked + .slider { background: #2563eb; }
                     input:checked + .slider:before { transform: translateX(20px); }
-                /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 22px rgba(96, 165, 250, .65), 0 0 60px rgba(59, 130, 246, .35); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 32px rgba(147, 197, 253, .85), 0 0 90px rgba(59, 130, 246, .45); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet blue text glow */ [class*="text-blue-100"], [class*="text-blue-200"], [class*="text-blue-300"] { text-shadow: 0 0 12px rgba(147, 197, 253, .4); }/* Droplet ambient background glow */ body::before { content:""; position:fixed; inset:0; pointer-events:none; background: radial-gradient(600px 300px at 85% -5%, rgba(59,130,246,.12), transparent 70%), radial-gradient(700px 350px at 10% 110%, rgba(59,130,246,.08), transparent 70%); }</style>
+                /* ROVIX glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 20px rgba(37, 99, 235, .45), 0 0 45px rgba(29, 78, 216, .25); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 30px rgba(59, 130, 246, .7), 0 0 70px rgba(37, 99, 235, .35); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(37, 99, 235, .4), 0 0 16px rgba(37, 99, 235, .2); }/* ROVIX ambient background glow */ body::before { content:""; position:fixed; inset:0; pointer-events:none; background: radial-gradient(700px 350px at 85% -5%, rgba(37, 99, 235, .10), transparent 70%), radial-gradient(800px 400px at 10% 110%, rgba(37, 99, 235, .06), transparent 70%); }</style>
                 <script src="/i18n.js"></script>
             </head>
-            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#070d1d] text-blue-100">
-                <header class="h-16 bg-[#080e1c]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
+            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#040714] text-white">
+                <header class="h-16 bg-[#060b1b]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-3">
                         <button type="button" onclick="window.dropletI18n.toggleLang()" class="droplet-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-blue-500/20 text-blue-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
                             <span class="text-sm">🌐</span>
