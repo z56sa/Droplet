@@ -136,7 +136,7 @@ module.exports = function (app, client) {
                         h1 { color: #ef4444; font-size: 24px; margin-bottom: 12px; }
                         p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
                     input:focus, select:focus, textarea:focus { outline: none; }
-                    </style>
+                    /* Droplet blended headings */ h1[class*="text-white"]:not([style]), h2[class*="text-white"]:not([style]) { background:linear-gradient(90deg,#c084fc,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent !important; }</style>
                 </head>
                 <body>
                     <div class="card">
@@ -169,7 +169,7 @@ module.exports = function (app, client) {
                     body.light-mode { background-color: #f1f5f9 !important; color: #0f172a !important; }
                     body.light-mode .glass { background: rgba(255, 255, 255, 0.92) !important; border: 1px solid #e2e8f0 !important; }
                     .btn-purple:hover { transform: translateY(-2px); }
-                </style>
+                /* Droplet blended headings */ h1[class*="text-white"]:not([style]), h2[class*="text-white"]:not([style]) { background:linear-gradient(90deg,#c084fc,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent !important; }</style>
             </head>
             <body class="min-h-screen flex items-center justify-center p-4">
                 <div class="w-full max-w-lg glass rounded-2xl p-8 shadow-2xl">
@@ -1428,7 +1428,7 @@ module.exports = function (app, client) {
                     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(37, 99, 235, 0.2); border-radius: 50%; border-top-color: #3b82f6; animation: spin 0.8s linear infinite; }
                     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
                     .toast-enter { animation: slideUp 0.3s ease-out; }
-                </style>
+                /* Droplet blended headings */ h1[class*="text-white"]:not([style]), h2[class*="text-white"]:not([style]) { background:linear-gradient(90deg,#c084fc,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent !important; }</style>
             
     <script>
     function _t(text) {
@@ -11777,9 +11777,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     .toggle input { opacity: 0; width: 0; height: 0; }
                     .slider { position: absolute; cursor: pointer; inset: 0; background: #1e293b; border-radius: 24px; transition: .3s; border: 1px solid rgba(59, 130, 246, 0.3); }
                     .slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 2px; bottom: 2px; background: white; border-radius: 50%; transition: .3s; }
-                    input:checked + .slider { background: #2563eb; border-color: #3b82f6; }
+                    input:checked + .slider { background: linear-gradient(135deg, #a855f7, #2563eb); border-color: #3b82f6; }
                     input:checked + .slider:before { transform: translateX(20px); }
-                </style>
+                /* Droplet blended headings */ h1[class*="text-white"]:not([style]), h2[class*="text-white"]:not([style]) { background:linear-gradient(90deg,#c084fc,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent !important; }</style>
                 <script src="/i18n.js"></script>
             </head>
             <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#060c1d] text-white">
