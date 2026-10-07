@@ -7,7 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="shortcut icon" href="/favicon.svg">
 
-    <title>ZENO BOT - اصنع خادم ديسكورد احترافي</title>
+    <title>Droplet BOT - اصنع خادم ديسكورد احترافي</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -19,14 +19,14 @@
             margin: 0;
             padding: 0;
         }
-        html[lang="en"] body, html.zeno-lang-en body {
+        html[lang="en"] body, html.droplet-lang-en body {
             font-family: 'Cairo', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
             letter-spacing: -0.01em;
         }
-        html[lang="en"] h1, html.zeno-lang-en h1,
-        html[lang="en"] h2, html.zeno-lang-en h2,
-        html[lang="en"] h3, html.zeno-lang-en h3,
-        html[lang="en"] h4, html.zeno-lang-en h4 {
+        html[lang="en"] h1, html.droplet-lang-en h1,
+        html[lang="en"] h2, html.droplet-lang-en h2,
+        html[lang="en"] h3, html.droplet-lang-en h3,
+        html[lang="en"] h4, html.droplet-lang-en h4 {
             font-family: 'Cairo', 'Segoe UI', 'Poppins', system-ui, sans-serif !important;
         }
         html[dir="rtl"] * { direction: rtl; }
@@ -43,29 +43,29 @@
         .purple-glow-bg {
             background: radial-gradient(circle at 50% 20%, rgba(147, 51, 234, 0.16), transparent 65%);
         }
-        .zeno-badge {
+        .droplet-badge {
             background: rgba(147, 51, 234, 0.12);
             border: 1px solid rgba(147, 51, 234, 0.35);
             color: #c084fc;
         }
-        .zeno-btn-primary {
+        .droplet-btn-primary {
             background: linear-gradient(135deg, #9333ea, #7e22ce);
             color: white;
             transition: all 0.25s ease;
             box-shadow: 0 4px 25px rgba(147, 51, 234, 0.4);
         }
-        .zeno-btn-primary:hover {
+        .droplet-btn-primary:hover {
             background: linear-gradient(135deg, #a855f7, #9333ea);
             transform: translateY(-2px);
             box-shadow: 0 8px 35px rgba(147, 51, 234, 0.6);
         }
-        .zeno-btn-secondary {
+        .droplet-btn-secondary {
             background-color: #0d0f17;
             border: 1px solid rgba(147, 51, 234, 0.3);
             color: #ffffff;
             transition: all 0.25s ease;
         }
-        .zeno-btn-secondary:hover {
+        .droplet-btn-secondary:hover {
             background-color: #151824;
             border-color: rgba(168, 85, 247, 0.6);
             transform: translateY(-2px);
@@ -92,15 +92,15 @@
         html[lang="en"] .lang-ar-block  { display: none   !important; }
         html[lang="en"] .lang-en-block  { display: block  !important; }
 
-        /* Compatibility with zeno-lang-* class names on <html> */
-        html.zeno-lang-ar .lang-ar        { display: inline !important; }
-        html.zeno-lang-ar .lang-en        { display: none   !important; }
-        html.zeno-lang-ar .lang-ar-block  { display: block  !important; }
-        html.zeno-lang-ar .lang-en-block  { display: none   !important; }
-        html.zeno-lang-en .lang-ar        { display: none   !important; }
-        html.zeno-lang-en .lang-en        { display: inline !important; }
-        html.zeno-lang-en .lang-ar-block  { display: none   !important; }
-        html.zeno-lang-en .lang-en-block  { display: block  !important; }
+        /* Compatibility with droplet-lang-* class names on <html> */
+        html.droplet-lang-ar .lang-ar        { display: inline !important; }
+        html.droplet-lang-ar .lang-en        { display: none   !important; }
+        html.droplet-lang-ar .lang-ar-block  { display: block  !important; }
+        html.droplet-lang-ar .lang-en-block  { display: none   !important; }
+        html.droplet-lang-en .lang-ar        { display: none   !important; }
+        html.droplet-lang-en .lang-en        { display: inline !important; }
+        html.droplet-lang-en .lang-ar-block  { display: none   !important; }
+        html.droplet-lang-en .lang-en-block  { display: block  !important; }
 
         /* Inline-level elements: always inline (never block inside titles/buttons) */
         h1 .lang-ar, h1 .lang-en,
@@ -125,7 +125,7 @@
             max-width: 1100px !important;
             padding-bottom: 4rem !important;
         }
-        main > .zeno-badge { margin-bottom: 2.5rem !important; }
+        main > .droplet-badge { margin-bottom: 2.5rem !important; }
         main > h1 { margin-bottom: 2.5rem !important; line-height: 1.15 !important; white-space: normal !important; word-break: normal !important; }
         main > p { margin-bottom: 3rem !important; }
         main > .flex.flex-wrap { margin-bottom: 3.5rem !important; }
@@ -154,13 +154,13 @@
         /* Ensure lang-en line-breaks inside headings match Arabic structure */
         h1 br, h2 br, h3 br { display: inline !important; }
 
-        /* Fix zeno-lang-en class inconsistencies with inline stylesheet */
-        html.zeno-lang-en main,
+        /* Fix droplet-lang-en class inconsistencies with inline stylesheet */
+        html.droplet-lang-en main,
         html[lang="en"] main {
             direction: ltr !important;
             text-align: center !important;
         }
-        html.zeno-lang-ar main,
+        html.droplet-lang-ar main,
         html[lang="ar"] main {
             direction: rtl !important;
             text-align: center !important;
@@ -177,7 +177,7 @@
             position: relative;
             z-index: 1;
         }
-        a.zeno-btn-primary, a.zeno-btn-secondary {
+        a.droplet-btn-primary, a.droplet-btn-secondary {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -187,11 +187,11 @@
 
     <script>
         /* ===== Apply saved lang on page load BEFORE body parsed ===== */
-        (function applySavedZenoLang() {
+        (function applySavedDropletLang() {
             var saved = null;
-            try { saved = localStorage.getItem('zeno_dashboard_lang') || localStorage.getItem('zeno_lang'); } catch(e){}
+            try { saved = localStorage.getItem('droplet_dashboard_lang') || localStorage.getItem('droplet_lang'); } catch(e){}
             if (!saved) {
-                var cook = document.cookie.match(/zeno_dashboard_lang=([^;]+)/);
+                var cook = document.cookie.match(/droplet_dashboard_lang=([^;]+)/);
                 saved = cook ? cook[1] : null;
             }
             var lang = (saved === 'en' || saved === 'ar') ? saved : null;
@@ -203,38 +203,38 @@
             }
             document.documentElement.setAttribute('lang', lang);
             document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-            document.documentElement.classList.toggle('zeno-lang-en', lang === 'en');
-            document.documentElement.classList.toggle('zeno-lang-ar', lang === 'ar');
+            document.documentElement.classList.toggle('droplet-lang-en', lang === 'en');
+            document.documentElement.classList.toggle('droplet-lang-ar', lang === 'ar');
         })();
 
         /* ===== Global lang toggle: switch attr + persist + reload (guarantees clean render) ===== */
-        function toggleZenoLang() {
+        function toggleDropletLang() {
             var current = document.documentElement.getAttribute('lang') || 'ar';
             var next = current === 'ar' ? 'en' : 'ar';
             try {
-                localStorage.setItem('zeno_dashboard_lang', next);
-                localStorage.setItem('zeno_lang', next);
+                localStorage.setItem('droplet_dashboard_lang', next);
+                localStorage.setItem('droplet_lang', next);
             } catch(e){}
-            document.cookie = 'zeno_dashboard_lang=' + next + ';path=/;max-age=31536000;SameSite=Lax';
+            document.cookie = 'droplet_dashboard_lang=' + next + ';path=/;max-age=31536000;SameSite=Lax';
             document.documentElement.setAttribute('lang', next);
             document.documentElement.setAttribute('dir', next === 'ar' ? 'rtl' : 'ltr');
-            document.documentElement.classList.toggle('zeno-lang-en', next === 'en');
-            document.documentElement.classList.toggle('zeno-lang-ar', next === 'ar');
+            document.documentElement.classList.toggle('droplet-lang-en', next === 'en');
+            document.documentElement.classList.toggle('droplet-lang-ar', next === 'ar');
             // Force clean re-render to avoid any CSS/DOM glitches
             setTimeout(function(){ location.reload(); }, 50);
         }
     </script>
 </head>
 
-<body class="min-h-screen flex flex-col justify-between bg-[#06070a] purple-glow-bg" data-zeno-manual-lang="1">
+<body class="min-h-screen flex flex-col justify-between bg-[#06070a] purple-glow-bg" data-droplet-manual-lang="1">
 
     <!-- Header Navbar -->
     <header class="h-20 bg-[#06070a]/90 backdrop-blur-md border-b border-purple-900/20 px-6 sm:px-12 flex items-center justify-between sticky top-0 z-50">
         
         <!-- Logo -->
         <a href="/" class="flex items-center gap-3 group">
-            <img id="navBotAvatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="ZENO" class="w-10 h-10 rounded-2xl object-cover ring-2 ring-purple-500/40 shadow-lg shadow-purple-600/20 group-hover:scale-105 transition-transform">
-            <span id="navBotName" class="text-2xl font-black tracking-tight text-white">ZENO BOT</span>
+            <img id="navBotAvatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Droplet" class="w-10 h-10 rounded-2xl object-cover ring-2 ring-purple-500/40 shadow-lg shadow-purple-600/20 group-hover:scale-105 transition-transform">
+            <span id="navBotName" class="text-2xl font-black tracking-tight text-white">Droplet BOT</span>
         </a>
 
         <!-- Center Nav Links -->
@@ -251,11 +251,11 @@
 
         <!-- CTA Buttons -->
         <div class="flex items-center gap-3">
-            <button type="button" onclick="toggleZenoLang()" class="zeno-lang-toggle-btn px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer">
+            <button type="button" onclick="toggleDropletLang()" class="droplet-lang-toggle-btn px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer">
                 <span class="text-sm">🌐</span>
                 <span class="lang-toggle-label font-black text-xs uppercase tracking-wider">AR</span>
             </button>
-            <a href="/dashboard/manage" class="px-5 py-2.5 zeno-btn-primary rounded-xl text-xs font-black shadow-lg">
+            <a href="/dashboard/manage" class="px-5 py-2.5 droplet-btn-primary rounded-xl text-xs font-black shadow-lg">
                 <span class="lang-ar">لوحة التحكم</span>
                 <span class="lang-en">Dashboard</span>
             </a>
@@ -266,7 +266,7 @@
     <main class="max-w-4xl mx-auto px-6 py-20 text-center flex-1 flex flex-col items-center justify-center">
         
         <!-- Feature Badge -->
-        <div class="zeno-badge px-5 py-1.5 rounded-full text-xs font-black mb-8 tracking-wide shadow-sm flex items-center gap-2">
+        <div class="droplet-badge px-5 py-1.5 rounded-full text-xs font-black mb-8 tracking-wide shadow-sm flex items-center gap-2">
             <span>✨</span>
             <span class="lang-ar">جديد: نظام التذاكر والتحكم المتطور</span>
             <span class="lang-en">New: Advanced Ticket System & Controls</span>
@@ -289,14 +289,14 @@
         <!-- Two Action Buttons -->
         <div class="flex flex-wrap items-center justify-center gap-4 w-full max-w-md mb-12">
             <!-- Add Bot -->
-            <a id="heroAddBotBtn" href="https://discord.com/api/oauth2/authorize?client_id=1506005273893146775&permissions=8&scope=bot%20applications.commands" target="_blank" class="flex-1 min-w-[180px] py-4 zeno-btn-primary font-black rounded-2xl text-sm text-center shadow-xl flex items-center justify-center gap-2">
+            <a id="heroAddBotBtn" href="https://discord.com/api/oauth2/authorize?client_id=1506005273893146775&permissions=8&scope=bot%20applications.commands" target="_blank" class="flex-1 min-w-[180px] py-4 droplet-btn-primary font-black rounded-2xl text-sm text-center shadow-xl flex items-center justify-center gap-2">
                 <span>➕</span>
                 <span class="lang-ar">إضافة البوت في Discord</span>
                 <span class="lang-en">Add to Discord</span>
             </a>
 
             <!-- Dashboard -->
-            <a href="/dashboard/manage" class="flex-1 min-w-[150px] py-4 zeno-btn-secondary font-black rounded-2xl text-sm text-center flex items-center justify-center gap-2">
+            <a href="/dashboard/manage" class="flex-1 min-w-[150px] py-4 droplet-btn-secondary font-black rounded-2xl text-sm text-center flex items-center justify-center gap-2">
                 <span>⚙️</span>
                 <span class="lang-ar">لوحة التحكم</span>
                 <span class="lang-en">Dashboard</span>
@@ -459,7 +459,7 @@
             <div>
                 <span class="lang-ar">جميع الحقوق محفوظة ©</span>
                 <span class="lang-en">All rights reserved ©</span>
-                <span class="text-white font-bold"> ZENO BOT</span> 2026
+                <span class="text-white font-bold"> Droplet BOT</span> 2026
             </div>
             <div class="flex items-center gap-4 text-gray-400">
                 <a href="https://discord.gg/zduGPYv7pE" target="_blank" class="hover:text-purple-400 transition">

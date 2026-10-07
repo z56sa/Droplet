@@ -99,7 +99,7 @@ module.exports = {
           },
           { name: '🏅 الإنجازات والألقاب', value: achievements.join(' • '), inline: false }
         )
-        .setFooter({ text: 'ZENO Staff Activity System • يتم التحديث تلقائياً' })
+        .setFooter({ text: 'Droplet Staff Activity System • يتم التحديث تلقائياً' })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });

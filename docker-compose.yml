@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   redis:
-    container_name: zeno_redis
+    container_name: droplet_redis
     image: redis:6-alpine # Using a standard, stable Redis image
     restart: always
     ports:
@@ -10,8 +10,8 @@ services:
     volumes:
       - ./data/redis:/data
 
-  zeno_bot:
-    container_name: zeno_bot_service
+  droplet_bot:
+    container_name: droplet_bot_service
     build: . # Instructing compose to use the Dockerfile in the current directory
     restart: unless-stopped
     environment:
@@ -23,7 +23,7 @@ services:
       REDIS_PORT: 6379
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
     depends_on:
-      - redis # Ensures that Redis starts up and is ready BEFORE zeno_bot attempts to connect.
+      - redis # Ensures that Redis starts up and is ready BEFORE droplet_bot attempts to connect.
 
 volumes:
   data: # Persistence for Redis data

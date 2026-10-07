@@ -64,7 +64,7 @@ module.exports = {
             name: 'Muted',
             color: '#95a5a6',
             permissions: [],
-            reason: 'إنشاء رتبة Muted التلقائية لـ ZENO'
+            reason: 'إنشاء رتبة Muted التلقائية لـ Droplet'
           });
           db.updateGuildSetting(guild.id, 'mute_role', muteRole.id);
 

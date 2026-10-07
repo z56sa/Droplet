@@ -18,7 +18,7 @@ if (customDbPath) {
 } else {
   const customDataDir = process.env.DATA_DIR || path.join(__dirname, '../../data');
   if (!fs.existsSync(customDataDir)) fs.mkdirSync(customDataDir, { recursive: true });
-  dbPath = path.join(customDataDir, 'zeno.db');
+  dbPath = path.join(customDataDir, 'droplet.db');
 }
 
 const db = new Database(dbPath);
@@ -37,7 +37,7 @@ setInterval(() => {
   try {
     const backupDir = path.join(path.dirname(dbPath), 'backups');
     if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
-    const backupFile = path.join(backupDir, 'zeno_auto_backup.db');
+    const backupFile = path.join(backupDir, 'droplet_auto_backup.db');
     db.backup(backupFile).catch(err => console.error('[DB-BACKUP] Error:', err.message));
   } catch (e) {}
 }, 5 * 60 * 1000);

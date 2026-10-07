@@ -78,7 +78,7 @@ module.exports = {
           reqList.length > 0 ? `\n📌 **شروط ومميزات الاشتراك:**\n${reqList.join('\n')}` : ''
         ].filter(Boolean).join('\n'))
         .setThumbnail('https://cdn-icons-png.flaticon.com/512/3112/3112946.png')
-        .setFooter({ text: 'ZENO Giveaways • انقر للاشتراك أو المغادرة' })
+        .setFooter({ text: 'Droplet Giveaways • انقر للاشتراك أو المغادرة' })
         .setTimestamp(endsAt);
 
       const row = new ActionRowBuilder().addComponents(
@@ -170,7 +170,7 @@ module.exports = {
         .setColor('#E74C3C')
         .setTitle(`🎉 **انتهى السحب: ${giveaway.prize}**`)
         .setDescription('❌ **لم يشترك عدد كافٍ من الأعضاء المؤهلين، تم إلغاء السحب.**')
-        .setFooter({ text: 'ZENO Giveaways • انتهى السحب' })
+        .setFooter({ text: 'Droplet Giveaways • انتهى السحب' })
         .setTimestamp();
 
       if (message) {

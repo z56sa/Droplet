@@ -56,7 +56,7 @@ const DETAILED_SUBCHANNELS = {
   ]
 };
 
-const LOGS_CATEGORY_NAME = 'ZENO Server Logs';
+const LOGS_CATEGORY_NAME = 'Droplet Server Logs';
 const TOTAL_LOGS = 105;
 
 function getLogsConfig(guildId) {
@@ -100,7 +100,7 @@ async function createLogChannel(guild, categoryName, name) {
     type: ChannelType.GuildText,
     parent: cat.id,
     rateLimitPerUser: 5,
-    topic: `قناة سجلات ${categoryName} — ZENO Logs`,
+    topic: `قناة سجلات ${categoryName} — Droplet Logs`,
     permissionOverwrites: [
       { id: guild.roles.everyone.id, deny: ['ViewChannel', 'SendMessages'] },
       { id: guild.members.me.id, allow: ['ViewChannel', 'SendMessages', 'EmbedLinks'] }
@@ -187,7 +187,7 @@ function buildStatusEmbed(guild, logsConfig, settings) {
     return `${cat.icon} ${cat.title} — ${chStr} ${anyEnabled ? '✅' : '⬜'}`;
   });
   embed.addFields({ name: '📁 قنوات الأقسام (13)', value: catLines.join('\n').slice(0, 1024) || '—' });
-  embed.setFooter({ text: 'ZENO Logs • سجلات السيرفر' }).setTimestamp();
+  embed.setFooter({ text: 'Droplet Logs • سجلات السيرفر' }).setTimestamp();
   return embed;
 }
 
@@ -280,7 +280,7 @@ module.exports = {
     )
     .addSubcommand(sub =>
       sub.setName('delete-channels')
-        .setDescription('حذف كاتيجوري سجلات ZENO وجميع القنوات بداخلها وتعطيل السجلات')
+        .setDescription('حذف كاتيجوري سجلات Droplet وجميع القنوات بداخلها وتعطيل السجلات')
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
@@ -304,7 +304,7 @@ module.exports = {
           .setTitle('✅ تم إنشاء قنوات السجلات بنجاح')
           .setDescription(`تم إنشاء **${created.length}** قناة سجلات داخل كاتيجوري **${LOGS_CATEGORY_NAME}** بنظام: **${mode === 'grouped' ? 'قنوات عادية (قناة لكل قسم)' : 'قنوات مفصلة (قناة لكل نوع سجل)'}**\n\nتم تفعيل وتوزيع جميع السجلات تلقائياً 🎉`)
           .addFields({ name: '📁 القنوات المنشأة', value: created.slice(0, 15).map(c => `<#${c.id}>`).join('، ') + (created.length > 15 ? ` و${created.length - 15} أخرى` : '') })
-          .setFooter({ text: 'ZENO Logs • سجلات السيرفر' })
+          .setFooter({ text: 'Droplet Logs • سجلات السيرفر' })
           .setTimestamp();
         await interaction.editReply({ embeds: [embed] });
 
@@ -373,7 +373,7 @@ module.exports = {
         await sendServerLog(guild, testEventId, category, {
           title: `${cat.icon} سجل تجريبي — ${cat.title}`,
           desc: `هذا سجل تجريبي للتأكد من عمل نظام السجلات في قسم **${cat.title}**.\nإذا تشاهد هذه الرسالة فالنظام يعمل بنجاح ✅`,
-          footer: 'ZENO Logs • رسالة تجريبية'
+          footer: 'Droplet Logs • رسالة تجريبية'
         });
 
         const embed = new EmbedBuilder()
@@ -471,7 +471,7 @@ module.exports = {
         await sendServerLog(guild, categoryKey === 'members' ? 'member_join' : categoryKey === 'messages' ? 'msg_delete' : categoryKey === 'roles' ? 'role_create' : categoryKey === 'voice' ? 'vc_join' : categoryKey + '_test', categoryKey, {
           title: `${cat.icon} سجل تجريبي — ${cat.title}`,
           desc: `هذا سجل تجريبي للتأكد من عمل نظام السجلات في قسم **${cat.title}**.\nإذا تشاهد هذه الرسالة فالنظام يعمل بنجاح ✅`,
-          footer: 'ZENO Logs • رسالة تجريبية'
+          footer: 'Droplet Logs • رسالة تجريبية'
         });
         message.reply(`✅ ${cat.icon} تم إرسال سجل تجريبي لقسم **${cat.title}**`);
 

@@ -603,7 +603,7 @@ async def run_bot():
 
             wait_seconds = max(60, int(retry_after or 900) + 10)
             print(
-                f"Discord rate-limited ZENO during login (HTTP 429). "
+                f"Discord rate-limited Droplet during login (HTTP 429). "
                 f"Waiting {wait_seconds}s before retrying; the process will stay alive."
             )
             await asyncio.sleep(wait_seconds)

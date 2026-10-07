@@ -11,7 +11,7 @@ const {
     aiChatSchema
 } = require('../src/dashboard/validators/apiSchemas');
 
-console.log('🧪 Starting ZENO Dashboard Security & Validation Tests...\n');
+console.log('🧪 Starting Droplet Dashboard Security & Validation Tests...\n');
 
 let passed = 0;
 let failed = 0;

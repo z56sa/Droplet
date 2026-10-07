@@ -1,6 +1,6 @@
 /**
  * @file i18n.js
- * @description Localization module for ZENO Dashboard (Arabic & English)
+ * @description Localization module for Droplet Dashboard (Arabic & English)
  * Features:
  * - Dynamic dictionary mapping English translations to all Arabic texts and phrases
  * - Automatically translates full DOM text nodes, attribute labels, and headings
@@ -576,11 +576,11 @@
         "الإشراف": "Moderation",
         "الأعضاء:": "Members:",
         "الذكاء الاصطناعي": "AI",
-        "الذكاء الاصطناعي (ZENO AI & Web)": "AI (ZENO AI & Web)",
+        "الذكاء الاصطناعي (Droplet AI & Web)": "AI (Droplet AI & Web)",
         "الذكاء الاصطناعي والتصفح الذكي": "AI & Smart Browsing",
         "تجربة الذكاء الاصطناعي الحي (Live Chat)": "Live AI Experience (Live Chat)",
         "محادثة تجريبية مباشرة من الداشبورد": "Live Chat Test from Dashboard",
-        "اسأل ZENO أي سؤال أو Search في الويب...": "Ask ZENO any question or search the web...",
+        "اسأل Droplet أي سؤال أو Search في الويب...": "Ask Droplet any question or search the web...",
         "جاري التفكير...": "Thinking...",
         "جاري الحفظ...": "Saving...",
         "جارٍ الحفظ...": "Saving...",
@@ -626,7 +626,7 @@
         "المكافأة اليومية (Daily)": "Daily Reward",
         "الملف الشخصي": "Profile",
         "بطاقة الهوية": "ID Card",
-        "مرحباً بك في لوحة تحكم ZENO Bot!": "Welcome to ZENO Bot Dashboard!",
+        "مرحباً بك في لوحة تحكم Droplet Bot!": "Welcome to Droplet Bot Dashboard!",
         "لوحة المتصدرين": "Leaderboards",
         "أعلى 100 عضو بواسطة نقاط الخبرة (XP Leaderboard) 🏆": "Top 100 Members by XP 🏆",
         "أغنى الأثرياء": "Richest Users",
@@ -842,7 +842,7 @@
         }
     }
 
-    const LANG_KEYS = ['zeno_dashboard_lang', 'zeno_lang'];
+    const LANG_KEYS = ['droplet_dashboard_lang', 'droplet_lang'];
     const reverseDictionary = {};
     Object.keys(dictionary).forEach((ar) => {
         const en = dictionary[ar];
@@ -886,17 +886,17 @@
                 if (value === 'ar' || value === 'en') return value;
             }
         } catch (e) {}
-        const match = (document.cookie || '').match(/(?:^|;\s*)zeno_dashboard_lang=(ar|en)/);
+        const match = (document.cookie || '').match(/(?:^|;\s*)droplet_dashboard_lang=(ar|en)/);
         if (match) return match[1];
         return null;
     }
 
     function persistLang(lang) {
         try {
-            localStorage.setItem('zeno_dashboard_lang', lang);
-            localStorage.setItem('zeno_lang', lang);
+            localStorage.setItem('droplet_dashboard_lang', lang);
+            localStorage.setItem('droplet_lang', lang);
         } catch (e) {}
-        document.cookie = 'zeno_dashboard_lang=' + lang + ';path=/;max-age=31536000;SameSite=Lax';
+        document.cookie = 'droplet_dashboard_lang=' + lang + ';path=/;max-age=31536000;SameSite=Lax';
     }
 
     function detectLang() {
@@ -910,17 +910,17 @@
     }
 
     function ensureLayoutStyle() {
-        if (document.getElementById('zeno-i18n-layout')) return;
+        if (document.getElementById('droplet-i18n-layout')) return;
         const style = document.createElement('style');
-        style.id = 'zeno-i18n-layout';
+        style.id = 'droplet-i18n-layout';
         style.textContent = [
-            'html.zeno-lang-en [dir="rtl"] { direction: ltr !important; }',
-            'html.zeno-lang-en .text-right { text-align: left !important; }',
-            'html.zeno-lang-en .justify-end { justify-content: flex-start !important; }',
-            'html.zeno-lang-en .lang-ar, html.zeno-lang-en [data-lang="ar"], html.zeno-lang-en span[lang="ar"] { display: none !important; }',
-            'html.zeno-lang-ar .lang-en, html.zeno-lang-ar [data-lang="en"], html.zeno-lang-ar span[lang="en"] { display: none !important; }',
-            'html.zeno-lang-en .lang-en, html.zeno-lang-en [data-lang="en"], html.zeno-lang-en span[lang="en"] { display: inline !important; }',
-            'html.zeno-lang-ar .lang-ar, html.zeno-lang-ar [data-lang="ar"], html.zeno-lang-ar span[lang="ar"] { display: inline !important; }'
+            'html.droplet-lang-en [dir="rtl"] { direction: ltr !important; }',
+            'html.droplet-lang-en .text-right { text-align: left !important; }',
+            'html.droplet-lang-en .justify-end { justify-content: flex-start !important; }',
+            'html.droplet-lang-en .lang-ar, html.droplet-lang-en [data-lang="ar"], html.droplet-lang-en span[lang="ar"] { display: none !important; }',
+            'html.droplet-lang-ar .lang-en, html.droplet-lang-ar [data-lang="en"], html.droplet-lang-ar span[lang="en"] { display: none !important; }',
+            'html.droplet-lang-en .lang-en, html.droplet-lang-en [data-lang="en"], html.droplet-lang-en span[lang="en"] { display: inline !important; }',
+            'html.droplet-lang-ar .lang-ar, html.droplet-lang-ar [data-lang="ar"], html.droplet-lang-ar span[lang="ar"] { display: inline !important; }'
         ].join('\n');
         (document.head || document.documentElement).appendChild(style);
     }
@@ -930,14 +930,14 @@
         const html = document.documentElement;
         html.setAttribute('lang', lang);
         html.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-        html.classList.toggle('zeno-lang-en', lang === 'en');
-        html.classList.toggle('zeno-lang-ar', lang === 'ar');
-        document.querySelectorAll('.zeno-lang-toggle-btn').forEach((btn) => {
+        html.classList.toggle('droplet-lang-en', lang === 'en');
+        html.classList.toggle('droplet-lang-ar', lang === 'ar');
+        document.querySelectorAll('.droplet-lang-toggle-btn').forEach((btn) => {
             const label = lang === 'ar' ? 'EN' : 'AR';
             btn.innerHTML = '<span class="text-sm">🌐</span><span class="font-black text-xs uppercase tracking-wider">' + label + '</span>';
             // ربط حدث الضغط إذا لم يكن مربوطاً
-            if (!btn._zenoClickBound) {
-                btn._zenoClickBound = true;
+            if (!btn._dropletClickBound) {
+                btn._dropletClickBound = true;
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1010,8 +1010,8 @@
     }
 
     function isManualLangPage() {
-        if (document.body && document.body.hasAttribute && document.body.hasAttribute('data-zeno-manual-lang')) return true;
-        if (document.documentElement && document.documentElement.hasAttribute && document.documentElement.hasAttribute('data-zeno-manual-lang')) return true;
+        if (document.body && document.body.hasAttribute && document.body.hasAttribute('data-droplet-manual-lang')) return true;
+        if (document.documentElement && document.documentElement.hasAttribute && document.documentElement.hasAttribute('data-droplet-manual-lang')) return true;
         try {
             var lp = location.pathname;
             // لوحات التحكم تحتوي على آلاف العناصر وتحديثات مستمرة، فحص شجرة الـ DOM كاملة مع كل نقرة أو تعديل يتسبب بتجمد كامل للمتصفح
@@ -1057,10 +1057,10 @@
         }
     }
 
-    window._zenoT = function(text) {
+    window._dropletT = function(text) {
         return translateRuntimeText(text);
     };
-    window._zenoIsEn = function() {
+    window._dropletIsEn = function() {
         return detectLang() === 'en';
     };
 
@@ -1090,8 +1090,8 @@
         toggleLanguage: toggleLang
     };
 
-    window.ZenoI18n = api;
-    window.zenoI18n = api;
+    window.DropletI18n = api;
+    window.dropletI18n = api;
 
     let observerActive = false;
     let isTranslating = false;
@@ -1160,7 +1160,7 @@
 
     // Event delegation: اضغط على أي مكان وإذا كان زر الترجمة شغّل toggleLang
     document.addEventListener('click', function(e) {
-        const btn = e.target.closest('[data-lang-toggle="true"], .zeno-lang-toggle-btn');
+        const btn = e.target.closest('[data-lang-toggle="true"], .droplet-lang-toggle-btn');
         if (btn) {
             e.preventDefault();
             e.stopPropagation();

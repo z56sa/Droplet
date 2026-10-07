@@ -1,6 +1,6 @@
 Created At: 2026-08-22T07:00:04+03:00
 Completed At: 2026-08-22T07:00:04+03:00
-File Path: `file:///c:/Users/PCD/Desktop/zeno/src/dashboard/server.js`
+File Path: `file:///c:/Users/PCD/Desktop/droplet/src/dashboard/server.js`
 Total Lines: 7911
 Total Bytes: 613074
 Showing lines 400 to 600
@@ -10,7 +10,7 @@ The following code has been modified to include a line number before every line,
 402:             <head>
 403:                 <meta charset="UTF-8">
 404:                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-405:                 <title>لوحة التحكم | ZENO</title>
+405:                 <title>لوحة التحكم | Droplet</title>
 406:                 <script src="https://cdn.tailwindcss.com"></script>
 407:                 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 408:                 
@@ -81,8 +81,8 @@ The following code has been modified to include a line number before every line,
 473:                         <a href="/#commands" class="text-xs text-gray-400 hover:text-gray-200 transition">الأوامر</a>
 474:                     </div>
 475:                     <div class="flex items-center gap-2">
-476:                         <span class="font-black text-sm text-white tracking-wide">ZENO</span>
-477:                         <img src="/logo.png" class="w-8 h-8 rounded-xl object-cover border border-purple-500/40 shadow-lg shadow-black/40" alt="ZENO">
+476:                         <span class="font-black text-sm text-white tracking-wide">Droplet</span>
+477:                         <img src="/logo.png" class="w-8 h-8 rounded-xl object-cover border border-purple-500/40 shadow-lg shadow-black/40" alt="Droplet">
 478:                     </div>
 479:                 </header>
 480: 

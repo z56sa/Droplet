@@ -27,7 +27,7 @@ module.exports = {
       const botOwner = await botClient.users.fetch(ownerId).catch(() => null);
       if (!botOwner) return;
 
-      const botName = botClient.user.username || 'ZENO';
+      const botName = botClient.user.username || 'Droplet';
       const botAvatar = botClient.user.displayAvatarURL({ dynamic: true });
       const guildIcon = (guild?.iconURL ? guild.iconURL({ dynamic: true, size: 256 }) : null) || tracked.iconURL || botAvatar;
 

@@ -1,7 +1,7 @@
 {
-  "name": "zeno",
+  "name": "droplet",
   "version": "1.0.0",
-  "description": "ZENO Discord Bot with full dashboard and security system",
+  "description": "Droplet Discord Bot with full dashboard and security system",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

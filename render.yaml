@@ -1,6 +1,6 @@
 services:
   - type: worker
-    name: zeno-bot
+    name: droplet-bot
     runtime: docker
     plan: free
     region: frankfurt
@@ -32,7 +32,7 @@ services:
         sync: false
 
   - type: web
-    name: zeno-dashboard
+    name: droplet-dashboard
     runtime: node
     plan: free
     region: frankfurt

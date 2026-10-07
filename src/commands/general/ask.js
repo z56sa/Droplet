@@ -99,7 +99,7 @@ async function generateWithRetry(ai, prompt) {
                 const response = await ai.models.generateContent({
                     model,
                     contents: prompt,
-                    config: { systemInstruction: ZENO_SYSTEM_INSTRUCTION }
+                    config: { systemInstruction: Droplet_SYSTEM_INSTRUCTION }
                 });
                 const text = response && response.text;
                 if (text && text.trim()) return text.trim();
@@ -123,7 +123,7 @@ async function generateWithRetry(ai, prompt) {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ask')
-        .setDescription('اسأل زينو أي سؤال')
+        .setDescription('اسأل دروبلت أي سؤال')
         .addStringOption(opt =>
             opt.setName('question')
                 .setDescription('سؤالك')

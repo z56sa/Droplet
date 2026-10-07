@@ -1,6 +1,6 @@
 Created At: 2026-08-22T06:52:30+03:00
 Completed At: 2026-08-22T06:52:30+03:00
-File Path: `file:///c:/Users/PCD/Desktop/zeno/src/dashboard/server.js`
+File Path: `file:///c:/Users/PCD/Desktop/droplet/src/dashboard/server.js`
 Total Lines: 7913
 Total Bytes: 613728
 Showing lines 1060 to 1100
@@ -18,7 +18,7 @@ The following code has been modified to include a line number before every line,
 1070:             <head>
 1071:                 <meta charset="UTF-8">
 1072:                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-1073:                 <title>${guild.name} | ZENO Dashboard</title>
+1073:                 <title>${guild.name} | Droplet Dashboard</title>
 1074:                 <script src="https://cdn.tailwindcss.com"></script>
 1075:                 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 1076:                 

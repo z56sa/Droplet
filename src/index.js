@@ -1,5 +1,5 @@
 /**
- * ZENO Bot + Dashboard entrypoint.
+ * Droplet Bot + Dashboard entrypoint.
  *
  * Both the Discord bot (commands/events) and the web dashboard
  * run on Render as a single Node.js web service.
@@ -28,7 +28,7 @@ const PORT = Number(process.env.PORT || 3000);
 app.get('/health', (_req, res) => {
     res.status(200).json({
         status: 'ok',
-        service: 'zeno-dashboard',
+        service: 'droplet-dashboard',
         discord: client.isReady() ? 'ready' : 'connecting'
     });
 });

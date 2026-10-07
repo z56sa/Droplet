@@ -207,17 +207,17 @@ module.exports = {
       if (db.touchStaffShiftAction) db.touchStaffShiftAction(guildId, userId);
     }
 
-    // 🤖 ZENO AI
+    // 🤖 Droplet AI
     const cleanContent = message.content ? message.content.trim() : '';
     const botMentionRegex = new RegExp(`^<@!?${client.user?.id}>`);
     const isBotMentioned = botMentionRegex.test(cleanContent) ||
       (message.mentions && message.mentions.has(client.user?.id) && !message.mentions.everyone);
 
-    const zenoCallRegex = /^(?:zeno|زينو)(?:[\s,:!?؟-]+(.+)|$)/i;
-    const matchZeno = cleanContent.match(zenoCallRegex);
+    const dropletCallRegex = /^(?:droplet|دروبلت)(?:[\s,:!?؟-]+(.+)|$)/i;
+    const matchDroplet = cleanContent.match(dropletCallRegex);
 
 
-    if (isBotMentioned || matchZeno) {
+    if (isBotMentioned || matchDroplet) {
       const ownerId = process.env.OWNER_ID || config.ownerId || '1178342841882267744';
       if (message.author.id !== ownerId) {
         return; // تجاهل الأعضاء العاديين، الذكاء الاصطناعي مخصص للمالك ومساعدته في إدارة البوت فقط
@@ -226,10 +226,10 @@ module.exports = {
       let userPrompt = '';
       if (isBotMentioned) {
         userPrompt = cleanContent.replace(botMentionRegex, '').replace(new RegExp(`<@!?${client.user?.id}>`, 'g'), '').trim();
-      } else if (matchZeno) {
-        userPrompt = (matchZeno[1] || '').trim();
+      } else if (matchDroplet) {
+        userPrompt = (matchDroplet[1] || '').trim();
       }
-      if (!userPrompt) userPrompt = 'أهلاً بك يا مالك البوت! كيف يمكنني مساعدتك في تطوير وإدارة ZENO اليوم؟';
+      if (!userPrompt) userPrompt = 'أهلاً بك يا مالك البوت! كيف يمكنني مساعدتك في تطوير وإدارة Droplet اليوم؟';
 
       try {
         await message.channel.sendTyping().catch(() => {});
@@ -245,7 +245,7 @@ module.exports = {
         }
         return;
       } catch (err) {
-        console.error('[Auto ZENO AI Error]:', err);
+        console.error('[Auto Droplet AI Error]:', err);
       }
     }
 

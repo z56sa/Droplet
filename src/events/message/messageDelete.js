@@ -42,7 +42,7 @@ module.exports = {
             { name: '📄 محتوى الرسالة', value: message.content ? (message.content.length > 800 ? message.content.substring(0, 800) + '...' : message.content) : '*غير متوفر*', inline: false }
           )
           .setTimestamp()
-          .setFooter({ text: 'ZENO Security • Anti-Ghost-Ping' });
+          .setFooter({ text: 'Droplet Security • Anti-Ghost-Ping' });
 
         alertCh.send({ embeds: [ghostEmbed] }).catch(() => {});
         return; // لا ترسل لوق الحذف العادي إذا كان Ghost Ping

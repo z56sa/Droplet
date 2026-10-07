@@ -1,6 +1,6 @@
 /**
  * @module SecretManager
- * @description A dedicated service layer for securely accessing and managing sensitive configuration values (Secrets) for the zeno bot.
+ * @description A dedicated service layer for securely accessing and managing sensitive configuration values (Secrets) for the droplet bot.
  * 
  * This manager provides an abstraction layer over environment variables. In a production setting, this module would be updated 
  * to fetch secrets from a secure vault system (e.g., AWS Secrets Manager, Azure Key Vault) rather than relying on process.env.

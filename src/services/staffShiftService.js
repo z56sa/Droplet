@@ -63,7 +63,7 @@ class StaffShiftService {
                                         { name: '⏱️ المدة', value: `\`${durationStr}\``, inline: true },
                                         { name: '⭐ النقاط', value: `+${result.pointsEarned} نقطة`, inline: true }
                                     )
-                                    .setFooter({ text: 'نظام مراقبة نشاط الإدارة • ZENO' })
+                                    .setFooter({ text: 'نظام مراقبة نشاط الإدارة • Droplet' })
                                     .setTimestamp();
                                 await logChannel.send({ embeds: [embed] }).catch(() => {});
                             }
@@ -101,7 +101,7 @@ class StaffShiftService {
                                     { name: '⏱️ المدة المحتسبة', value: `\`${durationStr}\``, inline: true },
                                     { name: '⭐ النقاط', value: `+${result.pointsEarned} نقطة`, inline: true }
                                 )
-                                .setFooter({ text: 'نظام حماية ساعات الإدارة • ZENO' })
+                                .setFooter({ text: 'نظام حماية ساعات الإدارة • Droplet' })
                                 .setTimestamp();
 
                             await logChannel.send({ embeds: [embed] }).catch(() => {});
@@ -131,7 +131,7 @@ class StaffShiftService {
                                     { name: '⏱️ المدة المحتسبة', value: `\`${durationStr}\``, inline: true },
                                     { name: '⭐ النقاط', value: `+${result.pointsEarned} نقطة`, inline: true }
                                 )
-                                .setFooter({ text: 'نظام حماية ساعات الإدارة • ZENO' })
+                                .setFooter({ text: 'نظام حماية ساعات الإدارة • Droplet' })
                                 .setTimestamp();
 
                             await logChannel.send({ embeds: [embed] }).catch(() => {});

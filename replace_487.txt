@@ -101,7 +101,7 @@
                                         <div class="flex items-center gap-2.5 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white leading-tight">المكافأة اليومية (Daily)</h5>
-                                                <span class="text-[10px] text-gray-400 font-mono">ZENO Bot System</span>
+                                                <span class="text-[10px] text-gray-400 font-mono">Droplet Bot System</span>
                                             </div>
                                             <div class="w-8 h-8 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center text-sm font-bold border border-purple-500/30">🎁</div>
                                         </div>
@@ -141,7 +141,7 @@
                                             <!-- About Me Box -->
                                             <div class="bg-black/30 border border-white/5 rounded-xl p-3 text-right">
                                                 <span class="text-[9px] font-bold text-gray-400 block mb-0.5">ABOUT ME</span>
-                                                <p class="text-xs text-gray-200">مرحباً بك في لوحة تحكم ZENO Bot!</p>
+                                                <p class="text-xs text-gray-200">مرحباً بك في لوحة تحكم Droplet Bot!</p>
                                             </div>
 
                                             <!-- Stats & Gold in Card -->

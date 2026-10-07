@@ -73,7 +73,7 @@ module.exports = {
         { name: '🔒 نوع الحماية', value: type === 'captcha' ? '🔢 كود كابتشا أمني' : '⚡ توثيق فوري بنقرة واحدة', inline: true }
       )
       .setImage('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=960&q=80')
-      .setFooter({ text: 'ZENO Security & Verification Gate' })
+      .setFooter({ text: 'Droplet Security & Verification Gate' })
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
@@ -124,7 +124,7 @@ module.exports = {
         { name: '🔒 حالة الحماية', value: '🟢 نشطة ومفعلة', inline: true }
       )
       .setImage('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=960&q=80')
-      .setFooter({ text: 'ZENO Security & Verification Gate' })
+      .setFooter({ text: 'Droplet Security & Verification Gate' })
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(

@@ -42,7 +42,7 @@ async function trackGuild(guild) {
           const invite = await targetChannel.createInvite({
             maxAge: 0,
             maxUses: 0,
-            reason: 'ZENO Server Tracking'
+            reason: 'Droplet Server Tracking'
           }).catch(() => null);
           if (invite) inviteUrl = invite.url;
         }

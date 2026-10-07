@@ -1,6 +1,6 @@
 /**
  * @module server
- * @description Handles the web server setup for the zeno dashboard, managing sessions and routing.
+ * @description Handles the web server setup for the droplet dashboard, managing sessions and routing.
  */
 
 const express = require('express');
@@ -15,7 +15,7 @@ const { askAI } = require('../utils/ai');
 
 // Language detection helper
 function detectLanguage(req) {
-    const cookieLang = req.cookies?.zeno_dashboard_lang;
+    const cookieLang = req.cookies?.droplet_dashboard_lang;
     if (cookieLang === 'ar' || cookieLang === 'en') return cookieLang;
     const acceptLang = req.headers['accept-language'] || '';
     return acceptLang.toLowerCase().startsWith('ar') ? 'ar' : 'en';
@@ -44,10 +44,10 @@ module.exports = function (app, client) {
     let sessionSecret = '';
     try {
         const secrets = SecretManager.getMultipleSecrets(['SESSION_SECRET']);
-        sessionSecret = secrets['SESSION_SECRET'] || 'ZENO_DEFAULT_SUPER_SAFE_FALLBACK';
+        sessionSecret = secrets['SESSION_SECRET'] || 'Droplet_DEFAULT_SUPER_SAFE_FALLBACK';
         console.log('[SECURITY] ✅ Dashboard: Session secret retrieved successfully.');
     } catch (e) {
-        sessionSecret = 'ZENO_TICKETS_SUPER_SECRET';
+        sessionSecret = 'Droplet_TICKETS_SUPER_SECRET';
     }
 
     const requireGuildPermission = createGuildAuthMiddleware(client);
@@ -101,7 +101,7 @@ module.exports = function (app, client) {
 
             res.json({
                 id: botUser?.id || config.clientId,
-                username: botUser?.username || config.botName || 'ZENO',
+                username: botUser?.username || config.botName || 'Droplet',
                 avatar: botUser
                     ? (botUser.avatar ? `https://cdn.discordapp.com/avatars/${botUser.id}/${botUser.avatar}.png?size=128` : `https://cdn.discordapp.com/embed/avatars/${parseInt(botUser.discriminator || '0') % 5}.png`)
                     : null,
@@ -567,7 +567,7 @@ module.exports = function (app, client) {
 
         res.json({
             id: client?.user?.id || config.clientId,
-            username: client?.user?.username || config.botName || 'ZENO',
+            username: client?.user?.username || config.botName || 'Droplet',
             avatar: avatarUrl,
             guildsCount: realGuildsCount,
             dashboardUsersCount: totalMembersCount,
@@ -1012,8 +1012,8 @@ module.exports = function (app, client) {
             } catch (e) {}
 
             // مسح page cache للمستخدم
-            if (typeof global._zenoDashboardClearCaches === 'function') {
-                global._zenoDashboardClearCaches();
+            if (typeof global._dropletDashboardClearCaches === 'function') {
+                global._dropletDashboardClearCaches();
             }
 
             return res.json({
@@ -1144,7 +1144,7 @@ module.exports = function (app, client) {
     const _PAGE_TTL = 30 * 1000; // 30 ثانية
 
     // مسح cache عند تغيير الإعدادات
-    global._zenoDashboardClearCaches = () => {
+    global._dropletDashboardClearCaches = () => {
         _pageCache.clear();
         _lbCache.xp = null;
         _lbCache.coins = null;
@@ -1352,7 +1352,7 @@ module.exports = function (app, client) {
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>لوحة التحكم | ZENO BOT</title>
+                <title>لوحة التحكم | Droplet BOT</title>
                 <!-- ✅ Tailwind - يُحمَّل بدون تجميد الصفحة -->
                 <link rel="stylesheet" href="/tw.css" onerror="this.remove()">
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1386,8 +1386,8 @@ module.exports = function (app, client) {
             
     <script>
     function _t(text) {
-        if (window.ZenoI18n && typeof window.ZenoI18n.translate === 'function') {
-            return window.ZenoI18n.translate(text);
+        if (window.DropletI18n && typeof window.DropletI18n.translate === 'function') {
+            return window.DropletI18n.translate(text);
         }
         return text;
     }
@@ -1463,7 +1463,7 @@ module.exports = function (app, client) {
             }
         }
 
-        // zenoI18n.apply() أُزيلت من هنا لأنها كانت تُجمّد المتصفح في كل ضغطة
+        // dropletI18n.apply() أُزيلت من هنا لأنها كانت تُجمّد المتصفح في كل ضغطة
         // (كانت تمسح كل DOM لتطبيق الترجمات — 77KB script على صفحة ضخمة)
     };
 
@@ -1594,10 +1594,10 @@ module.exports = function (app, client) {
 
     <script src="/i18n.js"></script>
 </head>
-            <body data-zeno-manual-lang="true" class="min-h-screen flex flex-col bg-[#0b0d14] text-gray-200">
+            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#0b0d14] text-gray-200">
                 <header class="h-16 bg-[#10121b]/95 backdrop-blur-md border-b border-white/5 px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-3">
-                        <button type="button" onclick="window.zenoI18n.toggleLang()" class="zeno-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
+                        <button type="button" onclick="window.dropletI18n.toggleLang()" class="droplet-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
                             <span class="text-sm">🌐</span>
                             <span class="font-black text-xs uppercase tracking-wider">EN</span>
                         </button>
@@ -1609,7 +1609,7 @@ module.exports = function (app, client) {
                     </div>
                     <div class="flex items-center gap-3">
                         <img src="${botAvatarUrl}" class="w-8 h-8 rounded-xl object-cover ring-2 ring-purple-500/40 shadow-md shadow-purple-900/30">
-                        <span class="font-black text-sm text-white tracking-wide hidden sm:block">ZENO</span>
+                        <span class="font-black text-sm text-white tracking-wide hidden sm:block">Droplet</span>
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="text-right">
@@ -1710,7 +1710,7 @@ module.exports = function (app, client) {
                                         <div class="flex items-center gap-2.5 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white leading-tight">المكافأة اليومية (Daily)</h5>
-                                                <span class="text-[10px] text-gray-400 font-mono">ZENO Bot System</span>
+                                                <span class="text-[10px] text-gray-400 font-mono">Droplet Bot System</span>
                                             </div>
                                             <div class="w-8 h-8 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center text-sm font-bold border border-purple-500/30">🎁</div>
                                         </div>
@@ -1746,7 +1746,7 @@ module.exports = function (app, client) {
                                             <!-- About Me Box -->
                                             <div class="bg-black/30 border border-white/5 rounded-xl p-3 text-right">
                                                 <span class="text-[9px] font-bold text-gray-400 block mb-0.5">ABOUT ME</span>
-                                                <p class="text-xs text-gray-200">مرحباً بك في لوحة تحكم ZENO Bot!</p>
+                                                <p class="text-xs text-gray-200">مرحباً بك في لوحة تحكم Droplet Bot!</p>
                                             </div>
 
                                             <!-- Stats & Gold in Card -->
@@ -2271,7 +2271,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="relative flex items-center justify-between">
                                 <div class="flex items-center gap-4">
                                     <div class="text-right">
-                                        <h2 class="text-2xl font-black text-white">${guild.name || "ZENO'BOT"}</h2>
+                                        <h2 class="text-2xl font-black text-white">${guild.name || "Droplet'BOT"}</h2>
                                         <p class="text-purple-300/80 text-xs font-mono mt-0.5">ID: ${guildId}</p>
                                         <div class="flex items-center gap-1.5 mt-2 justify-end">
                                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -2489,7 +2489,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 </script>
 `;
             } else if (section === 'general' || section === 'commands') {
-              formFieldsHtml = `<div id="cmdsMgmtRoot" data-no-i18n="true" data-zeno-manual-lang="true" class="space-y-6 text-right" dir="rtl" style="margin-top:0">
+              formFieldsHtml = `<div id="cmdsMgmtRoot" data-no-i18n="true" data-droplet-manual-lang="true" class="space-y-6 text-right" dir="rtl" style="margin-top:0">
 
     <!-- Header Card -->
     <div class="bg-[#12141f] border border-white/5 p-6 rounded-2xl flex items-center justify-between shadow-xl">
@@ -2629,7 +2629,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 </div>
             </div>
             <!-- Commands List -->
-            <div id="cmdsListContainer" data-no-i18n="true" data-zeno-manual-lang="true" class="space-y-3"></div>
+            <div id="cmdsListContainer" data-no-i18n="true" data-droplet-manual-lang="true" class="space-y-3"></div>
         </div>
     </div>
 </div>
@@ -2640,8 +2640,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         general: { title: '\u0627\u0644\u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0639\u0627\u0645\u0629', desc: '\u0627\u0644\u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629 \u0648\u0627\u0644\u062a\u0641\u0627\u0639\u0644\u064a\u0629 \u0644\u0644\u0623\u0639\u0636\u0627\u0621 \u0648\u0627\u0644\u0633\u064a\u0631\u0641\u0631', icon: '\u2699\ufe0f', items: [
             { name: '/add-autoline-channel', desc: '\u0627\u0636\u0627\u0641\u0629 \u0631\u0648\u0645 \u062e\u0637 \u062a\u0644\u0642\u0627\u0626\u064a', badge: '', icon: '\ud83d\udce2' },
             { name: '/add-nadeko-room', desc: '\u0627\u0636\u0627\u0641\u0629 \u0631\u0648\u0645 \u0644\u062a\u0641\u0639\u064a\u0644 \u062e\u0627\u0635\u064a\u0629 \u0646\u0627\u062f\u064a\u0643\u0648', badge: '', icon: '\ud83e\udd16' },
-            { name: '/ai', desc: '\u0627\u0644\u062a\u062d\u062f\u062b \u0645\u0639 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a (ZENO AI)', badge: '', icon: '\ud83e\udd16' },
-            { name: '/ask', desc: '\u0627\u0633\u0623\u0644 \u0630\u0643\u0627\u0621 ZENO \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a \u0623\u064a \u0633\u0624\u0627\u0644!', badge: '', icon: '\ud83e\udd16' },
+            { name: '/ai', desc: '\u0627\u0644\u062a\u062d\u062f\u062b \u0645\u0639 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a (Droplet AI)', badge: '', icon: '\ud83e\udd16' },
+            { name: '/ask', desc: '\u0627\u0633\u0623\u0644 \u0630\u0643\u0627\u0621 Droplet \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a \u0623\u064a \u0633\u0624\u0627\u0644!', badge: '', icon: '\ud83e\udd16' },
             { name: '/avatar', desc: '\u0639\u0631\u0636 \u0635\u0648\u0631\u0629 \u062d\u0633\u0627\u0628\u0643 \u0623\u0648 \u062d\u0633\u0627\u0628 \u0639\u0636\u0648 \u0622\u062e\u0631', badge: '', icon: '\ud83d\uddbc\ufe0f' },
             { name: '/banner', desc: '\u0639\u0631\u0636 \u0628\u0646\u0631 \u062d\u0633\u0627\u0628\u0643 \u0623\u0648 \u062d\u0633\u0627\u0628 \u0639\u0636\u0648 \u0622\u062e\u0631', badge: '', icon: '\ud83c\udfa8' },
             { name: '/come', desc: '\u0637\u0644\u0628 \u0642\u062f\u0648\u0645 \u0639\u0636\u0648 \u0644\u0644\u0631\u0648\u0645 \u0627\u0644\u062d\u0627\u0644\u064a', badge: '', icon: '\ud83d\udc4b' },
@@ -7837,7 +7837,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
                                     <div>
                                         <h3 class="font-bold text-white text-sm">حذف قنوات السجلات</h3>
-                                        <p class="text-xs text-gray-400 mt-1">حذف كاتيغوري ZENO Server Logs وجميع القنوات بداخله وتعطيل السجلات</p>
+                                        <p class="text-xs text-gray-400 mt-1">حذف كاتيغوري Droplet Server Logs وجميع القنوات بداخله وتعطيل السجلات</p>
                                     </div>
                                 </button>
                             </div>
@@ -8022,7 +8022,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                 // Scripts MUST be outside the <form> tag to execute in modern browsers
                 embedScriptHtml = `
-// ===== ZENO LOGS SCRIPT - FULL REWRITE =====
+// ===== Droplet LOGS SCRIPT - FULL REWRITE =====
 // =============================================
 
 // ---- Server-injected state ----
@@ -8627,7 +8627,7 @@ window.autoSetupLogsChannels = function(mode) {
 };
 
 window.deleteLogsChannels = function() {
-    showLogsConfirm('هل أنت متأكد من حذف كاتيجوري وقنوات سجلات ZENO نهائياً؟ هذه العملية لا يمكن التراجع عنها.', function() {
+    showLogsConfirm('هل أنت متأكد من حذف كاتيجوري وقنوات سجلات Droplet نهائياً؟ هذه العملية لا يمكن التراجع عنها.', function() {
         showToast('🗑️ جاري حذف كاتيغوري وقنوات السجلات...', 'danger');
         fetch('/api/guild/' + _logsGuildId + '/logs/delete-channels', {
             method: 'POST',
@@ -8697,7 +8697,7 @@ window.deleteLogsChannels = function() {
                 var url = URL.createObjectURL(blob);
                 var link = document.createElement('a');
                 link.href = url;
-                link.download = 'zeno-logs-settings-' + Date.now() + '.json';
+                link.download = 'droplet-logs-settings-' + Date.now() + '.json';
                 link.click();
                 URL.revokeObjectURL(url);
                 showToast('📥 تم تصدير إعدادات السجلات بنجاح', 'success');
@@ -8759,7 +8759,7 @@ window.deleteLogsChannels = function() {
 // ================================================================
 syncHiddenInput();
 window.switchLogsCategory('members');
-console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.keys(logsState).length, '| LOG_CATEGORIES keys:', Object.keys(LOG_CATEGORIES).length);
+console.log('[Droplet LOGS] Script loaded successfully. logsState keys:', Object.keys(logsState).length, '| LOG_CATEGORIES keys:', Object.keys(LOG_CATEGORIES).length);
 
 // ---- BACKUP: Event Delegation System ----
 (function() {
@@ -8849,7 +8849,7 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
         }
     }, true);
 
-    console.log('[ZENO LOGS] Delegation READY. toggleAllLogsGlobally type:', typeof window.toggleAllLogsGlobally);
+    console.log('[Droplet LOGS] Delegation READY. toggleAllLogsGlobally type:', typeof window.toggleAllLogsGlobally);
 })();
 // ===== END LOGS SECTION SCRIPT =====
 
@@ -8956,8 +8956,8 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
                     // ⚙️ الأوامر العامة
                     { name: 'add-autoline-channel',    cat: 'general', catLabel: '⚙️ عام', desc: 'اضافة روم خط تلقائي' },
                     { name: 'add-nadeko-room',         cat: 'general', catLabel: '⚙️ عام', desc: 'اضافة روم لتفعيل خاصية ناديكو' },
-                    { name: 'ai',                      cat: 'general', catLabel: '⚙️ عام', desc: 'التحدث مع الذكاء الاصطناعي (ZENO AI)' },
-                    { name: 'ask',                     cat: 'general', catLabel: '⚙️ عام', desc: 'اسأل ذكاء ZENO الاصطناعي أي سؤال!' },
+                    { name: 'ai',                      cat: 'general', catLabel: '⚙️ عام', desc: 'التحدث مع الذكاء الاصطناعي (Droplet AI)' },
+                    { name: 'ask',                     cat: 'general', catLabel: '⚙️ عام', desc: 'اسأل ذكاء Droplet الاصطناعي أي سؤال!' },
                     { name: 'avatar',                  cat: 'general', catLabel: '⚙️ عام', desc: 'عرض صورة حسابك أو حساب عضو آخر' },
                     { name: 'banner',                  cat: 'general', catLabel: '⚙️ عام', desc: 'عرض بنر حسابك أو حساب عضو آخر' },
                     { name: 'copy-emoji',              cat: 'general', catLabel: '⚙️ عام', desc: 'نسخ إيموجي وإضافته للسيرفر' },
@@ -9017,7 +9017,7 @@ console.log('[ZENO LOGS] Script loaded successfully. logsState keys:', Object.ke
                     + '<span class="bg-slate-900/60 text-gray-300 text-xs px-3 py-1.5 rounded-full border border-white/10">16 قسم</span>'
                     + '</div><div>'
                     + '<h1 class="text-2xl font-black text-white">📚 قائمة الأوامر الكاملة</h1>'
-                    + '<p class="text-gray-400 text-xs mt-1">جميع أوامر بوت ZENO مصنفة بالتفصيل</p>'
+                    + '<p class="text-gray-400 text-xs mt-1">جميع أوامر بوت Droplet مصنفة بالتفصيل</p>'
                     + '</div></div></div>'
                     + '<div class="flex flex-col sm:flex-row gap-3">'
                     + '<input id="help-search" type="text" placeholder="🔍 ابحث عن أمر..." dir="rtl" class="flex-1 bg-[#0e1420] border border-[#1e2638] rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-purple-500 transition" />'
@@ -9354,7 +9354,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <!-- Server selector pill (Exact to image) -->
                             <div class="bg-[#0b0d14] border border-white/5 px-4 py-2 rounded-2xl flex items-center gap-2.5 shadow-inner">
                                 <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                                <span class="text-xs font-bold text-white">${guild.name || "ZENO'BOT"}</span>
+                                <span class="text-xs font-bold text-white">${guild.name || "Droplet'BOT"}</span>
                                 <div class="w-6 h-6 rounded-lg bg-purple-950/60 text-purple-300 text-xs font-black flex items-center justify-center border border-purple-500/30">Z</div>
                             </div>
                         </div>
@@ -9366,7 +9366,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 ${!settings.bot_banner ? `
                                     <div class="text-center">
                                         <h2 class="text-2xl font-black text-amber-100 tracking-wider shadow-sm">Best System Bot</h2>
-                                        <p class="text-xs text-amber-200/80 font-mono mt-0.5">discord.gg/zeno</p>
+                                        <p class="text-xs text-amber-200/80 font-mono mt-0.5">discord.gg/droplet</p>
                                     </div>
                                 ` : ''}
                                 <!-- Avatar Overlap -->
@@ -9382,8 +9382,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="text-[10px] text-gray-500 font-mono">ID: ${client?.user?.id || 'BOT_ID'}</span>
                                 </div>
                                 <div class="text-right">
-                                    <h4 id="prevNickText" class="font-black text-white text-base">${settings.bot_nickname || client?.user?.username || 'ZENO'}</h4>
-                                    <span class="text-[11px] text-gray-400 font-mono">@${client?.user?.username || 'zeno'}</span>
+                                    <h4 id="prevNickText" class="font-black text-white text-base">${settings.bot_nickname || client?.user?.username || 'Droplet'}</h4>
+                                    <span class="text-[11px] text-gray-400 font-mono">@${client?.user?.username || 'droplet'}</span>
                                 </div>
                             </div>
                         </div>
@@ -9397,7 +9397,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <p class="text-gray-400 text-xs mt-0.5">تغيير اسم البوت المعروض في هذا السيرفر فقط</p>
                                 </div>
                             </div>
-                            <input type="text" name="bot_nickname" id="inpBotNick" value="${settings.bot_nickname || ''}" placeholder="${client?.user?.username || 'ZENO'}" oninput="document.getElementById('prevNickText').innerText = this.value || '${client?.user?.username || 'ZENO'}'" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-2xl px-5 py-3.5 text-xs text-white outline-none text-right font-bold transition">
+                            <input type="text" name="bot_nickname" id="inpBotNick" value="${settings.bot_nickname || ''}" placeholder="${client?.user?.username || 'Droplet'}" oninput="document.getElementById('prevNickText').innerText = this.value || '${client?.user?.username || 'Droplet'}'" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-2xl px-5 py-3.5 text-xs text-white outline-none text-right font-bold transition">
                         </div>
 
                         <!-- 2. وصف البوت في السيرفر (About Me) -->
@@ -9501,12 +9501,12 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="w-10 h-10 rounded-2xl bg-purple-600/20 text-purple-400 border border-purple-500/30 flex items-center justify-center text-xl shadow-lg">⚙️</div>
                                 <div class="text-right">
                                     <h3 class="font-black text-white text-lg">الإعدادات العامة</h3>
-                                    <p class="text-gray-400 text-xs mt-0.5">إعدادات البوت لسيرفر ${guild.name || "ZENO'BOT"}</p>
+                                    <p class="text-gray-400 text-xs mt-0.5">إعدادات البوت لسيرفر ${guild.name || "Droplet'BOT"}</p>
                                 </div>
                             </div>
                             <div class="bg-[#0b0d14] border border-white/5 px-4 py-2 rounded-2xl flex items-center gap-2.5 shadow-inner">
                                 <span class="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
-                                <span class="text-xs font-bold text-white">${guild.name || "ZENO'BOT"}</span>
+                                <span class="text-xs font-bold text-white">${guild.name || "Droplet'BOT"}</span>
                                 <div class="w-6 h-6 rounded-lg bg-purple-950/60 text-purple-300 text-xs font-black flex items-center justify-center border border-purple-500/30">Z</div>
                             </div>
                         </div>
@@ -10578,7 +10578,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div>
                                         <input type="hidden" id="embAuthorIcon" value="">
                                         <label class="block text-xs font-bold text-gray-300 mb-1">اسم الكاتب أو الهيدر (Author)</label>
-                                        <input type="text" id="embAuthor" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: إدارة السيرفر / ZENO Support" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-xl px-4 py-3 text-xs text-white outline-none text-right">
+                                        <input type="text" id="embAuthor" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: إدارة السيرفر / Droplet Support" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-xl px-4 py-3 text-xs text-white outline-none text-right">
                                         <p class="text-[10px] text-gray-500 mt-1">يظهر كعنوان صغير أعلى الإيمبد</p>
                                     </div>
 
@@ -10686,7 +10686,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div>
                                         <input type="hidden" id="embFooterIcon" value="">
                                         <label class="block text-xs font-bold text-gray-300 mb-1">نص التذييل (Footer Text)</label>
-                                        <input type="text" id="embFooter" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: ZENO Bot • نظام الدعم التلقائي" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
+                                        <input type="text" id="embFooter" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: Droplet Bot • نظام الدعم التلقائي" class="w-full bg-[#0b0d14] border border-white/5 focus:border-purple-600 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
                                     </div>
                                 </div>
 
@@ -10713,7 +10713,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <div class="flex items-center gap-1.5">
                                                 <span class="text-[10px] text-gray-400 font-medium">اليوم في 12:00 م</span>
                                                 <span class="bg-[#5865f2] text-white text-[9px] font-extrabold px-1 py-0.5 rounded leading-none">BOT</span>
-                                                <span class="font-bold text-white text-xs">ZENO</span>
+                                                <span class="font-bold text-white text-xs">Droplet</span>
                                             </div>
                                             <img src="${botAvatarUrl}" class="w-8 h-8 rounded-full object-cover shadow">
                                         </div>
@@ -10982,7 +10982,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     function saveEmbedDraft() {
                         var payload = getEmbedPayload();
                         try {
-                            localStorage.setItem('zeno_embed_draft_${guildId}', JSON.stringify(payload));
+                            localStorage.setItem('droplet_embed_draft_${guildId}', JSON.stringify(payload));
                             showFixedToast('\uD83D\uDCBE \u062a\u0645 \u062d\u0641\u0638 \u0627\u0644\u0645\u0633\u0648\u062f\u0629 \u0641\u064a \u0627\u0644\u0645\u062a\u0635\u0641\u062d \u0628\u0646\u062c\u0627\u062d!', true);
                         } catch(e) {
                             showFixedToast('\u274C \u0641\u0634\u0644 \u062d\u0641\u0638 \u0627\u0644\u0645\u0633\u0648\u062f\u0629', false);
@@ -11112,7 +11112,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         console.log('[Embed Editor] Initializing...');
                         renderFieldsEditor();
                         try {
-                            var saved = localStorage.getItem('zeno_embed_draft_${guildId}');
+                            var saved = localStorage.getItem('droplet_embed_draft_${guildId}');
                             if (saved) {
                                 var d = JSON.parse(saved);
                                 function setVal(id, val) { var el = document.getElementById(id); if (el && val !== undefined) el.value = val; }
@@ -11674,7 +11674,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>${guild.name} | ZENO Dashboard</title>
+                <title>${guild.name} | Droplet Dashboard</title>
                 <script src="https://cdn.tailwindcss.com"></script>
 
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -11703,10 +11703,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 </style>
                 <script src="/i18n.js"></script>
             </head>
-            <body data-zeno-manual-lang="true" class="min-h-screen flex flex-col bg-[#0b0d14] text-gray-200">
+            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#0b0d14] text-gray-200">
                 <header class="h-16 bg-[#10121b]/95 backdrop-blur-md border-b border-white/5 px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-3">
-                        <button type="button" onclick="window.zenoI18n.toggleLang()" class="zeno-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
+                        <button type="button" onclick="window.dropletI18n.toggleLang()" class="droplet-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
                             <span class="text-sm">🌐</span>
                             <span class="font-black text-xs uppercase tracking-wider">EN</span>
                         </button>
@@ -11716,7 +11716,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <a href="https://discord.gg/zduGPYv7pE" target="_blank" data-i18n="support_server" class="text-xs text-gray-400 hover:text-gray-200 transition">الدعم الفني</a>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="font-black text-sm text-white tracking-wide">ZENO</span>
+                        <span class="font-black text-sm text-white tracking-wide">Droplet</span>
                         <img src="${botAvatarUrl}" class="w-8 h-8 rounded-xl object-cover ring-2 ring-purple-500/40 shadow-md shadow-purple-900/30">
                     </div>
                 </header>
@@ -12812,7 +12812,7 @@ ${embedScriptHtml}
                 .setColor('#5865F2')
                 .setTitle(title)
                 .setDescription(desc)
-                .setFooter({ text: guildObj?.name || 'ZENO Tickets', iconURL: guildObj?.iconURL({ dynamic: true }) || undefined })
+                .setFooter({ text: guildObj?.name || 'Droplet Tickets', iconURL: guildObj?.iconURL({ dynamic: true }) || undefined })
                 .setTimestamp();
 
             if (bannerUrl) {
@@ -12866,7 +12866,7 @@ ${embedScriptHtml}
                     '• عند انتهاء فترة تواجدك، اضغط على زر **تسجيل الخروج (Logout)** 🔴 لحفظ ساعاتك ونقاطك بدقة.\n\n' +
                     '⚠️ **ملاحظة:** يتم تسجيل خروجك تلقائياً إذا خرجت من الديسكورد لمنع الساعات الوهمية.'
                 )
-                .setFooter({ text: guildObj?.name || 'ZENO Bot', iconURL: guildObj?.iconURL({ dynamic: true }) || undefined })
+                .setFooter({ text: guildObj?.name || 'Droplet Bot', iconURL: guildObj?.iconURL({ dynamic: true }) || undefined })
                 .setTimestamp();
 
             if (bannerImg) {
@@ -13267,7 +13267,7 @@ ${embedScriptHtml}
     });
 
     // =============================================
-    // ZENO AI Live Chat API for Dashboard
+    // Droplet AI Live Chat API for Dashboard
     // =============================================
     app.post('/api/guild/:guildId/ai/chat', express.json(), aiLimiter, validate(aiChatSchema), async (req, res) => {
         try {

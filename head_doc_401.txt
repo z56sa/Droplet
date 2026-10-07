@@ -1,6 +1,6 @@
 Created At: 2026-08-22T06:51:29+03:00
 Completed At: 2026-08-22T06:51:30+03:00
-File Path: `file:///c:/Users/PCD/Desktop/zeno/src/dashboard/server.js`
+File Path: `file:///c:/Users/PCD/Desktop/droplet/src/dashboard/server.js`
 Total Lines: 7503
 Total Bytes: 563547
 Showing lines 6890 to 6980
@@ -84,8 +84,8 @@ The following code has been modified to include a line number before every line,
 6966:                         <a href="/dashboard/${guildId}" class="text-xs text-[#5865f2] hover:text-gray-200 font-bold transition">الرجوع للوحة التحكم</a>
 6967:                     </div>
 6968:                     <div class="flex items-center gap-2">
-6969:                         <span class="font-black text-sm text-white tracking-wide">ZENO</span>
-6970:                         <img src="/logo.png" class="w-8 h-8 rounded-xl object-cover border border-purple-500/40 shadow-lg shadow-black/40" alt="ZENO">
+6969:                         <span class="font-black text-sm text-white tracking-wide">Droplet</span>
+6970:                         <img src="/logo.png" class="w-8 h-8 rounded-xl object-cover border border-purple-500/40 shadow-lg shadow-black/40" alt="Droplet">
 6971:                     </div>
 6972:                 </header>
 6973: 

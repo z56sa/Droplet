@@ -1,6 +1,6 @@
 {
   "prefix": "#",
-  "botName": "ZENO",
+  "botName": "Droplet",
   "colors": {
     "primary": "#7c3aed",
     "secondary": "#5865F2",
@@ -10,12 +10,12 @@
     "info": "#3b82f6",
     "gold": "#eab308"
   },
-  "footer": "ZENO Security & Management",
+  "footer": "Droplet Security & Management",
   "clientId": "1506005273893146775",
-  "dashboardUrl": "https://zeno-0gme.onrender.com",
-  "supportServer": "https://discord.gg/zeno",
+  "dashboardUrl": "https://droplet-0gme.onrender.com",
+  "supportServer": "https://discord.gg/droplet",
   "embeds": {
-    "author": "ZENO System",
-    "footerText": "ZENO Bot • All Rights Reserved"
+    "author": "Droplet System",
+    "footerText": "Droplet Bot • All Rights Reserved"
   }
 }

@@ -125,7 +125,7 @@ class TursoDatabase:
 
         await self.execute(
             """
-            CREATE TABLE IF NOT EXISTS zeno_bot_blocked_hashes (
+            CREATE TABLE IF NOT EXISTS droplet_bot_blocked_hashes (
                 sha256 TEXT PRIMARY KEY,
                 created_at INTEGER DEFAULT (strftime('%s','now'))
             )
@@ -137,7 +137,7 @@ class TursoDatabase:
         if not self.enabled:
             return set()
         rows = await self.fetch_all(
-            "SELECT sha256 FROM zeno_bot_blocked_hashes"
+            "SELECT sha256 FROM droplet_bot_blocked_hashes"
         )
         return {
             str(row.get("sha256", "")).strip().lower()
@@ -150,7 +150,7 @@ class TursoDatabase:
             return
         await self.execute(
             """
-            INSERT OR IGNORE INTO zeno_bot_blocked_hashes (sha256)
+            INSERT OR IGNORE INTO droplet_bot_blocked_hashes (sha256)
             VALUES (?)
             """,
             [sha256.lower().strip()],

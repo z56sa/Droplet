@@ -94,7 +94,7 @@ async function generateHtmlTranscript(channel, options = {}) {
       ${messageRows || '<p style="text-align: center; color: #64748b;">لا توجد رسائل في هذه التذكرة.</p>'}
     </div>
     <div class="footer-bar">
-      تم إنشاء هذا السجل تلقائياً بواسطة بوت ZENO • جميع الحقوق محفوظة ©
+      تم إنشاء هذا السجل تلقائياً بواسطة بوت Droplet • جميع الحقوق محفوظة ©
     </div>
   </div>
 </body>

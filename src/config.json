@@ -1,6 +1,6 @@
 {
   "prefix": "#",
-  "botName": "ZENO",
+  "botName": "Droplet",
   "ownerId": "1178342841882267744",
   "colors": {
     "primary": "#7c3aed",
@@ -11,10 +11,10 @@
     "info": "#3b82f6",
     "gold": "#eab308"
   },
-  "footer": "ZENO Security & Management",
+  "footer": "Droplet Security & Management",
   "embeds": {
-    "author": "ZENO System",
-    "footerText": "ZENO Bot • All Rights Reserved"
+    "author": "Droplet System",
+    "footerText": "Droplet Bot • All Rights Reserved"
   },
   "emojis": {
     "success": "✅",

@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     function t(text) {
-        if (window.ZenoI18n && typeof window.ZenoI18n.translate === 'function') {
-            return window.ZenoI18n.translate(text);
+        if (window.DropletI18n && typeof window.DropletI18n.translate === 'function') {
+            return window.DropletI18n.translate(text);
         }
         return text;
     }

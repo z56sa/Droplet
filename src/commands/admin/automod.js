@@ -210,6 +210,6 @@ function buildStatusEmbed(settings, guild) {
         inline: false
       }
     )
-    .setFooter({ text: 'ZENO Auto-Mod System • التعديل متاح أيضاً عبر لوحة الويب' })
+    .setFooter({ text: 'Droplet Auto-Mod System • التعديل متاح أيضاً عبر لوحة الويب' })
     .setTimestamp();
 }

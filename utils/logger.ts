@@ -1,7 +1,7 @@
 // src/utils/Logger.ts
 
 /**
- * Centralized logging utility for Zeno Bot.
+ * Centralized logging utility for Droplet Bot.
  * Uses colored output for better visibility in the console.
  */
 

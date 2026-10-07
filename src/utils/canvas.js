@@ -396,7 +396,7 @@ const canvasUtil = {
     // وسم المستخدم أو الحالة
     ctx.fillStyle = '#8c96ab';
     ctx.font = 'bold 14px sans-serif';
-    ctx.fillText(`@${username} • ZENO MEMBER`, infoStartX, 238);
+    ctx.fillText(`@${username} • Droplet MEMBER`, infoStartX, 238);
 
     // كبسولة الشارات المعتمدة
     const badgesStartX = width - 235;

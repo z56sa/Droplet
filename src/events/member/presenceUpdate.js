@@ -44,7 +44,7 @@ module.exports = {
                 { name: '⭐ النقاط المحتسبة', value: `+${result.pointsEarned} نقطة`, inline: true },
                 { name: '📌 السبب', value: isAfk ? 'خامل / وضع الـ AFK (Idle)' : 'خروج من الديسكورد (Offline / Invisible)', inline: false }
               )
-              .setFooter({ text: 'نظام مراقبة نشاط الإدارة الذكي • ZENO' })
+              .setFooter({ text: 'نظام مراقبة نشاط الإدارة الذكي • Droplet' })
               .setTimestamp();
 
             await logChannel.send({ embeds: [autoLogoutEmbed] }).catch(() => {});

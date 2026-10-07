@@ -164,7 +164,7 @@ class SecurityGuardian {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle(`🛡️ ZENO Guardian • ${title}`)
+      .setTitle(`🛡️ Droplet Guardian • ${title}`)
       .setColor(severity === 'critical' ? 0xE74C3C : severity === 'warning' ? 0xF59E0B : 0x22C55E)
       .addFields(
         { name: 'Severity', value: severity, inline: true },
@@ -180,7 +180,7 @@ class SecurityGuardian {
       await channel.send({ embeds: [embed] }).catch(() => {});
     }
 
-    console.error(`[ZENO-GUARDIAN][${severity}] ${title}: ${safeDetails}`);
+    console.error(`[Droplet-GUARDIAN][${severity}] ${title}: ${safeDetails}`);
   }
 
   async scanMessage(message) {

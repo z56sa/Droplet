@@ -84,7 +84,7 @@ module.exports = {
           jailRole = await guild.roles.create({
             name: 'Jailed',
             color: '#7f8c8d',
-            reason: 'إنشاء رتبة السجن التلقائية لـ ZENO'
+            reason: 'إنشاء رتبة السجن التلقائية لـ Droplet'
           });
           db.updateGuildSetting(guild.id, 'jail_role', jailRole.id);
 

@@ -279,9 +279,9 @@ class TursoSync {
 
       // ✅ بعد انتهاء كل الاستعادة — مسح cache الداشبورد حتى يظهر الـ leaderboard بالبيانات الصحيحة
 
-      if (typeof global._zenoDashboardClearCaches === 'function') {
+      if (typeof global._dropletDashboardClearCaches === 'function') {
         setTimeout(() => {
-          try { global._zenoDashboardClearCaches(); } catch(e) {}
+          try { global._dropletDashboardClearCaches(); } catch(e) {}
         }, 1000); // نتأخر ثانية إضافية للتأكد من انتهاء كل العمليات
       }
 

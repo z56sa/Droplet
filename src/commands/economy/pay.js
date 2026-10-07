@@ -44,7 +44,7 @@ module.exports = {
           `💰 **المبلغ المحول:** \`${amount.toLocaleString()}\` **Gold** 🪙\n\n` +
           `💳 **رصيدك المتبقي:** \`${result.senderBalance.toLocaleString()}\` 🪙`
         )
-        .setFooter({ text: 'ZENO Economy System • تم الحفظ فوراً بقاعدة البيانات', iconURL: interaction.guild.iconURL({ dynamic: true }) })
+        .setFooter({ text: 'Droplet Economy System • تم الحفظ فوراً بقاعدة البيانات', iconURL: interaction.guild.iconURL({ dynamic: true }) })
         .setTimestamp();
 
       await interaction.reply({ embeds: [embed] });
@@ -90,7 +90,7 @@ module.exports = {
           `💰 **المبلغ المحول:** \`${amount.toLocaleString()}\` **Gold** 🪙\n\n` +
           `💳 **رصيدك المتبقي:** \`${result.senderBalance.toLocaleString()}\` 🪙`
         )
-        .setFooter({ text: 'ZENO Economy System • تم الحفظ فوراً بقاعدة البيانات', iconURL: message.guild.iconURL({ dynamic: true }) })
+        .setFooter({ text: 'Droplet Economy System • تم الحفظ فوراً بقاعدة البيانات', iconURL: message.guild.iconURL({ dynamic: true }) })
         .setTimestamp();
 
       await message.reply({ embeds: [embed] });

@@ -1,6 +1,6 @@
-# 📘 ZENO Dashboard & Bot API Documentation
+# 📘 Droplet Dashboard & Bot API Documentation
 
-توثيق شامل لجميع مسارات الـ REST API في بوت ولوحة تحكم **ZENO** مع معايير الأمان، الصلاحيات، والـ Payload.
+توثيق شامل لجميع مسارات الـ REST API في بوت ولوحة تحكم **Droplet** مع معايير الأمان، الصلاحيات، والـ Payload.
 
 ---
 
@@ -36,7 +36,7 @@
 ```json
 {
   "id": "1506005273893146775",
-  "username": "ZENO",
+  "username": "Droplet",
   "avatar": "https://cdn.discordapp.com/...",
   "guildsCount": 12,
   "ping": 35,
@@ -61,7 +61,7 @@
   "leveling_enabled": 1,
   "level_channel": "current",
   "level_message": "🎉 مبروك {user}! وصلت للمستوى {level}",
-  "bot_nickname": "ZENO Guard"
+  "bot_nickname": "Droplet Guard"
 }
 ```
 - **Response:**
@@ -224,7 +224,7 @@
 
 ---
 
-## 🤖 الذكاء الاصطناعي (ZENO AI Live Chat)
+## 🤖 الذكاء الاصطناعي (Droplet AI Live Chat)
 
 - **Method:** `POST`
 - **Path:** `/api/guild/:guildId/ai/chat`

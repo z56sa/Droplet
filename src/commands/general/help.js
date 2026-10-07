@@ -145,8 +145,8 @@ const CATEGORIES = {
       { name: 'embed',           desc: 'قول كلام في ايمبد' },
       { name: 'say',             desc: 'قول كلام' },
       { name: 'send',            desc: 'لارسال رسالة لشخص ما' },
-      { name: 'ai',              desc: 'التحدث مع الذكاء الاصطناعي (ZENO)' },
-      { name: 'ask',             desc: 'اسأل ذكاء ZENO الاصطناعي أي سؤال!' },
+      { name: 'ai',              desc: 'التحدث مع الذكاء الاصطناعي (Droplet)' },
+      { name: 'ask',             desc: 'اسأل ذكاء Droplet الاصطناعي أي سؤال!' },
       { name: 'ping',            desc: 'لتجربة سرعة البوت' },
       { name: 'help',            desc: 'قائمة اوامر البوت' },
     ]
@@ -180,7 +180,7 @@ module.exports = {
     const totalCommands = Object.values(CATEGORIES).reduce((sum, cat) => sum + cat.commands.length, 0);
     return new EmbedBuilder()
       .setColor(config.colors?.primary || '#9333ea')
-      .setTitle('📚 دليل أوامر بوت ZENO الشامل')
+      .setTitle('📚 دليل أوامر بوت Droplet الشامل')
       .setDescription(
         `مرحباً! يمتلك البوت **${totalCommands} أمراً** موزعاً على **${Object.keys(CATEGORIES).length} فئات**.\n` +
         `اختر الفئة من القائمة المنسدلة لعرض الأوامر التفصيلية 👇`
@@ -192,7 +192,7 @@ module.exports = {
           inline: true
         }))
       )
-      .setFooter({ text: `ZENO Bot • ${totalCommands} أمر إجمالي • اختر فئة للتفاصيل` })
+      .setFooter({ text: `Droplet Bot • ${totalCommands} أمر إجمالي • اختر فئة للتفاصيل` })
       .setTimestamp();
   },
 

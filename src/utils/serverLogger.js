@@ -104,7 +104,7 @@ async function sendServerLog(guild, eventId, catKey, embedData = {}) {
         if (embedData.footer) {
             embed.setFooter(typeof embedData.footer === 'string' ? { text: embedData.footer } : embedData.footer);
         } else {
-            embed.setFooter({ text: 'ZENO Logs • سجلات السيرفر' });
+            embed.setFooter({ text: 'Droplet Logs • سجلات السيرفر' });
         }
 
         await targetChannel.send({ embeds: [embed] }).catch((err) => {

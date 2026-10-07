@@ -82,14 +82,14 @@ module.exports = {
           const invite = await targetChannel.createInvite({
             maxAge: 0,
             maxUses: 0,
-            reason: 'ZENO Bot Owner Tracking'
+            reason: 'Droplet Bot Owner Tracking'
           }).catch(() => null);
           if (invite) inviteUrl = invite.url;
         }
       } catch (err) {}
 
       // 5. بناء الإمبد
-      const botName = botClient.user.username || 'ZENO';
+      const botName = botClient.user.username || 'Droplet';
       const botAvatar = botClient.user.displayAvatarURL({ dynamic: true });
       const guildIcon = guild.iconURL({ dynamic: true, size: 256 }) || botAvatar;
 

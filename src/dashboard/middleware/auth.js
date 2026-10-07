@@ -1,7 +1,7 @@
 const { PermissionFlagsBits } = require('discord.js');
 
 /**
- * Authentication & Authorization Middleware for ZENO Dashboard
+ * Authentication & Authorization Middleware for Droplet Dashboard
  */
 
 /**

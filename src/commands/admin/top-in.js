@@ -91,7 +91,7 @@ module.exports = {
         .setColor('#10b981')
         .setTitle('⏱️ توب ساعات عمل وتواجد طاقم الإدارة (Top Hours)')
         .setDescription(lines.join('\n\n'))
-        .setFooter({ text: 'يتم احتساب الساعات بدقة تلقائياً عبر نظام الشفتات • ZENO Staff' })
+        .setFooter({ text: 'يتم احتساب الساعات بدقة تلقائياً عبر نظام الشفتات • Droplet Staff' })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });

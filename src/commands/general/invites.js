@@ -76,7 +76,7 @@ module.exports = {
         .setColor('#eab308')
         .setTitle(`🏆 قائمة متصدري الدعوات - ${interaction.guild.name}`)
         .setDescription(rows)
-        .setFooter({ text: 'ZENO Invite Tracker' })
+        .setFooter({ text: 'Droplet Invite Tracker' })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });

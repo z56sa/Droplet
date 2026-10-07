@@ -194,7 +194,7 @@
                                     <label class="toggle"><input type="checkbox" checked><span class="slider"></span></label>
                                     <div class="text-right">
                                         <p class="font-bold text-white text-xs">gamble & #gamble & /gamble</p>
-                                        <p class="text-gray-400 text-[10px]">المراهنة بالعملات في لعبة الكازينو لمضاعفة الأرباح</p>
+                                        <p class="text-gray-400 text-[10px]">المراهنة بالعملات في لعبة الكادروبلت لمضاعفة الأرباح</p>
                                     </div>
                                 </div>
 

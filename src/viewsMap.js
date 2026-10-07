@@ -15,7 +15,7 @@
  *   src/dashboard/public/i18n.js
  *
  * Do not put language-switching logic here. The dashboard's existing
- * zenoI18n/data-lang-toggle integration remains untouched.
+ * dropletI18n/data-lang-toggle integration remains untouched.
  */
 
 'use strict';

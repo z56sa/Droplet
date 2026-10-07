@@ -34,7 +34,7 @@ module.exports = {
         { name: '⭐ المستوى (Level)', value: `\`${level}\``, inline: true },
         { name: '✨ نقاط الخبرة (XP)', value: `\`${xp.toLocaleString()}\``, inline: true }
       )
-      .setFooter({ text: 'ZENO Economy System • الحفظ الدائم نشط 🛡️', iconURL: interaction.guild.iconURL({ dynamic: true }) })
+      .setFooter({ text: 'Droplet Economy System • الحفظ الدائم نشط 🛡️', iconURL: interaction.guild.iconURL({ dynamic: true }) })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
@@ -63,7 +63,7 @@ module.exports = {
         { name: '⭐ المستوى (Level)', value: `\`${level}\``, inline: true },
         { name: '✨ نقاط الخبرة (XP)', value: `\`${xp.toLocaleString()}\``, inline: true }
       )
-      .setFooter({ text: 'ZENO Economy System • الحفظ الدائم نشط 🛡️', iconURL: message.guild.iconURL({ dynamic: true }) })
+      .setFooter({ text: 'Droplet Economy System • الحفظ الدائم نشط 🛡️', iconURL: message.guild.iconURL({ dynamic: true }) })
       .setTimestamp();
 
     await message.reply({ embeds: [embed] });
