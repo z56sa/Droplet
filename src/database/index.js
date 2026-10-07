@@ -2630,5 +2630,30 @@ module.exports = {
   getStaffRatings,
   getStaffAverageRating,
 
+  getDb: () => db,
+  tursoSync,
+  getTursoUser: async (userId) => {
+    if (!tursoSync.enabled || !tursoSync.client) return null;
+    try {
+      const res = await tursoSync.client.execute({
+        sql: 'SELECT SUM(coins) as total_coins, MAX(level) as max_level, MAX(xp) as max_xp, MAX(reputation) as max_rep, MAX(streak) as max_streak, MAX(wallpaper) as wallpaper FROM users WHERE user_id = ?',
+        args: [String(userId)]
+      });
+      if (res.rows && res.rows.length > 0 && res.rows[0].total_coins !== null) {
+        return {
+          coins: Number(res.rows[0].total_coins || 0),
+          level: Number(res.rows[0].max_level || 1),
+          xp: Number(res.rows[0].max_xp || 0),
+          reputation: Number(res.rows[0].max_rep || 0),
+          streak: Number(res.rows[0].max_streak || 0),
+          wallpaper: res.rows[0].wallpaper ? String(res.rows[0].wallpaper) : null
+        };
+      }
+    } catch(e) {
+      console.error('[TURSO] Error fetching user in getTursoUser:', e.message);
+    }
+    return null;
+  },
+
   db
 };

@@ -27,11 +27,40 @@ module.exports = {
     userData.wallpaper_url = db.getWallpaper(targetUser.id);
     const rankData = db.getUserRank(targetUser.id, interaction.guild.id) || { xp: 0, level: 0, rank: 1 };
 
-    // التأكد من جلب رصيد الذهب الفعلي للمستخدم (سواء من السيرفر الحالي أو محفظته المجمعة)
+    // 🌐 جلب رصيد الذهب والإحصائيات الحية مباشرة من Turso Cloud
+    try {
+      if (db.getTursoUser) {
+        const tursoData = await db.getTursoUser(targetUser.id);
+        if (tursoData) {
+          if (tursoData.coins !== null && tursoData.coins > (userData.coins || 0)) {
+            userData.coins = tursoData.coins;
+          }
+          if (tursoData.streak !== null && tursoData.streak > (userData.streak || 0)) {
+            userData.streak = tursoData.streak;
+          }
+          if (tursoData.reputation !== null && tursoData.reputation > (userData.reputation || 0)) {
+            userData.reputation = tursoData.reputation;
+          }
+          if (tursoData.level !== null && tursoData.level > (rankData.level || 1)) {
+            rankData.level = tursoData.level;
+          }
+          if (tursoData.xp !== null && tursoData.xp > (rankData.xp || 0)) {
+            rankData.xp = tursoData.xp;
+          }
+          if (tursoData.wallpaper && tursoData.wallpaper !== 'default') {
+            userData.wallpaper_url = tursoData.wallpaper;
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[PROFILE] Turso fetch error:', e.message);
+    }
+
+    // التأكد من جلب رصيد الذهب الفعلي للمستخدم محلياً كـ fallback إضافي
     try {
       const rawDb = db.getDb?.();
       if (rawDb) {
-        const sumRow = rawDb.prepare('SELECT SUM(coins) as total_coins, MAX(streak) as max_streak, MAX(reputation) as max_rep FROM users WHERE user_id = ?').get(targetUser.id);
+        const sumRow = rawDb.prepare('SELECT SUM(coins) as total_coins, MAX(streak) as max_streak, MAX(reputation) as max_rep, MAX(level) as max_lvl, MAX(xp) as max_xp FROM users WHERE user_id = ?').get(targetUser.id);
         if (sumRow) {
           if (sumRow.total_coins !== null && sumRow.total_coins > (userData.coins || 0)) {
             userData.coins = sumRow.total_coins;
@@ -41,6 +70,12 @@ module.exports = {
           }
           if (sumRow.max_rep !== null && sumRow.max_rep > (userData.reputation || 0)) {
             userData.reputation = sumRow.max_rep;
+          }
+          if (sumRow.max_lvl !== null && sumRow.max_lvl > (rankData.level || 1)) {
+            rankData.level = sumRow.max_lvl;
+          }
+          if (sumRow.max_xp !== null && sumRow.max_xp > (rankData.xp || 0)) {
+            rankData.xp = sumRow.max_xp;
           }
         }
       }
@@ -76,11 +111,40 @@ module.exports = {
     userData.wallpaper_url = db.getWallpaper(targetUser.id);
     const rankData = db.getUserRank(targetUser.id, message.guild.id) || { xp: 0, level: 0, rank: 1 };
 
-    // التأكد من جلب رصيد الذهب الفعلي للمستخدم (سواء من السيرفر الحالي أو محفظته المجمعة)
+    // 🌐 جلب رصيد الذهب والإحصائيات الحية مباشرة من Turso Cloud
+    try {
+      if (db.getTursoUser) {
+        const tursoData = await db.getTursoUser(targetUser.id);
+        if (tursoData) {
+          if (tursoData.coins !== null && tursoData.coins > (userData.coins || 0)) {
+            userData.coins = tursoData.coins;
+          }
+          if (tursoData.streak !== null && tursoData.streak > (userData.streak || 0)) {
+            userData.streak = tursoData.streak;
+          }
+          if (tursoData.reputation !== null && tursoData.reputation > (userData.reputation || 0)) {
+            userData.reputation = tursoData.reputation;
+          }
+          if (tursoData.level !== null && tursoData.level > (rankData.level || 1)) {
+            rankData.level = tursoData.level;
+          }
+          if (tursoData.xp !== null && tursoData.xp > (rankData.xp || 0)) {
+            rankData.xp = tursoData.xp;
+          }
+          if (tursoData.wallpaper && tursoData.wallpaper !== 'default') {
+            userData.wallpaper_url = tursoData.wallpaper;
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[PROFILE] Turso fetch error:', e.message);
+    }
+
+    // التأكد من جلب رصيد الذهب الفعلي للمستخدم محلياً كـ fallback إضافي
     try {
       const rawDb = db.getDb?.();
       if (rawDb) {
-        const sumRow = rawDb.prepare('SELECT SUM(coins) as total_coins, MAX(streak) as max_streak, MAX(reputation) as max_rep FROM users WHERE user_id = ?').get(targetUser.id);
+        const sumRow = rawDb.prepare('SELECT SUM(coins) as total_coins, MAX(streak) as max_streak, MAX(reputation) as max_rep, MAX(level) as max_lvl, MAX(xp) as max_xp FROM users WHERE user_id = ?').get(targetUser.id);
         if (sumRow) {
           if (sumRow.total_coins !== null && sumRow.total_coins > (userData.coins || 0)) {
             userData.coins = sumRow.total_coins;
@@ -90,6 +154,12 @@ module.exports = {
           }
           if (sumRow.max_rep !== null && sumRow.max_rep > (userData.reputation || 0)) {
             userData.reputation = sumRow.max_rep;
+          }
+          if (sumRow.max_lvl !== null && sumRow.max_lvl > (rankData.level || 1)) {
+            rankData.level = sumRow.max_lvl;
+          }
+          if (sumRow.max_xp !== null && sumRow.max_xp > (rankData.xp || 0)) {
+            rankData.xp = sumRow.max_xp;
           }
         }
       }
