@@ -9479,16 +9479,17 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
 
                                 <div class="flex items-center justify-between p-4 bg-[#08060e] border border-[#7c3aed]/20 rounded-2xl">
-                                    <button type="button" onclick="document.getElementById('inpAvatarUrl').focus()" class="px-4 py-2 bg-gradient-to-r from-[#7c3aed] to-[#2563eb] hover:from-[#8b5cf6] hover:to-[#3b82f6] text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5">
+                                    <label class="cursor-pointer px-4 py-2 bg-gradient-to-r from-[#7c3aed] to-[#2563eb] hover:from-[#8b5cf6] hover:to-[#3b82f6] text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5">
                                         <span>🖼️</span>
-                                        <span>اختر صورة</span>
-                                    </button>
+                                        <span id="btn_text_bot_avatar">اختر صورة</span>
+                                        <input type="file" id="file_bot_avatar" accept="image/*" class="hidden" onchange="uploadImageFile(this, 'bot_avatar', function(url){ updateAvatarPreview(url); })">
+                                    </label>
                                     <div class="flex items-center gap-3">
-                                        <span class="text-[11px] text-white">اضغط أو الصق رابط صورة جديدة</span>
+                                        <span class="text-[11px] text-white">اختر صورة مباشرة من جهازك</span>
                                         <img id="cardAvatarPreview" src="${settings.bot_avatar || (botGuild?.members?.me?.user?.displayAvatarURL() || userAvatar)}" class="w-10 h-10 rounded-xl object-cover ring-2 ring-blue-400/50">
                                     </div>
                                 </div>
-                                <input type="url" name="bot_avatar" id="inpAvatarUrl" value="${settings.bot_avatar || ''}" placeholder="https://i.imgur.com/... (رابط الصورة المباشر)" oninput="updateAvatarPreview(this.value)" class="w-full bg-[#08060e] border border-[#7c3aed]/20 focus:border-[#7c3aed] rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono">
+                                <input type="hidden" name="bot_avatar" id="input_bot_avatar" value="${settings.bot_avatar || ''}">
                             </div>
 
                             <!-- بنر البوت في السيرفر -->
@@ -9502,13 +9503,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
 
                                 <div class="flex items-center justify-between p-4 bg-[#08060e] border border-[#7c3aed]/20 rounded-2xl">
-                                    <button type="button" onclick="document.getElementById('inpBannerUrl').focus()" class="px-4 py-2 bg-gradient-to-r from-[#7c3aed] to-[#2563eb] hover:from-[#8b5cf6] hover:to-[#3b82f6] text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5">
+                                    <label class="cursor-pointer px-4 py-2 bg-gradient-to-r from-[#7c3aed] to-[#2563eb] hover:from-[#8b5cf6] hover:to-[#3b82f6] text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5">
                                         <span>🖼️</span>
-                                        <span>اختر بنر</span>
-                                    </button>
-                                    <span class="text-[11px] text-white">الصق رابط صورة البنر المباشر</span>
+                                        <span id="btn_text_bot_banner">اختر بنر</span>
+                                        <input type="file" id="file_bot_banner" accept="image/*" class="hidden" onchange="uploadImageFile(this, 'bot_banner', function(url){ updateBannerPreview(url); })">
+                                    </label>
+                                    <span class="text-[11px] text-white">اختر صورة بنر مباشرة من جهازك</span>
                                 </div>
-                                <input type="url" name="bot_banner" id="inpBannerUrl" value="${settings.bot_banner || ''}" placeholder="https://i.imgur.com/... (رابط البنر المباشر)" oninput="updateBannerPreview(this.value)" class="w-full bg-[#08060e] border border-[#7c3aed]/20 focus:border-[#7c3aed] rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono">
+                                <input type="hidden" name="bot_banner" id="input_bot_banner" value="${settings.bot_banner || ''}">
                             </div>
 
                         </div>
@@ -9522,7 +9524,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <ul class="text-[11px] text-white space-y-1 pr-2 list-none">
                                 <li>• تغيير الاسم والصورة والبنر يؤثر فقط على السيرفر المحدد.</li>
                                 <li>• قد يستغرق ظهور التغييرات بضع ثوانٍ في ديسكورد فور الضغط على حفظ.</li>
-                                <li>• الصور يجب أن تكون بروابط مباشرة بصيغة PNG أو JPG أو WEBP أو GIF.</li>
+                                <li>• يدعم رفع صيغ PNG أو JPG أو WEBP أو GIF مباشرة من جهازك.</li>
                             </ul>
                         </div>
 
