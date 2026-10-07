@@ -136,7 +136,7 @@ module.exports = function (app, client) {
                         h1 { color: #ef4444; font-size: 24px; margin-bottom: 12px; }
                         p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
                         a { display: inline-block; margin-top: 20px; color: #93c5fd; text-decoration: none; font-weight: bold; }
-                    /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 16px rgba(147, 197, 253, .35), 0 0 44px rgba(147, 197, 253, .14); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 26px rgba(191, 219, 254, .6), 0 0 70px rgba(147, 197, 253, .3); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet light theme (default) */ body.light-mode { background-color:#f1f5f9 !important; color:#0f172a !important; } body.light-mode [class*="bg-[#0b0d14]"], body.light-mode [class*="bg-[#0b0e14]"] { background-color:#f1f5f9 !important; } body.light-mode [class*="bg-[#12141f]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#10121b]"], body.light-mode [class*="bg-[#151722]"], body.light-mode [class*="bg-[#121620]"], body.light-mode [class*="bg-[#161824]"], body.light-mode [class*="bg-[#1e2638]"], body.light-mode [class*="bg-[#1e0e11]"] { background-color:#ffffff !important; } body.light-mode [class*="bg-[#1c1f2e]"] { background-color:#e2e8f0 !important; } body.light-mode [class*="bg-[#06070a]"], body.light-mode [class*="bg-[#040508]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#0d0f17]"] { background-color:rgba(248,250,252,.92) !important; } body.light-mode [class*="bg-[#0f111a]"] { background-color:rgba(248,250,252,.85) !important; } body.light-mode [class*="text-white"]:not([class*="bg-blue-"]):not([class*="from-blue-"]):not([class*="bg-green-"]):not([class*="bg-red-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-black"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]) { color:#0f172a !important; } body.light-mode [class*="hover:text-white"]:hover { color:#0f172a !important; } body.light-mode [class*="text-gray-200"] { color:#334155 !important; } body.light-mode [class*="text-gray-300"] { color:#475569 !important; } body.light-mode [class*="text-gray-400"] { color:#64748b !important; } body.light-mode [class*="border-blue-300/60"] { border-color:rgb(15 23 42 / .1) !important; } body.light-mode [class*="divide-"] > * + * { border-color:rgb(15 23 42 / .08) !important; } body.light-mode [class*="bg-white/"] { background-color:rgb(15 23 42 / .04) !important; } body.light-mode [class*="hover:bg-blue-300"]:hover { background-color:rgb(15 23 42 / .06) !important; } body.light-mode [class*="text-amber-200"], body.light-mode [class*="text-amber-300"] { color:#b45309 !important; } body.light-mode [class*="text-amber-400"] { color:#d97706 !important; } body.light-mode [class*="text-emerald-300"], body.light-mode [class*="text-emerald-400"] { color:#047857 !important; } body.light-mode [class*="text-green-400"] { color:#16a34a !important; } body.light-mode [class*="text-red-400"] { color:#dc2626 !important; } body.light-mode [class*="text-blue-200"], body.light-mode [class*="text-blue-300"] { color:#1d4ed8 !important; } body.light-mode ::placeholder { color:#94a3b8 !important; } body.light-mode [class*="ring-blue-300"] { --tw-ring-color:#cbd5e1 !important; } body.light-mode [class*="to-black"] { --tw-gradient-to:#ffffff var(--tw-gradient-to-position) !important; } body.light-mode ::-webkit-scrollbar-track { background:#e2e8f0 !important; }/* Droplet blue text glow */ [class*="text-blue-100"], [class*="text-blue-200"] { text-shadow: 0 0 12px rgba(147, 197, 253, .4); }</style>
+                    /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 16px rgba(147, 197, 253, .35), 0 0 44px rgba(147, 197, 253, .14); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 26px rgba(191, 219, 254, .6), 0 0 70px rgba(147, 197, 253, .3); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet light theme (default) */ body.light-mode { background-color:#f1f5f9 !important; color:#0f172a !important; } body.light-mode [class*="bg-[#0b0d14]"], body.light-mode [class*="bg-[#0b0e14]"] { background-color:#f1f5f9 !important; } body.light-mode [class*="bg-[#12141f]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#10121b]"], body.light-mode [class*="bg-[#151722]"], body.light-mode [class*="bg-[#121620]"], body.light-mode [class*="bg-[#161824]"], body.light-mode [class*="bg-[#1e2638]"], body.light-mode [class*="bg-[#1e0e11]"] { background-color:#ffffff !important; } body.light-mode [class*="bg-[#1c1f2e]"] { background-color:#e2e8f0 !important; } body.light-mode [class*="bg-[#06070a]"], body.light-mode [class*="bg-[#040508]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#0d0f17]"] { background-color:rgba(248,250,252,.92) !important; } body.light-mode [class*="bg-[#0f111a]"] { background-color:rgba(248,250,252,.85) !important; } body.light-mode [class*="text-white"]:not([class*="bg-blue-"]):not([class*="from-blue-"]):not([class*="bg-green-"]):not([class*="bg-red-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-black"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]) { color:#0f172a !important; } body.light-mode [class*="hover:text-white"]:hover { color:#0f172a !important; } body.light-mode [class*="text-gray-200"] { color:#334155 !important; } body.light-mode [class*="text-gray-300"] { color:#475569 !important; } body.light-mode [class*="text-gray-400"] { color:#64748b !important; } body.light-mode [class*="border-blue-300/60"] { border-color:rgb(15 23 42 / .1) !important; } body.light-mode [class*="divide-"] > * + * { border-color:rgb(15 23 42 / .08) !important; } body.light-mode [class*="bg-white/"] { background-color:rgb(15 23 42 / .04) !important; } body.light-mode [class*="hover:bg-blue-300"]:hover { background-color:rgb(15 23 42 / .06) !important; } body.light-mode [class*="text-amber-200"], body.light-mode [class*="text-amber-300"] { color:#b45309 !important; } body.light-mode [class*="text-amber-400"] { color:#d97706 !important; } body.light-mode [class*="text-emerald-300"], body.light-mode [class*="text-emerald-400"] { color:#047857 !important; } body.light-mode [class*="text-green-400"] { color:#16a34a !important; } body.light-mode [class*="text-red-400"] { color:#dc2626 !important; } body.light-mode [class*="text-blue-200"], body.light-mode [class*="text-blue-300"] { color:#1d4ed8 !important; } body.light-mode ::placeholder { color:#94a3b8 !important; } body.light-mode [class*="ring-blue-300"] { --tw-ring-color:#cbd5e1 !important; } body.light-mode [class*="to-black"] { --tw-gradient-to:#ffffff var(--tw-gradient-to-position) !important; } body.light-mode ::-webkit-scrollbar-track { background:#e2e8f0 !important; }/* Droplet blue text glow */ [class*="text-blue-100"], [class*="text-blue-200"], [class*="text-blue-300"] { text-shadow: 0 0 12px rgba(147, 197, 253, .4); }</style>
                 </head>
                 <body>
                     <div class="card">
@@ -171,7 +171,7 @@ module.exports = function (app, client) {
                     .glass { background: rgba(22, 27, 46, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
                     .btn-purple { background: linear-gradient(135deg, #60a5fa, #60a5fa); transition: all 0.2s ease; }
                     .btn-purple:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(96, 165, 250, 0.4); }
-                /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 16px rgba(147, 197, 253, .35), 0 0 44px rgba(147, 197, 253, .14); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 26px rgba(191, 219, 254, .6), 0 0 70px rgba(147, 197, 253, .3); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet light theme (default) */ body.light-mode { background-color:#f1f5f9 !important; color:#0f172a !important; } body.light-mode [class*="bg-[#0b0d14]"], body.light-mode [class*="bg-[#0b0e14]"] { background-color:#f1f5f9 !important; } body.light-mode [class*="bg-[#12141f]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#10121b]"], body.light-mode [class*="bg-[#151722]"], body.light-mode [class*="bg-[#121620]"], body.light-mode [class*="bg-[#161824]"], body.light-mode [class*="bg-[#1e2638]"], body.light-mode [class*="bg-[#1e0e11]"] { background-color:#ffffff !important; } body.light-mode [class*="bg-[#1c1f2e]"] { background-color:#e2e8f0 !important; } body.light-mode [class*="bg-[#06070a]"], body.light-mode [class*="bg-[#040508]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#0d0f17]"] { background-color:rgba(248,250,252,.92) !important; } body.light-mode [class*="bg-[#0f111a]"] { background-color:rgba(248,250,252,.85) !important; } body.light-mode [class*="text-white"]:not([class*="bg-blue-"]):not([class*="from-blue-"]):not([class*="bg-green-"]):not([class*="bg-red-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-black"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]) { color:#0f172a !important; } body.light-mode [class*="hover:text-white"]:hover { color:#0f172a !important; } body.light-mode [class*="text-gray-200"] { color:#334155 !important; } body.light-mode [class*="text-gray-300"] { color:#475569 !important; } body.light-mode [class*="text-gray-400"] { color:#64748b !important; } body.light-mode [class*="border-blue-300/60"] { border-color:rgb(15 23 42 / .1) !important; } body.light-mode [class*="divide-"] > * + * { border-color:rgb(15 23 42 / .08) !important; } body.light-mode [class*="bg-white/"] { background-color:rgb(15 23 42 / .04) !important; } body.light-mode [class*="hover:bg-blue-300"]:hover { background-color:rgb(15 23 42 / .06) !important; } body.light-mode [class*="text-amber-200"], body.light-mode [class*="text-amber-300"] { color:#b45309 !important; } body.light-mode [class*="text-amber-400"] { color:#d97706 !important; } body.light-mode [class*="text-emerald-300"], body.light-mode [class*="text-emerald-400"] { color:#047857 !important; } body.light-mode [class*="text-green-400"] { color:#16a34a !important; } body.light-mode [class*="text-red-400"] { color:#dc2626 !important; } body.light-mode [class*="text-blue-200"], body.light-mode [class*="text-blue-300"] { color:#1d4ed8 !important; } body.light-mode ::placeholder { color:#94a3b8 !important; } body.light-mode [class*="ring-blue-300"] { --tw-ring-color:#cbd5e1 !important; } body.light-mode [class*="to-black"] { --tw-gradient-to:#ffffff var(--tw-gradient-to-position) !important; } body.light-mode ::-webkit-scrollbar-track { background:#e2e8f0 !important; }/* Droplet blue text glow */ [class*="text-blue-100"], [class*="text-blue-200"] { text-shadow: 0 0 12px rgba(147, 197, 253, .4); }</style>
+                /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 16px rgba(147, 197, 253, .35), 0 0 44px rgba(147, 197, 253, .14); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 26px rgba(191, 219, 254, .6), 0 0 70px rgba(147, 197, 253, .3); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet light theme (default) */ body.light-mode { background-color:#f1f5f9 !important; color:#0f172a !important; } body.light-mode [class*="bg-[#0b0d14]"], body.light-mode [class*="bg-[#0b0e14]"] { background-color:#f1f5f9 !important; } body.light-mode [class*="bg-[#12141f]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#10121b]"], body.light-mode [class*="bg-[#151722]"], body.light-mode [class*="bg-[#121620]"], body.light-mode [class*="bg-[#161824]"], body.light-mode [class*="bg-[#1e2638]"], body.light-mode [class*="bg-[#1e0e11]"] { background-color:#ffffff !important; } body.light-mode [class*="bg-[#1c1f2e]"] { background-color:#e2e8f0 !important; } body.light-mode [class*="bg-[#06070a]"], body.light-mode [class*="bg-[#040508]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#0d0f17]"] { background-color:rgba(248,250,252,.92) !important; } body.light-mode [class*="bg-[#0f111a]"] { background-color:rgba(248,250,252,.85) !important; } body.light-mode [class*="text-white"]:not([class*="bg-blue-"]):not([class*="from-blue-"]):not([class*="bg-green-"]):not([class*="bg-red-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-black"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]) { color:#0f172a !important; } body.light-mode [class*="hover:text-white"]:hover { color:#0f172a !important; } body.light-mode [class*="text-gray-200"] { color:#334155 !important; } body.light-mode [class*="text-gray-300"] { color:#475569 !important; } body.light-mode [class*="text-gray-400"] { color:#64748b !important; } body.light-mode [class*="border-blue-300/60"] { border-color:rgb(15 23 42 / .1) !important; } body.light-mode [class*="divide-"] > * + * { border-color:rgb(15 23 42 / .08) !important; } body.light-mode [class*="bg-white/"] { background-color:rgb(15 23 42 / .04) !important; } body.light-mode [class*="hover:bg-blue-300"]:hover { background-color:rgb(15 23 42 / .06) !important; } body.light-mode [class*="text-amber-200"], body.light-mode [class*="text-amber-300"] { color:#b45309 !important; } body.light-mode [class*="text-amber-400"] { color:#d97706 !important; } body.light-mode [class*="text-emerald-300"], body.light-mode [class*="text-emerald-400"] { color:#047857 !important; } body.light-mode [class*="text-green-400"] { color:#16a34a !important; } body.light-mode [class*="text-red-400"] { color:#dc2626 !important; } body.light-mode [class*="text-blue-200"], body.light-mode [class*="text-blue-300"] { color:#1d4ed8 !important; } body.light-mode ::placeholder { color:#94a3b8 !important; } body.light-mode [class*="ring-blue-300"] { --tw-ring-color:#cbd5e1 !important; } body.light-mode [class*="to-black"] { --tw-gradient-to:#ffffff var(--tw-gradient-to-position) !important; } body.light-mode ::-webkit-scrollbar-track { background:#e2e8f0 !important; }/* Droplet blue text glow */ [class*="text-blue-100"], [class*="text-blue-200"], [class*="text-blue-300"] { text-shadow: 0 0 12px rgba(147, 197, 253, .4); }</style>
             </head>
             <body class="min-h-screen flex items-center justify-center p-4">
                 <div class="w-full max-w-lg glass rounded-2xl p-8 shadow-2xl">
@@ -179,39 +179,39 @@ module.exports = function (app, client) {
                         <div class="w-16 h-16 bg-blue-400 bg-opacity-20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl font-bold">
                             ⚖️
                         </div>
-                        <h1 class="text-2xl font-extrabold text-blue-100">طلب فك الحظر (Unban Appeal)</h1>
+                        <h1 class="text-2xl font-extrabold text-blue-300">طلب فك الحظر (Unban Appeal)</h1>
                         <p class="text-gray-400 text-sm mt-1">قم بملء النموذج التالي وسيتم مراجعته مباشرة من قبل إدارة السيرفر.</p>
                     </div>
 
                     <form id="appealForm" class="space-y-4">
                         <div>
                             <label class="block text-xs font-bold text-gray-300 mb-1">معرف السيرفر (Server ID) *</label>
-                            <input type="text" id="guildId" required placeholder="مثال: 123456789012345678" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-100 focus:outline-none focus:border-blue-400">
+                            <input type="text" id="guildId" required placeholder="مثال: 123456789012345678" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-300 focus:outline-none focus:border-blue-400">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-300 mb-1">الديسكورد آيدي الخاص بك (Your Discord ID) *</label>
-                            <input type="text" id="userId" required placeholder="مثال: 987654321098765432" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-100 focus:outline-none focus:border-blue-400">
+                            <input type="text" id="userId" required placeholder="مثال: 987654321098765432" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-300 focus:outline-none focus:border-blue-400">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-300 mb-1">اسم حسابك (Username / Tag) *</label>
-                            <input type="text" id="username" required placeholder="مثال: username" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-100 focus:outline-none focus:border-blue-400">
+                            <input type="text" id="username" required placeholder="مثال: username" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-300 focus:outline-none focus:border-blue-400">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-300 mb-1">سبب حظرك من السيرفر *</label>
-                            <input type="text" id="banReason" required placeholder="ما هو السبب الذي تم حظرك بسببه؟" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-100 focus:outline-none focus:border-blue-400">
+                            <input type="text" id="banReason" required placeholder="ما هو السبب الذي تم حظرك بسببه؟" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-300 focus:outline-none focus:border-blue-400">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-300 mb-1">لماذا يجب على الإدارة فك حظرك؟ *</label>
-                            <textarea id="appealReason" required rows="3" placeholder="اشرح موقفك ووجهة نظرك للإدارة..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-100 focus:outline-none focus:border-blue-400"></textarea>
+                            <textarea id="appealReason" required rows="3" placeholder="اشرح موقفك ووجهة نظرك للإدارة..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-300 focus:outline-none focus:border-blue-400"></textarea>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-300 mb-1">تعهدك بعدم تكرار المخالفة *</label>
-                            <input type="text" id="promise" required placeholder="أتعهد بالالتزام بالقوانين..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-100 focus:outline-none focus:border-blue-400">
+                            <input type="text" id="promise" required placeholder="أتعهد بالالتزام بالقوانين..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm text-blue-300 focus:outline-none focus:border-blue-400">
                         </div>
 
                         <div id="statusMsg" class="hidden p-3 rounded-xl text-sm font-semibold text-center"></div>
 
-                        <button type="submit" class="w-full btn-purple py-3.5 rounded-xl font-bold text-blue-100 shadow-lg text-sm">
+                        <button type="submit" class="w-full btn-purple py-3.5 rounded-xl font-bold text-blue-300 shadow-lg text-sm">
                             إرسال طلب فك الحظر 🚀
                         </button>
                     </form>
@@ -449,7 +449,7 @@ module.exports = function (app, client) {
                 const errText = await tokenRes.text();
                 console.error('[OAUTH ERROR] Token exchange failed:', errText);
                 return res.status(400).send(`
-                    <div style="background:#0b0d14;color:#dbeafe;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
+                    <div style="background:#0b0d14;color:#bfdbfe;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
                         <h2 style="color:#ef4444;">تعذر إكمال تسجيل الدخول عبر Discord</h2>
                         <p style="color:#aaa;max-width:500px;margin-top:10px;">رسالة الخطأ من Discord: <code>${errText}</code></p>
                         <p style="color:#888;font-size:13px;margin-top:5px;">تأكد من صحة Client Secret في إعدادات البوت.</p>
@@ -639,7 +639,7 @@ module.exports = function (app, client) {
                     <div class="p-3.5 flex flex-col justify-between flex-1 text-right gap-2.5">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-mono font-bold text-amber-300">🪙 ${w.price.toLocaleString()}</span>
-                            <h4 class="text-xs font-bold text-blue-100 truncate max-w-[140px]">${w.name}</h4>
+                            <h4 class="text-xs font-bold text-blue-300 truncate max-w-[140px]">${w.name}</h4>
                         </div>
                         <button onclick="buyItem('identity', '${w.url}', ${w.price}, this)" class="w-full py-2 bg-gradient-to-r ${isSelected ? 'from-emerald-600 to-teal-600 cursor-default' : 'from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500'} text-blue-950 rounded-xl text-xs font-bold transition shadow-md flex items-center justify-center gap-1.5">
                             ${isSelected ? '<span>مجهزة على بطاقتك 🪪</span>' : `<span>شراء وتجهيز (${w.price.toLocaleString()} 🪙)</span>`}
@@ -1267,7 +1267,7 @@ module.exports = function (app, client) {
                     </a>
                     <div class="flex items-center gap-3">
                         <div class="text-right">
-                            <h4 class="font-bold text-blue-100 text-sm group-hover:text-blue-400 transition truncate max-w-[160px]">${g.name}</h4>
+                            <h4 class="font-bold text-blue-300 text-sm group-hover:text-blue-400 transition truncate max-w-[160px]">${g.name}</h4>
                             <span class="text-[10px] text-gray-500 font-mono">${g.id}</span>
                         </div>
                         <img src="${g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-12 h-12 rounded-2xl bg-[#0b0d14] object-cover ring-2 ring-blue-300/5">
@@ -1276,7 +1276,7 @@ module.exports = function (app, client) {
             `).join('') : `
                 <div class="col-span-full py-12 text-center space-y-3 bg-[#131520] rounded-2xl border border-dashed border-blue-400/25 p-6">
                     <div class="text-4xl">🛡️</div>
-                    <h4 class="text-blue-100 font-bold text-sm">No manageable servers found</h4>
+                    <h4 class="text-blue-300 font-bold text-sm">No manageable servers found</h4>
                     <p class="text-gray-400 text-xs max-w-md mx-auto">To manage a server, you must be the owner or have Administrator / Manage Server permissions, and the bot must be invited.</p>
                     <a href="https://discord.com/api/oauth2/authorize?client_id=${client?.user?.id || config.clientId}&permissions=8&scope=bot%20applications.commands" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-400 hover:bg-blue-500 text-blue-950 text-xs font-bold rounded-xl transition shadow-lg mt-2">
                         <span>➕ Add Bot to Server</span>
@@ -1298,7 +1298,7 @@ module.exports = function (app, client) {
                     <div class="flex items-center gap-2.5 flex-1 min-w-0">
                         <img src="${uAvatar}" alt="${uName}" class="w-8 h-8 rounded-xl object-cover shrink-0 ${isMe ? 'ring-2 ring-blue-400' : ''}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
                         <div class="text-right min-w-0">
-                            <span class="text-xs text-blue-100 font-bold block truncate max-w-[130px] ${isMe ? 'text-blue-300' : ''}">${uName}${isMe ? ' 👤' : ''}</span>
+                            <span class="text-xs text-blue-300 font-bold block truncate max-w-[130px] ${isMe ? 'text-blue-300' : ''}">${uName}${isMe ? ' 👤' : ''}</span>
                             <span class="text-[10px] text-gray-500 font-mono block">Lv.${r.max_level || 1}</span>
                         </div>
                     </div>
@@ -1324,7 +1324,7 @@ module.exports = function (app, client) {
                     <div class="flex items-center gap-2.5 flex-1 min-w-0">
                         <img src="${uAvatar}" alt="${uName}" class="w-8 h-8 rounded-xl object-cover shrink-0 ${isMe ? 'ring-2 ring-amber-500' : ''}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
                         <div class="text-right min-w-0">
-                            <span class="text-xs text-blue-100 font-bold block truncate max-w-[130px] ${isMe ? 'text-amber-300' : ''}">${uName}${isMe ? ' 👤' : ''}</span>
+                            <span class="text-xs text-blue-300 font-bold block truncate max-w-[130px] ${isMe ? 'text-amber-300' : ''}">${uName}${isMe ? ' 👤' : ''}</span>
                             <span class="text-[10px] text-gray-500 font-mono block">Lv.${r.max_level || 1}</span>
                         </div>
                     </div>
@@ -1372,7 +1372,7 @@ module.exports = function (app, client) {
                         --primary: #60a5fa;
                         --border: rgba(255, 255, 255, 0.05);
                     }
-                    body { background-color: var(--bg-main) !important; color: #dbeafe !important; font-family: 'Cairo', sans-serif !important; transition: background-color 0.3s, color 0.3s; }
+                    body { background-color: var(--bg-main) !important; color: #bfdbfe !important; font-family: 'Cairo', sans-serif !important; transition: background-color 0.3s, color 0.3s; }
                     body.light-mode { background-color: #f8f9fa !important; color: #1a1a1a !important; }
                     body.light-mode .bg-\[\#0b0e14\], body.light-mode .bg-\[\#0b0d14\] { background-color: #f3f4f6 !important; }
                     body.light-mode .bg-\[\#121620\], body.light-mode .bg-\[\#151722\] { background-color: #ffffff !important; border-color: #e5e7eb !important; }
@@ -1387,7 +1387,7 @@ module.exports = function (app, client) {
                     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(96, 165, 250, 0.2); border-radius: 50%; border-top-color: #93c5fd; animation: spin 0.8s linear infinite; }
                     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
                     .toast-enter { animation: slideUp 0.3s ease-out; }
-                /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 16px rgba(147, 197, 253, .35), 0 0 44px rgba(147, 197, 253, .14); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 26px rgba(191, 219, 254, .6), 0 0 70px rgba(147, 197, 253, .3); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet light theme (default) */ body.light-mode { background-color:#f1f5f9 !important; color:#0f172a !important; } body.light-mode [class*="bg-[#0b0d14]"], body.light-mode [class*="bg-[#0b0e14]"] { background-color:#f1f5f9 !important; } body.light-mode [class*="bg-[#12141f]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#10121b]"], body.light-mode [class*="bg-[#151722]"], body.light-mode [class*="bg-[#121620]"], body.light-mode [class*="bg-[#161824]"], body.light-mode [class*="bg-[#1e2638]"], body.light-mode [class*="bg-[#1e0e11]"] { background-color:#ffffff !important; } body.light-mode [class*="bg-[#1c1f2e]"] { background-color:#e2e8f0 !important; } body.light-mode [class*="bg-[#06070a]"], body.light-mode [class*="bg-[#040508]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#0d0f17]"] { background-color:rgba(248,250,252,.92) !important; } body.light-mode [class*="bg-[#0f111a]"] { background-color:rgba(248,250,252,.85) !important; } body.light-mode [class*="text-white"]:not([class*="bg-blue-"]):not([class*="from-blue-"]):not([class*="bg-green-"]):not([class*="bg-red-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-black"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]) { color:#0f172a !important; } body.light-mode [class*="hover:text-white"]:hover { color:#0f172a !important; } body.light-mode [class*="text-gray-200"] { color:#334155 !important; } body.light-mode [class*="text-gray-300"] { color:#475569 !important; } body.light-mode [class*="text-gray-400"] { color:#64748b !important; } body.light-mode [class*="border-blue-300/60"] { border-color:rgb(15 23 42 / .1) !important; } body.light-mode [class*="divide-"] > * + * { border-color:rgb(15 23 42 / .08) !important; } body.light-mode [class*="bg-white/"] { background-color:rgb(15 23 42 / .04) !important; } body.light-mode [class*="hover:bg-blue-300"]:hover { background-color:rgb(15 23 42 / .06) !important; } body.light-mode [class*="text-amber-200"], body.light-mode [class*="text-amber-300"] { color:#b45309 !important; } body.light-mode [class*="text-amber-400"] { color:#d97706 !important; } body.light-mode [class*="text-emerald-300"], body.light-mode [class*="text-emerald-400"] { color:#047857 !important; } body.light-mode [class*="text-green-400"] { color:#16a34a !important; } body.light-mode [class*="text-red-400"] { color:#dc2626 !important; } body.light-mode [class*="text-blue-200"], body.light-mode [class*="text-blue-300"] { color:#1d4ed8 !important; } body.light-mode ::placeholder { color:#94a3b8 !important; } body.light-mode [class*="ring-blue-300"] { --tw-ring-color:#cbd5e1 !important; } body.light-mode [class*="to-black"] { --tw-gradient-to:#ffffff var(--tw-gradient-to-position) !important; } body.light-mode ::-webkit-scrollbar-track { background:#e2e8f0 !important; }/* Droplet blue text glow */ [class*="text-blue-100"], [class*="text-blue-200"] { text-shadow: 0 0 12px rgba(147, 197, 253, .4); }</style>
+                /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 16px rgba(147, 197, 253, .35), 0 0 44px rgba(147, 197, 253, .14); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 26px rgba(191, 219, 254, .6), 0 0 70px rgba(147, 197, 253, .3); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet light theme (default) */ body.light-mode { background-color:#f1f5f9 !important; color:#0f172a !important; } body.light-mode [class*="bg-[#0b0d14]"], body.light-mode [class*="bg-[#0b0e14]"] { background-color:#f1f5f9 !important; } body.light-mode [class*="bg-[#12141f]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#10121b]"], body.light-mode [class*="bg-[#151722]"], body.light-mode [class*="bg-[#121620]"], body.light-mode [class*="bg-[#161824]"], body.light-mode [class*="bg-[#1e2638]"], body.light-mode [class*="bg-[#1e0e11]"] { background-color:#ffffff !important; } body.light-mode [class*="bg-[#1c1f2e]"] { background-color:#e2e8f0 !important; } body.light-mode [class*="bg-[#06070a]"], body.light-mode [class*="bg-[#040508]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#0d0f17]"] { background-color:rgba(248,250,252,.92) !important; } body.light-mode [class*="bg-[#0f111a]"] { background-color:rgba(248,250,252,.85) !important; } body.light-mode [class*="text-white"]:not([class*="bg-blue-"]):not([class*="from-blue-"]):not([class*="bg-green-"]):not([class*="bg-red-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-black"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]) { color:#0f172a !important; } body.light-mode [class*="hover:text-white"]:hover { color:#0f172a !important; } body.light-mode [class*="text-gray-200"] { color:#334155 !important; } body.light-mode [class*="text-gray-300"] { color:#475569 !important; } body.light-mode [class*="text-gray-400"] { color:#64748b !important; } body.light-mode [class*="border-blue-300/60"] { border-color:rgb(15 23 42 / .1) !important; } body.light-mode [class*="divide-"] > * + * { border-color:rgb(15 23 42 / .08) !important; } body.light-mode [class*="bg-white/"] { background-color:rgb(15 23 42 / .04) !important; } body.light-mode [class*="hover:bg-blue-300"]:hover { background-color:rgb(15 23 42 / .06) !important; } body.light-mode [class*="text-amber-200"], body.light-mode [class*="text-amber-300"] { color:#b45309 !important; } body.light-mode [class*="text-amber-400"] { color:#d97706 !important; } body.light-mode [class*="text-emerald-300"], body.light-mode [class*="text-emerald-400"] { color:#047857 !important; } body.light-mode [class*="text-green-400"] { color:#16a34a !important; } body.light-mode [class*="text-red-400"] { color:#dc2626 !important; } body.light-mode [class*="text-blue-200"], body.light-mode [class*="text-blue-300"] { color:#1d4ed8 !important; } body.light-mode ::placeholder { color:#94a3b8 !important; } body.light-mode [class*="ring-blue-300"] { --tw-ring-color:#cbd5e1 !important; } body.light-mode [class*="to-black"] { --tw-gradient-to:#ffffff var(--tw-gradient-to-position) !important; } body.light-mode ::-webkit-scrollbar-track { background:#e2e8f0 !important; }/* Droplet blue text glow */ [class*="text-blue-100"], [class*="text-blue-200"], [class*="text-blue-300"] { text-shadow: 0 0 12px rgba(147, 197, 253, .4); }</style>
             
     <script>
     function _t(text) {
@@ -1614,11 +1614,11 @@ module.exports = function (app, client) {
                     </div>
                     <div class="flex items-center gap-3">
                         <img src="${botAvatarUrl}" class="w-8 h-8 rounded-xl object-cover ring-2 ring-blue-400/40 shadow-md shadow-blue-700/30">
-                        <span class="font-black text-sm text-blue-100 tracking-wide hidden sm:block">Droplet</span>
+                        <span class="font-black text-sm text-blue-300 tracking-wide hidden sm:block">Droplet</span>
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="text-right">
-                            <span class="text-xs font-bold text-blue-100 block">${user.username}</span>
+                            <span class="text-xs font-bold text-blue-300 block">${user.username}</span>
                             <span class="text-[10px] text-yellow-400 font-mono">🪙 ${userCoins.toLocaleString()} Gold</span>
                         </div>
                         <img src="${userAvatar}" class="w-9 h-9 rounded-xl object-cover ring-2 ring-yellow-500/40">
@@ -1634,7 +1634,7 @@ module.exports = function (app, client) {
                         <div id="tabOverview" class="tab-content space-y-6">
                             
                             <!-- Header Title -->
-                            <div class="flex items-center justify-end gap-2 text-blue-100 font-black text-lg">
+                            <div class="flex items-center justify-end gap-2 text-blue-300 font-black text-lg">
                                 <span>نظرة عامة</span>
                                 <span class="text-blue-400">🎛️</span>
                             </div>
@@ -1647,7 +1647,7 @@ module.exports = function (app, client) {
                                     <div class="w-10 h-10 rounded-xl bg-blue-400/10 text-amber-400 flex items-center justify-center text-xl font-bold shadow-inner">🪙</div>
                                     <div class="text-right">
                                         <span class="text-xs font-bold text-gray-400">Gold</span>
-                                        <h3 id="userCoinsDisplay" class="text-xl font-black text-blue-100 mt-0.5">${userCoins.toLocaleString()}</h3>
+                                        <h3 id="userCoinsDisplay" class="text-xl font-black text-blue-300 mt-0.5">${userCoins.toLocaleString()}</h3>
                                     </div>
                                 </div>
 
@@ -1656,7 +1656,7 @@ module.exports = function (app, client) {
                                     <div class="w-10 h-10 rounded-xl bg-blue-400/10 text-blue-400 flex items-center justify-center text-xl shadow-inner">👍</div>
                                     <div class="text-right">
                                         <span class="text-xs font-bold text-gray-400">Reputation</span>
-                                        <h3 class="text-xl font-black text-blue-100 mt-0.5">${userStars}</h3>
+                                        <h3 class="text-xl font-black text-blue-300 mt-0.5">${userStars}</h3>
                                     </div>
                                 </div>
 
@@ -1665,7 +1665,7 @@ module.exports = function (app, client) {
                                     <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl shadow-inner">🏆</div>
                                     <div class="text-right">
                                         <span class="text-xs font-bold text-gray-400">Rank</span>
-                                        <h3 class="text-xl font-black text-blue-100 mt-0.5">#${userRankXp}</h3>
+                                        <h3 class="text-xl font-black text-blue-300 mt-0.5">#${userRankXp}</h3>
                                     </div>
                                 </div>
 
@@ -1674,7 +1674,7 @@ module.exports = function (app, client) {
                                     <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl shadow-inner">📈</div>
                                     <div class="text-right">
                                         <span class="text-xs font-bold text-gray-400">Level</span>
-                                        <h3 class="text-xl font-black text-blue-100 mt-0.5">${userLevel}</h3>
+                                        <h3 class="text-xl font-black text-blue-300 mt-0.5">${userLevel}</h3>
                                     </div>
                                 </div>
 
@@ -1684,7 +1684,7 @@ module.exports = function (app, client) {
                             <div class="bg-[#10121b] border border-blue-400/15 rounded-3xl p-6 shadow-xl space-y-4">
                                 <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
                                     <span class="text-xs text-blue-400 font-bold bg-blue-800/40 px-2.5 py-1 rounded-lg">${guilds.length} Servers</span>
-                                    <h3 class="text-sm font-black text-blue-100 text-right flex items-center gap-2"><span>🛡️</span><span>Your Manageable Servers</span></h3>
+                                    <h3 class="text-sm font-black text-blue-300 text-right flex items-center gap-2"><span>🛡️</span><span>Your Manageable Servers</span></h3>
                                 </div>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     ${userDashboardGuildsHtml}
@@ -1695,7 +1695,7 @@ module.exports = function (app, client) {
                             <div class="bg-[#10121b] border border-blue-400/15 rounded-3xl p-6 shadow-xl space-y-4 text-right">
                                 <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
                                     <span class="text-xs text-gray-400">Transaction & Rewards Log</span>
-                                    <h3 class="text-sm font-black text-blue-100 flex items-center gap-2"><span>Last 5 Gold Transactions</span><span>🪙</span></h3>
+                                    <h3 class="text-sm font-black text-blue-300 flex items-center gap-2"><span>Last 5 Gold Transactions</span><span>🪙</span></h3>
                                 </div>
 
                                 <div class="overflow-x-auto">
@@ -1714,7 +1714,7 @@ module.exports = function (app, client) {
                                         </div>
                                         <div class="flex items-center gap-2.5 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-blue-100 leading-tight">المكافأة اليومية (Daily)</h5>
+                                                <h5 class="text-xs font-bold text-blue-300 leading-tight">المكافأة اليومية (Daily)</h5>
                                                 <span class="text-[10px] text-gray-400 font-mono">Droplet Bot System</span>
                                             </div>
                                             <div class="w-8 h-8 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-sm font-bold border border-blue-400/30">🎁</div>
@@ -1725,14 +1725,14 @@ module.exports = function (app, client) {
 
                             <!-- قسم الملف الشخصي وبطاقة الهوية (Profile Card & Identity Card - Novax Exact Style) -->
                             <div class="space-y-4 text-right">
-                                <h3 class="text-sm font-black text-blue-100 flex items-center justify-end gap-2"><span>الملف الشخصي</span><span>👤</span></h3>
+                                <h3 class="text-sm font-black text-blue-300 flex items-center justify-end gap-2"><span>الملف الشخصي</span><span>👤</span></h3>
                                 
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     
                                     <!-- 1. الملف الشخصي (Main Profile Card) -->
                                     <div class="bg-[#10121b] border border-blue-400/15 rounded-3xl p-5 shadow-xl space-y-4">
                                         <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
-                                            <h4 class="text-xs font-black text-blue-100">الملف الشخصي</h4>
+                                            <h4 class="text-xs font-black text-blue-300">الملف الشخصي</h4>
                                         </div>
 
                                         <!-- The Graphic Discord Card (Purple Nebula Design) -->
@@ -1742,7 +1742,7 @@ module.exports = function (app, client) {
                                                 <span class="px-2.5 py-1 bg-blue-700/60 border border-blue-400/40 text-blue-200 text-[10px] font-bold rounded-lg">+0 REP</span>
                                                 <div class="flex items-center gap-3">
                                                     <div class="text-right">
-                                                        <h4 class="text-sm font-black text-blue-100 leading-tight">@${user.username}</h4>
+                                                        <h4 class="text-sm font-black text-blue-300 leading-tight">@${user.username}</h4>
                                                     </div>
                                                     <img src="${userAvatar}" class="w-12 h-12 rounded-2xl object-cover ring-2 ring-blue-400/60 shadow-lg shadow-black/40">
                                                 </div>
@@ -1790,7 +1790,7 @@ module.exports = function (app, client) {
                                     <!-- 2. بطاقة الهوية (Identity / Voice & Invites Card) -->
                                     <div class="bg-[#10121b] border border-blue-400/15 rounded-3xl p-5 shadow-xl space-y-4">
                                         <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
-                                            <h4 class="text-xs font-black text-blue-100">بطاقة الهوية</h4>
+                                            <h4 class="text-xs font-black text-blue-300">بطاقة الهوية</h4>
                                         </div>
 
                                         <!-- The Graphic Identity Card -->
@@ -1801,7 +1801,7 @@ module.exports = function (app, client) {
                                                 </div>
                                                 <div class="flex items-center gap-3">
                                                     <div class="text-right">
-                                                        <h4 class="text-sm font-black text-blue-100 leading-tight">@${user.username}</h4>
+                                                        <h4 class="text-sm font-black text-blue-300 leading-tight">@${user.username}</h4>
                                                         <span class="text-[10px] text-gray-400">ID CARD</span>
                                                     </div>
                                                     <img src="${userAvatar}" class="w-12 h-12 rounded-2xl object-cover ring-2 ring-indigo-500/60 shadow-lg shadow-black/40">
@@ -1814,7 +1814,7 @@ module.exports = function (app, client) {
                                                         <span>TOP #1</span>
                                                         <span>💬 TEXT</span>
                                                     </div>
-                                                    <div class="text-[10px] text-gray-300">TOTAL XP: <span class="font-mono text-blue-100">${userXp}</span></div>
+                                                    <div class="text-[10px] text-gray-300">TOTAL XP: <span class="font-mono text-blue-300">${userXp}</span></div>
                                                     <div class="text-[10px] text-gray-300">STREAK: <span class="font-mono text-emerald-400">Active</span></div>
                                                 </div>
 
@@ -1823,7 +1823,7 @@ module.exports = function (app, client) {
                                                         <span>TOP #1</span>
                                                         <span>🎙️ VOICE</span>
                                                     </div>
-                                                    <div class="text-[10px] text-gray-300">VOICE TIME: <span class="font-mono text-blue-100">Online</span></div>
+                                                    <div class="text-[10px] text-gray-300">VOICE TIME: <span class="font-mono text-blue-300">Online</span></div>
                                                     <div class="text-[10px] text-gray-300">STREAK: <span class="font-mono text-emerald-400">Level ${userLevel}</span></div>
                                                 </div>
                                             </div>
@@ -1845,7 +1845,7 @@ module.exports = function (app, client) {
                                     <div class="flex items-center gap-3">
                                         <div class="w-12 h-12 rounded-2xl bg-blue-400/20 border border-blue-400/40 flex items-center justify-center text-2xl shadow-lg">⚡</div>
                                         <div>
-                                            <h2 class="text-base font-black text-blue-100">لوحة الصدارة — XP</h2>
+                                            <h2 class="text-base font-black text-blue-300">لوحة الصدارة — XP</h2>
                                             <p class="text-xs text-blue-300/70 mt-0.5">أعلى 20 عضو بنقاط الخبرة</p>
                                         </div>
                                     </div>
@@ -1872,7 +1872,7 @@ module.exports = function (app, client) {
                                     <div class="flex items-center gap-3">
                                         <div class="w-12 h-12 rounded-2xl bg-amber-600/20 border border-amber-500/40 flex items-center justify-center text-2xl shadow-lg">🏆</div>
                                         <div>
-                                            <h2 class="text-base font-black text-blue-100">أغنى الأثرياء — الذهب</h2>
+                                            <h2 class="text-base font-black text-blue-300">أغنى الأثرياء — الذهب</h2>
                                             <p class="text-xs text-amber-300/70 mt-0.5">أعلى 20 عضو برصيد الذهب</p>
                                         </div>
                                     </div>
@@ -1900,7 +1900,7 @@ module.exports = function (app, client) {
                                     <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-400/40 to-indigo-600/40 border border-blue-400/30 flex items-center justify-center text-4xl mx-auto shadow-2xl shadow-blue-700/40">🎁</div>
                                     <!-- Title -->
                                     <div>
-                                        <h2 class="text-xl font-black text-blue-100">الراتب اليومي</h2>
+                                        <h2 class="text-xl font-black text-blue-300">الراتب اليومي</h2>
                                         <p class="text-gray-400 text-xs mt-1.5 leading-relaxed">استلم مكافأتك مجاناً كل 24 ساعة!</p>
                                     </div>
                                     <!-- Stats Row -->
@@ -1939,7 +1939,7 @@ module.exports = function (app, client) {
                                 <div class="relative space-y-4">
                                     <div class="w-14 h-14 rounded-2xl bg-blue-400/20 border border-blue-400/30 flex items-center justify-center text-2xl mx-auto">🗳️</div>
                                     <div>
-                                        <h3 class="text-base font-black text-blue-100">صوّت للبوت على Top.gg</h3>
+                                        <h3 class="text-base font-black text-blue-300">صوّت للبوت على Top.gg</h3>
                                         <p class="text-gray-400 text-xs mt-1.5 leading-relaxed">صوّتك يساعد البوت على الانتشار! يمكنك التصويت كل <span class="text-blue-300 font-bold">12 ساعة</span></p>
                                     </div>
                                     <a href="https://top.gg/ar/bot/${client?.user?.id || config.clientId}/vote" target="_blank"
@@ -1962,7 +1962,7 @@ module.exports = function (app, client) {
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
                                 </div>
                                 <div class="flex items-center gap-2.5">
-                                    <span class="font-bold text-blue-100 text-xs">Manage Server</span>
+                                    <span class="font-bold text-blue-300 text-xs">Manage Server</span>
                                     <div class="w-8 h-8 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-sm border border-blue-400/30">
                                         🗂️
                                     </div>
@@ -2034,12 +2034,12 @@ module.exports = function (app, client) {
                         <!-- User Profile Bottom Bar (Novax Exact Style) -->
                         <div class="p-3 border-t border-blue-400/15">
                             <div class="bg-gradient-to-r from-blue-500 to-indigo-700 rounded-2xl p-2.5 flex items-center justify-between shadow-lg shadow-blue-800/40">
-                                <div class="text-blue-100/80 hover:text-blue-200 cursor-pointer px-1">
+                                <div class="text-blue-300/80 hover:text-blue-200 cursor-pointer px-1">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/></svg>
                                 </div>
                                 <div class="flex items-center gap-2.5">
                                     <div class="text-right">
-                                        <span class="text-xs font-black text-blue-100 block leading-tight truncate max-w-[110px]">${user.username}</span>
+                                        <span class="text-xs font-black text-blue-300 block leading-tight truncate max-w-[110px]">${user.username}</span>
                                     </div>
                                     <img src="${userAvatar}" class="w-8 h-8 rounded-xl object-cover ring-2 ring-blue-300/20 shadow-md">
                                 </div>
@@ -2108,7 +2108,7 @@ module.exports = function (app, client) {
             }
             if (!botGuild) {
                 return res.status(404).send(`
-                    <div style="background:#0b0d14;color:#dbeafe;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+                    <div style="background:#0b0d14;color:#bfdbfe;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
                         <h2>Bot not in this server</h2>
                         <a href="/dashboard/manage" style="color:#93c5fd;margin-top:10px;">Back to Dashboard</a>
                     </div>
@@ -2120,7 +2120,7 @@ module.exports = function (app, client) {
             const userCanManage = sessionGuilds.some(g => g.id === guildId);
             if (!userCanManage) {
                 return res.status(403).send(`
-                    <div style="background:#0b0d14;color:#dbeafe;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+                    <div style="background:#0b0d14;color:#bfdbfe;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
                         <h2>You don't have admin permissions in this server</h2>
                         <p style="color:#888;">You must be the server owner or have Manage Server / Administrator permissions</p>
                         <a href="/dashboard/manage" style="color:#93c5fd;margin-top:10px;">Back to Manageable Servers</a>
@@ -2248,7 +2248,7 @@ module.exports = function (app, client) {
 
             function renderChannelSelect(inputName, selectedId, isMulti = false) {
                 return `
-                    <select name="${inputName}" id="${inputName}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-100 outline-none text-right cursor-pointer">
+                    <select name="${inputName}" id="${inputName}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-300 outline-none text-right cursor-pointer">
                         <option value="">...اختر القناة</option>
                         ${guildTextChannels.map(c => `<option value="${c.id}" ${String(selectedId).includes(String(c.id)) ? 'selected' : ''}># ${c.name}</option>`).join('')}
                     </select>
@@ -2257,7 +2257,7 @@ module.exports = function (app, client) {
 
             function renderRoleSelect(inputName, selectedId) {
                 return `
-                    <select name="${inputName}" id="${inputName}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-100 outline-none text-right cursor-pointer">
+                    <select name="${inputName}" id="${inputName}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-300 outline-none text-right cursor-pointer">
                         <option value="">...اختر الرتبة</option>
                         ${guildRoles.map(r => `<option value="${r.id}" ${String(selectedId) === String(r.id) ? 'selected' : ''}>@ ${r.name}</option>`).join('')}
                     </select>
@@ -2276,7 +2276,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="relative flex items-center justify-between">
                                 <div class="flex items-center gap-4">
                                     <div class="text-right">
-                                        <h2 class="text-2xl font-black text-blue-100">${guild.name || "Droplet'BOT"}</h2>
+                                        <h2 class="text-2xl font-black text-blue-300">${guild.name || "Droplet'BOT"}</h2>
                                         <p class="text-blue-300/80 text-xs font-mono mt-0.5">ID: ${guildId}</p>
                                         <div class="flex items-center gap-1.5 mt-2 justify-end">
                                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -2286,7 +2286,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <img src="${guild.icon ? `https://cdn.discordapp.com/icons/${guildId}/${guild.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-20 h-20 rounded-3xl ring-4 ring-blue-400/40 shadow-xl object-cover">
                                 </div>
                                 <div class="text-left">
-                                    <div class="text-5xl font-black text-blue-100/10 select-none">🏰</div>
+                                    <div class="text-5xl font-black text-blue-300/10 select-none">🏰</div>
                                 </div>
                             </div>
                         </div>
@@ -2298,7 +2298,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-blue-400/20 border border-blue-400/30 text-blue-400 flex items-center justify-center text-sm">👥</div>
                                     <span class="text-[10px] text-gray-500 font-mono">MEMBERS</span>
                                 </div>
-                                <div class="text-2xl font-black text-blue-100">${(botGuild?.memberCount || 0).toLocaleString()}</div>
+                                <div class="text-2xl font-black text-blue-300">${(botGuild?.memberCount || 0).toLocaleString()}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">إجمالي الأعضاء</p>
                             </div>
                             <div class="bg-[#12141f] border border-emerald-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-emerald-500/40 transition group">
@@ -2306,7 +2306,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-sm">🟢</div>
                                     <span class="text-[10px] text-gray-500 font-mono">ONLINE</span>
                                 </div>
-                                <div class="text-2xl font-black text-blue-100" id="onlineMembersCount">…</div>
+                                <div class="text-2xl font-black text-blue-300" id="onlineMembersCount">…</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">الأعضاء المتصلون</p>
                             </div>
                             <div class="bg-[#12141f] border border-indigo-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-indigo-500/40 transition group">
@@ -2314,7 +2314,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-sm">📁</div>
                                     <span class="text-[10px] text-gray-500 font-mono">CHANNELS</span>
                                 </div>
-                                <div class="text-2xl font-black text-blue-100">${(botGuild?.channels?.cache?.size || 0)}</div>
+                                <div class="text-2xl font-black text-blue-300">${(botGuild?.channels?.cache?.size || 0)}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">إجمالي القنوات</p>
                             </div>
                             <div class="bg-[#12141f] border border-amber-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-amber-500/40 transition group">
@@ -2322,7 +2322,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-amber-600/20 border border-amber-500/30 text-amber-400 flex items-center justify-center text-sm">💎</div>
                                     <span class="text-[10px] text-gray-500 font-mono">BOOSTS</span>
                                 </div>
-                                <div class="text-2xl font-black text-blue-100">${(botGuild?.premiumSubscriptionCount || 0)}</div>
+                                <div class="text-2xl font-black text-blue-300">${(botGuild?.premiumSubscriptionCount || 0)}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">بوستات السيرفر</p>
                             </div>
                         </div>
@@ -2334,7 +2334,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-pink-600/20 border border-pink-500/30 text-pink-400 flex items-center justify-center text-sm">🎖️</div>
                                     <span class="text-[10px] text-gray-500 font-mono">ROLES</span>
                                 </div>
-                                <div class="text-2xl font-black text-blue-100">${(botGuild?.roles?.cache?.size || 0)}</div>
+                                <div class="text-2xl font-black text-blue-300">${(botGuild?.roles?.cache?.size || 0)}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">إجمالي الرتب</p>
                             </div>
                             <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl shadow-xl text-right hover:border-blue-400/20 transition">
@@ -2342,7 +2342,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-400/30 text-blue-400 flex items-center justify-center text-sm">😃</div>
                                     <span class="text-[10px] text-gray-500 font-mono">EMOJIS</span>
                                 </div>
-                                <div class="text-2xl font-black text-blue-100">${(botGuild?.emojis?.cache?.size || 0)}</div>
+                                <div class="text-2xl font-black text-blue-300">${(botGuild?.emojis?.cache?.size || 0)}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">الإيموجيات المخصصة</p>
                             </div>
                             <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl shadow-xl text-right hover:border-blue-400/20 transition">
@@ -2350,7 +2350,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-cyan-600/20 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-sm">🤖</div>
                                     <span class="text-[10px] text-gray-500 font-mono">BOTS</span>
                                 </div>
-                                <div class="text-2xl font-black text-blue-100" id="botsCount">…</div>
+                                <div class="text-2xl font-black text-blue-300" id="botsCount">…</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">عدد البوتات</p>
                             </div>
                             <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl shadow-xl text-right hover:border-blue-400/20 transition">
@@ -2358,7 +2358,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-blue-400/20 border border-blue-400/30 text-blue-400 flex items-center justify-center text-sm">🎁</div>
                                     <span class="text-[10px] text-gray-500 font-mono">GIVEAWAYS</span>
                                 </div>
-                                <div class="text-2xl font-black text-blue-100" id="giveawaysCount">${guildGiveawaysList?.length || 0}</div>
+                                <div class="text-2xl font-black text-blue-300" id="giveawaysCount">${guildGiveawaysList?.length || 0}</div>
                                 <p class="text-xs text-gray-400 mt-1 font-bold">إجمالي القيف اوايز</p>
                             </div>
                         </div>
@@ -2367,10 +2367,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <!-- Server Details -->
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-3xl shadow-xl space-y-3 text-right">
-                                <h4 class="font-black text-blue-100 text-sm flex items-center justify-end gap-2"><span>🏰</span><span>Server Information</span></h4>
+                                <h4 class="font-black text-blue-300 text-sm flex items-center justify-end gap-2"><span>🏰</span><span>Server Information</span></h4>
                                 <div class="space-y-2.5 text-xs text-gray-400">
                                     <div class="flex items-center justify-between bg-[#0b0d14] p-3 rounded-xl border border-blue-400/15">
-                                        <span class="text-blue-100 font-bold font-mono">${new Date((parseInt(guildId) / 4194304 + 1420070400000)).toLocaleDateString('ar-IQ', {year:'numeric',month:'long',day:'numeric'})}</span>
+                                        <span class="text-blue-300 font-bold font-mono">${new Date((parseInt(guildId) / 4194304 + 1420070400000)).toLocaleDateString('ar-IQ', {year:'numeric',month:'long',day:'numeric'})}</span>
                                         <span>Server Creation Date</span>
                                     </div>
                                     <div class="flex items-center justify-between bg-[#0b0d14] p-3 rounded-xl border border-blue-400/15">
@@ -2378,11 +2378,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span>مستوى البوست</span>
                                     </div>
                                     <div class="flex items-center justify-between bg-[#0b0d14] p-3 rounded-xl border border-blue-400/15">
-                                        <span class="text-blue-100 font-bold font-mono">${botGuild?.vanityURLCode ? `discord.gg/${botGuild.vanityURLCode}` : '—'}</span>
+                                        <span class="text-blue-300 font-bold font-mono">${botGuild?.vanityURLCode ? `discord.gg/${botGuild.vanityURLCode}` : '—'}</span>
                                         <span>Vanity URL</span>
                                     </div>
                                     <div class="flex items-center justify-between bg-[#0b0d14] p-3 rounded-xl border border-blue-400/15">
-                                        <span class="text-blue-100 font-bold">${botGuild?.verificationLevel === 0 ? 'لا يوجد' : botGuild?.verificationLevel === 1 ? 'منخفض' : botGuild?.verificationLevel === 2 ? 'متوسط' : botGuild?.verificationLevel === 3 ? 'عالي' : 'عالي جداً'}</span>
+                                        <span class="text-blue-300 font-bold">${botGuild?.verificationLevel === 0 ? 'لا يوجد' : botGuild?.verificationLevel === 1 ? 'منخفض' : botGuild?.verificationLevel === 2 ? 'متوسط' : botGuild?.verificationLevel === 3 ? 'عالي' : 'عالي جداً'}</span>
                                         <span>مستوى التحقق</span>
                                     </div>
                                 </div>
@@ -2390,33 +2390,33 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <!-- Quick Actions -->
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-3xl shadow-xl space-y-3 text-right">
-                                <h4 class="font-black text-blue-100 text-sm flex items-center justify-end gap-2"><span>الإجراءات السريعة</span><span>⚡</span></h4>
+                                <h4 class="font-black text-blue-300 text-sm flex items-center justify-end gap-2"><span>الإجراءات السريعة</span><span>⚡</span></h4>
                                 <div class="space-y-2">
                                     <a href="/dashboard/${guildId}/commands" class="flex items-center justify-between bg-[#0b0d14] hover:bg-blue-700/20 border border-blue-400/15 hover:border-blue-400/30 p-3 rounded-xl transition group">
                                         <span class="text-blue-400 text-xs group-hover:text-blue-300">←</span>
                                         <div class="flex items-center gap-2 text-right">
-                                            <span class="text-xs font-bold text-blue-100">إدارة الأوامر</span>
+                                            <span class="text-xs font-bold text-blue-300">إدارة الأوامر</span>
                                             <span class="text-sm">🎛️</span>
                                         </div>
                                     </a>
                                     <a href="/dashboard/${guildId}/moderation" class="flex items-center justify-between bg-[#0b0d14] hover:bg-blue-700/20 border border-blue-400/15 hover:border-blue-400/30 p-3 rounded-xl transition group">
                                         <span class="text-blue-400 text-xs group-hover:text-blue-300">←</span>
                                         <div class="flex items-center gap-2 text-right">
-                                            <span class="text-xs font-bold text-blue-100">إعدادات الإشراف</span>
+                                            <span class="text-xs font-bold text-blue-300">إعدادات الإشراف</span>
                                             <span class="text-sm">🔨</span>
                                         </div>
                                     </a>
                                     <a href="/dashboard/${guildId}/protection" class="flex items-center justify-between bg-[#0b0d14] hover:bg-blue-700/20 border border-blue-400/15 hover:border-blue-400/30 p-3 rounded-xl transition group">
                                         <span class="text-blue-400 text-xs group-hover:text-blue-300">←</span>
                                         <div class="flex items-center gap-2 text-right">
-                                            <span class="text-xs font-bold text-blue-100">نظام الحماية</span>
+                                            <span class="text-xs font-bold text-blue-300">نظام الحماية</span>
                                             <span class="text-sm">🛡️</span>
                                         </div>
                                     </a>
                                     <a href="/dashboard/${guildId}/analytics" class="flex items-center justify-between bg-[#0b0d14] hover:bg-blue-700/20 border border-blue-400/15 hover:border-blue-400/30 p-3 rounded-xl transition group">
                                         <span class="text-blue-400 text-xs group-hover:text-blue-300">←</span>
                                         <div class="flex items-center gap-2 text-right">
-                                            <span class="text-xs font-bold text-blue-100">الإحصائيات والتحليلات</span>
+                                            <span class="text-xs font-bold text-blue-300">الإحصائيات والتحليلات</span>
                                             <span class="text-sm">📊</span>
                                         </div>
                                     </a>
@@ -2432,7 +2432,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-3xl shadow-xl text-right">
                             <div class="flex items-center justify-between mb-4">
                                 <a href="/dashboard/${guildId}/analytics" class="text-xs text-blue-400 hover:text-blue-300 font-bold transition">عرض الكل ←</a>
-                                <h4 class="font-black text-blue-100 text-sm flex items-center gap-2"><span>أكثر الأعضاء نشاطاً</span><span>🏆</span></h4>
+                                <h4 class="font-black text-blue-300 text-sm flex items-center gap-2"><span>أكثر الأعضاء نشاطاً</span><span>🏆</span></h4>
                             </div>
                             <div class="space-y-2">
                                 ${guildLeaderboardUsers.slice(0, 5).map((u, i) => {
@@ -2451,7 +2451,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         </div>
                                         <div class="flex items-center gap-3">
                                             <div class="text-right">
-                                                <span class="text-xs text-blue-100 font-bold block group-hover:text-blue-300 transition truncate max-w-[130px]">${uName}</span>
+                                                <span class="text-xs text-blue-300 font-bold block group-hover:text-blue-300 transition truncate max-w-[130px]">${uName}</span>
                                                 <span class="text-[10px] text-gray-400 font-mono block">${uTag}</span>
                                             </div>
                                             <img src="${uAvatar}" alt="${uName}" class="w-8 h-8 rounded-xl object-cover ring-2 ring-blue-300/10 group-hover:ring-blue-400/50 transition shrink-0" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
@@ -2508,13 +2508,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 <span class="text-[10px] text-gray-400 block font-bold">الأوامر المفعلة</span>
             </div>
             <div class="text-center">
-                <span id="totalCmdsCount" class="text-xl font-black text-blue-100 font-mono">98</span>
+                <span id="totalCmdsCount" class="text-xl font-black text-blue-300 font-mono">98</span>
                 <span class="text-[10px] text-gray-400 block font-bold">إجمالي الأوامر</span>
             </div>
         </div>
         <div class="flex items-center gap-3">
             <div class="text-right">
-                <h4 class="font-black text-blue-100 text-base">إدارة الأوامر</h4>
+                <h4 class="font-black text-blue-300 text-base">إدارة الأوامر</h4>
                 <p class="text-gray-400 text-xs mt-0.5">تخصيص وإدارة جميع أوامر البوت والصلاحيات</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-lg border border-blue-400/30">🎛️</div>
@@ -2529,7 +2529,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             <button type="button" id="btnFilterAll" onclick="window.filterCmdStatus('all')" class="px-3 py-1 rounded-lg text-xs font-bold bg-blue-400 text-blue-950 transition shadow cursor-pointer">الكل</button>
         </div>
         <div class="flex-1 relative">
-            <input type="text" id="cmdSearchInput" placeholder="...ابحث عن أمر" oninput="window.searchCommands()" class="w-full bg-[#12141f] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right pr-10">
+            <input type="text" id="cmdSearchInput" placeholder="...ابحث عن أمر" oninput="window.searchCommands()" class="w-full bg-[#12141f] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right pr-10">
             <span class="absolute right-3 top-2.5 text-gray-400">🔍</span>
         </div>
     </div>
@@ -2539,11 +2539,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
         <!-- Sidebar: Categories -->
         <div class="lg:col-span-1 space-y-1.5 bg-[#12141f] border border-blue-400/15 p-3 rounded-2xl shadow-xl h-fit max-h-[750px] overflow-y-auto">
-            <div class="flex items-center justify-end gap-1.5 text-xs font-black text-blue-100 px-2 py-1.5 border-b border-blue-400/15 mb-1 sticky top-0 bg-[#12141f] z-10">
+            <div class="flex items-center justify-end gap-1.5 text-xs font-black text-blue-300 px-2 py-1.5 border-b border-blue-400/15 mb-1 sticky top-0 bg-[#12141f] z-10">
                 <span>الأقسام والأنظمة</span><span>📁</span>
             </div>
             <button type="button" id="btnCatAll" onclick="window.switchCmdCategory('all')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-blue-400 text-blue-950 shadow-lg transition cursor-pointer">
-                <span id="badgeCatAll" class="px-2 py-0.5 bg-white/20 text-blue-100 rounded-lg text-[10px] font-mono">98/98</span>
+                <span id="badgeCatAll" class="px-2 py-0.5 bg-white/20 text-blue-300 rounded-lg text-[10px] font-mono">98/98</span>
                 <span class="flex items-center gap-1.5"><span>جميع الأوامر</span><span>🌐</span></span>
             </button>
             <button type="button" id="btnCatGeneral" onclick="window.switchCmdCategory('general')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-blue-200 hover:bg-white/5 transition cursor-pointer">
@@ -2627,7 +2627,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="text-right">
-                        <h5 id="catTitle" class="font-black text-blue-100 text-sm">جميع الأوامر والخدمات</h5>
+                        <h5 id="catTitle" class="font-black text-blue-300 text-sm">جميع الأوامر والخدمات</h5>
                         <p id="catDesc" class="text-gray-400 text-[11px] mt-0.5">عرض وإدارة كافة أنظمة وأوامر البوت في مكان واحد</p>
                     </div>
                     <span id="catIcon" class="text-xl">🌐</span>
@@ -2854,7 +2854,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                   '</div>' +
                   '<div class="flex items-center gap-3">' +
                     '<div class="text-right">' +
-                      '<div class="flex items-center justify-end gap-2">' + bh + '<span class="font-black text-blue-100 text-xs font-mono inline-block" dir="ltr">' + escH(item.name) + '</span></div>' +
+                      '<div class="flex items-center justify-end gap-2">' + bh + '<span class="font-black text-blue-300 text-xs font-mono inline-block" dir="ltr">' + escH(item.name) + '</span></div>' +
                       '<p class="text-[11px] text-gray-400 mt-0.5">' + escH(item.desc) + '</p>' +
                     '</div>' +
                     '<div class="w-9 h-9 rounded-xl bg-[#0b0d14] border border-blue-400/15 flex items-center justify-center text-sm shadow-inner">' + (item.icon || '&#9881;') + '</div>' +
@@ -2931,7 +2931,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         var h = '<div class="p-4 space-y-4">' +
             '<div class="flex items-center justify-between gap-4 flex-wrap"><div class="flex-1 min-w-[200px]">' +
                 '<label class="block text-[10px] text-gray-400 font-bold mb-1">\u0627\u062e\u062a\u0635\u0627\u0631 \u0645\u062e\u0635\u0635 \u0644\u0644\u0623\u0645\u0631 (Custom Alias)</label>' +
-                '<input type="text" dir="ltr" class="cmd-alias-input w-full bg-[#12141f] border border-blue-400/25 focus:border-blue-400 rounded-xl px-3 py-2 text-xs text-blue-100 outline-none text-left" placeholder="H \u0623\u0648 b \u0623\u0648 !help" data-cmd="' + escH(cmdName) + '" value="' + escH(alias) + '">' +
+                '<input type="text" dir="ltr" class="cmd-alias-input w-full bg-[#12141f] border border-blue-400/25 focus:border-blue-400 rounded-xl px-3 py-2 text-xs text-blue-300 outline-none text-left" placeholder="H \u0623\u0648 b \u0623\u0648 !help" data-cmd="' + escH(cmdName) + '" value="' + escH(alias) + '">' +
             '</div></div>' +
             '<div>' +
                 '<label class="block text-[10px] text-gray-400 font-bold mb-1.5">\u0627\u0644\u0631\u062a\u0628 \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0644\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Roles)</label>' +
@@ -3175,7 +3175,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             </label>
                             <div class="flex items-center gap-3">
                                 <div class="text-left">
-                                    <h4 class="font-black text-blue-100 text-base">Auto Moderation</h4>
+                                    <h4 class="font-black text-blue-300 text-base">Auto Moderation</h4>
                                     <p class="text-gray-400 text-xs mt-0.5">Protect your server from unwanted content</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-lg border border-blue-400/30">
@@ -3203,7 +3203,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-left">
                                     <div>
                                         <div class="flex items-center justify-start gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">Banned Words Filtering</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">Banned Words Filtering</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">Enabled</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">Filter offensive words, profanity, and inappropriate content</p>
@@ -3221,7 +3221,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-left">
                                     <div>
                                         <div class="flex items-center justify-start gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">Server Invites Blocking</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">Server Invites Blocking</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">Enabled</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">Prevent sharing of other server invite links</p>
@@ -3244,7 +3244,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-left">
                                     <div>
                                         <div class="flex items-center justify-start gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">Anti Spam</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">Anti Spam</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">Enabled</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">Detect and block annoying and repetitive messages</p>
@@ -3262,7 +3262,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-left">
                                     <div>
                                         <div class="flex items-center justify-start gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">Link Blocking</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">Link Blocking</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">Enabled</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">Block unauthorized links</p>
@@ -3280,7 +3280,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-left">
                                     <div>
                                         <div class="flex items-center justify-start gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">Mention Spam Blocking</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">Mention Spam Blocking</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">Enabled</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">حدد عدد المنشنات المسموح بها في الرسالة الواحدة</p>
@@ -3298,7 +3298,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-right">
                                     <div>
                                         <div class="flex items-center justify-end gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">حظر الحروف الكبيرة</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">حظر الحروف الكبيرة</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">مفعل</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">منع الرسائل التي تحتوي على أحرف كبيرة بشكل مفرط (70% أو أكثر)</p>
@@ -3316,7 +3316,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-right">
                                     <div>
                                         <div class="flex items-center justify-end gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">إزعاج Spoilers</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">إزعاج Spoilers</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">مفعل</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">منع الاستخدام المفرط لعلامات السبويلر</p>
@@ -3334,7 +3334,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-right">
                                     <div>
                                         <div class="flex items-center justify-end gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">نص Zalgo</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">نص Zalgo</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">مفعل</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">منع النصوص المشوهة والرموز الغريبة (Zalgo text)</p>
@@ -3363,7 +3363,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-right">
                                     <div>
                                         <div class="flex items-center justify-end gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">مكافحة السبام</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">مكافحة السبام</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">مفعل</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">كشف الرسائل المتكررة والفيضان السريع وحظرها تلقائياً</p>
@@ -3381,7 +3381,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-left">
                                     <div>
                                         <div class="flex items-center justify-start gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">Emoji Spam</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">Emoji Spam</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">Enabled</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">Prevent excessive use of emojis</p>
@@ -3399,7 +3399,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-left">
                                     <div>
                                         <div class="flex items-center justify-start gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">Text Repeat</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">Text Repeat</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">Enabled</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">Prevent excessive repetition of same characters or words</p>
@@ -3417,7 +3417,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-left">
                                     <div>
                                         <div class="flex items-center justify-start gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">Duplicate Messages</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">Duplicate Messages</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">Enabled</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">Prevent sending the same message multiple times consecutively</p>
@@ -3435,7 +3435,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-left">
                                     <div>
                                         <div class="flex items-center justify-start gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">Sticker Spam</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">Sticker Spam</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">Enabled</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">Prevent sending stickers repeatedly and quickly</p>
@@ -3453,7 +3453,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-left">
                                     <div>
                                         <div class="flex items-center justify-start gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">Line Spam</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">Line Spam</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">Enabled</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">Prevent messages with many empty lines</p>
@@ -3471,7 +3471,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 <div class="flex items-center gap-3 text-right">
                                     <div>
                                         <div class="flex items-center justify-end gap-2">
-                                            <h5 class="text-xs font-bold text-blue-100">الرسائل الطويلة</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">الرسائل الطويلة</h5>
                                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/40">مفعل</span>
                                         </div>
                                         <p class="text-[10px] text-gray-400 mt-0.5">منع الرسائل التي تتجاوز الحد الأقصى لعدد الأحرف</p>
@@ -3486,7 +3486,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
                                 <span class="px-2.5 py-1 bg-amber-950/60 text-amber-300 border border-amber-800/40 rounded-xl text-xs font-mono font-bold" id="warnRulesCount">${(warnPunishmentsList || []).length} قاعدة</span>
                                 <div class="text-right">
-                                    <div class="flex items-center justify-end gap-2 text-blue-100 font-black text-sm">
+                                    <div class="flex items-center justify-end gap-2 text-blue-300 font-black text-sm">
                                         <span>نظام العقوبات التلقائية للتحذيرات</span>
                                         <span class="text-amber-400">⚠️</span>
                                     </div>
@@ -3500,7 +3500,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                         <button type="button" onclick="deleteWarnRule(${rule.id})" class="px-3 py-1 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-bold transition">حذف 🗑️</button>
                                         <div class="flex items-center gap-3">
                                             <div class="text-right">
-                                                <span class="font-bold text-blue-100 block">عند بلوغ ${rule.warn_count} تحذيرات</span>
+                                                <span class="font-bold text-blue-300 block">عند بلوغ ${rule.warn_count} تحذيرات</span>
                                                 <span class="text-[10px] text-amber-400 font-mono">العقوبة: ${rule.action_type}</span>
                                             </div>
                                             <span class="w-8 h-8 rounded-lg bg-amber-600/20 text-amber-400 flex items-center justify-center font-bold">⚠️</span>
@@ -3546,19 +3546,19 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                         <span>•</span>
                                         <span>كلمة كاملة — الكلمة وحدها فقط</span>
                                     </div>
-                                    <div class="flex items-center gap-1 text-blue-100">
+                                    <div class="flex items-center gap-1 text-blue-300">
                                         <span>الكلمات المحظورة</span>
                                         <span>💬</span>
                                     </div>
                                 </div>
 
                                 <div class="flex items-center gap-2">
-                                    <button type="button" onclick="addStrictBadWord()" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-blue-100 rounded-xl text-xs font-bold transition shadow-lg shadow-rose-950/40">إضافة</button>
+                                    <button type="button" onclick="addStrictBadWord()" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-blue-300 rounded-xl text-xs font-bold transition shadow-lg shadow-rose-950/40">إضافة</button>
                                     <select id="strictWordMatchMode" class="bg-[#0b0d14] border border-blue-400/15 rounded-xl px-3 py-2.5 text-xs text-gray-300 outline-none">
                                         <option value="partial">جزئي</option>
                                         <option value="exact">كلمة كاملة</option>
                                     </select>
-                                    <input type="text" id="strictWordInput" placeholder="اكتب كلمة محظورة..." class="flex-1 bg-[#0b0d14] border border-blue-400/15 focus:border-rose-500 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right" onkeydown="if(event.key==='Enter') addStrictBadWord()">
+                                    <input type="text" id="strictWordInput" placeholder="اكتب كلمة محظورة..." class="flex-1 bg-[#0b0d14] border border-blue-400/15 focus:border-rose-500 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right" onkeydown="if(event.key==='Enter') addStrictBadWord()">
                                 </div>
 
                                 <div id="strictWordsContainer" class="flex flex-wrap gap-2 pt-2">
@@ -3581,7 +3581,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
 
                                 <div class="flex items-center gap-2">
                                     <button type="button" onclick="addWhitelistedWord()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-green-950 rounded-xl text-xs font-bold transition shadow-lg shadow-emerald-950/40">إضافة</button>
-                                    <input type="text" id="whitelistWordInput" placeholder="اكتب كلمة مسموح بها..." class="flex-1 bg-[#0b0d14] border border-blue-400/15 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right" onkeydown="if(event.key==='Enter') addWhitelistedWord()">
+                                    <input type="text" id="whitelistWordInput" placeholder="اكتب كلمة مسموح بها..." class="flex-1 bg-[#0b0d14] border border-blue-400/15 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right" onkeydown="if(event.key==='Enter') addWhitelistedWord()">
                                 </div>
 
                                 <div id="whitelistWordsContainer" class="flex flex-wrap gap-2 pt-2">
@@ -3596,17 +3596,17 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
 
                             <!-- أعضاء معفيون من الفلتر -->
                             <div class="space-y-2 pt-3 border-t border-blue-400/15">
-                                <div class="flex items-center justify-end gap-1 text-xs font-bold text-blue-100">
+                                <div class="flex items-center justify-end gap-1 text-xs font-bold text-blue-300">
                                     <span>أعضاء معفيون من الفلتر</span>
                                     <span class="text-emerald-400">🛡️</span>
                                 </div>
-                                <input type="text" name="automod_exempt_users" value="${settings.automod_exempt_users || ''}" placeholder="ابحث عن عضو أو أدخل الـ ID..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right font-mono">
+                                <input type="text" name="automod_exempt_users" value="${settings.automod_exempt_users || ''}" placeholder="ابحث عن عضو أو أدخل الـ ID..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right font-mono">
                                 <p class="text-[10px] text-gray-500 text-right">الأدمنية غير معفيين تلقائياً — أضفهم هنا إذا أردت</p>
                             </div>
 
                             <!-- قناة السجل (اختياري) -->
                             <div class="space-y-2 pt-3 border-t border-blue-400/15">
-                                <div class="flex items-center justify-end gap-1 text-xs font-bold text-blue-100">
+                                <div class="flex items-center justify-end gap-1 text-xs font-bold text-blue-300">
                                     <span>قناة السجل ((اختياري))</span>
                                     <span>📜</span>
                                 </div>
@@ -3783,7 +3783,7 @@ const leaderboard = database.getInvitesLeaderboard ? database.getInvitesLeaderbo
                             <td class="py-3 px-4 font-bold text-center text-amber-400 font-mono">${medal}</td>
                             <td class="py-3 px-4 flex items-center gap-3 justify-end">
                                 <div>
-                                    <div class="font-bold text-blue-100 text-xs">${name}</div>
+                                    <div class="font-bold text-blue-300 text-xs">${name}</div>
                                     <div class="text-[10px] text-gray-500 font-mono">${item.user_id}</div>
                                 </div>
                                 <img src="${avatar}" class="w-7 h-7 rounded-full object-cover">
@@ -3807,7 +3807,7 @@ const leaderboard = database.getInvitesLeaderboard ? database.getInvitesLeaderbo
                                 </button>
                             </div>
                             <div>
-                                <h3 class="font-black text-blue-100 text-xl">متتبع الدعوات المتقدم (Invite Tracker) 🔗</h3>
+                                <h3 class="font-black text-blue-300 text-xl">متتبع الدعوات المتقدم (Invite Tracker) 🔗</h3>
                                 <p class="text-gray-400 text-xs mt-1">تتبع دقيق لمن قام بدعوة الأعضاء وحساب الدعوات الحقيقية والمغادرين والوهمية والبونص</p>
                             </div>
                         </div>
@@ -3821,7 +3821,7 @@ const leaderboard = database.getInvitesLeaderboard ? database.getInvitesLeaderbo
                             </div>
                             <div class="bg-[#1c1f2e] border border-blue-400/15 p-4 rounded-2xl">
                                 <span class="text-gray-400 text-[11px]">متصدر الدعوات (Top Inviter)</span>
-                                <h4 class="text-base font-black text-blue-100 mt-1 truncate">${topInviter ? (botGuild?.members?.cache?.get(topInviter.user_id)?.user.username || topInviter.user_id) : 'لا يوجد'}</h4>
+                                <h4 class="text-base font-black text-blue-300 mt-1 truncate">${topInviter ? (botGuild?.members?.cache?.get(topInviter.user_id)?.user.username || topInviter.user_id) : 'لا يوجد'}</h4>
                                 <span class="text-[10px] text-amber-400 font-mono font-bold">${topInviter ? topInviter.total : 0} دعوة مسجلة</span>
                             </div>
                             <div class="bg-[#1c1f2e] border border-blue-400/15 p-4 rounded-2xl">
@@ -3833,18 +3833,18 @@ const leaderboard = database.getInvitesLeaderboard ? database.getInvitesLeaderbo
 
                         <!-- Add Bonus Invites Box -->
                         <div class="bg-[#1c1f2e] border border-blue-400/15 p-6 rounded-2xl space-y-4">
-                            <h4 class="font-bold text-blue-100 text-sm">🎁 إضافة أو خصم دعوات إضافية (Bonus Invites)</h4>
+                            <h4 class="font-bold text-blue-300 text-sm">🎁 إضافة أو خصم دعوات إضافية (Bonus Invites)</h4>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">أيدي أو منشن العضو (User ID)</label>
-                                    <input type="text" id="bonusUserId" placeholder="مثال: 123456789012345678" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none font-mono text-right">
+                                    <input type="text" id="bonusUserId" placeholder="مثال: 123456789012345678" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none font-mono text-right">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">عدد الدعوات (موجب للإضافة / سالب للخصم)</label>
-                                    <input type="number" id="bonusAmount" value="5" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none font-mono text-right">
+                                    <input type="number" id="bonusAmount" value="5" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none font-mono text-right">
                                 </div>
                                 <div>
-                                    <button type="button" onclick="submitBonusInvites()" class="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-blue-100 rounded-xl text-xs font-bold transition shadow-lg">
+                                    <button type="button" onclick="submitBonusInvites()" class="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-blue-300 rounded-xl text-xs font-bold transition shadow-lg">
                                         تطبيق الرصيد ✅
                                     </button>
                                 </div>
@@ -3853,7 +3853,7 @@ const leaderboard = database.getInvitesLeaderboard ? database.getInvitesLeaderbo
 
                         <!-- Leaderboard Table -->
                         <div class="bg-[#1c1f2e] border border-blue-400/15 rounded-2xl p-5 overflow-x-auto">
-                            <h4 class="font-bold text-blue-100 text-sm mb-4">🏆 قائمة متصدري الدعوات (Top Invites Leaderboard)</h4>
+                            <h4 class="font-bold text-blue-300 text-sm mb-4">🏆 قائمة متصدري الدعوات (Top Invites Leaderboard)</h4>
                             <table class="w-full text-xs">
                                 <thead>
                                     <tr class="border-b border-blue-400/25 text-gray-400 font-bold text-center">
@@ -3905,7 +3905,7 @@ const leaderboard = database.getInvitesLeaderboard ? database.getInvitesLeaderbo
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
                         <div class="bg-[#12141f] border border-blue-400/15 p-8 rounded-3xl text-center space-y-4 shadow-xl">
                             <div class="w-16 h-16 rounded-2xl bg-rose-600/20 text-rose-400 border border-rose-500/30 flex items-center justify-center text-3xl mx-auto shadow-lg">🚫</div>
-                            <h3 class="font-black text-blue-100 text-lg">تم إيقاف وحذف نظام الإعلانات والبرودكاست</h3>
+                            <h3 class="font-black text-blue-300 text-lg">تم إيقاف وحذف نظام الإعلانات والبرودكاست</h3>
                             <p class="text-gray-400 text-xs max-w-md mx-auto leading-relaxed">تم إزالة هذا القسم بالكامل من البوت بناءً على طلبكم. يمكنك استخدام رسائل الأمبد أو باقي الميزات لإدارة سيرفرك.</p>
                             <div class="pt-2">
                                 <a href="/dashboard/${guildId}/embed" class="px-5 py-2.5 bg-blue-400 hover:bg-blue-400 text-blue-950 rounded-xl text-xs font-bold transition inline-block">الانتقال إلى رسائل الأمبد 📄</a>
@@ -3966,7 +3966,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </label>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
-                                    <h4 class="font-black text-blue-100 text-sm">تفعيل نظام الحماية</h4>
+                                    <h4 class="font-black text-blue-300 text-sm">تفعيل نظام الحماية</h4>
                                     <p class="text-gray-400 text-xs mt-0.5">تفعيل أو تعطيل نظام الحماية الشامل</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-lg border border-blue-400/30">
@@ -3981,7 +3981,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <span class="text-xs text-gray-500 font-mono">PRO ONLY</span>
                                 <div class="flex items-center gap-3">
                                     <div class="text-right">
-                                        <h4 class="font-black text-blue-100 text-sm">حماية المتصفح</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">حماية المتصفح</h4>
                                         <p class="text-gray-400 text-xs mt-0.5">يزيل رتب الأعضاء المحمية مؤقتاً عند الدخول من متصفح — بوتات خاصة فقط</p>
                                     </div>
                                     <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-lg border border-indigo-500/30">
@@ -4001,7 +4001,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <span id="badge_limit_punish" class="px-3 py-1 bg-amber-950/60 text-amber-300 border border-amber-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_channel_delete, settings.anti_channel_create, settings.anti_channel_update, settings.anti_channel_permissions, settings.anti_role_delete, settings.anti_role_create, settings.anti_role_update, settings.anti_webhook_create, settings.anti_webhook_update, settings.anti_mass_ban, settings.anti_mass_kick, settings.anti_mass_mention].filter(Boolean).length}/12 مفعل</span>
                                 <div class="flex items-center gap-2">
                                     <div class="text-right">
-                                        <h4 class="font-black text-blue-100 text-sm">تحديد وعقوبة</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">تحديد وعقوبة</h4>
                                         <p class="text-gray-400 text-[11px]">تعيين حد وعقوبة لكل إجراء</p>
                                     </div>
                                     <span class="text-base">🛡️</span>
@@ -4012,7 +4012,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
                                     <span id="badge_grp_channels">${[settings.anti_channel_delete, settings.anti_channel_create, settings.anti_channel_update, settings.anti_channel_permissions].filter(Boolean).length}/4 مفعل</span>
-                                    <span class="text-blue-100">حماية الرومات / الشاتات</span>
+                                    <span class="text-blue-300">حماية الرومات / الشاتات</span>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <!-- مكافحة حذف القنوات -->
@@ -4020,7 +4020,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="toggle"><input type="checkbox" name="anti_channel_delete" value="1" ${settings.anti_channel_delete ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_delete', this.checked)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-blue-100">مكافحة حذف القنوات</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">مكافحة حذف القنوات</h5>
                                                 <p class="text-[10px] text-gray-400">منع حذف قنوات جماعي</p>
                                             </div>
                                             <span class="text-sm">🗑️</span>
@@ -4032,7 +4032,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="toggle"><input type="checkbox" name="anti_channel_create" value="1" ${settings.anti_channel_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_create', this.checked)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-blue-100">مكافحة إنشاء القنوات</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">مكافحة إنشاء القنوات</h5>
                                                 <p class="text-[10px] text-gray-400">منع إنشاء قنوات جماعي</p>
                                             </div>
                                             <span class="text-sm">📢</span>
@@ -4044,7 +4044,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="toggle"><input type="checkbox" name="anti_channel_update" value="1" ${settings.anti_channel_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_update', this.checked)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-blue-100">مكافحة تعديل القنوات</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">مكافحة تعديل القنوات</h5>
                                                 <p class="text-[10px] text-gray-400">منع تعديل قنوات جماعي</p>
                                             </div>
                                             <span class="text-sm">#️⃣</span>
@@ -4056,7 +4056,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="toggle"><input type="checkbox" name="anti_channel_permissions" value="1" ${settings.anti_channel_permissions ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_permissions', this.checked)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-blue-100">حماية صلاحيات القنوات</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">حماية صلاحيات القنوات</h5>
                                                 <p class="text-[10px] text-gray-400">منع أي تعديل على صلاحيات القنوات بأي شكل (Allow/Deny/Overwrites)</p>
                                             </div>
                                             <span class="text-sm">⚙️</span>
@@ -4069,7 +4069,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="space-y-3 pt-4 border-t border-blue-400/15">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
                                     <span id="badge_grp_roles">${[settings.anti_role_delete, settings.anti_role_create, settings.anti_role_update].filter(Boolean).length}/3 مفعل</span>
-                                    <span class="text-blue-100">حماية الرتب</span>
+                                    <span class="text-blue-300">حماية الرتب</span>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <!-- مكافحة حذف الرتب -->
@@ -4077,7 +4077,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="toggle"><input type="checkbox" name="anti_role_delete" value="1" ${settings.anti_role_delete ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_delete', this.checked)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-blue-100">مكافحة حذف الرتب</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">مكافحة حذف الرتب</h5>
                                                 <p class="text-[10px] text-gray-400">منع حذف رتب جماعي</p>
                                             </div>
                                             <span class="text-sm">🗑️</span>
@@ -4089,7 +4089,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="toggle"><input type="checkbox" name="anti_role_create" value="1" ${settings.anti_role_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_create', this.checked)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-blue-100">مكافحة إنشاء الرتب</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">مكافحة إنشاء الرتب</h5>
                                                 <p class="text-[10px] text-gray-400">منع إنشاء رتب جماعي</p>
                                             </div>
                                             <span class="text-sm">🎖️</span>
@@ -4101,7 +4101,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="toggle"><input type="checkbox" name="anti_role_update" value="1" ${settings.anti_role_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_update', this.checked)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-blue-100">مكافحة تعديل الرتب</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">مكافحة تعديل الرتب</h5>
                                                 <p class="text-[10px] text-gray-400">منع تعديل رتب جماعي</p>
                                             </div>
                                             <span class="text-sm">🏅</span>
@@ -4114,7 +4114,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="space-y-3 pt-4 border-t border-blue-400/15">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
                                     <span id="badge_grp_webhooks">${[settings.anti_webhook_create, settings.anti_webhook_update].filter(Boolean).length}/2 مفعل</span>
-                                    <span class="text-blue-100">حماية الويب هوك</span>
+                                    <span class="text-blue-300">حماية الويب هوك</span>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <!-- مكافحة إنشاء الويب هوك -->
@@ -4122,7 +4122,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="toggle"><input type="checkbox" name="anti_webhook_create" value="1" ${settings.anti_webhook_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_webhook_create', this.checked)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-blue-100">مكافحة إنشاء الويب هوك</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">مكافحة إنشاء الويب هوك</h5>
                                                 <p class="text-[10px] text-gray-400">منع إنشاء الويب هوك وحذفه فوراً مع معاقبة المسؤول</p>
                                             </div>
                                             <span class="text-sm">⚙️</span>
@@ -4134,7 +4134,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="toggle"><input type="checkbox" name="anti_webhook_update" value="1" ${settings.anti_webhook_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_webhook_update', this.checked)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-blue-100">مكافحة تعديل الويب هوك</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">مكافحة تعديل الويب هوك</h5>
                                                 <p class="text-[10px] text-gray-400">منع التعديل الجماعي على الويب هوكات الحالية مع معاقبة المسؤول</p>
                                             </div>
                                             <span class="text-sm">⚙️</span>
@@ -4147,7 +4147,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="space-y-3 pt-4 border-t border-blue-400/15">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
                                     <span id="badge_grp_members">${[settings.anti_mass_ban, settings.anti_mass_kick].filter(Boolean).length}/2 مفعل</span>
-                                    <span class="text-blue-100">حماية الأعضاء</span>
+                                    <span class="text-blue-300">حماية الأعضاء</span>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <!-- مكافحة الحظر -->
@@ -4155,7 +4155,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="toggle"><input type="checkbox" name="anti_mass_ban" value="1" ${settings.anti_mass_ban ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_ban', this.checked)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-blue-100">مكافحة الحظر</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">مكافحة الحظر</h5>
                                                 <p class="text-[10px] text-gray-400">منع الحظر الجماعي</p>
                                             </div>
                                             <span class="text-sm">🔨</span>
@@ -4167,7 +4167,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="toggle"><input type="checkbox" name="anti_mass_kick" value="1" ${settings.anti_mass_kick ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_kick', this.checked)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-blue-100">مكافحة الطرد</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">مكافحة الطرد</h5>
                                                 <p class="text-[10px] text-gray-400">منع الطرد الجماعي</p>
                                             </div>
                                             <span class="text-sm">👢</span>
@@ -4180,7 +4180,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="space-y-3 pt-4 border-t border-blue-400/15">
                                 <div class="flex items-center justify-between text-xs text-gray-400 font-bold">
                                     <span id="badge_grp_content">${[settings.anti_mass_mention].filter(Boolean).length}/1 مفعل</span>
-                                    <span class="text-blue-100">حماية المحتوى</span>
+                                    <span class="text-blue-300">حماية المحتوى</span>
                                 </div>
                                 <div class="grid grid-cols-1 gap-3">
                                     <!-- مكافحة المنشنات -->
@@ -4188,7 +4188,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="toggle"><input type="checkbox" name="anti_mass_mention" value="1" ${settings.anti_mass_mention ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_mention', this.checked)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
-                                                <h5 class="text-xs font-bold text-blue-100">مكافحة المنشنات</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">مكافحة المنشنات</h5>
                                                 <p class="text-[10px] text-gray-400">منع المنشنات المفرطة</p>
                                             </div>
                                             <span class="text-sm">📢</span>
@@ -4205,7 +4205,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <span id="badge_instant_punish" class="px-3 py-1 bg-rose-950/60 text-rose-300 border border-rose-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_onboarding_danger, settings.anti_join_danger_roles, settings.anti_raid_fast, settings.anti_dangerous_perms, settings.anti_linked_roles, settings.anti_bot_add, settings.anti_prune, settings.anti_server_name_change, settings.anti_server_icon_change].filter(Boolean).length}/9 مفعل</span>
                                 <div class="flex items-center gap-2">
                                     <div class="text-right">
-                                        <h4 class="font-black text-blue-100 text-sm">عقوبة فورية</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">عقوبة فورية</h4>
                                         <p class="text-gray-400 text-[11px]">تطبيق العقوبة فوراً</p>
                                     </div>
                                     <span class="text-base">🏏</span>
@@ -4218,7 +4218,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_onboarding_danger" value="1" ${settings.anti_onboarding_danger ? 'checked' : ''} onchange="saveProtectionSetting('anti_onboarding_danger', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">رتب Onboarding الخطيرة</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">رتب Onboarding الخطيرة</h5>
                                             <p class="text-[10px] text-gray-400">يمنع منح رتبة بصلاحيات خطيرة تلقائياً لأي عضو جديد عبر أسئلة الانضمام (Onboarding)</p>
                                         </div>
                                         <span class="text-sm">🚨</span>
@@ -4230,7 +4230,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_join_danger_roles" value="1" ${settings.anti_join_danger_roles ? 'checked' : ''} onchange="saveProtectionSetting('anti_join_danger_roles', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">رتب خطيرة عند الانضمام (حماية الانفايت)</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">رتب خطيرة عند الانضمام (حماية الانفايت)</h5>
                                             <p class="text-[10px] text-gray-400">يزيل تلقائياً أي رتبة استقرت على عضو جديد عبر رابط دعوة أو Onboarding ولم تكن الرتبة التلقائية الرسمية</p>
                                         </div>
                                         <span class="text-sm">🚨</span>
@@ -4242,7 +4242,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_raid_fast" value="1" ${settings.anti_raid_fast ? 'checked' : ''} onchange="saveProtectionSetting('anti_raid_fast', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">مكافحة الريد</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">مكافحة الريد</h5>
                                             <p class="text-[10px] text-gray-400">حماية ضد الانضمام الجماعي</p>
                                         </div>
                                         <span class="text-sm">🛡️</span>
@@ -4254,7 +4254,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_dangerous_perms" value="1" ${settings.anti_dangerous_perms ? 'checked' : ''} onchange="saveProtectionSetting('anti_dangerous_perms', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">مكافحة الصلاحيات الخطيرة</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">مكافحة الصلاحيات الخطيرة</h5>
                                             <p class="text-[10px] text-gray-400">منع منح صلاحيات خطيرة</p>
                                         </div>
                                         <span class="text-sm">🚨</span>
@@ -4266,7 +4266,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_linked_roles" value="1" ${settings.anti_linked_roles ? 'checked' : ''} onchange="saveProtectionSetting('anti_linked_roles', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">مكافحة الرتب الخطيرة القابلة للربط</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">مكافحة الرتب الخطيرة القابلة للربط</h5>
                                             <p class="text-[10px] text-gray-400">يمنع أي رتبة تحمل صلاحية خطيرة من أن تصبح قابلة للحصول عليها ذاتياً عبر ربط حساب خارجي (Linked Roles)</p>
                                         </div>
                                         <span class="text-sm">🚨</span>
@@ -4278,7 +4278,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_bot_add" value="1" ${settings.anti_bot_add ? 'checked' : ''} onchange="saveProtectionSetting('anti_bot_add', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">مكافحة إضافة البوتات</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">مكافحة إضافة البوتات</h5>
                                             <p class="text-[10px] text-gray-400">منع إضافة بوتات بدون إذن</p>
                                         </div>
                                         <span class="text-sm">🤖</span>
@@ -4290,7 +4290,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_prune" value="1" ${settings.anti_prune ? 'checked' : ''} onchange="saveProtectionSetting('anti_prune', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">مكافحة التطهير</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">مكافحة التطهير</h5>
                                             <p class="text-[10px] text-gray-400">منع تطهير الأعضاء</p>
                                         </div>
                                         <span class="text-sm">🧹</span>
@@ -4302,7 +4302,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_server_name_change" value="1" ${settings.anti_server_name_change ? 'checked' : ''} onchange="saveProtectionSetting('anti_server_name_change', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">مكافحة تغيير اسم السيرفر</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">مكافحة تغيير اسم السيرفر</h5>
                                             <p class="text-[10px] text-gray-400">منع تغيير اسم السيرفر</p>
                                         </div>
                                         <span class="text-sm">✏️</span>
@@ -4314,7 +4314,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_server_icon_change" value="1" ${settings.anti_server_icon_change ? 'checked' : ''} onchange="saveProtectionSetting('anti_server_icon_change', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">مكافحة تغيير أيقونة السيرفر</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">مكافحة تغيير أيقونة السيرفر</h5>
                                             <p class="text-[10px] text-gray-400">منع تغيير أيقونة السيرفر</p>
                                         </div>
                                         <span class="text-sm">🖼️</span>
@@ -4329,7 +4329,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <span id="badge_detect_only" class="px-3 py-1 bg-cyan-950/60 text-cyan-300 border border-cyan-800/40 rounded-xl text-xs font-bold font-mono">${[settings.anti_scam, settings.anti_invite_links, settings.anti_nsfw_content, settings.anti_ghost_ping, settings.anti_channel_move, (settings.anti_webhook_spam !== 0 ? 1 : 0)].filter(Boolean).length}/6 مفعل</span>
                                 <div class="flex items-center gap-2">
                                     <div class="text-right">
-                                        <h4 class="font-black text-blue-100 text-sm">كشف فقط</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">كشف فقط</h4>
                                         <p class="text-gray-400 text-[11px]">تسجيل فقط بدون عقوبة</p>
                                     </div>
                                     <span class="text-base">🔭</span>
@@ -4342,7 +4342,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_scam" value="1" ${settings.anti_scam ? 'checked' : ''} onchange="saveProtectionSetting('anti_scam', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">مكافحة الاحتيال</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">مكافحة الاحتيال</h5>
                                             <p class="text-[10px] text-gray-400">كشف وحذف روابط الاحتيال</p>
                                         </div>
                                         <span class="text-sm">🦅</span>
@@ -4354,7 +4354,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_invite_links" value="1" ${settings.anti_invite_links ? 'checked' : ''} onchange="saveProtectionSetting('anti_invite_links', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">مكافحة روابط الدعوة</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">مكافحة روابط الدعوة</h5>
                                             <p class="text-[10px] text-gray-400">حذف روابط الدعوة</p>
                                         </div>
                                         <span class="text-sm">🪵</span>
@@ -4366,7 +4366,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_nsfw_content" value="1" ${settings.anti_nsfw_content ? 'checked' : ''} onchange="saveProtectionSetting('anti_nsfw_content', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">مكافحة المحتوى الغير لائق</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">مكافحة المحتوى الغير لائق</h5>
                                             <p class="text-[10px] text-gray-400">حذف المحتوى الغير لائق</p>
                                         </div>
                                         <span class="text-sm">🛡️</span>
@@ -4378,7 +4378,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_ghost_ping" value="1" ${settings.anti_ghost_ping ? 'checked' : ''} onchange="saveProtectionSetting('anti_ghost_ping', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">مكافحة الغوست بينغ</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">مكافحة الغوست بينغ</h5>
                                             <p class="text-[10px] text-gray-400">كشف حذف المنشنات</p>
                                         </div>
                                         <span class="text-sm">👻</span>
@@ -4390,7 +4390,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_channel_move" value="1" ${settings.anti_channel_move ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_move', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">كشف نقل القنوات</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">كشف نقل القنوات</h5>
                                             <p class="text-[10px] text-gray-400">كشف نقل القنوات إلى تصنيفات أخرى (تنبيه فقط)</p>
                                         </div>
                                         <span class="text-sm">📍</span>
@@ -4402,7 +4402,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <label class="toggle"><input type="checkbox" name="anti_webhook_spam" value="1" checked onchange="saveProtectionSetting('anti_webhook_spam', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
-                                            <h5 class="text-xs font-bold text-blue-100">مكافحة سبام الويب هوك</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">مكافحة سبام الويب هوك</h5>
                                             <p class="text-[10px] text-gray-400">يحذف تلقائياً رسائل السبام المرسلة عبر أي ويبهوك ويزيل الويب هوك نفسه — يعمل باستمرار بالخلفية</p>
                                         </div>
                                         <span class="text-sm">⚙️</span>
@@ -4417,7 +4417,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <span class="text-[11px] text-gray-400">مقفلة دائماً — تحمي البوت نفسه، لا يمكن إيقافها</span>
                                 <div class="flex items-center gap-2">
                                     <div class="text-right">
-                                        <h4 class="font-black text-blue-100 text-sm">الدفاع الذاتي للبوت</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">الدفاع الذاتي للبوت</h4>
                                     </div>
                                     <span class="text-base">🛡️</span>
                                 </div>
@@ -4427,7 +4427,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="bg-[#0b0d14] border border-blue-400/15 p-4 rounded-xl flex items-center justify-between">
                                     <span class="px-2.5 py-1 bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[10px] font-bold rounded-lg">مقفلة دائماً</span>
                                     <div class="text-right">
-                                        <h5 class="text-xs font-bold text-blue-100">مكافحة نزع صلاحيات البوت</h5>
+                                        <h5 class="text-xs font-bold text-blue-300">مكافحة نزع صلاحيات البوت</h5>
                                         <p class="text-[10px] text-gray-400">ينبهك (عبر رسالة خاصة) لو فقدت رتبة البوت نفسها صلاحيات حرجة — مثلاً عند إعادة استخدام رابط دعوته وإلغاء تحديد الصلاحيات</p>
                                     </div>
                                 </div>
@@ -4435,7 +4435,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="bg-[#0b0d14] border border-blue-400/15 p-4 rounded-xl flex items-center justify-between">
                                     <span class="px-2.5 py-1 bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[10px] font-bold rounded-lg">مقفلة دائماً</span>
                                     <div class="text-right">
-                                        <h5 class="text-xs font-bold text-blue-100">مكافحة إزالة رتبة البوت</h5>
+                                        <h5 class="text-xs font-bold text-blue-300">مكافحة إزالة رتبة البوت</h5>
                                         <p class="text-[10px] text-gray-400">ينبهك (عبر رسالة خاصة) لو أزيلت من البوت مباشرة رتبة تمنحه صلاحيات حرجة</p>
                                     </div>
                                 </div>
@@ -4532,14 +4532,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <div class="space-y-3">
                                 <div>
-                                    <input type="text" id="wlSearchUser" placeholder="ابحث عن عضو لإضافته..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right placeholder-gray-500">
+                                    <input type="text" id="wlSearchUser" placeholder="ابحث عن عضو لإضافته..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right placeholder-gray-500">
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <button type="button" onclick="addWhitelistUser('whitelist')" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-green-950 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-lg shadow-emerald-950/40">
                                         <span>➕</span>
                                         <span>إضافة</span>
                                     </button>
-                                    <input type="text" id="wlUserId" placeholder="أدخل معرف المستخدم (User ID) ثم اضغط إضافة أو Enter" class="flex-1 bg-[#0b0d14] border border-blue-400/15 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right font-mono placeholder-gray-500" onkeydown="if(event.key==='Enter') addWhitelistUser('whitelist')">
+                                    <input type="text" id="wlUserId" placeholder="أدخل معرف المستخدم (User ID) ثم اضغط إضافة أو Enter" class="flex-1 bg-[#0b0d14] border border-blue-400/15 focus:border-emerald-500 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right font-mono placeholder-gray-500" onkeydown="if(event.key==='Enter') addWhitelistUser('whitelist')">
                                 </div>
                                 <div class="text-[10px] text-gray-500 flex items-center justify-end gap-1">
                                     <span>اضغط Enter للإضافة السريعة</span>
@@ -4552,7 +4552,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-4 shadow-xl">
                             <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
                                 <span class="px-2.5 py-1 bg-emerald-950/60 text-emerald-300 border border-emerald-800/40 rounded-xl text-xs font-mono font-bold" id="wlCountBadge">${(whitelistUsers || []).length} عضو</span>
-                                <div class="flex items-center gap-2 text-blue-100 font-black text-sm">
+                                <div class="flex items-center gap-2 text-blue-300 font-black text-sm">
                                     <span>الأعضاء الموثوقين</span>
                                     <span class="text-emerald-400">🛡️</span>
                                 </div>
@@ -4564,7 +4564,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <button type="button" onclick="removeWhitelistUser('${u.user_id}', 'whitelist')" class="px-3 py-1 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-bold transition">حذف 🗑️</button>
                                         <div class="flex items-center gap-3">
                                             <div class="text-right">
-                                                <span class="text-xs font-bold text-blue-100 block font-mono">${u.user_id}</span>
+                                                <span class="text-xs font-bold text-blue-300 block font-mono">${u.user_id}</span>
                                                 <span class="text-[10px] text-gray-400">مستثنى من جميع فلاتر الحماية</span>
                                             </div>
                                             <div class="w-8 h-8 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-bold text-xs">👤</div>
@@ -4584,7 +4584,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-4 shadow-xl">
                             <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
                                 <span class="px-2.5 py-1 bg-amber-950/60 text-amber-300 border border-amber-800/40 rounded-xl text-xs font-mono font-bold" id="antiModCountBadge">${(antimodUsers || []).length} عضو</span>
-                                <div class="flex items-center gap-2 text-blue-100 font-black text-sm">
+                                <div class="flex items-center gap-2 text-blue-300 font-black text-sm">
                                     <span>نظام Anti Mod (محمي من العقوبات)</span>
                                     <span class="text-amber-400">🛡️</span>
                                 </div>
@@ -4592,13 +4592,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <div class="space-y-3">
                                 <div>
-                                    <input type="text" id="antiModSearchUser" placeholder="ابحث عن عضو لإضافته..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-amber-500 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right placeholder-gray-500">
+                                    <input type="text" id="antiModSearchUser" placeholder="ابحث عن عضو لإضافته..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-amber-500 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right placeholder-gray-500">
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <button type="button" onclick="addWhitelistUser('antimod')" class="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-amber-950 rounded-xl text-xs font-black transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
                                         <span>إضافة</span>
                                     </button>
-                                    <input type="text" id="antiModUserId" placeholder="أدخل User ID لإضافته إلى Anti Mod" class="flex-1 bg-[#0b0d14] border border-blue-400/15 focus:border-amber-500 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right font-mono placeholder-gray-500" onkeydown="if(event.key==='Enter') addWhitelistUser('antimod')">
+                                    <input type="text" id="antiModUserId" placeholder="أدخل User ID لإضافته إلى Anti Mod" class="flex-1 bg-[#0b0d14] border border-blue-400/15 focus:border-amber-500 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right font-mono placeholder-gray-500" onkeydown="if(event.key==='Enter') addWhitelistUser('antimod')">
                                 </div>
                             </div>
 
@@ -4608,7 +4608,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <button type="button" onclick="removeWhitelistUser('${u.user_id}', 'antimod')" class="px-3 py-1 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-bold transition">حذف 🗑️</button>
                                         <div class="flex items-center gap-3">
                                             <div class="text-right">
-                                                <span class="text-xs font-bold text-blue-100 block font-mono">${u.user_id}</span>
+                                                <span class="text-xs font-bold text-blue-300 block font-mono">${u.user_id}</span>
                                                 <span class="text-[10px] text-amber-400/80">محمي من الطرد والحظر والعقوبات التلقائية</span>
                                             </div>
                                             <div class="w-8 h-8 rounded-lg bg-amber-600/20 text-amber-400 flex items-center justify-center font-bold text-xs">🛡️</div>
@@ -4698,7 +4698,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </label>
                                 <div class="flex items-center gap-3">
                                     <div class="text-right">
-                                        <h4 class="font-black text-blue-100 text-sm">سجلات الأمان</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">سجلات الأمان</h4>
                                         <p class="text-gray-400 text-xs mt-0.5">تسجيل أحداث الأمان</p>
                                     </div>
                                     <div class="w-10 h-10 rounded-xl bg-amber-600/20 text-amber-400 flex items-center justify-center text-lg border border-amber-500/30">
@@ -4715,7 +4715,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </label>
                                 <div class="flex items-center gap-3">
                                     <div class="text-right">
-                                        <h4 class="font-black text-blue-100 text-sm">سجلات الإشراف</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">سجلات الإشراف</h4>
                                         <p class="text-gray-400 text-xs mt-0.5">تسجيل إجراءات الإشراف</p>
                                     </div>
                                     <div class="w-10 h-10 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-lg border border-blue-400/30">
@@ -4727,7 +4727,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                         <!-- 3. بطاقة ماذا يتم تسجيله؟ -->
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-6 shadow-xl">
-                            <div class="flex items-center justify-end gap-2 text-blue-100 font-black text-sm border-b border-blue-400/15 pb-3">
+                            <div class="flex items-center justify-end gap-2 text-blue-300 font-black text-sm border-b border-blue-400/15 pb-3">
                                 <span>ماذا يتم تسجيله؟</span>
                                 <span class="text-base">⚙️</span>
                             </div>
@@ -4799,7 +4799,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-4 shadow-xl">
                             <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
                                 <span class="px-2.5 py-1 bg-blue-800/60 text-blue-300 border border-blue-600/40 rounded-xl text-xs font-mono font-bold">${(securityLogsList || []).length} سجل مسجل</span>
-                                <h4 class="font-black text-blue-100 text-sm">أحدث سجلات الأمان والإشراف المسجلة لحظياً</h4>
+                                <h4 class="font-black text-blue-300 text-sm">أحدث سجلات الأمان والإشراف المسجلة لحظياً</h4>
                             </div>
 
                             <div class="space-y-2">
@@ -4808,7 +4808,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="text-[10px] text-gray-500 font-mono">${new Date(log.created_at * 1000).toLocaleString('ar-SA')}</span>
                                         <div class="flex items-center gap-3">
                                             <div class="text-right">
-                                                <span class="font-bold text-blue-100 block">${log.reason || log.action_type}</span>
+                                                <span class="font-bold text-blue-300 block">${log.reason || log.action_type}</span>
                                                 <span class="text-[10px] text-gray-400">${log.details || ''} ${log.executor_id ? `• المشرف: <span class="font-mono text-blue-300">${log.executor_id}</span>` : ''}</span>
                                             </div>
                                             <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold ${log.category === 'security' ? 'bg-amber-950/60 text-amber-400 border border-amber-800/30' : 'bg-blue-800/60 text-blue-400 border border-blue-600/30'}">${log.category === 'security' ? 'أمان' : 'إشراف'}</span>
@@ -4878,7 +4878,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </label>
                                 <div class="flex items-center gap-3">
                                     <div class="text-right">
-                                        <div class="flex items-center justify-end gap-2 text-blue-100 font-black text-base">
+                                        <div class="flex items-center justify-end gap-2 text-blue-300 font-black text-base">
                                             <span>مفعل</span>
                                             <span class="text-emerald-400">🎁</span>
                                         </div>
@@ -4899,7 +4899,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span>☺</span>
                                         <span>رسالة الترحيب (نص عادي)</span>
                                     </div>
-                                    <textarea name="welcome_message" id="welcomeText" rows="3" oninput="updateWelcomePreview()" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-4 text-xs text-blue-100 outline-none leading-relaxed text-right">${settings.welcome_message || 'مرحباً {user} في سيرفر **{server}**! 🎉 أنت العضو رقم **{memberCount}**'}</textarea>
+                                    <textarea name="welcome_message" id="welcomeText" rows="3" oninput="updateWelcomePreview()" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-4 text-xs text-blue-300 outline-none leading-relaxed text-right">${settings.welcome_message || 'مرحباً {user} في سيرفر **{server}**! 🎉 أنت العضو رقم **{memberCount}**'}</textarea>
                                     
                                     <!-- Variables Pill Badges -->
                                     <div class="flex items-center justify-between pt-1">
@@ -4918,15 +4918,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <!-- Card 3: خيارات الترحيب الثلاثة (نص فقط / صورة ترحيب / رسالة Embed) -->
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <button type="button" onclick="setWelcomeType('text')" id="btnWlTypeText" class="p-4 rounded-2xl border ${settings.welcome_embed_enabled === 0 && !settings.welcome_image ? 'border-blue-400 bg-orange-950/20 text-blue-100' : 'border-blue-400/15 bg-[#12141f] text-gray-400'} text-center transition">
+                                <button type="button" onclick="setWelcomeType('text')" id="btnWlTypeText" class="p-4 rounded-2xl border ${settings.welcome_embed_enabled === 0 && !settings.welcome_image ? 'border-blue-400 bg-orange-950/20 text-blue-300' : 'border-blue-400/15 bg-[#12141f] text-gray-400'} text-center transition">
                                     <h5 class="font-bold text-xs">نص فقط</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">رسالة نصية بسيطة</p>
                                 </button>
-                                <button type="button" onclick="setWelcomeType('image')" id="btnWlTypeImage" class="p-4 rounded-2xl border ${settings.welcome_image ? 'border-blue-400 bg-orange-950/20 text-blue-100' : 'border-blue-400/15 bg-[#12141f] text-gray-400'} text-center transition">
+                                <button type="button" onclick="setWelcomeType('image')" id="btnWlTypeImage" class="p-4 rounded-2xl border ${settings.welcome_image ? 'border-blue-400 bg-orange-950/20 text-blue-300' : 'border-blue-400/15 bg-[#12141f] text-gray-400'} text-center transition">
                                     <h5 class="font-bold text-xs">صورة ترحيب</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">صورة مخصصة مع اسم العضو</p>
                                 </button>
-                                <button type="button" onclick="setWelcomeType('embed')" id="btnWlTypeEmbed" class="p-4 rounded-2xl border ${settings.welcome_embed_enabled !== 0 ? 'border-blue-400 bg-orange-950/20 text-blue-100' : 'border-blue-400/15 bg-[#12141f] text-gray-400'} text-center transition">
+                                <button type="button" onclick="setWelcomeType('embed')" id="btnWlTypeEmbed" class="p-4 rounded-2xl border ${settings.welcome_embed_enabled !== 0 ? 'border-blue-400 bg-orange-950/20 text-blue-300' : 'border-blue-400/15 bg-[#12141f] text-gray-400'} text-center transition">
                                     <h5 class="font-bold text-xs">رسالة Embed</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">رسالة منسقة مع ألوان</p>
                                 </button>
@@ -4956,7 +4956,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <!-- نصوص الشرح -->
                                     <div class="flex-1 text-right space-y-1 w-full">
                                         <div class="flex items-center justify-end gap-2">
-                                            <h5 class="text-sm font-black text-blue-100">صورة بانر الترحيب</h5>
+                                            <h5 class="text-sm font-black text-blue-300">صورة بانر الترحيب</h5>
                                             <span class="text-blue-400 text-base">🖼️</span>
                                         </div>
                                         <ul class="text-[11px] text-gray-400 space-y-0.5 list-disc list-inside">
@@ -4989,7 +4989,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="text-[10px] font-mono bg-[#1c1f2e] text-blue-400 px-2 py-0.5 rounded-lg border border-blue-400/20">{user.avatar}</span>
                                         <span class="text-[10px] font-mono bg-[#1c1f2e] text-blue-400 px-2 py-0.5 rounded-lg border border-blue-400/20">{inviter}</span>
                                     </div>
-                                    <h5 class="text-xs font-black text-blue-100">تخصيص رسالة الترحيب</h5>
+                                    <h5 class="text-xs font-black text-blue-300">تخصيص رسالة الترحيب</h5>
                                 </div>
 
                                 <!-- Color Pickers Palette -->
@@ -5020,7 +5020,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
 
                                     <div class="space-y-1">
-                                        <h4 class="text-sm font-black text-blue-100 flex items-center justify-end gap-1.5">
+                                        <h4 class="text-sm font-black text-blue-300 flex items-center justify-end gap-1.5">
                                             <span>مرحباً بك!</span>
                                             <span>🎉</span>
                                         </h4>
@@ -5054,7 +5054,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </label>
                                 <div class="flex items-center gap-3">
                                     <div class="text-right">
-                                        <div class="flex items-center justify-end gap-2 text-blue-100 font-black text-base">
+                                        <div class="flex items-center justify-end gap-2 text-blue-300 font-black text-base">
                                             <span>مفعل</span>
                                             <span class="text-rose-400">🚪</span>
                                         </div>
@@ -5075,7 +5075,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span>☺</span>
                                         <span>رسالة المغادرة (نص عادي)</span>
                                     </div>
-                                    <textarea name="leave_message" id="leaveText" rows="3" oninput="updateLeavePreview()" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-rose-500 rounded-xl p-4 text-xs text-blue-100 outline-none leading-relaxed text-right">${settings.leave_message || 'وداعاً **{user}**، نتمنى لك التوفيق 👋'}</textarea>
+                                    <textarea name="leave_message" id="leaveText" rows="3" oninput="updateLeavePreview()" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-rose-500 rounded-xl p-4 text-xs text-blue-300 outline-none leading-relaxed text-right">${settings.leave_message || 'وداعاً **{user}**، نتمنى لك التوفيق 👋'}</textarea>
                                     
                                     <!-- Variables Pill Badges -->
                                     <div class="flex items-center justify-end gap-1.5 pt-1">
@@ -5089,11 +5089,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <!-- Card 3: خيارات المغادرة (رسالة نصية / رسالة Embed) -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <button type="button" onclick="setLeaveType('text')" id="btnLvTypeText" class="p-4 rounded-2xl border ${settings.leave_embed_enabled === 0 ? 'border-rose-500 bg-rose-950/20 text-blue-100' : 'border-blue-400/15 bg-[#12141f] text-gray-400'} text-center transition">
+                                <button type="button" onclick="setLeaveType('text')" id="btnLvTypeText" class="p-4 rounded-2xl border ${settings.leave_embed_enabled === 0 ? 'border-rose-500 bg-rose-950/20 text-blue-300' : 'border-blue-400/15 bg-[#12141f] text-gray-400'} text-center transition">
                                     <h5 class="font-bold text-xs">رسالة نصية</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">رسالة بسيطة</p>
                                 </button>
-                                <button type="button" onclick="setLeaveType('embed')" id="btnLvTypeEmbed" class="p-4 rounded-2xl border ${settings.leave_embed_enabled !== 0 ? 'border-rose-500 bg-rose-950/20 text-blue-100' : 'border-blue-400/15 bg-[#12141f] text-gray-400'} text-center transition">
+                                <button type="button" onclick="setLeaveType('embed')" id="btnLvTypeEmbed" class="p-4 rounded-2xl border ${settings.leave_embed_enabled !== 0 ? 'border-rose-500 bg-rose-950/20 text-blue-300' : 'border-blue-400/15 bg-[#12141f] text-gray-400'} text-center transition">
                                     <h5 class="font-bold text-xs">رسالة Embed</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">رسالة منسقة مع ألوان</p>
                                 </button>
@@ -5110,7 +5110,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="text-[10px] font-mono bg-[#1c1f2e] text-rose-400 px-2 py-0.5 rounded-lg border border-rose-500/20">{server}</span>
                                         <span class="text-[10px] font-mono bg-[#1c1f2e] text-rose-400 px-2 py-0.5 rounded-lg border border-rose-500/20">{memberCount}</span>
                                     </div>
-                                    <h5 class="text-xs font-black text-blue-100">تخصيص رسالة المغادرة</h5>
+                                    <h5 class="text-xs font-black text-blue-300">تخصيص رسالة المغادرة</h5>
                                 </div>
 
                                 <!-- Color Pickers Palette -->
@@ -5140,7 +5140,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
 
                                     <div class="space-y-1">
-                                        <h4 class="text-sm font-black text-blue-100 flex items-center justify-end gap-1.5">
+                                        <h4 class="text-sm font-black text-blue-300 flex items-center justify-end gap-1.5">
                                             <span>وداعاً 👋</span>
                                         </h4>
                                         <p id="pvLvMsg" class="text-xs text-gray-300">وداعاً **{username}**، نتمنى لك التوفيق</p>
@@ -5232,7 +5232,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </button>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
-                                    <h4 class="font-black text-blue-100 text-base">الرد التلقائي</h4>
+                                    <h4 class="font-black text-blue-300 text-base">الرد التلقائي</h4>
                                     <p class="text-gray-400 text-xs mt-0.5">إعداد ردود تلقائية على كلمات أو عبارات معينة</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg border border-blue-400/30">
@@ -5245,7 +5245,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <!-- إجمالي الردود -->
                             <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl text-center space-y-1 shadow-lg">
-                                <span class="text-2xl font-black text-blue-100 font-mono">${(autoRespondersList || []).length}</span>
+                                <span class="text-2xl font-black text-blue-300 font-mono">${(autoRespondersList || []).length}</span>
                                 <span class="text-xs font-bold text-gray-400 block">إجمالي الردود</span>
                             </div>
                             <!-- ردود نشطة -->
@@ -5255,7 +5255,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                             <!-- إجمالي الاستخدام -->
                             <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl text-center space-y-1 shadow-lg">
-                                <span class="text-2xl font-black text-blue-100 font-mono">${(autoRespondersList || []).reduce((acc, r) => acc + (r.uses_count || 0), 0)}</span>
+                                <span class="text-2xl font-black text-blue-300 font-mono">${(autoRespondersList || []).reduce((acc, r) => acc + (r.uses_count || 0), 0)}</span>
                                 <span class="text-xs font-bold text-gray-400 block">إجمالي الاستخدام</span>
                             </div>
                         </div>
@@ -5266,7 +5266,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="space-y-3">
                                     <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
                                         <span class="text-xs font-mono text-gray-400 font-bold">${autoRespondersList.length} رد مسجل</span>
-                                        <h5 class="text-xs font-black text-blue-100">الردود التلقائية النشطة</h5>
+                                        <h5 class="text-xs font-black text-blue-300">الردود التلقائية النشطة</h5>
                                     </div>
                                     ${autoRespondersList.map(r => `
                                         <div class="bg-[#0b0d14] border border-blue-400/15 p-4 rounded-xl flex items-center justify-between hover:border-blue-400/40 transition">
@@ -5288,7 +5288,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         💬
                                     </div>
                                     <div class="space-y-1">
-                                        <h5 class="text-sm font-black text-blue-100">لا توجد ردود تلقائية</h5>
+                                        <h5 class="text-sm font-black text-blue-300">لا توجد ردود تلقائية</h5>
                                         <p class="text-xs text-gray-400">أضف ردود تلقائية للرد على كلمات أو عبارات محددة</p>
                                     </div>
                                     <button type="button" onclick="openAddAutoresponderModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-black transition inline-flex items-center gap-2 shadow-lg shadow-blue-800/40">
@@ -5307,7 +5307,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <!-- Modal Header -->
                                 <div class="flex items-center justify-between border-b border-blue-400/15 pb-4">
                                     <button type="button" onclick="closeAddAutoresponderModal()" class="text-gray-400 hover:text-blue-200 text-lg font-bold">✕</button>
-                                    <h3 class="text-base font-black text-blue-100">إضافة رد جديد</h3>
+                                    <h3 class="text-base font-black text-blue-300">إضافة رد جديد</h3>
                                 </div>
 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -5317,7 +5317,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <!-- حقل المحفز -->
                                         <div class="space-y-1.5">
                                             <label class="block text-xs font-bold text-gray-300">حقل المحفز</label>
-                                            <input type="text" id="arTrigger" placeholder="اكتب الكلمة أو العبارة..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right">
+                                            <input type="text" id="arTrigger" placeholder="اكتب الكلمة أو العبارة..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right">
                                         </div>
 
                                         <!-- نوع المطابقة (Buttons: يحتوي على / مطابقة تامة / يبدأ بـ / ينتهي بـ / Regex) -->
@@ -5354,7 +5354,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <!-- الرد والبادجات -->
                                         <div class="space-y-2">
                                             <label class="block text-xs font-bold text-gray-300">الرد</label>
-                                            <textarea id="arReply" rows="3" placeholder="اكتب الرد..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-3 text-xs text-blue-100 outline-none leading-relaxed text-right"></textarea>
+                                            <textarea id="arReply" rows="3" placeholder="اكتب الرد..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-3 text-xs text-blue-300 outline-none leading-relaxed text-right"></textarea>
                                             <div class="flex flex-wrap gap-1 justify-end">
                                                 <span class="text-[10px] font-mono bg-[#1c1f2e] text-blue-400 px-2 py-0.5 rounded-lg border border-blue-400/20 cursor-pointer" onclick="insertArVar('{user}')">{user}</span>
                                                 <span class="text-[10px] font-mono bg-[#1c1f2e] text-blue-400 px-2 py-0.5 rounded-lg border border-blue-400/20 cursor-pointer" onclick="insertArVar('{server}')">{server}</span>
@@ -5370,7 +5370,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <div class="bg-[#0b0d14] border border-blue-400/15 p-3 rounded-xl flex items-center justify-between">
                                             <label class="toggle"><input type="checkbox" id="arCase"><span class="slider"></span></label>
                                             <div class="text-right">
-                                                <h5 class="text-xs font-bold text-blue-100">حساس لحالة الأحرف</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">حساس لحالة الأحرف</h5>
                                                 <p class="text-[10px] text-gray-500">التمييز بين الأحرف الكبيرة والصغيرة</p>
                                             </div>
                                         </div>
@@ -5379,7 +5379,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <div class="bg-[#0b0d14] border border-blue-400/15 p-3 rounded-xl flex items-center justify-between">
                                             <label class="toggle"><input type="checkbox" id="arDeleteTrigger"><span class="slider"></span></label>
                                             <div class="text-right">
-                                                <h5 class="text-xs font-bold text-blue-100">حذف رسالة المحفز</h5>
+                                                <h5 class="text-xs font-bold text-blue-300">حذف رسالة المحفز</h5>
                                                 <p class="text-[10px] text-gray-500">حذف الرسالة التي أطلقت الرد التلقائي</p>
                                             </div>
                                         </div>
@@ -5387,7 +5387,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <!-- فترة الانتظار (ثانية) -->
                                         <div class="space-y-1">
                                             <label class="block text-xs font-bold text-gray-300">فترة الانتظار (ثانية)</label>
-                                            <input type="number" id="arCooldown" placeholder="0" class="w-full bg-[#0b0d14] border border-blue-400/15 rounded-xl px-4 py-2 text-xs text-blue-100 outline-none text-right font-mono">
+                                            <input type="number" id="arCooldown" placeholder="0" class="w-full bg-[#0b0d14] border border-blue-400/15 rounded-xl px-4 py-2 text-xs text-blue-300 outline-none text-right font-mono">
                                         </div>
 
                                         <!-- القنوات المسموحة -->
@@ -5543,7 +5543,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </label>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
-                                    <h4 class="font-black text-blue-100 text-base">نظام التذاكر والدعم الفني 🎫</h4>
+                                    <h4 class="font-black text-blue-300 text-base">نظام التذاكر والدعم الفني 🎫</h4>
                                     <p class="text-gray-400 text-xs mt-0.5">لوحات تذاكر تفاعلية، تصنيفات مخصصة، وتقييمات خدمة العملاء</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-lg border border-blue-400/30">
@@ -5575,7 +5575,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span>📩</span>
                                     <span>إرسال اللوحة للشات الآن</span>
                                 </button>
-                                <h4 class="text-xs font-black text-blue-100">إعدادات ومظهر لوحة الدعم الفني (Wicks Design)</h4>
+                                <h4 class="text-xs font-black text-blue-300">إعدادات ومظهر لوحة الدعم الفني (Wicks Design)</h4>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -5591,7 +5591,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">عنوان لوحة التذاكر (Panel Title)</label>
-                                    <input type="text" id="input_ticket_panel_title" name="ticket_panel_title" value="${settings.ticket_panel_title || 'Open a ticket 🎫'}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right">
+                                    <input type="text" id="input_ticket_panel_title" name="ticket_panel_title" value="${settings.ticket_panel_title || 'Open a ticket 🎫'}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">قناة سجلات التذاكر (Transcripts Channel)</label>
@@ -5610,7 +5610,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="slider"></span>
                                     </label>
                                     <div class="text-right">
-                                        <span class="text-xs font-bold text-blue-100 block">طلب تقييم الخدمة عند إغلاق التذكرة</span>
+                                        <span class="text-xs font-bold text-blue-300 block">طلب تقييم الخدمة عند إغلاق التذكرة</span>
                                         <span class="text-[10px] text-gray-400">إرسال نجوم التقييم ⭐ للعضو بعد الإغلاق</span>
                                     </div>
                                 </div>
@@ -5639,7 +5639,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <!-- نصوص الشرح وزر الرفع -->
                                         <div class="flex-1 text-right space-y-1 w-full">
                                             <div class="flex items-center justify-end gap-2">
-                                                <h5 class="text-sm font-black text-blue-100">صورة خلفية إعداد التذكرة</h5>
+                                                <h5 class="text-sm font-black text-blue-300">صورة خلفية إعداد التذكرة</h5>
                                                 <span class="text-blue-400 text-base">🖼️</span>
                                             </div>
                                             <ul class="text-[11px] text-gray-400 space-y-0.5 list-disc list-inside">
@@ -5682,7 +5682,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <!-- نصوص الشرح وزر الرفع -->
                                         <div class="flex-1 text-right space-y-1 w-full">
                                             <div class="flex items-center justify-end gap-2">
-                                                <h5 class="text-sm font-black text-blue-100">صورة خط إعداد التذاكر</h5>
+                                                <h5 class="text-sm font-black text-blue-300">صورة خط إعداد التذاكر</h5>
                                                 <span class="text-blue-400 text-base">🖼️</span>
                                             </div>
                                             <ul class="text-[11px] text-gray-400 space-y-0.5 list-disc list-inside">
@@ -5707,7 +5707,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <div>
                                 <label class="block text-xs font-bold text-gray-300 mb-2">رسالة الترحيب التلقائية داخل التذكرة (Ticket Welcome Message)</label>
-                                <textarea name="ticket_welcome_msg" rows="3" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-4 text-xs text-blue-100 outline-none leading-relaxed text-right">${settings.ticket_welcome_msg || 'مرحباً بك {user}! يرجى كتابة استفسارك وسيقوم طاقم الإدارة بالرد عليك قريباً 🌟'}</textarea>
+                                <textarea name="ticket_welcome_msg" rows="3" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-4 text-xs text-blue-300 outline-none leading-relaxed text-right">${settings.ticket_welcome_msg || 'مرحباً بك {user}! يرجى كتابة استفسارك وسيقوم طاقم الإدارة بالرد عليك قريباً 🌟'}</textarea>
                             </div>
                         </div>
 
@@ -5715,7 +5715,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-4 shadow-xl">
                             <div class="flex items-center justify-between border-b border-blue-400/15 pb-3">
                                 <span class="text-xs font-mono text-gray-400 font-bold">${(guildTicketsList || []).length} تذكرة</span>
-                                <h4 class="text-xs font-black text-blue-100">سجل التذاكر الأخيرة</h4>
+                                <h4 class="text-xs font-black text-blue-300">سجل التذاكر الأخيرة</h4>
                             </div>
 
                             <div class="space-y-2">
@@ -5723,7 +5723,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="bg-[#0b0d14] border border-blue-400/15 p-3.5 rounded-xl flex items-center justify-between hover:border-blue-400/30 transition text-xs">
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status === 'open' ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/30' : 'bg-rose-950/60 text-rose-400 border border-rose-800/30'}">${t.status === 'open' ? 'مفتوحة 🟢' : 'مغلقة 🔴'}</span>
                                         <div class="text-right">
-                                            <span class="font-bold text-blue-100 block">صاحب التذكرة: <span class="font-mono text-blue-300">${t.user_id}</span></span>
+                                            <span class="font-bold text-blue-300 block">صاحب التذكرة: <span class="font-mono text-blue-300">${t.user_id}</span></span>
                                             <span class="text-[10px] text-gray-400">${t.category || 'عام'} • <span class="font-mono">${new Date(t.created_at * 1000).toLocaleDateString('ar-SA')}</span></span>
                                         </div>
                                     </div>
@@ -5858,7 +5858,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <span class="slider"></span>
                             </label>
                             <div class="flex items-center gap-3">
-                                <span class="text-xs font-black text-blue-100">مفعل</span>
+                                <span class="text-xs font-black text-blue-300">مفعل</span>
                                 <div class="w-10 h-10 rounded-xl bg-amber-600/20 text-amber-400 flex items-center justify-center text-lg border border-amber-500/30">
                                     🛡️
                                 </div>
@@ -5956,7 +5956,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div id="tabLvlSettings" class="space-y-6 ${(!currentTab || currentTab === 'settings') ? '' : 'hidden'}">
                             <!-- بطاقة نظام XP -->
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-5 shadow-xl">
-                                <div class="flex items-center justify-end gap-2 text-blue-100 font-black text-sm border-b border-blue-400/15 pb-3">
+                                <div class="flex items-center justify-end gap-2 text-blue-300 font-black text-sm border-b border-blue-400/15 pb-3">
                                     <span>نظام XP</span>
                                     <span class="text-amber-400">✨</span>
                                 </div>
@@ -5968,7 +5968,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <input type="checkbox" name="level_text_xp_enabled" value="1" ${settings.level_text_xp_enabled !== 0 ? 'checked' : ''}>
                                             <span class="slider"></span>
                                         </label>
-                                        <div class="flex items-center gap-2 text-xs font-bold text-blue-100">
+                                        <div class="flex items-center gap-2 text-xs font-bold text-blue-300">
                                             <span>مستويات كتابية</span>
                                             <span>💬</span>
                                         </div>
@@ -5980,7 +5980,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <input type="checkbox" name="level_voice_xp_enabled" value="1" ${settings.level_voice_xp_enabled !== 0 ? 'checked' : ''}>
                                             <span class="slider"></span>
                                         </label>
-                                        <div class="flex items-center gap-2 text-xs font-bold text-blue-100">
+                                        <div class="flex items-center gap-2 text-xs font-bold text-blue-300">
                                             <span>مستويات صوتية</span>
                                             <span>🎵</span>
                                         </div>
@@ -5992,10 +5992,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center gap-2">
                                             <span class="text-xs text-gray-400">ثانية</span>
-                                            <input type="number" name="level_cooldown_seconds" value="${settings.level_cooldown_seconds || 120}" class="w-20 bg-[#0b0d14] border border-blue-400/15 rounded-xl px-3 py-1.5 text-xs text-blue-100 font-mono text-center outline-none">
+                                            <input type="number" name="level_cooldown_seconds" value="${settings.level_cooldown_seconds || 120}" class="w-20 bg-[#0b0d14] border border-blue-400/15 rounded-xl px-3 py-1.5 text-xs text-blue-300 font-mono text-center outline-none">
                                         </div>
                                         <div class="text-right">
-                                            <h5 class="text-xs font-bold text-blue-100">فترة انتظار XP</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">فترة انتظار XP</h5>
                                             <p class="text-[10px] text-gray-500">الثواني بين كل رسالة تكسب XP</p>
                                         </div>
                                     </div>
@@ -6006,10 +6006,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center gap-2">
                                             <span class="text-xs text-gray-400">XP/دقيقة</span>
-                                            <input type="number" name="level_voice_xp_rate" value="${settings.level_voice_xp_rate || 3}" class="w-20 bg-[#0b0d14] border border-blue-400/15 rounded-xl px-3 py-1.5 text-xs text-blue-100 font-mono text-center outline-none">
+                                            <input type="number" name="level_voice_xp_rate" value="${settings.level_voice_xp_rate || 3}" class="w-20 bg-[#0b0d14] border border-blue-400/15 rounded-xl px-3 py-1.5 text-xs text-blue-300 font-mono text-center outline-none">
                                         </div>
                                         <div class="text-right">
-                                            <h5 class="text-xs font-bold text-blue-100">XP الصوت في الدقيقة</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">XP الصوت في الدقيقة</h5>
                                             <p class="text-[10px] text-gray-500">كمية XP الممنوحة لكل دقيقة في الصوت</p>
                                         </div>
                                     </div>
@@ -6018,7 +6018,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <!-- بطاقة إعدادات صوتية -->
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-5 shadow-xl">
-                                <div class="flex items-center justify-end gap-2 text-blue-100 font-black text-sm border-b border-blue-400/15 pb-3">
+                                <div class="flex items-center justify-end gap-2 text-blue-300 font-black text-sm border-b border-blue-400/15 pb-3">
                                     <span>إعدادات صوتية</span>
                                     <span class="text-pink-400">🎵</span>
                                 </div>
@@ -6026,7 +6026,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="space-y-2">
                                     <div class="flex items-center justify-between text-xs font-bold">
                                         <span class="px-3 py-1 bg-orange-950/60 text-blue-400 border border-orange-800/40 rounded-xl font-mono text-sm" id="voiceMinMembersVal">${settings.level_voice_min_members || 2}</span>
-                                        <span class="text-blue-100">الحد الأدنى للأعضاء في القناة</span>
+                                        <span class="text-blue-300">الحد الأدنى للأعضاء في القناة</span>
                                     </div>
                                     <input type="range" name="level_voice_min_members" min="1" max="10" value="${settings.level_voice_min_members || 2}" oninput="document.getElementById('voiceMinMembersVal').innerText = this.value" class="w-full accent-blue-400 cursor-pointer">
                                     <p class="text-[10px] text-gray-500 text-right">عدد الأعضاء المطلوب في القناة لبدء حساب XP</p>
@@ -6038,7 +6038,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="slider"></span>
                                     </label>
                                     <div class="text-right">
-                                        <h5 class="text-xs font-bold text-blue-100">تجاهل الأعضاء المكتومين</h5>
+                                        <h5 class="text-xs font-bold text-blue-300">تجاهل الأعضاء المكتومين</h5>
                                         <p class="text-[10px] text-gray-500">لن يحصل الأعضاء المكتومون على XP صوتي</p>
                                     </div>
                                 </div>
@@ -6049,7 +6049,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="slider"></span>
                                     </label>
                                     <div class="text-right">
-                                        <h5 class="text-xs font-bold text-blue-100">تجاهل الأعضاء الصامتين</h5>
+                                        <h5 class="text-xs font-bold text-blue-300">تجاهل الأعضاء الصامتين</h5>
                                         <p class="text-[10px] text-gray-500">لن يحصل الأعضاء الصامتون على XP صوتي</p>
                                     </div>
                                 </div>
@@ -6060,7 +6060,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="slider"></span>
                                     </label>
                                     <div class="text-right">
-                                        <h5 class="text-xs font-bold text-blue-100">تجاهل قناة AFK</h5>
+                                        <h5 class="text-xs font-bold text-blue-300">تجاهل قناة AFK</h5>
                                         <p class="text-[10px] text-gray-500">لن يحصل الأعضاء في قناة AFK على XP</p>
                                     </div>
                                 </div>
@@ -6068,7 +6068,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <!-- بطاقة إعدادات رفع المستوى -->
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-5 shadow-xl">
-                                <div class="flex items-center justify-end gap-2 text-blue-100 font-black text-sm border-b border-blue-400/15 pb-3">
+                                <div class="flex items-center justify-end gap-2 text-blue-300 font-black text-sm border-b border-blue-400/15 pb-3">
                                     <span>إعدادات رفع المستوى</span>
                                     <span class="text-indigo-400">🎉</span>
                                 </div>
@@ -6079,14 +6079,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="slider"></span>
                                     </label>
                                     <div class="text-right">
-                                        <h5 class="text-xs font-bold text-blue-100">رسائل رفع المستوى</h5>
+                                        <h5 class="text-xs font-bold text-blue-300">رسائل رفع المستوى</h5>
                                         <p class="text-[10px] text-gray-500">إرسال رسالة عند رفع المستوى</p>
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
                                     <label class="block text-xs font-bold text-gray-300">قناة إشعارات المستوى</label>
-                                    <select name="level_channel" id="level_channel" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-100 outline-none text-right cursor-pointer">
+                                    <select name="level_channel" id="level_channel" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-300 outline-none text-right cursor-pointer">
                                         <option value="current" ${(!settings.level_channel || settings.level_channel === 'current') ? 'selected' : ''}>💬 الروم الحالي (نفس مكان كتابة الرسالة)</option>
                                         <option value="dm" ${settings.level_channel === 'dm' ? 'selected' : ''}>📩 رسالة خاصة بالخاص (DM)</option>
                                         <option value="disabled" ${settings.level_channel === 'disabled' ? 'selected' : ''}>🚫 معطل (بدون إرسال رسالة ترقية)</option>
@@ -6104,14 +6104,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <span class="text-[10px] font-mono bg-[#1c1f2e] text-blue-400 px-2 py-0.5 rounded-lg border border-blue-400/20">{level}</span>
                                             <span class="text-[10px] font-mono bg-[#1c1f2e] text-blue-400 px-2 py-0.5 rounded-lg border border-blue-400/20">{user}</span>
                                         </div>
-                                        <span class="font-bold text-blue-100">رسالة رفع المستوى (كتابي)</span>
+                                        <span class="font-bold text-blue-300">رسالة رفع المستوى (كتابي)</span>
                                     </div>
-                                    <input type="text" name="level_message" value="${settings.level_message || '🎉 مبروك {user}! وصلت للمستوى **{level}**!'}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right">
+                                    <input type="text" name="level_message" value="${settings.level_message || '🎉 مبروك {user}! وصلت للمستوى **{level}**!'}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right">
                                 </div>
 
                                 <div class="space-y-2">
-                                    <label class="block text-xs font-bold text-blue-100 text-right">رسالة رفع المستوى (صوتي)</label>
-                                    <input type="text" name="level_voice_msg" value="${settings.level_voice_msg || '🎤 مبروك {user}! وصلت للمستوى الصوتي **{level}**!'}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right">
+                                    <label class="block text-xs font-bold text-blue-300 text-right">رسالة رفع المستوى (صوتي)</label>
+                                    <input type="text" name="level_voice_msg" value="${settings.level_voice_msg || '🎤 مبروك {user}! وصلت للمستوى الصوتي **{level}**!'}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right">
                                 </div>
 
                                 <div class="bg-[#0b0d14] border border-blue-400/15 p-4 rounded-xl flex items-center justify-between">
@@ -6120,7 +6120,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="slider"></span>
                                     </label>
                                     <div class="text-right">
-                                        <h5 class="text-xs font-bold text-blue-100">إرسال رسالة خاصة</h5>
+                                        <h5 class="text-xs font-bold text-blue-300">إرسال رسالة خاصة</h5>
                                         <p class="text-[10px] text-gray-500">إرسال إشعار رفع المستوى برسالة خاصة في DM</p>
                                     </div>
                                 </div>
@@ -6146,7 +6146,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <!-- نصوص الشرح -->
                                         <div class="flex-1 text-right space-y-1 w-full">
                                             <div class="flex items-center justify-end gap-2">
-                                                <h5 class="text-sm font-black text-blue-100">صورة إشعار رفع المستوى</h5>
+                                                <h5 class="text-sm font-black text-blue-300">صورة إشعار رفع المستوى</h5>
                                                 <span class="text-blue-400 text-base">🎉</span>
                                             </div>
                                             <ul class="text-[11px] text-gray-400 space-y-0.5 list-disc list-inside">
@@ -6171,7 +6171,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <!-- بطاقة تكديس الرتب & الاستثناءات -->
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-5 shadow-xl">
-                                <div class="flex items-center justify-end gap-2 text-blue-100 font-black text-sm border-b border-blue-400/15 pb-3">
+                                <div class="flex items-center justify-end gap-2 text-blue-300 font-black text-sm border-b border-blue-400/15 pb-3">
                                     <span>إعدادات الرتب والاستثناءات</span>
                                     <span class="text-amber-400">👑</span>
                                 </div>
@@ -6182,18 +6182,18 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="slider"></span>
                                     </label>
                                     <div class="text-right">
-                                        <h5 class="text-xs font-bold text-blue-100">تكديس الرتب</h5>
+                                        <h5 class="text-xs font-bold text-blue-300">تكديس الرتب</h5>
                                         <p class="text-[10px] text-gray-500">الاحتفاظ بجميع رتب المستويات السابقة عند الترقية</p>
                                     </div>
                                 </div>
 
                                 <div class="space-y-2 pt-3 border-t border-blue-400/15">
-                                    <label class="block text-xs font-bold text-blue-100">قنوات مستثناة</label>
+                                    <label class="block text-xs font-bold text-blue-300">قنوات مستثناة</label>
                                     ${renderChannelSelect('level_exempt_channels', settings.level_exempt_channels || '', true)}
                                 </div>
 
                                 <div class="space-y-2 pt-3 border-t border-blue-400/15">
-                                    <label class="block text-xs font-bold text-blue-100">رتب مستثناة</label>
+                                    <label class="block text-xs font-bold text-blue-300">رتب مستثناة</label>
                                     ${renderRoleSelect('level_exempt_roles', settings.level_exempt_roles || '')}
                                 </div>
                             </div>
@@ -6216,7 +6216,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         </button>
                                     </div>
                                     <div class="text-right">
-                                        <h4 class="text-sm font-black text-blue-100">رتب المستويات الكتابية</h4>
+                                        <h4 class="text-sm font-black text-blue-300">رتب المستويات الكتابية</h4>
                                         <p class="text-[10px] text-gray-500 mt-0.5">أضف رتب يحصل عليها الأعضاء عند الوصول لمستوى كتابي معين</p>
                                     </div>
                                 </div>
@@ -6227,7 +6227,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <button type="button" onclick="deleteLevelRole(${r.id || r.level})" class="px-3 py-1 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-bold transition">حذف 🗑️</button>
                                             <div class="flex items-center gap-3">
                                                 <div class="text-right">
-                                                    <span class="font-bold text-blue-100 block">مستوى كتابي ${r.level}</span>
+                                                    <span class="font-bold text-blue-300 block">مستوى كتابي ${r.level}</span>
                                                     <span class="text-[10px] text-blue-400 font-mono">الرتبة: @${(guildRoles.find(role => role.id === r.role_id)?.name) || r.role_id}</span>
                                                 </div>
                                                 <span class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">📜</span>
@@ -6278,7 +6278,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         </button>
                                     </div>
                                     <div class="text-right">
-                                        <h4 class="text-sm font-black text-blue-100">رتب المستويات الصوتية</h4>
+                                        <h4 class="text-sm font-black text-blue-300">رتب المستويات الصوتية</h4>
                                         <p class="text-[10px] text-gray-500 mt-0.5">أضف رتب يحصل عليها الأعضاء عند الوصول لمستوى صوتي معين</p>
                                     </div>
                                 </div>
@@ -6289,7 +6289,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <button type="button" onclick="deleteLevelRole(${r.id || r.level})" class="px-3 py-1 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-bold transition">حذف 🗑️</button>
                                             <div class="flex items-center gap-3">
                                                 <div class="text-right">
-                                                    <span class="font-bold text-blue-100 block">مستوى صوتي ${r.level}</span>
+                                                    <span class="font-bold text-blue-300 block">مستوى صوتي ${r.level}</span>
                                                     <span class="text-[10px] text-pink-400 font-mono">الرتبة: @${(guildRoles.find(role => role.id === r.role_id)?.name) || r.role_id}</span>
                                                 </div>
                                                 <span class="w-8 h-8 rounded-lg bg-pink-600/20 text-pink-400 flex items-center justify-center font-bold">🎵</span>
@@ -6340,7 +6340,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         </button>
                                     </div>
                                     <div class="text-right">
-                                        <h4 class="text-sm font-black text-blue-100">رتب الشرط المزدوج</h4>
+                                        <h4 class="text-sm font-black text-blue-300">رتب الشرط المزدوج</h4>
                                         <p class="text-[10px] text-gray-500 mt-0.5">الرتبة تُمنح فقط عند تحقق شرطي الكتابة والصوت معاً</p>
                                     </div>
                                 </div>
@@ -6383,7 +6383,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <button type="button" onclick="deleteLevelRole(${r.id || r.level})" class="px-3 py-1 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-bold transition">حذف 🗑️</button>
                                             <div class="flex items-center gap-3">
                                                 <div class="text-right">
-                                                    <span class="font-bold text-blue-100 block">كتابي ≥ ${r.level} + صوتي ≥ ${r.voice_level || 0}</span>
+                                                    <span class="font-bold text-blue-300 block">كتابي ≥ ${r.level} + صوتي ≥ ${r.voice_level || 0}</span>
                                                     <span class="text-[10px] text-amber-400 font-mono">الرتبة: @${(guildRoles.find(role => role.id === r.role_id)?.name) || r.role_id}</span>
                                                 </div>
                                                 <span class="w-8 h-8 rounded-lg bg-amber-600/20 text-amber-400 flex items-center justify-center font-bold">✨</span>
@@ -6413,7 +6413,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span>تحديث</span>
                                 </button>
                                 <div class="text-right">
-                                    <h4 class="text-sm font-black text-blue-100">لوحة المتصدرين</h4>
+                                    <h4 class="text-sm font-black text-blue-300">لوحة المتصدرين</h4>
                                     <p class="text-[10px] text-gray-500 mt-0.5">أكثر الأعضاء نشاطاً في السيرفر</p>
                                 </div>
                             </div>
@@ -6421,15 +6421,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <!-- Triple Stats Cards (Exact to Image 3: عضو نشط | إجمالي XP | أعلى مستوى) -->
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl text-center space-y-1 shadow-lg">
-                                    <span class="text-2xl font-black text-blue-100 font-mono">${(guildLeaderboardUsers || []).length}</span>
+                                    <span class="text-2xl font-black text-blue-300 font-mono">${(guildLeaderboardUsers || []).length}</span>
                                     <span class="text-xs font-bold text-gray-400 block">عضو نشط</span>
                                 </div>
                                 <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl text-center space-y-1 shadow-lg">
-                                    <span class="text-2xl font-black text-blue-100 font-mono">${(guildLeaderboardUsers || []).reduce((acc, u) => acc + (u.xp || 0), 0)}</span>
+                                    <span class="text-2xl font-black text-blue-300 font-mono">${(guildLeaderboardUsers || []).reduce((acc, u) => acc + (u.xp || 0), 0)}</span>
                                     <span class="text-xs font-bold text-gray-400 block">إجمالي XP</span>
                                 </div>
                                 <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl text-center space-y-1 shadow-lg">
-                                    <span class="text-2xl font-black text-blue-100 font-mono">${(guildLeaderboardUsers && guildLeaderboardUsers[0]) ? guildLeaderboardUsers[0].level : 1}</span>
+                                    <span class="text-2xl font-black text-blue-300 font-mono">${(guildLeaderboardUsers && guildLeaderboardUsers[0]) ? guildLeaderboardUsers[0].level : 1}</span>
                                     <span class="text-xs font-bold text-gray-400 block">أعلى مستوى</span>
                                 </div>
                             </div>
@@ -6450,7 +6450,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                         <div class="flex items-center gap-3">
                                             <span class="px-2 py-0.5 bg-indigo-950/60 text-indigo-300 border border-indigo-500/30 rounded-lg text-[10px] font-mono font-bold">Lv.${u.level || 1}</span>
-                                            <span class="font-bold text-blue-100 text-xs">${u.user_id}</span>
+                                            <span class="font-bold text-blue-300 text-xs">${u.user_id}</span>
                                             <div class="w-7 h-7 rounded-xl bg-amber-600/20 text-amber-400 flex items-center justify-center font-bold text-xs border border-amber-500/30 font-mono">
                                                 ${idx + 1}
                                             </div>
@@ -6565,7 +6565,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
-                                    <h4 class="font-black text-blue-100 text-base">الإشراف</h4>
+                                    <h4 class="font-black text-blue-300 text-base">الإشراف</h4>
                                     <p class="text-gray-400 text-xs mt-0.5">إعدادات الإشراف والعقوبات</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg border border-blue-400/30">
@@ -6578,7 +6578,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <!-- رتب الإشراف -->
                             <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl text-center space-y-1 shadow-lg">
-                                <span class="text-2xl font-black text-blue-100 font-mono">${(settings.mod_staff_roles ? settings.mod_staff_roles.split(',').filter(Boolean).length : 0)}</span>
+                                <span class="text-2xl font-black text-blue-300 font-mono">${(settings.mod_staff_roles ? settings.mod_staff_roles.split(',').filter(Boolean).length : 0)}</span>
                                 <span class="text-xs font-bold text-gray-400 block">رتب الإشراف</span>
                             </div>
                             <!-- رتب مستثناة -->
@@ -6588,7 +6588,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                             <!-- كلمات محظورة -->
                             <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl text-center space-y-1 shadow-lg">
-                                <span class="text-2xl font-black text-blue-100 font-mono">${(settings.bad_words_list ? settings.bad_words_list.split(/[\n,]+/).filter(Boolean).length : 0)}</span>
+                                <span class="text-2xl font-black text-blue-300 font-mono">${(settings.bad_words_list ? settings.bad_words_list.split(/[\n,]+/).filter(Boolean).length : 0)}</span>
                                 <span class="text-xs font-bold text-gray-400 block">كلمات محظورة</span>
                             </div>
                         </div>
@@ -6603,7 +6603,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-2 text-right">
-                                    <h5 class="text-xs font-bold text-blue-100">نظام التحذيرات</h5>
+                                    <h5 class="text-xs font-bold text-blue-300">نظام التحذيرات</h5>
                                     <span class="text-amber-400">🛡️</span>
                                 </div>
                             </div>
@@ -6615,7 +6615,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-2 text-right">
-                                    <h5 class="text-xs font-bold text-blue-100">نظام الكتم</h5>
+                                    <h5 class="text-xs font-bold text-blue-300">نظام الكتم</h5>
                                     <span class="text-indigo-400">⏳</span>
                                 </div>
                             </div>
@@ -6627,7 +6627,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-2 text-right">
-                                    <h5 class="text-xs font-bold text-blue-100">الكلمات المحظورة</h5>
+                                    <h5 class="text-xs font-bold text-blue-300">الكلمات المحظورة</h5>
                                     <span class="text-rose-400">💬</span>
                                 </div>
                             </div>
@@ -6639,7 +6639,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-2 text-right">
-                                    <h5 class="text-xs font-bold text-blue-100">سبام المنشنات</h5>
+                                    <h5 class="text-xs font-bold text-blue-300">سبام المنشنات</h5>
                                     <span class="text-pink-400">📢</span>
                                 </div>
                             </div>
@@ -6651,7 +6651,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-2 text-right">
-                                    <h5 class="text-xs font-bold text-blue-100">فلتر الحروف الكبيرة</h5>
+                                    <h5 class="text-xs font-bold text-blue-300">فلتر الحروف الكبيرة</h5>
                                     <span class="text-blue-400">🔠</span>
                                 </div>
                             </div>
@@ -6663,7 +6663,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-2 text-right">
-                                    <h5 class="text-xs font-bold text-blue-100">سبام الإيموجيات</h5>
+                                    <h5 class="text-xs font-bold text-blue-300">سبام الإيموجيات</h5>
                                     <span class="text-amber-300">😜</span>
                                 </div>
                             </div>
@@ -6672,7 +6672,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                         <!-- 4. بطاقة رتب الإشراف والرتب المستثناة (Exact to Image 1) -->
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-5 shadow-xl">
-                            <div class="flex items-center justify-end gap-2 text-blue-100 font-black text-sm border-b border-blue-400/15 pb-3">
+                            <div class="flex items-center justify-end gap-2 text-blue-300 font-black text-sm border-b border-blue-400/15 pb-3">
                                 <span>رتب الإشراف</span>
                                 <span class="text-blue-400">👮</span>
                             </div>
@@ -6725,7 +6725,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </button>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
-                                    <h4 class="font-black text-blue-100 text-base">نظام القيف اواي</h4>
+                                    <h4 class="font-black text-blue-300 text-base">نظام القيف اواي</h4>
                                     <p class="text-gray-400 text-xs mt-0.5">إنشاء وإدارة مسابقات القيف اواي في سيرفرك</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg border border-blue-400/30">
@@ -6738,7 +6738,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <!-- إجمالي القيف اواي -->
                             <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl text-center space-y-1 shadow-lg">
-                                <span class="text-2xl font-black text-blue-100 font-mono">${(guildGiveawaysList || []).length}</span>
+                                <span class="text-2xl font-black text-blue-300 font-mono">${(guildGiveawaysList || []).length}</span>
                                 <span class="text-xs font-bold text-gray-400 block">إجمالي القيف اواي</span>
                             </div>
                             <!-- نشطة الآن -->
@@ -6748,7 +6748,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                             <!-- منتهية -->
                             <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl text-center space-y-1 shadow-lg">
-                                <span class="text-2xl font-black text-blue-100 font-mono">${(guildGiveawaysList || []).filter(g => g.status === 'ended').length}</span>
+                                <span class="text-2xl font-black text-blue-300 font-mono">${(guildGiveawaysList || []).filter(g => g.status === 'ended').length}</span>
                                 <span class="text-xs font-bold text-gray-400 block">منتهية</span>
                             </div>
                             <!-- إجمالي المشاركين -->
@@ -6782,7 +6782,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                     '<span class="text-gray-400 font-mono">' + entriesCount + ' مشارك 👥</span>' +
                                                 '</div>' +
                                                 '<div class="text-right">' +
-                                                    '<h5 class="font-bold text-blue-100 text-sm">' + g.prize + '</h5>' +
+                                                    '<h5 class="font-bold text-blue-300 text-sm">' + g.prize + '</h5>' +
                                                     '<p class="text-[10px] text-gray-400">الفائزين: ' + (g.winners_count || 1) + ' • القناة: <#' + g.channel_id + '></p>' +
                                                 '</div>' +
                                             '</div>';
@@ -6794,7 +6794,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             🎁
                                         </div>
                                         <div class="space-y-1">
-                                            <h5 class="text-sm font-black text-blue-100">لا توجد قيف اواي بعد</h5>
+                                            <h5 class="text-sm font-black text-blue-300">لا توجد قيف اواي بعد</h5>
                                             <p class="text-xs text-gray-400">ابدأ بإنشاء أول قيف اواي لسيرفرك!</p>
                                         </div>
                                         <button type="button" onclick="openCreateGiveawayModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-blue-950 rounded-xl text-xs font-black transition inline-flex items-center gap-2 shadow-lg shadow-blue-800/40">
@@ -6816,7 +6816,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <button type="button" onclick="closeCreateGiveawayModal()" class="text-gray-400 hover:text-blue-200 text-lg font-bold">✕</button>
                                     <div class="flex items-center gap-2.5">
                                         <div class="text-right">
-                                            <h3 class="text-base font-black text-blue-100">إنشاء قيف اواي جديد</h3>
+                                            <h3 class="text-base font-black text-blue-300">إنشاء قيف اواي جديد</h3>
                                             <p class="text-[10px] text-gray-400">أعلن عن جائزتك الآن</p>
                                         </div>
                                         <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-sm shadow">
@@ -6828,13 +6828,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <!-- حقل الجائزة -->
                                 <div class="space-y-1.5">
                                     <label class="block text-xs font-bold text-gray-300">الجائزة <span class="text-blue-400">*</span></label>
-                                    <input type="text" id="gwPrize" placeholder="مثال: Discord Nitro لمدة شهر" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right">
+                                    <input type="text" id="gwPrize" placeholder="مثال: Discord Nitro لمدة شهر" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right">
                                 </div>
 
                                 <!-- الوصف (اختياري) -->
                                 <div class="space-y-1.5">
                                     <label class="block text-xs font-bold text-gray-300">الوصف (اختياري)</label>
-                                    <textarea id="gwDesc" rows="2" placeholder="...أضف تفاصيل إضافية" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-3 text-xs text-blue-100 outline-none text-right leading-relaxed"></textarea>
+                                    <textarea id="gwDesc" rows="2" placeholder="...أضف تفاصيل إضافية" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-3 text-xs text-blue-300 outline-none text-right leading-relaxed"></textarea>
                                 </div>
 
                                 <!-- القناة المستهدفة -->
@@ -6847,11 +6847,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="grid grid-cols-2 gap-4">
                                     <div class="space-y-1.5">
                                         <label class="block text-xs font-bold text-gray-300">عدد الفائزين</label>
-                                        <input type="number" id="gwWinners" value="1" min="1" max="50" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-center font-mono">
+                                        <input type="number" id="gwWinners" value="1" min="1" max="50" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-center font-mono">
                                     </div>
                                     <div class="space-y-1.5">
                                         <label class="block text-xs font-bold text-gray-300">المدة</label>
-                                        <select id="gwDuration" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right cursor-pointer">
+                                        <select id="gwDuration" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right cursor-pointer">
                                             <option value="10m">10 دقائق</option>
                                             <option value="1h">ساعة واحدة</option>
                                             <option value="6h">6 ساعات</option>
@@ -6865,12 +6865,12 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- المظهر (المجسم والإيموجي ولون الإطار) -->
                                 <div class="bg-[#0b0d14] border border-blue-400/15 p-4 rounded-2xl space-y-4">
-                                    <span class="text-xs font-bold text-blue-100 block border-b border-blue-400/15 pb-2">المظهر</span>
+                                    <span class="text-xs font-bold text-blue-300 block border-b border-blue-400/15 pb-2">المظهر</span>
 
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center gap-2">
                                             <span class="text-lg">🎉</span>
-                                            <input type="text" id="gwEmoji" value="🎉" class="w-16 bg-[#12141f] border border-blue-400/15 rounded-xl px-2 py-1 text-xs text-center text-blue-100 font-mono outline-none">
+                                            <input type="text" id="gwEmoji" value="🎉" class="w-16 bg-[#12141f] border border-blue-400/15 rounded-xl px-2 py-1 text-xs text-center text-blue-300 font-mono outline-none">
                                         </div>
                                         <label class="text-xs font-bold text-gray-300">الإيموجي</label>
                                     </div>
@@ -6922,7 +6922,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- المتطلبات والدخول -->
                                 <div class="bg-[#0b0d14] border border-blue-400/15 p-4 rounded-2xl space-y-4">
-                                    <span class="text-xs font-bold text-blue-100 block border-b border-blue-400/15 pb-2">المتطلبات والدخول</span>
+                                    <span class="text-xs font-bold text-blue-300 block border-b border-blue-400/15 pb-2">المتطلبات والدخول</span>
 
                                     <!-- الرتب المطلوبة -->
                                     <div class="space-y-1.5">
@@ -6938,7 +6938,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="grid grid-cols-2 gap-3">
                                         <div class="space-y-1.5">
                                             <label class="block text-xs font-bold text-gray-300">لون الزر</label>
-                                            <select id="gwBtnStyle" class="w-full bg-[#12141f] border border-blue-400/15 rounded-xl px-3 py-2 text-xs text-blue-100 outline-none text-right">
+                                            <select id="gwBtnStyle" class="w-full bg-[#12141f] border border-blue-400/15 rounded-xl px-3 py-2 text-xs text-blue-300 outline-none text-right">
                                                 <option value="Primary">🔵 أزرق (Primary)</option>
                                                 <option value="Success">🟢 أخضر (Success)</option>
                                                 <option value="Danger">🔴 أحمر (Danger)</option>
@@ -6947,7 +6947,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         </div>
                                         <div class="space-y-1.5">
                                             <label class="block text-xs font-bold text-gray-300">طريقة المشاركة</label>
-                                            <select id="gwEntryMode" class="w-full bg-[#12141f] border border-blue-400/15 rounded-xl px-3 py-2 text-xs text-blue-100 outline-none text-right">
+                                            <select id="gwEntryMode" class="w-full bg-[#12141f] border border-blue-400/15 rounded-xl px-3 py-2 text-xs text-blue-300 outline-none text-right">
                                                 <option value="button">🔘 زر (Button)</option>
                                                 <option value="reaction">😊 تفاعل (Reaction)</option>
                                             </select>
@@ -6958,7 +6958,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="flex items-center justify-between pt-2 border-t border-blue-400/15">
                                         <label class="toggle"><input type="checkbox" id="gwNotifyWinners" checked><span class="slider"></span></label>
                                         <div class="text-right">
-                                            <h5 class="text-xs font-bold text-blue-100">إعلان الفائزين</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">إعلان الفائزين</h5>
                                             <p class="text-[10px] text-gray-500">إرسال رسالة عند اختيار الفائزين</p>
                                         </div>
                                     </div>
@@ -7108,7 +7108,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </button>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
-                                    <h4 class="font-black text-blue-100 text-base">نظام الاقتراحات والشكاوي</h4>
+                                    <h4 class="font-black text-blue-300 text-base">نظام الاقتراحات والشكاوي</h4>
                                     <p class="text-gray-400 text-xs mt-0.5">جمع آراء وتصويتات الأعضاء ومراجعة وتحديث حالات الاقتراحات</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-lg border border-blue-400/30">
@@ -7120,7 +7120,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- 2. Quad Stats Badges (إجمالي الاقتراحات / قيد الانتظار / مقبولة / مرفوضة) -->
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl text-center space-y-1 shadow-lg">
-                                <span class="text-2xl font-black text-blue-100 font-mono">${(guildSuggestionsList || []).length}</span>
+                                <span class="text-2xl font-black text-blue-300 font-mono">${(guildSuggestionsList || []).length}</span>
                                 <span class="text-xs font-bold text-gray-400 block">إجمالي الاقتراحات</span>
                             </div>
                             <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-2xl text-center space-y-1 shadow-lg">
@@ -7139,7 +7139,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                         <!-- 3. إعدادات نظام الاقتراحات الأساسية (قناة الاقتراحات، رتب المراجعة، الخيوط التلقائية) -->
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-4 shadow-xl">
-                            <h4 class="text-xs font-black text-blue-100 border-b border-blue-400/15 pb-3">إعدادات قناة وصلاحيات الاقتراحات</h4>
+                            <h4 class="text-xs font-black text-blue-300 border-b border-blue-400/15 pb-3">إعدادات قناة وصلاحيات الاقتراحات</h4>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -7160,7 +7160,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="flex items-center justify-between p-3.5 bg-[#0b0d14] border border-blue-400/15 rounded-xl mt-6">
                                     <label class="toggle"><input type="checkbox" name="suggestions_auto_thread" value="1" ${settings.suggestions_auto_thread !== 0 ? 'checked' : ''}><span class="slider"></span></label>
                                     <div class="text-right">
-                                        <h5 class="text-xs font-bold text-blue-100">إنشاء خيط نقاش تلقائي (Thread)</h5>
+                                        <h5 class="text-xs font-bold text-blue-300">إنشاء خيط نقاش تلقائي (Thread)</h5>
                                         <p class="text-[10px] text-gray-500">فتح ثريد تحت كل اقتراح لتمكين الأعضاء من النقاش</p>
                                     </div>
                                 </div>
@@ -7202,14 +7202,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             '</div>' +
                                             '<div class="flex items-center gap-2">' +
                                                 statusBadge +
-                                                '<span class="text-xs font-bold text-blue-100 font-mono">#' + s.id + '</span>' +
+                                                '<span class="text-xs font-bold text-blue-300 font-mono">#' + s.id + '</span>' +
                                             '</div>' +
                                         '</div>' +
                                         '<div>' +
-                                            (s.title ? '<h5 class="text-sm font-bold text-blue-100 mb-1">' + s.title + '</h5>' : '') +
+                                            (s.title ? '<h5 class="text-sm font-bold text-blue-300 mb-1">' + s.title + '</h5>' : '') +
                                             '<p class="text-xs text-gray-300 leading-relaxed">' + s.content + '</p>' +
                                         '</div>' +
-                                        (s.status_reason ? '<div class="bg-[#12141f] p-3 rounded-xl border border-blue-400/15 text-[11px] text-gray-400"><span class="text-blue-100 font-bold">رد الإدارة: </span>' + s.status_reason + '</div>' : '') +
+                                        (s.status_reason ? '<div class="bg-[#12141f] p-3 rounded-xl border border-blue-400/15 text-[11px] text-gray-400"><span class="text-blue-300 font-bold">رد الإدارة: </span>' + s.status_reason + '</div>' : '') +
                                         '<div class="flex items-center justify-between text-[11px] text-gray-500 pt-2 border-t border-blue-400/15">' +
                                             '<div class="flex items-center gap-3">' +
                                                 '<span class="text-emerald-400 font-mono font-bold">👍 ' + upCount + '</span>' +
@@ -7228,7 +7228,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             💡
                                         </div>
                                         <div class="space-y-1">
-                                            <h5 class="text-sm font-black text-blue-100">لا توجد اقتراحات بعد</h5>
+                                            <h5 class="text-sm font-black text-blue-300">لا توجد اقتراحات بعد</h5>
                                             <p class="text-xs text-gray-400">كن أول من يقترح فكرة لتطوير وتحسين السيرفر!</p>
                                         </div>
                                         <button type="button" onclick="openCreateSuggestionModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-blue-950 rounded-xl text-xs font-black transition inline-flex items-center gap-2 shadow-lg shadow-blue-800/40">
@@ -7244,18 +7244,18 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="bg-[#12141f] border border-blue-400/25 rounded-3xl w-full max-w-lg p-6 space-y-5 text-right shadow-2xl" dir="rtl">
                                 <div class="flex items-center justify-between border-b border-blue-400/15 pb-4">
                                     <button type="button" onclick="closeCreateSuggestionModal()" class="text-gray-400 hover:text-blue-200 text-lg font-bold">✕</button>
-                                    <h3 class="text-base font-black text-blue-100">تقديم اقتراح جديد 💡</h3>
+                                    <h3 class="text-base font-black text-blue-300">تقديم اقتراح جديد 💡</h3>
                                 </div>
 
                                 <div class="space-y-3">
                                     <div>
                                         <label class="block text-xs font-bold text-gray-300 mb-1.5">عنوان الفكرة (اختياري)</label>
-                                        <input type="text" id="sgTitle" placeholder="اكتب عنواناً مختصراً..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right">
+                                        <input type="text" id="sgTitle" placeholder="اكتب عنواناً مختصراً..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right">
                                     </div>
 
                                     <div>
                                         <label class="block text-xs font-bold text-gray-300 mb-1.5">تصنيف الاقتراح</label>
-                                        <select id="sgCategory" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right cursor-pointer">
+                                        <select id="sgCategory" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right cursor-pointer">
                                             <option value="عام">💡 اقتراح عام</option>
                                             <option value="فعاليات">🎉 فعاليات ومسابقات</option>
                                             <option value="رتب">🎖️ رتب وأدوار</option>
@@ -7267,7 +7267,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                     <div>
                                         <label class="block text-xs font-bold text-gray-300 mb-1.5">تفاصيل الاقتراح <span class="text-blue-400">*</span></label>
-                                        <textarea id="sgContent" rows="4" placeholder="اشرح فكرتك بالتفصيل وكيف ستفيد السيرفر..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-3 text-xs text-blue-100 outline-none text-right leading-relaxed"></textarea>
+                                        <textarea id="sgContent" rows="4" placeholder="اشرح فكرتك بالتفصيل وكيف ستفيد السيرفر..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-3 text-xs text-blue-300 outline-none text-right leading-relaxed"></textarea>
                                     </div>
                                 </div>
 
@@ -7360,13 +7360,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-2xl bg-red-600/20 text-red-400 border border-red-500/30 flex items-center justify-center text-xl shadow-lg">🚨</div>
                                 <div class="text-right">
-                                    <h3 class="font-black text-blue-100 text-lg">مكافحة الغزو والأعضاء الوهميين</h3>
+                                    <h3 class="font-black text-blue-300 text-lg">مكافحة الغزو والأعضاء الوهميين</h3>
                                     <p class="text-gray-400 text-xs mt-0.5">كشف الغزو الجماعي وحظر الحسابات الوهمية والجديدة تلقائياً</p>
                                 </div>
                             </div>
                             <div class="grid grid-cols-3 gap-3">
                                 <div class="bg-[#0b0d14] border border-blue-400/15 px-4 py-2 rounded-2xl text-center">
-                                    <div class="text-xl font-black text-blue-100">${settings.anti_alt_days || 3}</div>
+                                    <div class="text-xl font-black text-blue-300">${settings.anti_alt_days || 3}</div>
                                     <div class="text-[10px] text-gray-400 font-bold mt-0.5">أيام الحساب</div>
                                 </div>
                                 <div class="bg-[#0b0d14] border border-blue-400/15 px-4 py-2 rounded-2xl text-center">
@@ -7388,7 +7388,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </label>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
-                                    <h4 class="font-black text-blue-100 text-sm">تفعيل نظام مكافحة الغزو (Anti-Raid)</h4>
+                                    <h4 class="font-black text-blue-300 text-sm">تفعيل نظام مكافحة الغزو (Anti-Raid)</h4>
                                     <p class="text-gray-400 text-xs mt-0.5">رصد ومنع هجمات الدخول الجماعي والحسابات الوهمية أو الجديدة تلقائياً</p>
                                 </div>
                                 <div class="w-8 h-8 rounded-xl bg-red-600/20 text-red-400 flex items-center justify-center text-sm border border-red-500/30">🛡️</div>
@@ -7403,7 +7403,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="flex items-center justify-between">
                                     <div class="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-sm border border-blue-400/30">🗓️</div>
                                     <div class="text-right">
-                                        <h4 class="font-black text-blue-100 text-sm">الحد الأدنى لعمر الحساب</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">الحد الأدنى لعمر الحساب</h4>
                                         <p class="text-gray-400 text-[11px] mt-0.5">الحسابات الجديدة الأقل من هذا العمر لن تتمكن من الدخول</p>
                                     </div>
                                 </div>
@@ -7421,7 +7421,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="flex items-center justify-between">
                                     <div class="w-8 h-8 rounded-xl bg-red-600/20 text-red-400 flex items-center justify-center text-sm border border-red-500/30">⚡</div>
                                     <div class="text-right">
-                                        <h4 class="font-black text-blue-100 text-sm">حد رصد الغزو الجماعي</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">حد رصد الغزو الجماعي</h4>
                                         <p class="text-gray-400 text-[11px] mt-0.5">عدد الأعضاء الذين ينضمون في 10 ثوانٍ لتفعيل درع الغزو</p>
                                     </div>
                                 </div>
@@ -7445,7 +7445,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="flex items-center justify-between mb-2">
                                     <div class="w-8 h-8 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-sm border border-blue-400/30">⚖️</div>
                                     <div class="text-right">
-                                        <h4 class="font-black text-blue-100 text-sm">إجراء مكافحة الغزو</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">إجراء مكافحة الغزو</h4>
                                         <p class="text-gray-400 text-[11px] mt-0.5">الإجراء التلقائي عند رصد غزو أو دخول مشبوه</p>
                                     </div>
                                 </div>
@@ -7465,19 +7465,19 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <!-- Toggles: Anti-Bot & DM Notify & Log Channel -->
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-3xl space-y-3 shadow-xl">
-                                <h4 class="font-black text-blue-100 text-sm text-right border-b border-blue-400/15 pb-3">خيارات إضافية</h4>
+                                <h4 class="font-black text-blue-300 text-sm text-right border-b border-blue-400/15 pb-3">خيارات إضافية</h4>
                                 <div class="space-y-2.5">
                                     <div class="flex items-center justify-between p-3 bg-[#0b0d14] border border-blue-400/15 rounded-xl">
                                         <label class="toggle"><input type="checkbox" name="anti_bot" value="1" ${settings.anti_bot ? 'checked' : ''}><span class="slider"></span></label>
                                         <div class="text-right">
-                                            <h5 class="text-xs font-bold text-blue-100">منع إضافة بوتات جديدة (Anti-Bot)</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">منع إضافة بوتات جديدة (Anti-Bot)</h5>
                                             <p class="text-[10px] text-gray-500">تقييد إضافة أي بوتات إلا من قِبل الأونر أو الأدمن فقط</p>
                                         </div>
                                     </div>
                                     <div class="flex items-center justify-between p-3 bg-[#0b0d14] border border-blue-400/15 rounded-xl">
                                         <label class="toggle"><input type="checkbox" name="antiraid_dm_notify" value="1" ${settings.antiraid_dm_notify !== 0 ? 'checked' : ''}><span class="slider"></span></label>
                                         <div class="text-right">
-                                            <h5 class="text-xs font-bold text-blue-100">إشعار الأونر عبر DM</h5>
+                                            <h5 class="text-xs font-bold text-blue-300">إشعار الأونر عبر DM</h5>
                                             <p class="text-[10px] text-gray-500">إرسال تنبيه خاص لأونر السيرفر عند رصد أي غزو</p>
                                         </div>
                                     </div>
@@ -7488,12 +7488,12 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- Log Channel & Whitelist Roles -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-3xl space-y-3 shadow-xl text-right">
-                                <h4 class="font-black text-blue-100 text-sm">قناة سجلات مكافحة الغزو</h4>
+                                <h4 class="font-black text-blue-300 text-sm">قناة سجلات مكافحة الغزو</h4>
                                 <p class="text-gray-400 text-[11px]">تسجيل جميع الأحداث المشبوهة والإجراءات المتخذة</p>
                                 ${renderChannelSelect('antiraid_log_channel', settings.antiraid_log_channel)}
                             </div>
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-3xl space-y-3 shadow-xl text-right">
-                                <h4 class="font-black text-blue-100 text-sm">رتبة مستثناة من الحماية (Whitelist)</h4>
+                                <h4 class="font-black text-blue-300 text-sm">رتبة مستثناة من الحماية (Whitelist)</h4>
                                 <p class="text-gray-400 text-[11px]">هذه الرتبة لن تخضع لفلتر عمر الحساب أو حد الغزو</p>
                                 ${renderRoleSelect('antiraid_whitelist_roles', settings.antiraid_whitelist_roles)}
                             </div>
@@ -7527,7 +7527,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <label class="toggle"><input type="checkbox" name="temp_voice_enabled" value="1" ${settings.temp_voice_enabled !== 0 ? 'checked' : ''}><span class="slider"></span></label>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
-                                    <h4 class="font-black text-blue-100 text-xl flex items-center gap-2 justify-end"><span>الرومات الصوتية المؤقتة (Temp Voice)</span><span>🎙️</span></h4>
+                                    <h4 class="font-black text-blue-300 text-xl flex items-center gap-2 justify-end"><span>الرومات الصوتية المؤقتة (Temp Voice)</span><span>🎙️</span></h4>
                                     <p class="text-gray-400 text-xs mt-0.5">إنشاء غرف صوتية خاصة تلقائياً عند دخول الأعضاء وحذفها فور خروجهم</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-2xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-xl border border-blue-400/30">🕒</div>
@@ -7545,14 +7545,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="text-xs text-gray-400 font-bold mt-1">حالة روم الإنشاء (Join-to-Create)</div>
                             </div>
                             <div class="bg-[#12141f] border border-blue-400/15 p-4 rounded-2xl text-center">
-                                <div class="text-2xl font-black text-blue-100 font-mono">${settings.temp_voice_user_limit || 'غير محدود'}</div>
+                                <div class="text-2xl font-black text-blue-300 font-mono">${settings.temp_voice_user_limit || 'غير محدود'}</div>
                                 <div class="text-xs text-gray-400 font-bold mt-1">الحد الأقصى الافتراضي</div>
                             </div>
                         </div>
 
                         <!-- Settings Form -->
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-3xl space-y-4 shadow-xl">
-                            <h4 class="text-sm font-black text-blue-100 border-b border-blue-400/15 pb-3 flex items-center gap-2 justify-end">
+                            <h4 class="text-sm font-black text-blue-300 border-b border-blue-400/15 pb-3 flex items-center gap-2 justify-end">
                                 <span>إعدادات الروم الرئيسي والكاتيجوري</span>
                                 <span>⚙️</span>
                             </h4>
@@ -7563,24 +7563,24 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">قسم الرومات المنشأة (Category ID)</label>
-                                    <input type="text" name="temp_voice_category" value="${settings.temp_voice_category || ''}" placeholder="آيدي الكاتيجوري الذي ستنشأ تحته الرومات..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none font-mono text-right">
+                                    <input type="text" name="temp_voice_category" value="${settings.temp_voice_category || ''}" placeholder="آيدي الكاتيجوري الذي ستنشأ تحته الرومات..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none font-mono text-right">
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">الاسم الافتراضي للروم المنشأ</label>
-                                    <input type="text" name="temp_voice_name_template" value="${settings.temp_voice_name_template || '🔊 | {username}'}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right font-mono">
+                                    <input type="text" name="temp_voice_name_template" value="${settings.temp_voice_name_template || '🔊 | {username}'}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right font-mono">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">الحد الأقصى للمستخدمين الافتراضي</label>
-                                    <input type="number" name="temp_voice_user_limit" value="${settings.temp_voice_user_limit || 0}" placeholder="0 = غير محدود" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none font-mono text-right">
+                                    <input type="number" name="temp_voice_user_limit" value="${settings.temp_voice_user_limit || 0}" placeholder="0 = غير محدود" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none font-mono text-right">
                                 </div>
                             </div>
                         </div>
 
                         <!-- Active Temp Channels Table -->
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-3xl space-y-3 shadow-xl">
-                            <h4 class="text-sm font-black text-blue-100 flex items-center justify-between pb-3 border-b border-blue-400/15">
+                            <h4 class="text-sm font-black text-blue-300 flex items-center justify-between pb-3 border-b border-blue-400/15">
                                 <span class="text-xs text-blue-400 font-bold">${activeTempVoices.length} روم نشط</span>
                                 <span class="flex items-center gap-2"><span>الرومات المؤقتة الفعالة الآن</span><span>🎙️</span></span>
                             </h4>
@@ -7590,7 +7590,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="bg-[#0b0d14] p-3 rounded-2xl border border-blue-400/15 flex items-center justify-between">
                                     <span class="text-xs text-gray-500 font-mono">ID: ${tv.channel_id}</span>
                                     <div class="text-right">
-                                        <span class="text-xs font-bold text-blue-100 block">صاحب الروم: <@${tv.owner_id}></span>
+                                        <span class="text-xs font-bold text-blue-300 block">صاحب الروم: <@${tv.owner_id}></span>
                                     </div>
                                 </div>
                             `).join('')}
@@ -7602,7 +7602,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <label class="toggle"><input type="checkbox" name="colors_enabled" value="1" ${settings.colors_enabled !== 0 ? 'checked' : ''}><span class="slider"></span></label>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
-                                    <h4 class="font-black text-blue-100 text-base">نظام رتب الألوان المتقدم (Color Roles)</h4>
+                                    <h4 class="font-black text-blue-300 text-base">نظام رتب الألوان المتقدم (Color Roles)</h4>
                                     <p class="text-gray-400 text-xs mt-0.5">لوحة وقوائم تفاعلية لتمكين الأعضاء من اختيار ألوانهم المفضلة</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-xl bg-pink-600/20 text-pink-400 flex items-center justify-center text-lg border border-pink-500/30">🎨</div>
@@ -7610,7 +7610,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         </div>
 
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-4 shadow-xl">
-                            <h4 class="text-xs font-black text-blue-100 border-b border-blue-400/15 pb-3">إعدادات نشر لوحة الألوان</h4>
+                            <h4 class="text-xs font-black text-blue-300 border-b border-blue-400/15 pb-3">إعدادات نشر لوحة الألوان</h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">قناة لوحة الألوان</label>
@@ -7623,7 +7623,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                             <div class="pt-2">
                                 <label class="block text-xs font-bold text-gray-300 mb-2">رتب الألوان المتاحة (Role IDs مفصولة بفواصل)</label>
-                                <textarea name="color_role_ids" rows="3" placeholder="أيدي_رتبة_1, أيدي_رتبة_2, أيدي_رتبة_3..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-3 text-xs text-blue-100 outline-none font-mono text-right leading-relaxed">${settings.color_role_ids || ''}</textarea>
+                                <textarea name="color_role_ids" rows="3" placeholder="أيدي_رتبة_1, أيدي_رتبة_2, أيدي_رتبة_3..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-3 text-xs text-blue-300 outline-none font-mono text-right leading-relaxed">${settings.color_role_ids || ''}</textarea>
                             </div>
                         </div>
                     </div>`;
@@ -7633,7 +7633,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <label class="toggle"><input type="checkbox" name="boost_msg_enabled" value="1" ${settings.boost_msg_enabled !== 0 ? 'checked' : ''}><span class="slider"></span></label>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
-                                    <h4 class="font-black text-blue-100 text-base">نظام تنبيهات ومعلومات البوست (Server Boost)</h4>
+                                    <h4 class="font-black text-blue-300 text-base">نظام تنبيهات ومعلومات البوست (Server Boost)</h4>
                                     <p class="text-gray-400 text-xs mt-0.5">تنبيهات تلقائية في الشات وشكر البوسترز وتوزيع الرتب والمميزات</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-xl bg-pink-600/20 text-pink-400 flex items-center justify-center text-lg border border-pink-500/30">💎</div>
@@ -7641,7 +7641,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         </div>
 
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-2xl space-y-4 shadow-xl">
-                            <h4 class="text-xs font-black text-blue-100 border-b border-blue-400/15 pb-3">إعدادات رسالة البوست</h4>
+                            <h4 class="text-xs font-black text-blue-300 border-b border-blue-400/15 pb-3">إعدادات رسالة البوست</h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">قناة تنبيهات البوست</label>
@@ -7654,7 +7654,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                             <div class="pt-2">
                                 <label class="block text-xs font-bold text-gray-300 mb-2">نص رسالة البوست (يدعم {user} و {count})</label>
-                                <textarea name="boost_message" rows="3" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-3 text-xs text-blue-100 outline-none text-right leading-relaxed">${settings.boost_message || 'شكراً لك {user} على تعزيز السيرفر 💎! أصبح عدد البوستات الآن {count} بوست!'}</textarea>
+                                <textarea name="boost_message" rows="3" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl p-3 text-xs text-blue-300 outline-none text-right leading-relaxed">${settings.boost_message || 'شكراً لك {user} على تعزيز السيرفر 💎! أصبح عدد البوستات الآن {count} بوست!'}</textarea>
                             </div>
                         </div>
                     </div>`;
@@ -7678,14 +7678,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="w-10 h-10 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center shrink-0">
                                     <i class="fa-solid fa-triangle-exclamation"></i>
                                 </div>
-                                <h3 class="text-lg font-bold text-blue-100">تأكيد العملية</h3>
+                                <h3 class="text-lg font-bold text-blue-300">تأكيد العملية</h3>
                             </div>
                             <p id="logs-confirm-msg" class="text-sm text-gray-300 mb-6"></p>
                             <div class="flex gap-3 justify-start">
                                 <button type="button" id="logs-confirm-ok" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-red-950 rounded-lg text-sm font-bold transition flex items-center gap-2 cursor-pointer">
                                     <span>تأكيد</span>
                                 </button>
-                                <button type="button" id="logs-confirm-cancel" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-blue-100 rounded-lg text-sm font-bold transition cursor-pointer">
+                                <button type="button" id="logs-confirm-cancel" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-blue-300 rounded-lg text-sm font-bold transition cursor-pointer">
                                     إلغاء
                                 </button>
                             </div>
@@ -7727,7 +7727,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <div class="p-2.5 bg-blue-400/10 text-blue-400 rounded-xl">
                                             <i class="fa-solid fa-book-bookmark text-xl"></i>
                                         </div>
-                                        <h1 class="text-2xl font-black text-blue-100">سجلات السيرفر الشاملة</h1>
+                                        <h1 class="text-2xl font-black text-blue-300">سجلات السيرفر الشاملة</h1>
                                     </div>
                                     <p class="text-sm text-gray-400 pr-11">يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.</p>
                                 </div>
@@ -7744,7 +7744,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <i class="fa-solid fa-shield-halved text-lg"></i>
                                     </div>
                                     <div>
-                                        <h3 class="font-bold text-blue-100 text-base">السجلات</h3>
+                                        <h3 class="font-bold text-blue-300 text-base">السجلات</h3>
                                         <p class="text-xs text-gray-400">تتبع جميع الأحداث في السيرفر مع الفاعل والتفاصيل فورياً</p>
                                     </div>
                                 </div>
@@ -7795,7 +7795,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex items-center justify-between mb-4">
                                 <div class="flex items-center gap-2">
                                     <i class="fa-solid fa-gear text-blue-400"></i>
-                                    <h2 class="font-bold text-blue-100 text-base">إعداد تلقائي للقنوات</h2>
+                                    <h2 class="font-bold text-blue-300 text-base">إعداد تلقائي للقنوات</h2>
                                 </div>
                                 <span class="text-xs text-gray-400">إنشاء قنوات السجلات تلقائياً لجميع الأقسام بضغطة واحدة</span>
                             </div>
@@ -7811,7 +7811,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="text-xs font-semibold text-blue-400 bg-blue-400/10 px-2.5 py-1 rounded-lg">شائع</span>
                                     </div>
                                     <div>
-                                        <h3 class="font-bold text-blue-100 text-sm">إنشاء قنوات عادية</h3>
+                                        <h3 class="font-bold text-blue-300 text-sm">إنشاء قنوات عادية</h3>
                                         <p class="text-xs text-gray-400 mt-1">قناة واحدة لكل قسم (أعضاء، رسائل، أدوار...) — مناسب لأغلب السيرفرات</p>
                                     </div>
                                 </button>
@@ -7826,7 +7826,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="text-xs font-semibold text-blue-400 bg-blue-400/10 px-2.5 py-1 rounded-lg">متقدم</span>
                                     </div>
                                     <div>
-                                        <h3 class="font-bold text-blue-100 text-sm">إنشاء قنوات مفصلة</h3>
+                                        <h3 class="font-bold text-blue-300 text-sm">إنشاء قنوات مفصلة</h3>
                                         <p class="text-xs text-gray-400 mt-1">قناة منفصلة لكل نوع سجل — للسيرفرات الكبيرة التي تحتاج تنظيم دقيق</p>
                                     </div>
                                 </button>
@@ -7841,7 +7841,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="text-xs font-semibold text-red-400 bg-red-500/10 px-2.5 py-1 rounded-lg">إزالة</span>
                                     </div>
                                     <div>
-                                        <h3 class="font-bold text-blue-100 text-sm">حذف قنوات السجلات</h3>
+                                        <h3 class="font-bold text-blue-300 text-sm">حذف قنوات السجلات</h3>
                                         <p class="text-xs text-gray-400 mt-1">حذف كاتيغوري Droplet Server Logs وجميع القنوات بداخله وتعطيل السجلات</p>
                                     </div>
                                 </button>
@@ -7862,7 +7862,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <span class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
                                     <i class="fa-solid fa-magnifying-glass text-sm"></i>
                                 </span>
-                                <input type="text" id="logSearchInput" placeholder="ابحث عن سجل..." oninput="window.searchLogsItems()" class="w-full bg-[#0b0e14] border border-[#1e2638] rounded-xl py-2.5 pr-10 pl-4 text-xs text-blue-100 placeholder-gray-500 focus:outline-none focus:border-blue-400 transition">
+                                <input type="text" id="logSearchInput" placeholder="ابحث عن سجل..." oninput="window.searchLogsItems()" class="w-full bg-[#0b0e14] border border-[#1e2638] rounded-xl py-2.5 pr-10 pl-4 text-xs text-blue-300 placeholder-gray-500 focus:outline-none focus:border-blue-400 transition">
                             </div>
                         </div>
 
@@ -7871,7 +7871,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <!-- Sidebar: 13 Categories -->
                             <div class="lg:col-span-1 space-y-1 bg-[#121620] border border-[#1e2638] p-3 rounded-2xl shadow-xl h-fit">
-                                <button type="button" onclick="window.toggleLogsCategoriesDropdown()" class="w-full flex items-center justify-between text-xs font-black text-blue-100 px-2 py-2 border-b border-[#1e2638] mb-1 cursor-pointer hover:text-blue-300 transition">
+                                <button type="button" onclick="window.toggleLogsCategoriesDropdown()" class="w-full flex items-center justify-between text-xs font-black text-blue-300 px-2 py-2 border-b border-[#1e2638] mb-1 cursor-pointer hover:text-blue-300 transition">
                                     <i id="logsCategoriesDropdownArrow" class="fa-solid fa-chevron-down text-gray-400 text-xs"></i>
                                     <span class="flex items-center gap-2">
                                         <span>الأقسام (13 قسم)</span>
@@ -7892,7 +7892,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                 <span id="activeCatIcon">🎯</span>
                                             </div>
                                             <div>
-                                                <h2 id="activeCatTitle" class="text-lg font-black text-blue-100">الأعضاء</h2>
+                                                <h2 id="activeCatTitle" class="text-lg font-black text-blue-300">الأعضاء</h2>
                                                 <span id="activeCatCount" class="text-xs text-gray-400">17 سجل</span>
                                             </div>
                                         </div>
@@ -7913,7 +7913,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <!-- Section Settings Form Block -->
                                     <div class="bg-[#0b0e14] border border-[#1e2638] rounded-2xl p-5 space-y-5">
                                         <div class="flex items-center justify-between border-b border-[#1e2638] pb-3">
-                                            <div class="flex items-center gap-2 text-blue-100 font-bold text-sm">
+                                            <div class="flex items-center gap-2 text-blue-300 font-bold text-sm">
                                                 <i class="fa-solid fa-gear text-blue-400"></i>
                                                 <span>إعدادات القسم</span>
                                             </div>
@@ -7943,7 +7943,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                         <input type="color" id="catColorPicker" value="#60a5fa" class="absolute -top-2 -right-2 w-16 h-16 cursor-pointer opacity-0" onchange="document.getElementById('catColorHex').value = this.value; document.getElementById('catColorPreviewBox').style.backgroundColor = this.value;">
                                                         <div id="catColorPreviewBox" class="w-full h-full bg-[#60a5fa]"></div>
                                                     </div>
-                                                    <input type="text" id="catColorHex" value="#60a5fa" class="w-full bg-[#121620] border border-[#1e2638] focus:border-blue-400 rounded-xl py-2.5 px-3.5 text-xs text-blue-100 font-mono focus:outline-none transition" dir="ltr" onchange="document.getElementById('catColorPicker').value = this.value; document.getElementById('catColorPreviewBox').style.backgroundColor = this.value;">
+                                                    <input type="text" id="catColorHex" value="#60a5fa" class="w-full bg-[#121620] border border-[#1e2638] focus:border-blue-400 rounded-xl py-2.5 px-3.5 text-xs text-blue-300 font-mono focus:outline-none transition" dir="ltr" onchange="document.getElementById('catColorPicker').value = this.value; document.getElementById('catColorPreviewBox').style.backgroundColor = this.value;">
                                                 </div>
                                             </div>
                                         </div>
@@ -7972,7 +7972,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex items-center justify-between border-b border-[#1e2638] pb-3">
                                 <button type="button" onclick="window.closeEditLogModal()" class="text-gray-400 hover:text-blue-200 text-lg font-bold">✕</button>
                                 <div class="flex items-center gap-2">
-                                    <h5 class="text-blue-100 font-black text-sm" id="modalLogTitle">تخصيص السجل</h5>
+                                    <h5 class="text-blue-300 font-black text-sm" id="modalLogTitle">تخصيص السجل</h5>
                                     <span id="modalLogIcon" class="text-base">📜</span>
                                 </div>
                             </div>
@@ -7996,7 +7996,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <input type="color" id="modalLogColorPicker" value="#60a5fa" class="absolute -top-2 -right-2 w-16 h-16 cursor-pointer opacity-0" onchange="document.getElementById('modalLogColorHex').value = this.value; document.getElementById('modalColorPreviewBox').style.backgroundColor = this.value;">
                                         <div id="modalColorPreviewBox" class="w-full h-full bg-[#60a5fa]"></div>
                                     </div>
-                                    <input type="text" id="modalLogColorHex" value="#60a5fa" class="w-full bg-[#0b0e14] border border-[#1e2638] focus:border-blue-400 rounded-xl py-2 px-3 text-xs text-blue-100 font-mono outline-none text-center" dir="ltr" onchange="document.getElementById('modalLogColorPicker').value = this.value; document.getElementById('modalColorPreviewBox').style.backgroundColor = this.value;">
+                                    <input type="text" id="modalLogColorHex" value="#60a5fa" class="w-full bg-[#0b0e14] border border-[#1e2638] focus:border-blue-400 rounded-xl py-2 px-3 text-xs text-blue-300 font-mono outline-none text-center" dir="ltr" onchange="document.getElementById('modalLogColorPicker').value = this.value; document.getElementById('modalColorPreviewBox').style.backgroundColor = this.value;">
                                 </div>
                             </div>
 
@@ -8417,7 +8417,7 @@ function renderLogsGrid() {
         html += '<div class="flex items-center justify-end gap-2">';
         if (item.isSpecial) html += '<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-lg text-[9px] font-bold flex items-center gap-1"><span>بوتات خاصة فقط</span><i class="fa-solid fa-lock text-[8px]"></i></span>';
         if (customChan)     html += '<span class="px-2 py-0.5 bg-blue-400/10 text-blue-400 border border-blue-400/20 rounded-lg text-[9px] font-bold flex items-center gap-1"><span>قناة مخصصة</span><i class="fa-solid fa-hashtag text-[8px]"></i></span>';
-        html += '<span class="font-bold text-blue-100 text-xs">' + item.title + '</span>';
+        html += '<span class="font-bold text-blue-300 text-xs">' + item.title + '</span>';
         html += '<span class="w-2.5 h-2.5 rounded-full shadow-sm" style="background-color:' + customColor + '" title="لون الإيمبد"></span>';
         html += '</div>';
         html += '<p class="text-[10px] text-gray-400 mt-0.5">' + item.desc + '</p>';
@@ -9021,12 +9021,12 @@ console.log('[Droplet LOGS] Script loaded successfully. logsState keys:', Object
                     + '<span class="bg-blue-800/60 text-blue-300 text-xs font-bold px-3 py-1.5 rounded-full border border-blue-400/30">' + totalCount + ' أمر</span>'
                     + '<span class="bg-slate-900/60 text-gray-300 text-xs px-3 py-1.5 rounded-full border border-blue-400/25">16 قسم</span>'
                     + '</div><div>'
-                    + '<h1 class="text-2xl font-black text-blue-100">📚 قائمة الأوامر الكاملة</h1>'
+                    + '<h1 class="text-2xl font-black text-blue-300">📚 قائمة الأوامر الكاملة</h1>'
                     + '<p class="text-gray-400 text-xs mt-1">جميع أوامر بوت Droplet مصنفة بالتفصيل</p>'
                     + '</div></div></div>'
                     + '<div class="flex flex-col sm:flex-row gap-3">'
-                    + '<input id="help-search" type="text" placeholder="🔍 ابحث عن أمر..." dir="rtl" class="flex-1 bg-[#0e1420] border border-[#1e2638] rounded-xl px-4 py-2.5 text-blue-100 text-sm placeholder:text-gray-500 focus:outline-none focus:border-blue-400 transition" />'
-                    + '<select id="help-filter" dir="rtl" class="bg-[#0e1420] border border-[#1e2638] rounded-xl px-4 py-2.5 text-blue-100 text-sm focus:outline-none focus:border-blue-400 transition">'
+                    + '<input id="help-search" type="text" placeholder="🔍 ابحث عن أمر..." dir="rtl" class="flex-1 bg-[#0e1420] border border-[#1e2638] rounded-xl px-4 py-2.5 text-blue-300 text-sm placeholder:text-gray-500 focus:outline-none focus:border-blue-400 transition" />'
+                    + '<select id="help-filter" dir="rtl" class="bg-[#0e1420] border border-[#1e2638] rounded-xl px-4 py-2.5 text-blue-300 text-sm focus:outline-none focus:border-blue-400 transition">'
                     + '<option value="all">جميع الأقسام (' + totalCount + ')</option>'
                     + '<option value="moderation">🔨 الإشراف والعقوبات (' + (catCounts.moderation || 0) + ')</option>'
                     + '<option value="protection">🔐 الحماية والأمان (' + (catCounts.protection || 0) + ')</option>'
@@ -9046,7 +9046,7 @@ console.log('[Droplet LOGS] Script loaded successfully. logsState keys:', Object
                     + '<option value="general">⚙️ الأوامر العامة (' + (catCounts.general || 0) + ')</option>'
                     + '</select></div>'
                     + '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">'
-                    + '<div class="bg-[#121620] border border-[#1e2638] rounded-2xl p-3 text-center"><div class="text-2xl font-black text-blue-100">' + totalCount + '</div><div class="text-gray-400 text-xs mt-0.5">أمر إجمالي</div></div>'
+                    + '<div class="bg-[#121620] border border-[#1e2638] rounded-2xl p-3 text-center"><div class="text-2xl font-black text-blue-300">' + totalCount + '</div><div class="text-gray-400 text-xs mt-0.5">أمر إجمالي</div></div>'
                     + '<div class="bg-red-950/30 border border-red-500/20 rounded-2xl p-3 text-center"><div class="text-2xl font-black text-red-400">' + (catCounts.moderation || 0) + '</div><div class="text-gray-400 text-xs mt-0.5">إشراف</div></div>'
                     + '<div class="bg-blue-800/30 border border-blue-400/20 rounded-2xl p-3 text-center"><div class="text-2xl font-black text-blue-400">' + (catCounts.tickets || 0) + '</div><div class="text-gray-400 text-xs mt-0.5">تذاكر</div></div>'
                     + '<div class="bg-slate-950/30 border border-slate-500/20 rounded-2xl p-3 text-center"><div class="text-2xl font-black text-slate-300">' + (catCounts.admin || 0) + '</div><div class="text-gray-400 text-xs mt-0.5">إدارة</div></div>'
@@ -9105,7 +9105,7 @@ console.log('[Droplet LOGS] Script loaded successfully. logsState keys:', Object
                                 </a>
                             </div>
                             <div class="text-right">
-                                <h4 class="font-black text-blue-100 text-xl flex items-center gap-2 justify-end"><span>لوحة الإحصائيات والتحليلات المتقدمة</span><span>📊</span></h4>
+                                <h4 class="font-black text-blue-300 text-xl flex items-center gap-2 justify-end"><span>لوحة الإحصائيات والتحليلات المتقدمة</span><span>📊</span></h4>
                                 <p class="text-gray-400 text-xs mt-0.5">تحليل شامل لحركة السيرفر ونموه وتوزيع الأعضاء والقنوات</p>
                             </div>
                         </div>
@@ -9114,7 +9114,7 @@ console.log('[Droplet LOGS] Script loaded successfully. logsState keys:', Object
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div class="bg-[#12141f] border border-blue-400/15 hover:border-blue-400/30 p-5 rounded-3xl text-center space-y-1 shadow-xl transition">
                                 <div class="w-10 h-10 rounded-2xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-lg mx-auto mb-2">👥</div>
-                                <span class="text-3xl font-black text-blue-100 font-mono">${totalMembers}</span>
+                                <span class="text-3xl font-black text-blue-300 font-mono">${totalMembers}</span>
                                 <span class="text-xs font-bold text-gray-400 block">إجمالي الأعضاء</span>
                             </div>
                             <div class="bg-[#12141f] border border-blue-400/15 hover:border-blue-400/30 p-5 rounded-3xl text-center space-y-1 shadow-xl transition">
@@ -9137,7 +9137,7 @@ console.log('[Droplet LOGS] Script loaded successfully. logsState keys:', Object
                         <!-- Server Health and Activity Indicators -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-3xl space-y-4 shadow-xl">
-                                <h4 class="text-sm font-black text-blue-100 border-b border-blue-400/15 pb-3 flex items-center gap-2 justify-end">
+                                <h4 class="text-sm font-black text-blue-300 border-b border-blue-400/15 pb-3 flex items-center gap-2 justify-end">
                                     <span>مؤشرات تفاعل السيرفر</span>
                                     <span>⚡</span>
                                 </h4>
@@ -9164,7 +9164,7 @@ console.log('[Droplet LOGS] Script loaded successfully. logsState keys:', Object
                             </div>
 
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-3xl space-y-4 shadow-xl">
-                                <h4 class="text-sm font-black text-blue-100 border-b border-blue-400/15 pb-3 flex items-center gap-2 justify-end">
+                                <h4 class="text-sm font-black text-blue-300 border-b border-blue-400/15 pb-3 flex items-center gap-2 justify-end">
                                     <span>الربط السريع للعدادات</span>
                                     <span>📡</span>
                                 </h4>
@@ -9228,7 +9228,7 @@ console.log('[Droplet LOGS] Script loaded successfully. logsState keys:', Object
                         </div>
                         <div class="flex-1 text-right">
                             <div class="flex items-center justify-end gap-2">
-                                <span class="text-sm font-black text-blue-100">${def.label}</span>
+                                <span class="text-sm font-black text-blue-300">${def.label}</span>
                                 <div class="w-8 h-8 rounded-xl bg-blue-400/20 border border-blue-400/30 text-base flex items-center justify-center">${def.icon}</div>
                             </div>
                             <p class="text-[11px] text-gray-400 mt-0.5">${def.desc}</p>
@@ -9249,7 +9249,7 @@ formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
             <div class="w-12 h-12 rounded-2xl bg-blue-400/20 text-blue-400 border border-blue-400/30 flex items-center justify-center text-2xl shadow-lg">📈</div>
         </div>
         <div class="text-right">
-            <h3 class="font-black text-blue-100 text-xl">قنوات الإحصائيات</h3>
+            <h3 class="font-black text-blue-300 text-xl">قنوات الإحصائيات</h3>
             <p class="text-gray-400 text-xs mt-0.5">اعرض إحصائيات سيرفرك في قنوات صوتية مقفلة في الشريط الجانبي.</p>
             <p class="text-gray-500 text-[10px] mt-0.5">⚠️ تأكد أن البوت لديه صلاحية إدارة القنوات (Manage Channels)</p>
         </div>
@@ -9258,7 +9258,7 @@ formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
     <!-- Stats Counter -->
     <div class="grid grid-cols-3 gap-3">
         <div class="bg-[#12141f] border border-blue-400/15 p-4 rounded-2xl text-center">
-            <div class="text-2xl font-black text-blue-100">${statChannelsRows.length}</div>
+            <div class="text-2xl font-black text-blue-300">${statChannelsRows.length}</div>
             <div class="text-xs text-gray-400 font-bold mt-1">قناة مُفعّلة</div>
         </div>
         <div class="bg-[#12141f] border border-blue-400/15 p-4 rounded-2xl text-center">
@@ -9275,7 +9275,7 @@ formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
     <div class="bg-[#12141f] border border-blue-400/15 rounded-3xl p-6 shadow-xl space-y-3">
         <div class="flex items-center justify-between pb-3 border-b border-blue-400/15">
             <span class="text-xs text-blue-400 font-bold">${statChannelsRows.length}/9 قنوات</span>
-            <h4 class="text-sm font-black text-blue-100">العدادات الأساسية</h4>
+            <h4 class="text-sm font-black text-blue-300">العدادات الأساسية</h4>
         </div>
         ${statRowsHtml}
     </div>
@@ -9284,19 +9284,19 @@ formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
     <div id="addStatChannelModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
         <div class="bg-[#10121b] border border-blue-400/30 rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl space-y-5">
             <div class="text-center">
-                <h3 class="text-lg font-black text-blue-100" id="addStatModalTitle">إنشاء قناة إحصائية</h3>
+                <h3 class="text-lg font-black text-blue-300" id="addStatModalTitle">إنشاء قناة إحصائية</h3>
                 <p class="text-gray-400 text-xs mt-1">سيقوم البوت بتحديث اسم هذه القناة تلقائياً كل 10 دقائق</p>
             </div>
             <form id="addStatChannelForm" class="space-y-4 text-right">
                 <input type="hidden" id="addStatType" name="stat_type">
                 <div>
                     <label class="text-xs font-bold text-gray-300 block mb-1.5">أيدي (ID) القناة الصوتية</label>
-                    <input type="text" name="channel_id" id="addStatChannelId" placeholder="مثال: 123456789012345678" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-100 outline-none font-mono text-right" required>
+                    <input type="text" name="channel_id" id="addStatChannelId" placeholder="مثال: 123456789012345678" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-300 outline-none font-mono text-right" required>
                     <p class="text-[10px] text-gray-500 mt-1">انسخ ID القناة الصوتية من ديسكورد (كليك يمين → نسخ المعرف)</p>
                 </div>
                 <div>
                     <label class="text-xs font-bold text-gray-300 block mb-1.5">نص مخصص للبادئة (اختياري)</label>
-                    <input type="text" name="custom_prefix" id="addStatPrefix" placeholder="مثال: 👥 الأعضاء" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-100 outline-none text-right">
+                    <input type="text" name="custom_prefix" id="addStatPrefix" placeholder="مثال: 👥 الأعضاء" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-300 outline-none text-right">
                     <p class="text-[10px] text-gray-500 mt-1">إذا تركته فارغاً سيستخدم البوت النص الافتراضي</p>
                 </div>
                 <div class="flex gap-3 pt-2">
@@ -9352,14 +9352,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-2xl bg-blue-400/20 text-blue-400 border border-blue-400/30 flex items-center justify-center text-xl shadow-lg">⭐</div>
                                 <div class="text-right">
-                                    <h3 class="font-black text-blue-100 text-lg">تخصيص البوت</h3>
+                                    <h3 class="font-black text-blue-300 text-lg">تخصيص البوت</h3>
                                     <p class="text-gray-400 text-xs mt-0.5">غير اسم البوت وصورته وبنره لكل سيرفر</p>
                                 </div>
                             </div>
                             <!-- Server selector pill (Exact to image) -->
                             <div class="bg-[#0b0d14] border border-blue-400/15 px-4 py-2 rounded-2xl flex items-center gap-2.5 shadow-inner">
                                 <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                                <span class="text-xs font-bold text-blue-100">${guild.name || "Droplet'BOT"}</span>
+                                <span class="text-xs font-bold text-blue-300">${guild.name || "Droplet'BOT"}</span>
                                 <div class="w-6 h-6 rounded-lg bg-blue-800/60 text-blue-300 text-xs font-black flex items-center justify-center border border-blue-400/30">Z</div>
                             </div>
                         </div>
@@ -9387,7 +9387,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="text-[10px] text-gray-500 font-mono">ID: ${client?.user?.id || 'BOT_ID'}</span>
                                 </div>
                                 <div class="text-right">
-                                    <h4 id="prevNickText" class="font-black text-blue-100 text-base">${settings.bot_nickname || client?.user?.username || 'Droplet'}</h4>
+                                    <h4 id="prevNickText" class="font-black text-blue-300 text-base">${settings.bot_nickname || client?.user?.username || 'Droplet'}</h4>
                                     <span class="text-[11px] text-gray-400 font-mono">@${client?.user?.username || 'droplet'}</span>
                                 </div>
                             </div>
@@ -9398,11 +9398,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex items-center justify-between">
                                 <div class="w-8 h-8 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-sm border border-blue-400/30">✏️</div>
                                 <div class="text-right">
-                                    <h4 class="font-black text-blue-100 text-sm">اسم البوت في السيرفر</h4>
+                                    <h4 class="font-black text-blue-300 text-sm">اسم البوت في السيرفر</h4>
                                     <p class="text-gray-400 text-xs mt-0.5">تغيير اسم البوت المعروض في هذا السيرفر فقط</p>
                                 </div>
                             </div>
-                            <input type="text" name="bot_nickname" id="inpBotNick" value="${settings.bot_nickname || ''}" placeholder="${client?.user?.username || 'Droplet'}" oninput="document.getElementById('prevNickText').innerText = this.value || '${client?.user?.username || 'Droplet'}'" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-2xl px-5 py-3.5 text-xs text-blue-100 outline-none text-right font-bold transition">
+                            <input type="text" name="bot_nickname" id="inpBotNick" value="${settings.bot_nickname || ''}" placeholder="${client?.user?.username || 'Droplet'}" oninput="document.getElementById('prevNickText').innerText = this.value || '${client?.user?.username || 'Droplet'}'" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-2xl px-5 py-3.5 text-xs text-blue-300 outline-none text-right font-bold transition">
                         </div>
 
                         <!-- 2. وصف البوت في السيرفر (About Me) -->
@@ -9413,11 +9413,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="w-8 h-8 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-sm border border-blue-400/30">💬</div>
                                 </div>
                                 <div class="text-right">
-                                    <h4 class="font-black text-blue-100 text-sm">وصف البوت في السيرفر</h4>
+                                    <h4 class="font-black text-blue-300 text-sm">وصف البوت في السيرفر</h4>
                                     <p class="text-gray-400 text-xs mt-0.5">تغيير وصف البوت (About Me) المعروض في هذا السيرفر فقط</p>
                                 </div>
                             </div>
-                            <textarea name="bot_about" id="inpBotAbout" rows="3" maxlength="190" placeholder="اكتب وصفاً للبوت في هذا السيرفر..." oninput="document.getElementById('aboutCount').innerText = this.value.length + '/190'" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-2xl px-5 py-3.5 text-xs text-blue-100 outline-none text-right leading-relaxed transition">${settings.bot_about || ''}</textarea>
+                            <textarea name="bot_about" id="inpBotAbout" rows="3" maxlength="190" placeholder="اكتب وصفاً للبوت في هذا السيرفر..." oninput="document.getElementById('aboutCount').innerText = this.value.length + '/190'" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-2xl px-5 py-3.5 text-xs text-blue-300 outline-none text-right leading-relaxed transition">${settings.bot_about || ''}</textarea>
                         </div>
 
                         <!-- 3. صورة وبنر البوت في السيرفر (Avatar & Banner 2-Grid) -->
@@ -9428,7 +9428,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="flex items-center justify-between">
                                     <div class="w-8 h-8 rounded-xl bg-rose-600/20 text-rose-400 flex items-center justify-center text-sm border border-rose-500/30">🎯</div>
                                     <div>
-                                        <h4 class="font-black text-blue-100 text-sm">صورة البوت في السيرفر</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">صورة البوت في السيرفر</h4>
                                         <p class="text-gray-400 text-[11px] mt-0.5">تغيير صورة البوت المعروضة في هذا السيرفر فقط (Per-Server Avatar)</p>
                                     </div>
                                 </div>
@@ -9443,7 +9443,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <img id="cardAvatarPreview" src="${settings.bot_avatar || (botGuild?.members?.me?.user?.displayAvatarURL() || userAvatar)}" class="w-10 h-10 rounded-xl object-cover ring-2 ring-blue-400/50">
                                     </div>
                                 </div>
-                                <input type="url" name="bot_avatar" id="inpAvatarUrl" value="${settings.bot_avatar || ''}" placeholder="https://i.imgur.com/... (رابط الصورة المباشر)" oninput="updateAvatarPreview(this.value)" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-left font-mono">
+                                <input type="url" name="bot_avatar" id="inpAvatarUrl" value="${settings.bot_avatar || ''}" placeholder="https://i.imgur.com/... (رابط الصورة المباشر)" oninput="updateAvatarPreview(this.value)" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-left font-mono">
                             </div>
 
                             <!-- بنر البوت في السيرفر -->
@@ -9451,7 +9451,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="flex items-center justify-between">
                                     <div class="w-8 h-8 rounded-xl bg-amber-600/20 text-amber-400 flex items-center justify-center text-sm border border-amber-500/30">🖼️</div>
                                     <div>
-                                        <h4 class="font-black text-blue-100 text-sm">بنر البوت في السيرفر</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">بنر البوت في السيرفر</h4>
                                         <p class="text-gray-400 text-[11px] mt-0.5">تغيير بنر البوت المعروض في هذا السيرفر فقط (Per-Server Banner)</p>
                                     </div>
                                 </div>
@@ -9463,7 +9463,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </button>
                                     <span class="text-[11px] text-gray-400">الصق رابط صورة البنر المباشر</span>
                                 </div>
-                                <input type="url" name="bot_banner" id="inpBannerUrl" value="${settings.bot_banner || ''}" placeholder="https://i.imgur.com/... (رابط البنر المباشر)" oninput="updateBannerPreview(this.value)" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-left font-mono">
+                                <input type="url" name="bot_banner" id="inpBannerUrl" value="${settings.bot_banner || ''}" placeholder="https://i.imgur.com/... (رابط البنر المباشر)" oninput="updateBannerPreview(this.value)" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-left font-mono">
                             </div>
 
                         </div>
@@ -9505,13 +9505,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-2xl bg-blue-400/20 text-blue-400 border border-blue-400/30 flex items-center justify-center text-xl shadow-lg">⚙️</div>
                                 <div class="text-right">
-                                    <h3 class="font-black text-blue-100 text-lg">الإعدادات العامة</h3>
+                                    <h3 class="font-black text-blue-300 text-lg">الإعدادات العامة</h3>
                                     <p class="text-gray-400 text-xs mt-0.5">إعدادات البوت لسيرفر ${guild.name || "Droplet'BOT"}</p>
                                 </div>
                             </div>
                             <div class="bg-[#0b0d14] border border-blue-400/15 px-4 py-2 rounded-2xl flex items-center gap-2.5 shadow-inner">
                                 <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-                                <span class="text-xs font-bold text-blue-100">${guild.name || "Droplet'BOT"}</span>
+                                <span class="text-xs font-bold text-blue-300">${guild.name || "Droplet'BOT"}</span>
                                 <div class="w-6 h-6 rounded-lg bg-blue-800/60 text-blue-300 text-xs font-black flex items-center justify-center border border-blue-400/30">Z</div>
                             </div>
                         </div>
@@ -9524,9 +9524,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div>
                                     <div class="flex items-center justify-between mb-4">
                                         <span class="text-[10px] text-gray-500">Command Prefix</span>
-                                        <h4 class="font-black text-blue-100 text-sm">البادئة (Prefix)</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">البادئة (Prefix)</h4>
                                     </div>
-                                    <input type="text" name="prefix" id="inpPrefix" value="${settings.prefix || '!'}" placeholder="!" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-2xl px-6 py-4 text-center text-xl text-blue-100 font-mono font-black outline-none shadow-inner transition">
+                                    <input type="text" name="prefix" id="inpPrefix" value="${settings.prefix || '!'}" placeholder="!" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-2xl px-6 py-4 text-center text-xl text-blue-300 font-mono font-black outline-none shadow-inner transition">
                                 </div>
                                 <p class="text-[11px] text-gray-500 text-right mt-4">الرمز المستخدم قبل الأوامر النصية</p>
                             </div>
@@ -9535,7 +9535,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-3xl shadow-xl space-y-4">
                                 <div class="flex items-center justify-between">
                                     <span class="text-[10px] text-blue-400 font-bold bg-blue-800/60 px-2 py-0.5 rounded-lg font-mono">LANG</span>
-                                    <h4 class="font-black text-blue-100 text-sm">لغة البوت</h4>
+                                    <h4 class="font-black text-blue-300 text-sm">لغة البوت</h4>
                                 </div>
 
                                 <input type="hidden" name="bot_language" id="inpHiddenLang" value="${settings.bot_language || 'AR'}">
@@ -9610,7 +9610,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </label>
                                 <div class="flex items-center gap-3">
                                     <div class="text-right">
-                                        <h4 class="font-black text-blue-100 text-sm">تصفير سجلات العقوبات التلقائي</h4>
+                                        <h4 class="font-black text-blue-300 text-sm">تصفير سجلات العقوبات التلقائي</h4>
                                         <p class="text-gray-400 text-xs mt-0.5">حذف دوري لسجلات العقوبات المنتهية / المزالة – العقوبات النشطة لا تتأثر إطلاقاً.</p>
                                     </div>
                                     <div class="w-8 h-8 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-sm border border-blue-400/30">⏱️</div>
@@ -9663,7 +9663,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                         <!-- 4. منطقة الخطر (Danger Zone) - Exact to Image -->
                         <div class="bg-rose-950/20 border border-rose-500/30 p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
-                            <button type="button" onclick="confirmResetGuildData()" class="px-6 py-3 bg-gradient-to-r from-rose-700 to-red-600 hover:from-rose-600 hover:to-red-500 text-blue-100 rounded-2xl text-xs font-black transition shadow-lg flex items-center gap-2 shrink-0">
+                            <button type="button" onclick="confirmResetGuildData()" class="px-6 py-3 bg-gradient-to-r from-rose-700 to-red-600 hover:from-rose-600 hover:to-red-500 text-blue-300 rounded-2xl text-xs font-black transition shadow-lg flex items-center gap-2 shrink-0">
                                 <span>⚠️</span>
                                 <span>تصفير قاعدة بيانات السيرفر</span>
                             </button>
@@ -9718,7 +9718,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
                         <div class="bg-[#12141f] border border-blue-400/15 p-8 rounded-3xl text-center space-y-4 shadow-xl">
                             <div class="w-16 h-16 rounded-2xl bg-rose-600/20 text-rose-400 border border-rose-500/30 flex items-center justify-center text-3xl mx-auto shadow-lg">🚫</div>
-                            <h3 class="font-black text-blue-100 text-lg">تم إيقاف وحذف نظام النسخ الاحتياطية</h3>
+                            <h3 class="font-black text-blue-300 text-lg">تم إيقاف وحذف نظام النسخ الاحتياطية</h3>
                             <p class="text-gray-400 text-xs max-w-md mx-auto leading-relaxed">تم إزالة هذا القسم بالكامل من البوت بناءً على طلبكم. يمكنك استخدام باقي أنظمة الحماية والإشراف لإدارة سيرفرك بأمان.</p>
                             <div class="pt-2">
                                 <a href="/dashboard/${guildId}/protection" class="px-5 py-2.5 bg-blue-400 hover:bg-blue-400 text-blue-950 rounded-xl text-xs font-bold transition inline-block">الانتقال إلى نظام الحماية 🛡️</a>
@@ -9788,7 +9788,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- Header Banner -->
                         <div class="bg-gradient-to-r from-[#1a132e] via-[#12141f] to-[#1a132e] border border-blue-400/20 p-6 rounded-3xl flex items-center justify-between shadow-2xl flex-wrap gap-3">
                             <div class="flex items-center gap-2">
-                                <button type="button" onclick="sendStaffPanelDirect()" class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-blue-100 rounded-xl text-xs font-black transition shadow-lg shadow-emerald-950/40 flex items-center gap-1.5 cursor-pointer">
+                                <button type="button" onclick="sendStaffPanelDirect()" class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-blue-300 rounded-xl text-xs font-black transition shadow-lg shadow-emerald-950/40 flex items-center gap-1.5 cursor-pointer">
                                     <span>🚀 إرسال لوحة الحضور (Login/Logout)</span>
                                 </button>
                                 <button type="button" onclick="resetAllStaffStats()" class="px-4 py-2 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/40 text-rose-300 rounded-xl text-xs font-bold transition cursor-pointer">
@@ -9799,7 +9799,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </button>
                             </div>
                             <div class="text-right">
-                                <h4 class="font-black text-blue-100 text-xl flex items-center gap-2 justify-end"><span>نظام وإحصائيات طاقم الإدارة</span><span>👮</span></h4>
+                                <h4 class="font-black text-blue-300 text-xl flex items-center gap-2 justify-end"><span>نظام وإحصائيات طاقم الإدارة</span><span>👮</span></h4>
                                 <p class="text-gray-400 text-xs mt-0.5">متابعة دقيقة لساعات العمل والشفتات، تسجيل الحضور والانصراف، تقييم الأداء، وتوزيع النقاط</p>
                             </div>
                         </div>
@@ -9808,13 +9808,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="bg-[#12141f] border border-blue-400/15 p-6 rounded-3xl space-y-4 shadow-xl">
                             <div class="flex items-center justify-between pb-3 border-b border-blue-400/15">
                                 <span class="text-xs text-blue-400 font-bold">إعدادات الحضور والانصراف</span>
-                                <h4 class="text-sm font-black text-blue-100 flex items-center gap-2"><span>ضبط قنوات ورتبة الإدارة</span><span>⚙️</span></h4>
+                                <h4 class="text-sm font-black text-blue-300 flex items-center gap-2"><span>ضبط قنوات ورتبة الإدارة</span><span>⚙️</span></h4>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-1">رتبة الإدارة المخولة بالتسجيل <span class="text-gray-400 font-normal">(اختياري - متاح لكل الإدارة تلقائياً)</span></label>
-                                    <select name="staff_role" id="staff_role" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-100 outline-none text-right cursor-pointer">
+                                    <select name="staff_role" id="staff_role" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-300 outline-none text-right cursor-pointer">
                                         <option value="">👑 جميع أفراد الإدارة والمشرفين (تلقائي)</option>
                                         ${guildRoles.map(r => `<option value="${r.id}" ${String(settings.staff_role) === String(r.id) ? 'selected' : ''}>@ ${r.name}</option>`).join('')}
                                     </select>
@@ -9832,7 +9832,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-1">الحد الأقصى للتواجد المتواصل (بالساعات)</label>
-                                    <select name="staff_max_shift_hours" id="staff_max_shift_hours" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right cursor-pointer">
+                                    <select name="staff_max_shift_hours" id="staff_max_shift_hours" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right cursor-pointer">
                                         <option value="1" ${Number(settings.staff_max_shift_hours) === 1 ? 'selected' : ''}>ساعة واحدة</option>
                                         <option value="2" ${Number(settings.staff_max_shift_hours) === 2 ? 'selected' : ''}>ساعتان</option>
                                         <option value="4" ${Number(settings.staff_max_shift_hours) === 4 ? 'selected' : ''}>4 ساعات</option>
@@ -9843,7 +9843,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-1">مهلة عدم التفاعل (شات/تذاكر)</label>
-                                    <select name="staff_inactivity_minutes" id="staff_inactivity_minutes" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right cursor-pointer">
+                                    <select name="staff_inactivity_minutes" id="staff_inactivity_minutes" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right cursor-pointer">
                                         <option value="15" ${Number(settings.staff_inactivity_minutes) === 15 ? 'selected' : ''}>15 دقيقة</option>
                                         <option value="30" ${!settings.staff_inactivity_minutes || Number(settings.staff_inactivity_minutes) === 30 ? 'selected' : ''}>30 دقيقة (مستحسن)</option>
                                         <option value="45" ${Number(settings.staff_inactivity_minutes) === 45 ? 'selected' : ''}>45 دقيقة</option>
@@ -9853,14 +9853,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-1">رابط بانر لوحة الحضور (اختياري)</label>
-                                    <input type="text" name="staff_banner_url" id="staff_banner_url" value="${settings.staff_banner_url || ''}" placeholder="https://..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-left font-mono">
+                                    <input type="text" name="staff_banner_url" id="staff_banner_url" value="${settings.staff_banner_url || ''}" placeholder="https://..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-left font-mono">
                                 </div>
                             </div>
 
                             <div class="pt-2">
                                 <div class="flex items-center justify-between bg-[#0b0d14] border border-blue-400/15 p-4 rounded-2xl">
                                     <div class="text-right">
-                                        <h5 class="text-xs font-bold text-blue-100 flex items-center gap-2">
+                                        <h5 class="text-xs font-bold text-blue-300 flex items-center gap-2">
                                             <span>⚡ تسجيل الخروج التلقائي (Auto Logout)</span>
                                         </h5>
                                         <p class="text-[11px] text-gray-400 mt-0.5">يسجل خروج الإداري تلقائياً عند الخمول (AFK) أو انعدام التفاعل في الشات واستلام التذاكر أو انتهاء الحد الأقصى للمدة</p>
@@ -9927,7 +9927,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="bg-[#12141f] border border-blue-400/15 rounded-3xl p-6 shadow-xl space-y-4">
                             <div class="flex items-center justify-between pb-3 border-b border-blue-400/15">
                                 <span class="text-xs text-blue-400 font-bold">${staffList.length} إداري مسجل</span>
-                                <h4 class="text-sm font-black text-blue-100 flex items-center gap-2"><span>لوحة صدارة وتواجد المشرفين</span><span>🏆</span></h4>
+                                <h4 class="text-sm font-black text-blue-300 flex items-center gap-2"><span>لوحة صدارة وتواجد المشرفين</span><span>🏆</span></h4>
                             </div>
 
                             ${staffList.length === 0 ? `
@@ -9967,14 +9967,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                 return `
                                                 <tr class="hover:bg-white/5 transition">
                                                     <td class="py-3.5 pr-3"><span class="w-7 h-7 rounded-lg border ${badge} flex items-center justify-center font-mono text-[11px] font-black">${i + 1}</span></td>
-                                                    <td class="py-3.5 font-bold text-blue-100 text-xs">
+                                                    <td class="py-3.5 font-bold text-blue-300 text-xs">
                                                         <div class="flex items-center gap-2.5">
                                                             <div class="relative flex-shrink-0">
                                                                 <img src="${staffAvatar}" alt="" class="w-8 h-8 rounded-full border border-blue-400/30 object-cover shadow" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
                                                                 ${isOnline ? '<span class="w-2.5 h-2.5 rounded-full bg-emerald-400 absolute -bottom-0.5 -right-0.5 ring-2 ring-[#12141f]"></span>' : ''}
                                                             </div>
                                                             <div class="truncate max-w-[170px]">
-                                                                <span class="block font-bold text-blue-100 leading-tight truncate">${staffDisplayName}</span>
+                                                                <span class="block font-bold text-blue-300 leading-tight truncate">${staffDisplayName}</span>
                                                                 <span class="text-[10px] text-gray-400 font-mono block leading-tight truncate">${staffHandle}</span>
                                                                 ${isOnline ? '<span class="text-[9px] text-emerald-400 font-bold block mt-0.5" data-i18n="🟢 في الخدمة الآن">🟢 في الخدمة الآن</span>' : ''}
                                                             </div>
@@ -10082,7 +10082,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 const appsCardsHtml = appsList.length === 0 ? `
                     <div class="py-12 text-center space-y-3 bg-[#12141f] border border-blue-400/15 rounded-3xl">
                         <div class="w-16 h-16 rounded-2xl bg-blue-400/10 text-blue-400 flex items-center justify-center text-3xl mx-auto border border-blue-400/20">📝</div>
-                        <h4 class="text-blue-100 font-bold text-sm">لا توجد نماذج تقديم حالياً</h4>
+                        <h4 class="text-blue-300 font-bold text-sm">لا توجد نماذج تقديم حالياً</h4>
                         <p class="text-gray-400 text-xs">اضغط على زر "إنشاء نموذج جديد" بالأعلى لإنشاء أول استمارة تقديم</p>
                     </div>
                 ` : appsList.map(a => {
@@ -10108,7 +10108,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
-                                    <h4 class="font-black text-blue-100 text-base">${a.title}</h4>
+                                    <h4 class="font-black text-blue-300 text-base">${a.title}</h4>
                                     <p class="text-gray-400 text-xs mt-0.5">${a.description || 'بدون وصف'}</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-2xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-xl border border-blue-400/30">📝</div>
@@ -10161,7 +10161,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </button>
                             </div>
                             <div class="text-right">
-                                <h3 class="font-black text-blue-100 text-xl flex items-center gap-2 justify-end"><span>نظام التقديمات والتوظيف</span><span>📝</span></h3>
+                                <h3 class="font-black text-blue-300 text-xl flex items-center gap-2 justify-end"><span>نظام التقديمات والتوظيف</span><span>📝</span></h3>
                                 <p class="text-gray-400 text-xs mt-0.5">أنشئ نماذج تقديم مخصصة، حدد الأسئلة، واستقبل الطلبات في قناة مخصصة مع إمكانية القبول والرفض التفاعلية</p>
                             </div>
                         </div>
@@ -10169,7 +10169,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- Quick Stats -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div class="bg-[#12141f] border border-blue-400/15 p-4 rounded-2xl text-center">
-                                <div class="text-2xl font-black text-blue-100">${appsList.length}</div>
+                                <div class="text-2xl font-black text-blue-300">${appsList.length}</div>
                                 <div class="text-xs text-gray-400 font-bold mt-1">إجمالي النماذج</div>
                             </div>
                             <div class="bg-[#12141f] border border-blue-400/15 p-4 rounded-2xl text-center">
@@ -10186,7 +10186,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="space-y-4">
                             <div class="flex items-center justify-between">
                                 <span class="text-xs text-blue-400 font-bold">${appsList.length} نموذج نشط</span>
-                                <h4 class="text-sm font-black text-blue-100">📋 نماذج التقديم الحالية</h4>
+                                <h4 class="text-sm font-black text-blue-300">📋 نماذج التقديم الحالية</h4>
                             </div>
                             ${appsCardsHtml}
                         </div>
@@ -10196,7 +10196,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="bg-[#12141f] border border-blue-400/30 rounded-3xl w-full max-w-2xl p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto text-right" dir="rtl">
                                 <div class="flex items-center justify-between pb-3 border-b border-blue-400/15">
                                     <button type="button" onclick="closeAppModal()" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-blue-200 flex items-center justify-center text-sm font-bold">✕</button>
-                                    <h4 id="appModalTitle" class="text-base font-black text-blue-100">إنشاء نموذج تقديم جديد 📝</h4>
+                                    <h4 id="appModalTitle" class="text-base font-black text-blue-300">إنشاء نموذج تقديم جديد 📝</h4>
                                 </div>
 
                                 <input type="hidden" id="modalAppId" value="">
@@ -10204,11 +10204,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="space-y-3">
                                     <div>
                                         <label class="block text-xs font-bold text-gray-300 mb-1">اسم النموذج (العنوان) <span class="text-blue-400">*</span></label>
-                                        <input type="text" id="appTitleInput" placeholder="مثال: تقديم الإدارة / تقديم الدعم الفني" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right font-bold">
+                                        <input type="text" id="appTitleInput" placeholder="مثال: تقديم الإدارة / تقديم الدعم الفني" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right font-bold">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-gray-300 mb-1">وصف النموذج (اختياري)</label>
-                                        <input type="text" id="appDescInput" placeholder="شرح مختصر عن المنصب أو الشروط المطلوبة..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right">
+                                        <input type="text" id="appDescInput" placeholder="شرح مختصر عن المنصب أو الشروط المطلوبة..." class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right">
                                     </div>
                                 </div>
 
@@ -10232,7 +10232,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="flex items-center justify-between">
                                         <button type="button" onclick="clearUploadedImageInDOM('app_panel_image')" class="text-[11px] text-rose-400 hover:text-rose-300 font-bold">🗑️ إزالة الصورة</button>
                                         <div class="flex items-center gap-1.5">
-                                            <span class="text-xs font-bold text-blue-100">صورة بانر رسالة التقديم (اختياري)</span>
+                                            <span class="text-xs font-bold text-blue-300">صورة بانر رسالة التقديم (اختياري)</span>
                                             <span class="text-blue-400">🖼️</span>
                                         </div>
                                     </div>
@@ -10262,7 +10262,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <button type="button" onclick="addQuestionField()" id="btnAddQ" class="px-3 py-1.5 bg-blue-400/20 hover:bg-blue-400/30 border border-blue-400/30 text-blue-300 rounded-xl text-xs font-bold transition">
                                             + إضافة سؤال (حتى 5)
                                         </button>
-                                        <span class="text-xs font-bold text-blue-100">أسئلة نموذج التقديم (Discord Modal)</span>
+                                        <span class="text-xs font-bold text-blue-300">أسئلة نموذج التقديم (Discord Modal)</span>
                                     </div>
                                     <div id="modalQuestionsContainer" class="space-y-2.5"></div>
                                 </div>
@@ -10376,7 +10376,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 '</div>' +
                                 '<span class="text-xs font-bold text-gray-300">السؤال #' + (i + 1) + '</span>' +
                                 '</div>' +
-                                '<input type="text" placeholder="اكتب نص السؤال هنا..." value="' + (q.text || '') + '" oninput="updateQuestionText(' + i + ', this.value)" class="w-full bg-[#12141f] border border-blue-400/15 focus:border-blue-400 rounded-xl px-3 py-2 text-xs text-blue-100 text-right outline-none">' +
+                                '<input type="text" placeholder="اكتب نص السؤال هنا..." value="' + (q.text || '') + '" oninput="updateQuestionText(' + i + ', this.value)" class="w-full bg-[#12141f] border border-blue-400/15 focus:border-blue-400 rounded-xl px-3 py-2 text-xs text-blue-300 text-right outline-none">' +
                                 '</div>';
                         }
                         container.innerHTML = html;
@@ -10511,7 +10511,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
-                                    <h3 class="font-black text-blue-100 text-base sm:text-lg flex items-center gap-2 justify-end">
+                                    <h3 class="font-black text-blue-300 text-base sm:text-lg flex items-center gap-2 justify-end">
                                         <span>صانع رسائل الإيمبد المتطور</span>
                                         <span class="text-blue-400">✨</span>
                                     </h3>
@@ -10533,7 +10533,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-3xl space-y-2 shadow-lg">
                                     <div class="flex items-center justify-between mb-1">
                                         <span class="text-[10px] text-blue-400 font-mono bg-blue-800/40 px-2.5 py-0.5 rounded-full border border-blue-600/40">مطلوب</span>
-                                        <label class="block text-xs font-black text-blue-100 flex items-center gap-1.5">
+                                        <label class="block text-xs font-black text-blue-300 flex items-center gap-1.5">
                                             <span>أرسل إلى القناة</span>
                                             <span class="text-blue-400">#</span>
                                         </label>
@@ -10546,11 +10546,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-3xl space-y-3 shadow-lg">
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center gap-2">
-                                            <input type="text" id="embHexInput" value="#60a5fa" oninput="if(window.setCustomHex)window.setCustomHex(this.value)" class="w-24 bg-[#0b0d14] border border-blue-400/25 rounded-xl px-3 py-1.5 text-xs text-blue-100 text-center font-mono focus:border-blue-400 outline-none uppercase">
+                                            <input type="text" id="embHexInput" value="#60a5fa" oninput="if(window.setCustomHex)window.setCustomHex(this.value)" class="w-24 bg-[#0b0d14] border border-blue-400/25 rounded-xl px-3 py-1.5 text-xs text-blue-300 text-center font-mono focus:border-blue-400 outline-none uppercase">
                                             <input type="color" id="embColor" value="#60a5fa" oninput="if(window.onColorPickerChange)window.onColorPickerChange(this.value)" class="w-9 h-9 rounded-xl border border-blue-400/25 bg-[#0b0d14] cursor-pointer p-0.5">
                                         </div>
                                         <div class="flex items-center gap-2">
-                                            <span class="text-xs font-black text-blue-100">لون شريط الإيمبد</span>
+                                            <span class="text-xs font-black text-blue-300">لون شريط الإيمبد</span>
                                             <span class="text-blue-400 text-sm">🎨</span>
                                         </div>
                                     </div>
@@ -10573,7 +10573,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="bg-[#12141f] border border-blue-400/15 p-5 rounded-3xl space-y-4 shadow-lg">
                                     <div class="flex items-center justify-between pb-3 border-b border-blue-400/15">
                                         <span class="text-[11px] text-gray-500 font-mono">Content</span>
-                                        <h4 class="text-xs font-black text-blue-100 flex items-center gap-1.5">
+                                        <h4 class="text-xs font-black text-blue-300 flex items-center gap-1.5">
                                             <span>محتوى الرسالة النصي</span>
                                             <span>✍️</span>
                                         </h4>
@@ -10583,7 +10583,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div>
                                         <input type="hidden" id="embAuthorIcon" value="">
                                         <label class="block text-xs font-bold text-gray-300 mb-1">اسم الكاتب أو الهيدر (Author)</label>
-                                        <input type="text" id="embAuthor" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: إدارة السيرفر / Droplet Support" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-100 outline-none text-right">
+                                        <input type="text" id="embAuthor" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: إدارة السيرفر / Droplet Support" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-300 outline-none text-right">
                                         <p class="text-[10px] text-gray-500 mt-1">يظهر كعنوان صغير أعلى الإيمبد</p>
                                     </div>
 
@@ -10591,7 +10591,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <input type="hidden" id="embTitleUrl" value="">
                                     <div>
                                         <label class="block text-xs font-bold text-gray-300 mb-1">العنوان الرئيسي (Title)</label>
-                                        <input type="text" id="embTitle" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: مرحباً بكم في مجتمعنا!" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-100 outline-none text-right font-bold">
+                                        <input type="text" id="embTitle" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: مرحباً بكم في مجتمعنا!" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-300 outline-none text-right font-bold">
                                         <p class="text-[10px] text-gray-500 mt-1">عنوان بارز وواضح بخط عريض</p>
                                     </div>
 
@@ -10603,7 +10603,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                 الوصف والمحتوى الأساسي <span class="text-blue-400">*</span>
                                             </label>
                                         </div>
-                                        <textarea id="embDesc" rows="5" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="اكتب نص الإيمبد هنا... يدعم ديسكورد ماركداون: **عريض**، *مائل*، __مسطر__، > اقتباس، وروابط [هنا](https://...)" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-100 outline-none text-right leading-relaxed"></textarea>
+                                        <textarea id="embDesc" rows="5" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="اكتب نص الإيمبد هنا... يدعم ديسكورد ماركداون: **عريض**، *مائل*، __مسطر__، > اقتباس، وروابط [هنا](https://...)" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-300 outline-none text-right leading-relaxed"></textarea>
                                     </div>
                                 </div>
 
@@ -10664,7 +10664,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <button type="button" onclick="if(window.addEmbedField)window.addEmbedField()" class="px-3.5 py-1.5 bg-blue-400/20 hover:bg-blue-400/40 border border-blue-400/40 text-blue-300 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer active:scale-95">
                                             <span>+</span><span>إضافة حقل جديد</span>
                                         </button>
-                                        <h4 class="text-xs font-black text-blue-100 flex items-center gap-1.5">
+                                        <h4 class="text-xs font-black text-blue-300 flex items-center gap-1.5">
                                             <span>حقول إضافية مخصصة (Fields)</span>
                                             <span>📑</span>
                                         </h4>
@@ -10682,7 +10682,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             </label>
                                             <span class="text-[11px] text-gray-400 font-bold">إظهار الوقت</span>
                                         </div>
-                                        <h4 class="text-xs font-black text-blue-100 flex items-center gap-1.5">
+                                        <h4 class="text-xs font-black text-blue-300 flex items-center gap-1.5">
                                             <span>التذييل والوقت (Footer)</span>
                                             <span>⏰</span>
                                         </h4>
@@ -10691,7 +10691,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div>
                                         <input type="hidden" id="embFooterIcon" value="">
                                         <label class="block text-xs font-bold text-gray-300 mb-1">نص التذييل (Footer Text)</label>
-                                        <input type="text" id="embFooter" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: Droplet Bot • نظام الدعم التلقائي" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-100 outline-none text-right">
+                                        <input type="text" id="embFooter" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: Droplet Bot • نظام الدعم التلقائي" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-blue-300 outline-none text-right">
                                     </div>
                                 </div>
 
@@ -10705,7 +10705,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                                             <span>معاينة حية ديسكورد</span>
                                         </span>
-                                        <h4 class="text-xs font-black text-blue-100 flex items-center gap-1.5">
+                                        <h4 class="text-xs font-black text-blue-300 flex items-center gap-1.5">
                                             <span>شكل الرسالة النهائي</span>
                                             <span>👁️</span>
                                         </h4>
@@ -10717,8 +10717,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <div class="flex items-center justify-end gap-2.5 pb-1">
                                             <div class="flex items-center gap-1.5">
                                                 <span class="text-[10px] text-gray-400 font-medium">اليوم في 12:00 م</span>
-                                                <span class="bg-[#60a5fa] text-blue-100 text-[9px] font-extrabold px-1 py-0.5 rounded leading-none">BOT</span>
-                                                <span class="font-bold text-blue-100 text-xs">Droplet</span>
+                                                <span class="bg-[#60a5fa] text-blue-300 text-[9px] font-extrabold px-1 py-0.5 rounded leading-none">BOT</span>
+                                                <span class="font-bold text-blue-300 text-xs">Droplet</span>
                                             </div>
                                             <img src="${botAvatarUrl}" class="w-8 h-8 rounded-full object-cover shadow">
                                         </div>
@@ -10739,7 +10739,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                     </div>
 
                                                     <!-- Title -->
-                                                    <div id="prevTitle" class="text-sm font-bold text-blue-100 leading-snug break-words"></div>
+                                                    <div id="prevTitle" class="text-sm font-bold text-blue-300 leading-snug break-words"></div>
 
                                                     <!-- Desc -->
                                                     <div id="prevDesc" class="text-xs text-gray-300 whitespace-pre-wrap leading-relaxed break-words">محتوى الإيمبد سيظهر هنا مباشرة...</div>
@@ -11204,7 +11204,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- Stats -->
                         <div class="grid grid-cols-3 gap-4">
                             <div class="bg-gradient-to-br from-blue-700/40 to-indigo-900/30 border border-blue-400/20 p-4 rounded-2xl text-center">
-                                <span class="text-3xl font-black text-blue-100">${appealsList.length}</span>
+                                <span class="text-3xl font-black text-blue-300">${appealsList.length}</span>
                                 <p class="text-xs text-gray-400 mt-1">إجمالي الطلبات</p>
                             </div>
                             <div class="bg-gradient-to-br from-amber-900/30 to-orange-900/20 border border-amber-500/20 p-4 rounded-2xl text-center">
@@ -11221,7 +11221,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="bg-[#0b0d14] border border-blue-400/30 p-5 rounded-2xl">
                             <div class="flex items-center gap-3 mb-3">
                                 <span class="text-xl">🔗</span>
-                                <h4 class="text-sm font-black text-blue-100">رابط تقديم طلب فك الحظر</h4>
+                                <h4 class="text-sm font-black text-blue-300">رابط تقديم طلب فك الحظر</h4>
                             </div>
                             <p class="text-xs text-gray-400 mb-3">شارك هذا الرابط مع الأعضاء المحظورين حتى يتمكنوا من تقديم طلبهم مباشرةً:</p>
                             <div class="flex items-center gap-2">
@@ -11235,18 +11235,18 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex items-center gap-3 mb-4">
                                 <span class="text-2xl">🔓</span>
                                 <div>
-                                    <h4 class="text-sm font-black text-blue-100">فك الحظر يدوياً</h4>
+                                    <h4 class="text-sm font-black text-blue-300">فك الحظر يدوياً</h4>
                                     <p class="text-xs text-gray-400 mt-0.5">فك حظر عضو مباشرةً دون الحاجة لطلب رسمي</p>
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <div>
                                     <label class="block text-[11px] text-gray-400 mb-1">آيدي العضو (User ID)</label>
-                                    <input type="text" id="manual_unban_uid" placeholder="مثال: 123456789012345678" class="w-full bg-[#0b0d14] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-100 font-mono">
+                                    <input type="text" id="manual_unban_uid" placeholder="مثال: 123456789012345678" class="w-full bg-[#0b0d14] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-300 font-mono">
                                 </div>
                                 <div class="md:col-span-2">
                                     <label class="block text-[11px] text-gray-400 mb-1">سبب فك الحظر (اختياري)</label>
-                                    <input type="text" id="manual_unban_reason" placeholder="مثال: تمت مراجعة الحالة وقررت الإدارة فك الحظر" class="w-full bg-[#0b0d14] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-100">
+                                    <input type="text" id="manual_unban_reason" placeholder="مثال: تمت مراجعة الحالة وقررت الإدارة فك الحظر" class="w-full bg-[#0b0d14] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-300">
                                 </div>
                             </div>
                             <button type="button" onclick="handleManualUnban('${guildId}')" class="mt-3 px-5 py-2.5 bg-red-600 hover:bg-red-500 text-red-950 rounded-lg text-xs font-bold transition">
@@ -11272,7 +11272,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <div class="bg-[#0b0d14] border border-blue-400/15 hover:border-blue-400/30 p-5 rounded-2xl transition">
                                             <div class="flex items-center justify-between mb-3 border-b border-blue-400/15 pb-2">
                                                 <div class="flex items-center gap-2">
-                                                    <span class="font-black text-blue-100 text-sm">${a.username || 'مستخدم مجهول'}</span>
+                                                    <span class="font-black text-blue-300 text-sm">${a.username || 'مستخدم مجهول'}</span>
                                                     <span class="text-xs text-gray-500 font-mono">(${a.user_id})</span>
                                                 </div>
                                                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -11344,7 +11344,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 formFieldsHtml = `
                     <div class="space-y-6 text-right" dir="rtl">
                         <div class="bg-gradient-to-r from-blue-700/30 to-indigo-900/30 border border-blue-400/20 p-5 rounded-2xl">
-                            <h3 class="text-lg font-black text-blue-100">👮 نظام إدارة الستاف والترقيات التلقائية</h3>
+                            <h3 class="text-lg font-black text-blue-300">👮 نظام إدارة الستاف والترقيات التلقائية</h3>
                             <p class="text-xs text-gray-400 mt-1">متابعة نقاط الإداريين، رتب الترقية التلقائية، ومهام العمل الإداري.</p>
                         </div>
 
@@ -11356,22 +11356,22 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             
                             <!-- Add Rank Form -->
                             <div class="bg-[#0b0d14] border border-blue-400/20 p-4 rounded-xl mb-4">
-                                <h5 class="text-xs font-bold text-blue-100 mb-3">➕ إضافة رتبة ترقية تلقائية جديدة</h5>
+                                <h5 class="text-xs font-bold text-blue-300 mb-3">➕ إضافة رتبة ترقية تلقائية جديدة</h5>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                                     <div>
                                         <label class="block text-[11px] text-gray-400 mb-1">الرتبة في السيرفر</label>
-                                        <select id="new_rank_role" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-100">
+                                        <select id="new_rank_role" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-300">
                                             <option value="">...اختر الرتبة</option>
                                             ${guildRoles.map(r => `<option value="${r.id}">@ ${r.name}</option>`).join('')}
                                         </select>
                                     </div>
                                     <div>
                                         <label class="block text-[11px] text-gray-400 mb-1">النقاط المطلوبة</label>
-                                        <input type="number" id="new_rank_points" min="1" placeholder="مثال: 100" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-100">
+                                        <input type="number" id="new_rank_points" min="1" placeholder="مثال: 100" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-300">
                                     </div>
                                     <div>
                                         <label class="block text-[11px] text-gray-400 mb-1">اسم مخصص للرتبة</label>
-                                        <input type="text" id="new_rank_name" placeholder="مثال: مشرف أول" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-100">
+                                        <input type="text" id="new_rank_name" placeholder="مثال: مشرف أول" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-300">
                                     </div>
                                 </div>
                                 <button type="button" onclick="handleAddStaffRank('${guildId}')" class="mt-3 px-4 py-2 bg-blue-400 hover:bg-blue-400 text-blue-950 rounded-lg text-xs font-bold transition">
@@ -11387,7 +11387,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <div class="bg-[#0b0d14] border border-blue-400/15 p-3 rounded-xl flex flex-col justify-between">
                                             <div>
                                                 <div class="flex items-center justify-between">
-                                                    <span class="text-xs font-bold text-blue-100">${r.rank_name || 'رتبة ترقية'}</span>
+                                                    <span class="text-xs font-bold text-blue-300">${r.rank_name || 'رتبة ترقية'}</span>
                                                     <span class="text-[10px] text-blue-400 font-mono font-bold">#${i + 1}</span>
                                                 </div>
                                                 <p class="text-xs text-emerald-400 font-bold mt-1">⭐ ${r.required_points} نقطة</p>
@@ -11410,7 +11410,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="flex items-center justify-between p-3 bg-[#0b0d14] border border-blue-400/15 rounded-xl text-xs">
                                         <div class="flex items-center gap-2">
                                             <span class="font-bold text-amber-400 font-mono">#${idx + 1}</span>
-                                            <span class="text-blue-100 font-bold">&lt;@${s.user_id}&gt;</span>
+                                            <span class="text-blue-300 font-bold">&lt;@${s.user_id}&gt;</span>
                                         </div>
                                         <div class="flex gap-4 text-gray-400">
                                             <span>🎫 ${s.tickets_closed} تذكرة</span>
@@ -11466,7 +11466,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="bg-gradient-to-r from-amber-900/30 to-orange-900/20 border border-amber-500/20 p-5 rounded-2xl flex items-center gap-4">
                             <span class="text-4xl">🏪</span>
                             <div>
-                                <h3 class="text-lg font-black text-blue-100">متجر السيرفر</h3>
+                                <h3 class="text-lg font-black text-blue-300">متجر السيرفر</h3>
                                 <p class="text-xs text-gray-400 mt-1">تحكم في عناصر المتجر وأسعارها — الأعضاء يشترون بالـ Gold عبر أمر <code class="text-amber-300 bg-black/30 px-1 rounded">#shop view</code></p>
                             </div>
                         </div>
@@ -11480,7 +11480,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="flex items-center gap-3">
                                         <span class="text-2xl">👑</span>
                                         <div>
-                                            <h4 class="text-sm font-black text-blue-100">رتبة مخصصة</h4>
+                                            <h4 class="text-sm font-black text-blue-300">رتبة مخصصة</h4>
                                             <p class="text-[11px] text-gray-400">Custom Role</p>
                                         </div>
                                     </div>
@@ -11493,7 +11493,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
                                     <div class="flex items-center justify-between">
                                         <label class="text-xs text-gray-400">المدة (أيام)</label>
-                                        <input type="number" id="shop_role_days" value="${shopSettings.customRole?.duration || 30}" min="1" class="w-28 bg-[#0b0d14] border border-blue-400/25 rounded-lg px-3 py-1.5 text-xs text-blue-100 font-mono text-left">
+                                        <input type="number" id="shop_role_days" value="${shopSettings.customRole?.duration || 30}" min="1" class="w-28 bg-[#0b0d14] border border-blue-400/25 rounded-lg px-3 py-1.5 text-xs text-blue-300 font-mono text-left">
                                     </div>
                                     <p class="text-[11px] text-gray-500">يختار العضو الاسم واللون وتُنشأ الرتبة تلقائياً</p>
                                 </div>
@@ -11506,7 +11506,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="flex items-center gap-3">
                                         <span class="text-2xl">💬</span>
                                         <div>
-                                            <h4 class="text-sm font-black text-blue-100">قناة كتابية خاصة</h4>
+                                            <h4 class="text-sm font-black text-blue-300">قناة كتابية خاصة</h4>
                                             <p class="text-[11px] text-gray-400">Text Channel Rental</p>
                                         </div>
                                     </div>
@@ -11519,7 +11519,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
                                     <div class="flex items-center justify-between">
                                         <label class="text-xs text-gray-400">المدة (أيام)</label>
-                                        <input type="number" id="shop_text_days" value="${shopSettings.textRoom?.duration || 30}" min="1" class="w-28 bg-[#0b0d14] border border-blue-400/25 rounded-lg px-3 py-1.5 text-xs text-blue-100 font-mono text-left">
+                                        <input type="number" id="shop_text_days" value="${shopSettings.textRoom?.duration || 30}" min="1" class="w-28 bg-[#0b0d14] border border-blue-400/25 rounded-lg px-3 py-1.5 text-xs text-blue-300 font-mono text-left">
                                     </div>
                                     <p class="text-[11px] text-gray-500">قناة نصية خاصة باسم العضو مع صلاحيات مخصصة</p>
                                 </div>
@@ -11531,7 +11531,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="flex items-center gap-3">
                                         <span class="text-2xl">🎖️</span>
                                         <div>
-                                            <h4 class="text-sm font-black text-blue-100">شارة / لقب مخصص</h4>
+                                            <h4 class="text-sm font-black text-blue-300">شارة / لقب مخصص</h4>
                                             <p class="text-[11px] text-gray-400">Profile Badge / Title</p>
                                         </div>
                                     </div>
@@ -11544,7 +11544,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
                                     <div class="flex items-center justify-between">
                                         <label class="text-xs text-gray-400">المدة (0 = دائم)</label>
-                                        <input type="number" id="shop_badge_days" value="${shopSettings.badge?.duration || 0}" min="0" class="w-28 bg-[#0b0d14] border border-blue-400/25 rounded-lg px-3 py-1.5 text-xs text-blue-100 font-mono text-left">
+                                        <input type="number" id="shop_badge_days" value="${shopSettings.badge?.duration || 0}" min="0" class="w-28 bg-[#0b0d14] border border-blue-400/25 rounded-lg px-3 py-1.5 text-xs text-blue-300 font-mono text-left">
                                     </div>
                                     <p class="text-[11px] text-gray-500">تظهر في بطاقة الهوية والبروفايل داخل الديسكورد</p>
                                 </div>
@@ -11553,21 +11553,21 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         </div>
 
                         <!-- Save Button -->
-                        <button type="button" onclick="saveShopSettings('${guildId}')" class="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-blue-100 rounded-xl text-sm font-black transition shadow-lg shadow-amber-900/30">
+                        <button type="button" onclick="saveShopSettings('${guildId}')" class="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-blue-300 rounded-xl text-sm font-black transition shadow-lg shadow-amber-900/30">
                             💾 حفظ إعدادات المتجر
                         </button>
 
                         <!-- Manual Grant -->
                         <div class="bg-[#0b0d14] border border-blue-400/20 p-5 rounded-2xl">
-                            <h5 class="text-xs font-black text-blue-100 mb-4 flex items-center gap-2"><span>🎁</span> منح رتبة مخصصة لعضو يدوياً (بدون دفع)</h5>
+                            <h5 class="text-xs font-black text-blue-300 mb-4 flex items-center gap-2"><span>🎁</span> منح رتبة مخصصة لعضو يدوياً (بدون دفع)</h5>
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
                                 <div>
                                     <label class="block text-[11px] text-gray-400 mb-1">آيدي العضو</label>
-                                    <input type="text" id="dash_role_user" placeholder="User ID" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-100 font-mono">
+                                    <input type="text" id="dash_role_user" placeholder="User ID" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-300 font-mono">
                                 </div>
                                 <div>
                                     <label class="block text-[11px] text-gray-400 mb-1">اسم الرتبة</label>
-                                    <input type="text" id="dash_role_name" placeholder="مثال: VIP King" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-100">
+                                    <input type="text" id="dash_role_name" placeholder="مثال: VIP King" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-300">
                                 </div>
                                 <div>
                                     <label class="block text-[11px] text-gray-400 mb-1">اللون HEX</label>
@@ -11575,7 +11575,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div>
                                     <label class="block text-[11px] text-gray-400 mb-1">المدة (أيام)</label>
-                                    <input type="number" id="dash_role_days" value="30" min="1" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-100">
+                                    <input type="number" id="dash_role_days" value="30" min="1" class="w-full bg-[#161824] border border-blue-400/25 rounded-lg p-2 text-xs text-blue-300">
                                 </div>
                             </div>
                             <button type="button" onclick="handleCreateDashRole('${guildId}')" class="mt-3 px-5 py-2 bg-blue-400 hover:bg-blue-400 text-blue-950 rounded-lg text-xs font-bold transition">
@@ -11592,11 +11592,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         ${customRoles.map(cr => `
                                             <div class="flex items-center justify-between p-3 bg-[#0b0d14] border border-blue-400/15 rounded-xl text-xs">
                                                 <div>
-                                                    <span class="font-bold text-blue-100 block">${cr.role_name}</span>
+                                                    <span class="font-bold text-blue-300 block">${cr.role_name}</span>
                                                     <span class="text-[10px] text-gray-400">&lt;@${cr.user_id}&gt;</span>
                                                 </div>
                                                 <div class="text-left">
-                                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold" style="background:${cr.role_color||'#60a5fa'};color:#dbeafe;">${cr.role_color||'HEX'}</span>
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold" style="background:${cr.role_color||'#60a5fa'};color:#bfdbfe;">${cr.role_color||'HEX'}</span>
                                                     <span class="text-[10px] text-gray-500 block mt-1">⏳ ${new Date(cr.expires_at * 1000).toLocaleDateString('ar-SA')}</span>
                                                 </div>
                                             </div>
@@ -11611,7 +11611,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         ${rentedChannels.map(rc => `
                                             <div class="flex items-center justify-between p-3 bg-[#0b0d14] border border-blue-400/15 rounded-xl text-xs">
                                                 <div>
-                                                    <span class="font-bold text-blue-100 block">${rc.channel_type === 'voice' ? '🔊' : '💬'} ${rc.channel_name}</span>
+                                                    <span class="font-bold text-blue-300 block">${rc.channel_type === 'voice' ? '🔊' : '💬'} ${rc.channel_name}</span>
                                                     <span class="text-[10px] text-gray-400">&lt;@${rc.user_id}&gt;</span>
                                                 </div>
                                                 <span class="text-[10px] text-gray-500 font-mono">⏳ ${new Date(rc.expires_at * 1000).toLocaleDateString('ar-SA')}</span>
@@ -11662,7 +11662,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-gray-300 mb-2">برفكس الأوامر (Prefix)</label>
-                                <input type="text" name="prefix" value="${settings.prefix || '#'}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-100 outline-none text-right font-mono">
+                                <input type="text" name="prefix" value="${settings.prefix || '#'}" class="w-full bg-[#0b0d14] border border-blue-400/15 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-blue-300 outline-none text-right font-mono">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-gray-300 mb-2">قناة السجلات (Log Channel)</label>
@@ -11694,7 +11694,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         --primary: #60a5fa;
                         --border: rgba(255, 255, 255, 0.05);
                     }
-                    body { background-color: var(--bg-main) !important; color: #dbeafe !important; font-family: 'Cairo', sans-serif !important; }
+                    body { background-color: var(--bg-main) !important; color: #bfdbfe !important; font-family: 'Cairo', sans-serif !important; }
                     ::-webkit-scrollbar { width: 6px; height: 6px; }
                     ::-webkit-scrollbar-track { background: #0b0d14; }
                     ::-webkit-scrollbar-thumb { background: #2f3146; border-radius: 10px; }
@@ -11705,7 +11705,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     .slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; }
                     input:checked + .slider { background: #60a5fa; }
                     input:checked + .slider:before { transform: translateX(20px); }
-                /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 16px rgba(147, 197, 253, .35), 0 0 44px rgba(147, 197, 253, .14); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 26px rgba(191, 219, 254, .6), 0 0 70px rgba(147, 197, 253, .3); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet light theme (default) */ body.light-mode { background-color:#f1f5f9 !important; color:#0f172a !important; } body.light-mode [class*="bg-[#0b0d14]"], body.light-mode [class*="bg-[#0b0e14]"] { background-color:#f1f5f9 !important; } body.light-mode [class*="bg-[#12141f]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#10121b]"], body.light-mode [class*="bg-[#151722]"], body.light-mode [class*="bg-[#121620]"], body.light-mode [class*="bg-[#161824]"], body.light-mode [class*="bg-[#1e2638]"], body.light-mode [class*="bg-[#1e0e11]"] { background-color:#ffffff !important; } body.light-mode [class*="bg-[#1c1f2e]"] { background-color:#e2e8f0 !important; } body.light-mode [class*="bg-[#06070a]"], body.light-mode [class*="bg-[#040508]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#0d0f17]"] { background-color:rgba(248,250,252,.92) !important; } body.light-mode [class*="bg-[#0f111a]"] { background-color:rgba(248,250,252,.85) !important; } body.light-mode [class*="text-white"]:not([class*="bg-blue-"]):not([class*="from-blue-"]):not([class*="bg-green-"]):not([class*="bg-red-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-black"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]) { color:#0f172a !important; } body.light-mode [class*="hover:text-white"]:hover { color:#0f172a !important; } body.light-mode [class*="text-gray-200"] { color:#334155 !important; } body.light-mode [class*="text-gray-300"] { color:#475569 !important; } body.light-mode [class*="text-gray-400"] { color:#64748b !important; } body.light-mode [class*="border-blue-300/60"] { border-color:rgb(15 23 42 / .1) !important; } body.light-mode [class*="divide-"] > * + * { border-color:rgb(15 23 42 / .08) !important; } body.light-mode [class*="bg-white/"] { background-color:rgb(15 23 42 / .04) !important; } body.light-mode [class*="hover:bg-blue-300"]:hover { background-color:rgb(15 23 42 / .06) !important; } body.light-mode [class*="text-amber-200"], body.light-mode [class*="text-amber-300"] { color:#b45309 !important; } body.light-mode [class*="text-amber-400"] { color:#d97706 !important; } body.light-mode [class*="text-emerald-300"], body.light-mode [class*="text-emerald-400"] { color:#047857 !important; } body.light-mode [class*="text-green-400"] { color:#16a34a !important; } body.light-mode [class*="text-red-400"] { color:#dc2626 !important; } body.light-mode [class*="text-blue-200"], body.light-mode [class*="text-blue-300"] { color:#1d4ed8 !important; } body.light-mode ::placeholder { color:#94a3b8 !important; } body.light-mode [class*="ring-blue-300"] { --tw-ring-color:#cbd5e1 !important; } body.light-mode [class*="to-black"] { --tw-gradient-to:#ffffff var(--tw-gradient-to-position) !important; } body.light-mode ::-webkit-scrollbar-track { background:#e2e8f0 !important; }/* Droplet blue text glow */ [class*="text-blue-100"], [class*="text-blue-200"] { text-shadow: 0 0 12px rgba(147, 197, 253, .4); }</style>
+                /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 16px rgba(147, 197, 253, .35), 0 0 44px rgba(147, 197, 253, .14); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 26px rgba(191, 219, 254, .6), 0 0 70px rgba(147, 197, 253, .3); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet light theme (default) */ body.light-mode { background-color:#f1f5f9 !important; color:#0f172a !important; } body.light-mode [class*="bg-[#0b0d14]"], body.light-mode [class*="bg-[#0b0e14]"] { background-color:#f1f5f9 !important; } body.light-mode [class*="bg-[#12141f]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#10121b]"], body.light-mode [class*="bg-[#151722]"], body.light-mode [class*="bg-[#121620]"], body.light-mode [class*="bg-[#161824]"], body.light-mode [class*="bg-[#1e2638]"], body.light-mode [class*="bg-[#1e0e11]"] { background-color:#ffffff !important; } body.light-mode [class*="bg-[#1c1f2e]"] { background-color:#e2e8f0 !important; } body.light-mode [class*="bg-[#06070a]"], body.light-mode [class*="bg-[#040508]"] { background-color:#f8fafc !important; } body.light-mode [class*="bg-[#0d0f17]"] { background-color:rgba(248,250,252,.92) !important; } body.light-mode [class*="bg-[#0f111a]"] { background-color:rgba(248,250,252,.85) !important; } body.light-mode [class*="text-white"]:not([class*="bg-blue-"]):not([class*="from-blue-"]):not([class*="bg-green-"]):not([class*="bg-red-"]):not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-black"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]) { color:#0f172a !important; } body.light-mode [class*="hover:text-white"]:hover { color:#0f172a !important; } body.light-mode [class*="text-gray-200"] { color:#334155 !important; } body.light-mode [class*="text-gray-300"] { color:#475569 !important; } body.light-mode [class*="text-gray-400"] { color:#64748b !important; } body.light-mode [class*="border-blue-300/60"] { border-color:rgb(15 23 42 / .1) !important; } body.light-mode [class*="divide-"] > * + * { border-color:rgb(15 23 42 / .08) !important; } body.light-mode [class*="bg-white/"] { background-color:rgb(15 23 42 / .04) !important; } body.light-mode [class*="hover:bg-blue-300"]:hover { background-color:rgb(15 23 42 / .06) !important; } body.light-mode [class*="text-amber-200"], body.light-mode [class*="text-amber-300"] { color:#b45309 !important; } body.light-mode [class*="text-amber-400"] { color:#d97706 !important; } body.light-mode [class*="text-emerald-300"], body.light-mode [class*="text-emerald-400"] { color:#047857 !important; } body.light-mode [class*="text-green-400"] { color:#16a34a !important; } body.light-mode [class*="text-red-400"] { color:#dc2626 !important; } body.light-mode [class*="text-blue-200"], body.light-mode [class*="text-blue-300"] { color:#1d4ed8 !important; } body.light-mode ::placeholder { color:#94a3b8 !important; } body.light-mode [class*="ring-blue-300"] { --tw-ring-color:#cbd5e1 !important; } body.light-mode [class*="to-black"] { --tw-gradient-to:#ffffff var(--tw-gradient-to-position) !important; } body.light-mode ::-webkit-scrollbar-track { background:#e2e8f0 !important; }/* Droplet blue text glow */ [class*="text-blue-100"], [class*="text-blue-200"], [class*="text-blue-300"] { text-shadow: 0 0 12px rgba(147, 197, 253, .4); }</style>
                 <script src="/i18n.js"></script>
             </head>
             <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#0b0d14] text-gray-200">
@@ -11721,7 +11721,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <a href="https://discord.gg/zduGPYv7pE" target="_blank" data-i18n="support_server" class="text-xs text-gray-400 hover:text-gray-200 transition">الدعم الفني</a>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="font-black text-sm text-blue-100 tracking-wide">Droplet</span>
+                        <span class="font-black text-sm text-blue-300 tracking-wide">Droplet</span>
                         <img src="${botAvatarUrl}" class="w-8 h-8 rounded-xl object-cover ring-2 ring-blue-400/40 shadow-md shadow-blue-700/30">
                     </div>
                 </header>
@@ -11734,7 +11734,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex items-center justify-between pb-6 mb-6 border-b border-blue-400/15${section === 'logs' ? ' hidden' : ''}">
                                 <label class="toggle"><input type="checkbox" onchange="toggleModule('${guildId}', '${section === 'levels' ? 'leveling_enabled' : section + '_enabled'}', this.checked)" ${section === 'levels' ? (settings.leveling_enabled !== 0 ? 'checked' : '') : 'checked'}><span class="slider"></span></label>
                                 <div class="text-right">
-                                    <h2 class="text-2xl font-black text-blue-100">${title}</h2>
+                                    <h2 class="text-2xl font-black text-blue-300">${title}</h2>
                                     <p class="text-gray-400 text-xs mt-1">يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.</p>
                                 </div>
                             </div>
@@ -11774,7 +11774,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <div class="text-right">
-                                        <h3 class="font-bold text-blue-100 text-xs truncate max-w-[130px]">${guild.name}</h3>
+                                        <h3 class="font-bold text-blue-300 text-xs truncate max-w-[130px]">${guild.name}</h3>
                                         <span class="text-[10px] text-gray-400">الأعضاء: ${guild.memberCount || botGuild?.memberCount || 0}</span>
                                     </div>
                                     <div class="relative">
@@ -12003,12 +12003,12 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- User Profile Bottom Bar -->
                         <div class="p-3 border-t border-blue-400/15">
                             <div class="bg-gradient-to-r from-blue-500 to-indigo-700 rounded-2xl p-2.5 flex items-center justify-between shadow-lg shadow-blue-800/40">
-                                <div class="text-blue-100/80 hover:text-blue-200 cursor-pointer px-1">
+                                <div class="text-blue-300/80 hover:text-blue-200 cursor-pointer px-1">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/></svg>
                                 </div>
                                 <div class="flex items-center gap-2.5">
                                     <div class="text-right">
-                                        <span class="text-xs font-black text-blue-100 block leading-tight truncate max-w-[110px]">${user.username}</span>
+                                        <span class="text-xs font-black text-blue-300 block leading-tight truncate max-w-[110px]">${user.username}</span>
                                     </div>
                                     <img src="${userAvatar}" class="w-8 h-8 rounded-xl object-cover ring-2 ring-blue-300/20 shadow-md">
                                 </div>
