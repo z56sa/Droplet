@@ -135,8 +135,8 @@ module.exports = function (app, client) {
                         .card { background: #122036; padding: 40px; border-radius: 16px; border: 1px solid #23405f; text-align: center; max-width: 450px; }
                         h1 { color: #ef4444; font-size: 24px; margin-bottom: 12px; }
                         p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
-                        a { display: inline-block; margin-top: 20px; color: #93c5fd; text-decoration: none; font-weight: bold; }
-                    /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 22px rgba(96, 165, 250, .65), 0 0 60px rgba(59, 130, 246, .35); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 32px rgba(147, 197, 253, .85), 0 0 90px rgba(59, 130, 246, .45); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet blue text glow */ [class*="text-blue-100"], [class*="text-blue-200"], [class*="text-blue-300"] { text-shadow: 0 0 12px rgba(147, 197, 253, .4); }/* Droplet ambient background glow */ body::before { content:""; position:fixed; inset:0; pointer-events:none; background: radial-gradient(600px 300px at 85% -5%, rgba(59,130,246,.12), transparent 70%), radial-gradient(700px 350px at 10% 110%, rgba(59,130,246,.08), transparent 70%); }</style>
+                    input:focus, select:focus, textarea:focus { outline: none; }
+                    </style>
                 </head>
                 <body>
                     <div class="card">
@@ -168,10 +168,8 @@ module.exports = function (app, client) {
                     body { background-color: #070d1d; color: #dbeafe; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
                     body.light-mode { background-color: #f1f5f9 !important; color: #0f172a !important; }
                     body.light-mode .glass { background: rgba(255, 255, 255, 0.92) !important; border: 1px solid #e2e8f0 !important; }
-                    .glass { background: rgba(10, 20, 38, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
-                    .btn-purple { background: linear-gradient(135deg, #60a5fa, #60a5fa); transition: all 0.2s ease; }
-                    .btn-purple:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(96, 165, 250, 0.4); }
-                /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 22px rgba(96, 165, 250, .65), 0 0 60px rgba(59, 130, 246, .35); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 32px rgba(147, 197, 253, .85), 0 0 90px rgba(59, 130, 246, .45); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet blue text glow */ [class*="text-blue-100"], [class*="text-blue-200"], [class*="text-blue-300"] { text-shadow: 0 0 12px rgba(147, 197, 253, .4); }/* Droplet ambient background glow */ body::before { content:""; position:fixed; inset:0; pointer-events:none; background: radial-gradient(600px 300px at 85% -5%, rgba(59,130,246,.12), transparent 70%), radial-gradient(700px 350px at 10% 110%, rgba(59,130,246,.08), transparent 70%); }</style>
+                    .btn-purple:hover { transform: translateY(-2px); }
+                </style>
             </head>
             <body class="min-h-screen flex items-center justify-center p-4">
                 <div class="w-full max-w-lg glass rounded-2xl p-8 shadow-2xl">
@@ -1430,7 +1428,7 @@ module.exports = function (app, client) {
                     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(37, 99, 235, 0.2); border-radius: 50%; border-top-color: #3b82f6; animation: spin 0.8s linear infinite; }
                     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
                     .toast-enter { animation: slideUp 0.3s ease-out; }
-                /* ROVIX glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 20px rgba(37, 99, 235, .45), 0 0 45px rgba(29, 78, 216, .25); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 30px rgba(59, 130, 246, .7), 0 0 70px rgba(37, 99, 235, .35); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(37, 99, 235, .4), 0 0 16px rgba(37, 99, 235, .2); }/* ROVIX ambient background glow */ body::before { content:""; position:fixed; inset:0; pointer-events:none; background: radial-gradient(700px 350px at 85% -5%, rgba(37, 99, 235, .10), transparent 70%), radial-gradient(800px 400px at 10% 110%, rgba(37, 99, 235, .06), transparent 70%); }</style>
+                </style>
             
     <script>
     function _t(text) {
@@ -1882,14 +1880,13 @@ module.exports = function (app, client) {
                         <!-- Tab 5: أعلى نقاط XP -->
                         <div id="tabLeaderboard" class="tab-content hidden space-y-5">
                             <!-- Hero Banner -->
-                            <div class="relative bg-gradient-to-br from-blue-700/40 via-[#0b1322] to-[#070d1d] border border-blue-500/20 rounded-3xl p-6 overflow-hidden shadow-2xl">
-                                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(96,165,250,0.15),transparent_60%)]"></div>
+                            <div class="relative bg-[#091124] border border-blue-500/20 rounded-3xl p-6 overflow-hidden shadow-xl">
                                 <div class="relative flex items-center justify-between">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 rounded-2xl bg-blue-400/20 border border-blue-500/20 flex items-center justify-center text-2xl shadow-lg">⚡</div>
+                                        <div class="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-2xl">⚡</div>
                                         <div>
                                             <h2 class="text-base font-black text-white">لوحة الصدارة — XP</h2>
-                                            <p class="text-xs text-white/70 mt-0.5">أعلى 20 عضو بنقاط الخبرة</p>
+                                            <p class="text-xs text-gray-400 mt-0.5">أعلى 20 عضو بنقاط الخبرة</p>
                                         </div>
                                     </div>
                                     <div class="text-right">
@@ -1899,8 +1896,8 @@ module.exports = function (app, client) {
                                 </div>
                             </div>
                             <!-- List -->
-                            <div class="bg-[#080e1c] border border-blue-500/20 rounded-3xl overflow-hidden shadow-xl">
-                                <div class="space-y-0 max-h-[520px] overflow-y-auto divide-y divide-blue-500/15/[0.03]">
+                            <div class="bg-[#091124] border border-blue-500/20 rounded-3xl overflow-hidden shadow-xl">
+                                <div class="space-y-0 max-h-[520px] overflow-y-auto divide-y divide-white/5">
                                     ${xpLeaderboardHtml}
                                 </div>
                             </div>
@@ -1909,11 +1906,10 @@ module.exports = function (app, client) {
                         <!-- Tab 5B: أغنى الأثرياء -->
                         <div id="tabCoinsLeaderboard" class="tab-content hidden space-y-5">
                             <!-- Hero Banner -->
-                            <div class="relative bg-gradient-to-br from-amber-900/30 via-[#0b1322] to-[#070d1d] border border-amber-500/20 rounded-3xl p-6 overflow-hidden shadow-2xl">
-                                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(251,191,36,0.10),transparent_60%)]"></div>
+                            <div class="relative bg-[#091124] border border-amber-500/20 rounded-3xl p-6 overflow-hidden shadow-xl">
                                 <div class="relative flex items-center justify-between">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 rounded-2xl bg-amber-600/20 border border-amber-500/40 flex items-center justify-center text-2xl shadow-lg">🏆</div>
+                                        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/40 flex items-center justify-center text-2xl">🏆</div>
                                         <div>
                                             <h2 class="text-base font-black text-white">أغنى الأثرياء — الذهب</h2>
                                             <p class="text-xs text-amber-300/70 mt-0.5">أعلى 20 عضو برصيد الذهب</p>
@@ -1926,8 +1922,8 @@ module.exports = function (app, client) {
                                 </div>
                             </div>
                             <!-- List -->
-                            <div class="bg-[#080e1c] border border-blue-500/20 rounded-3xl overflow-hidden shadow-xl">
-                                <div class="space-y-0 max-h-[520px] overflow-y-auto divide-y divide-blue-500/15/[0.03]">
+                            <div class="bg-[#091124] border border-blue-500/20 rounded-3xl overflow-hidden shadow-xl">
+                                <div class="space-y-0 max-h-[520px] overflow-y-auto divide-y divide-white/5">
                                     ${coinsLeaderboardHtml}
                                 </div>
                             </div>
@@ -1936,15 +1932,14 @@ module.exports = function (app, client) {
                         <!-- Tab 6: الراتب اليومي -->
                         <div id="tabDaily" class="tab-content hidden space-y-5">
                             <!-- Hero Card -->
-                            <div class="relative bg-gradient-to-br from-blue-700/40 via-[#0b1322] to-[#070d1d] border border-blue-500/20 rounded-3xl p-8 overflow-hidden shadow-2xl text-center">
-                                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(96,165,250,0.12),transparent_70%)]"></div>
+                            <div class="relative bg-[#091124] border border-blue-500/20 rounded-3xl p-8 overflow-hidden shadow-xl text-center">
                                 <div class="relative space-y-5">
                                     <!-- Icon -->
-                                    <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-400/40 to-indigo-600/40 border border-blue-500/20 flex items-center justify-center text-4xl mx-auto shadow-2xl shadow-blue-700/40">🎁</div>
+                                    <div class="w-20 h-20 rounded-3xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-4xl mx-auto">🎁</div>
                                     <!-- Title -->
                                     <div>
                                         <h2 class="text-xl font-black text-white">الراتب اليومي</h2>
-                                        <p class="text-white text-xs mt-1.5 leading-relaxed">استلم مكافأتك مجاناً كل 24 ساعة!</p>
+                                        <p class="text-gray-400 text-xs mt-1.5 leading-relaxed">استلم مكافأتك مجاناً كل 24 ساعة!</p>
                                     </div>
                                     <!-- Stats Row -->
                                     <div class="grid grid-cols-3 gap-3 text-center">
@@ -1962,7 +1957,7 @@ module.exports = function (app, client) {
                                         </div>
                                     </div>
                                     <!-- رصيدك الحالي -->
-                                    <div class="bg-[#0e1832] border border-blue-500/20 rounded-2xl px-5 py-3 flex items-center justify-between">
+                                    <div class="bg-[#091124] border border-blue-500/20 rounded-2xl px-5 py-3 flex items-center justify-between">
                                         <span class="text-amber-400 font-black font-mono text-lg" id="userCoinsDisplay">${userCoins.toLocaleString()}</span>
                                         <div class="flex items-center gap-2">
                                             <span class="text-xs text-white">رصيدك الحالي</span>
@@ -1977,16 +1972,15 @@ module.exports = function (app, client) {
                             </div>
 
                             <!-- Vote Card -->
-                            <div class="relative bg-gradient-to-br from-blue-700/30 via-[#0b1322] to-[#070d1d] border border-blue-500/20 rounded-3xl p-6 overflow-hidden shadow-xl text-center">
-                                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(96,165,250,0.08),transparent_70%)]"></div>
+                            <div class="relative bg-[#091124] border border-blue-500/20 rounded-3xl p-6 overflow-hidden shadow-xl text-center">
                                 <div class="relative space-y-4">
-                                    <div class="w-14 h-14 rounded-2xl bg-blue-400/20 border border-blue-500/20 flex items-center justify-center text-2xl mx-auto">🗳️</div>
+                                    <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-2xl mx-auto">🗳️</div>
                                     <div>
                                         <h3 class="text-base font-black text-white">صوّت للبوت على Top.gg</h3>
-                                        <p class="text-white text-xs mt-1.5 leading-relaxed">صوّتك يساعد البوت على الانتشار! يمكنك التصويت كل <span class="text-white font-bold">12 ساعة</span></p>
+                                        <p class="text-gray-400 text-xs mt-1.5 leading-relaxed">صوّتك يساعد البوت على الانتشار! يمكنك التصويت كل <span class="text-white font-bold">12 ساعة</span></p>
                                     </div>
                                     <a href="https://top.gg/ar/bot/${client?.user?.id || config.clientId}/vote" target="_blank"
-                                       class="inline-flex items-center gap-2 px-7 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-2xl text-sm font-black transition-all shadow-lg hover:scale-105">
+                                       class="inline-flex items-center gap-2 px-7 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-2xl text-sm font-black transition-all">
                                         🗳️ صوّت الآن
                                     </a>
                                 </div>
@@ -2314,8 +2308,7 @@ module.exports = function (app, client) {
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
 
                         <!-- Server Overview Hero Banner -->
-                        <div class="bg-gradient-to-br from-[#0c1230] via-[#0b1322] to-[#070d1d] border border-blue-500/20 p-6 rounded-3xl shadow-2xl relative overflow-hidden">
-                            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(96,165,250,0.12),transparent_70%)]"></div>
+                        <div class="bg-[#091124] border border-blue-500/20 p-6 rounded-3xl shadow-xl relative overflow-hidden">
                             <div class="relative flex items-center justify-between">
                                 <div class="flex items-center gap-4">
                                     <div class="text-right">
@@ -11787,7 +11780,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     .slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; }
                     input:checked + .slider { background: #2563eb; }
                     input:checked + .slider:before { transform: translateX(20px); }
-                /* ROVIX glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 20px rgba(37, 99, 235, .45), 0 0 45px rgba(29, 78, 216, .25); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 30px rgba(59, 130, 246, .7), 0 0 70px rgba(37, 99, 235, .35); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(37, 99, 235, .4), 0 0 16px rgba(37, 99, 235, .2); }/* ROVIX ambient background glow */ body::before { content:""; position:fixed; inset:0; pointer-events:none; background: radial-gradient(700px 350px at 85% -5%, rgba(37, 99, 235, .10), transparent 70%), radial-gradient(800px 400px at 10% 110%, rgba(37, 99, 235, .06), transparent 70%); }</style>
+                </style>
                 <script src="/i18n.js"></script>
             </head>
             <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#040714] text-white">
