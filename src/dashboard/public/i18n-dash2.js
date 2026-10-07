@@ -375,30 +375,14 @@ window.DropletDashDict2 = {
 
 
 
-  "شراء وتجهيز": "Buy & equip",
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-};
+  "شراء وتجهيز": "Buy & equip", 
+  "النشطة": "Active",
+  "نشطة": "Active",
+  "مثال:": "Example:",
+  "الغرف المستأجرة": "Rented rooms",
+  "المستأجرة": "Rented",
+  "المتجر": "Store",
+  "الغرف": "Rooms",
+  "المخصصة": "Custom",
+  "المخصص": "Custom",
+  "مخصصة": "Custom",};

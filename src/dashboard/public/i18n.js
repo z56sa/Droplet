@@ -1118,14 +1118,33 @@
         }
     }
 
+    var dashCombinedCache = null;
+    function getDashCombined() {
+        if (dashCombinedCache) return dashCombinedCache;
+        var merged = {};
+        var base = dictionary || {};
+        for (var k in base) {
+            if (Object.prototype.hasOwnProperty.call(base, k)) merged[k] = base[k];
+        }
+        var dash = getDashDict();
+        for (var k2 in dash) {
+            if (Object.prototype.hasOwnProperty.call(dash, k2)) merged[k2] = dash[k2];
+        }
+        var keys = Object.keys(merged).sort(function(a, b) { return b.length - a.length; });
+        dashCombinedCache = { merged: merged, keys: keys };
+        return dashCombinedCache;
+    }
+
     function translateStringWithDash(text) {
-        var out = translateString(text, dictionary, arKeysByLength, true);
-        var dashDict = getDashDict();
-        var dashKeys = Object.keys(dashDict).sort(function(a, b) { return b.length - a.length; });
-        for (var i = 0; i < dashKeys.length; i++) {
-            var key = dashKeys[i];
+        if (!text) return text;
+        var trimmed = text.trim();
+        var c = getDashCombined();
+        if (c.merged[trimmed]) return text.replace(trimmed, c.merged[trimmed]);
+        var out = text;
+        for (var i = 0; i < c.keys.length; i++) {
+            var key = c.keys[i];
             if (key.length < 2) continue;
-            if (out.indexOf(key) !== -1) out = replaceBounded(out, key, dashDict[key]);
+            if (out.indexOf(key) !== -1) out = replaceBounded(out, key, c.merged[key]);
         }
         out = out.replace(/[٠-٩]/g, function(d) { return easternToArabicMap[d] || d; });
         return out;
@@ -1188,27 +1207,24 @@
     function translateNodeWithDash(node) {
         translateNodeWithDict(node, dictionary, arKeysByLength, true);
         try {
-            var dashDict = getDashDict();
-            var dashKeys = Object.keys(dashDict).sort(function(a, b) { return b.length - a.length; });
-            if (!dashKeys.length) return;
             var applyDash = function(el) {
                 if (!el || isLangHandledSpan(el)) return;
                 if (el.nodeType === Node.TEXT_NODE) {
                     var original = el.nodeValue;
                     if (!original || !/[\u0600-\u06FF]/.test(original)) return;
-                    var out = original;
-                    for (var i = 0; i < dashKeys.length; i++) {
-                        var key = dashKeys[i];
-                        if (key.length < 2) continue;
-                        if (out.indexOf(key) !== -1) out = replaceBounded(out, key, dashDict[key]);
-                    }
-                    out = out.replace(/[٠-٩]/g, function(d) { return easternToArabicMap[d] || d; });
-                    if (out !== original) el.nodeValue = out;
+                    var next = translateStringWithDash(original);
+                    if (next !== original) el.nodeValue = next;
                     return;
                 }
                 if (el.nodeType !== Node.ELEMENT_NODE) return;
                 var tag = el.tagName;
                 if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') return;
+                if ((tag === 'INPUT' || tag === 'TEXTAREA') && el.hasAttribute && el.hasAttribute('value')) {
+                    var vv = el.getAttribute('value') || '';
+                    if (/^[٠-٩]+$/.test(vv)) {
+                        el.setAttribute('value', vv.replace(/[٠-٩]/g, function(d) { return easternToArabicMap[d] || d; }));
+                    }
+                }
                 var kids = el.childNodes;
                 for (var j = 0; j < kids.length; j++) applyDash(kids[j]);
             };
