@@ -1086,9 +1086,35 @@
 
     function getDashDict() {
         try {
-            if (window.DropletDashDict && typeof window.DropletDashDict === 'object') return window.DropletDashDict;
+            var merged = {};
+            var d1 = window.DropletDashDict;
+            var d2 = window.DropletDashDict2;
+            if (d1 && typeof d1 === 'object') {
+                for (var k in d1) { if (Object.prototype.hasOwnProperty.call(d1, k)) merged[k] = d1[k]; }
+            }
+            if (d2 && typeof d2 === 'object') {
+                for (var k2 in d2) { if (Object.prototype.hasOwnProperty.call(d2, k2)) merged[k2] = d2[k2]; }
+            }
+            return merged;
         } catch (e) {}
         return {};
+    }
+
+    var AR_LETTER = '[\\u0600-\\u06FF\\u200E]';
+
+    function escapeRegExp(s) {
+        return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // Replace only when the key is NOT glued to other Arabic letters
+    // (prevents mutilations like August<->أغسطس partial matches).
+    function replaceBounded(out, key, val) {
+        try {
+            var re = new RegExp('(?<!' + AR_LETTER + ')' + escapeRegExp(key) + '(?!' + AR_LETTER + ')', 'g');
+            return out.replace(re, function() { return val; });
+        } catch (e) {
+            return out.split(key).join(val);
+        }
     }
 
     function translateStringWithDash(text) {
@@ -1098,7 +1124,7 @@
         for (var i = 0; i < dashKeys.length; i++) {
             var key = dashKeys[i];
             if (key.length < 2) continue;
-            if (out.indexOf(key) !== -1) out = out.split(key).join(dashDict[key]);
+            if (out.indexOf(key) !== -1) out = replaceBounded(out, key, dashDict[key]);
         }
         out = out.replace(/[٠-٩]/g, function(d) { return easternToArabicMap[d] || d; });
         return out;
@@ -1173,7 +1199,7 @@
                     for (var i = 0; i < dashKeys.length; i++) {
                         var key = dashKeys[i];
                         if (key.length < 2) continue;
-                        if (out.indexOf(key) !== -1) out = out.split(key).join(dashDict[key]);
+                        if (out.indexOf(key) !== -1) out = replaceBounded(out, key, dashDict[key]);
                     }
                     out = out.replace(/[٠-٩]/g, function(d) { return easternToArabicMap[d] || d; });
                     if (out !== original) el.nodeValue = out;
