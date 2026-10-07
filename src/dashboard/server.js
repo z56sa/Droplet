@@ -1408,22 +1408,32 @@ module.exports = function (app, client) {
                 
                 <style>
                     :root {
-                        --bg-main: #06050a;
-                        --bg-sidebar: #0a0812;
-                        --bg-card: #0f0c1b;
-                        --bg-card-hover: #161228;
-                        --primary: #7c3aed;
-                        --border: rgba(124, 58, 237, 0.25);
+                        --bg-main: #07040e;
+                        --bg-sidebar: #090513;
+                        --bg-card: #0f0a1c;
+                        --bg-card-hover: #170f2b;
+                        --primary: #8b5cf6;
+                        --border: rgba(139, 92, 246, 0.25);
                     }
-                    body { background-color: var(--bg-main) !important; color: #ffffff !important; font-family: 'Cairo', sans-serif !important; transition: background-color 0.3s, color 0.3s; }
-                    body.light-mode { background-color: #f8f9fa !important; color: #1a1a1a !important; }
-                    body.light-mode .bg-\[\#06050a\], body.light-mode .bg-\[\#0f0c1b\] { background-color: #ffffff !important; border-color: #e5e7eb !important; }
+                    body {
+                        background-color: #07040e !important;
+                        background-image: 
+                            radial-gradient(at 10% 10%, rgba(124, 58, 237, 0.20) 0px, transparent 50%),
+                            radial-gradient(at 90% 20%, rgba(99, 102, 241, 0.15) 0px, transparent 45%),
+                            radial-gradient(at 50% 90%, rgba(139, 92, 246, 0.12) 0px, transparent 55%) !important;
+                        background-attachment: fixed !important;
+                        color: #ffffff !important;
+                        font-family: 'Cairo', sans-serif !important;
+                        transition: background-color 0.3s, color 0.3s;
+                    }
+                    body.light-mode { background-color: #f8f9fa !important; background-image: none !important; color: #1a1a1a !important; }
+                    body.light-mode .bg-\[\#06050a\], body.light-mode .bg-\[\#0f0c1b\], body.light-mode .bg-\[\#0a0714\] { background-color: #ffffff !important; border-color: #e5e7eb !important; }
                     body.light-mode .text-white { color: #1a1a1a !important; }
                     ::-webkit-scrollbar { width: 6px; height: 6px; }
-                    ::-webkit-scrollbar-track { background: #06050a; }
+                    ::-webkit-scrollbar-track { background: #07040e; }
                     ::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 10px; }
                     @keyframes spin { to { transform: rotate(360deg); } }
-                    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(124, 58, 237, 0.2); border-radius: 50%; border-top-color: #a78bfa; animation: spin 0.8s linear infinite; }
+                    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(124, 58, 237, 0.2); border-radius: 50%; border-top-color: #c084fc; animation: spin 0.8s linear infinite; }
                     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
                     .toast-enter { animation: slideUp 0.3s ease-out; }
                 </style>
@@ -2306,18 +2316,18 @@ module.exports = function (app, client) {
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
 
                         <!-- Server Overview Hero Banner -->
-                        <div class="bg-[#091124] border border-blue-500/20 p-6 rounded-3xl shadow-xl relative overflow-hidden">
+                        <div class="bg-[#0f0a1c] border border-[#7c3aed]/25 p-6 rounded-3xl shadow-xl relative overflow-hidden">
                             <div class="relative flex items-center justify-between">
                                 <div class="flex items-center gap-4">
                                     <div class="text-right">
                                         <h2 class="text-2xl font-black text-white">${guild.name || "Droplet'BOT"}</h2>
-                                        <p class="text-white/80 text-xs font-mono mt-0.5">ID: ${guildId}</p>
+                                        <p class="text-gray-400 text-xs font-mono mt-0.5">ID: ${guildId}</p>
                                         <div class="flex items-center gap-1.5 mt-2 justify-end">
                                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                                             <span class="text-xs text-emerald-300 font-bold">البوت متصل ويعمل</span>
                                         </div>
                                     </div>
-                                    <img src="${guild.icon ? `https://cdn.discordapp.com/icons/${guildId}/${guild.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-20 h-20 rounded-3xl ring-4 ring-blue-400/40 shadow-xl object-cover">
+                                    <img src="${guild.icon ? `https://cdn.discordapp.com/icons/${guildId}/${guild.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-20 h-20 rounded-3xl ring-4 ring-[#7c3aed]/40 shadow-xl object-cover">
                                 </div>
                                 <div class="text-left">
                                     <div class="text-5xl font-black text-white/10 select-none">🏰</div>
@@ -2327,96 +2337,96 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                         <!-- Real-Time Stats Grid (4 Counters) -->
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-blue-500/20 transition group">
+                            <div class="bg-[#0c0916] border border-[#7c3aed]/20 p-5 rounded-2xl shadow-xl text-right hover:border-[#7c3aed]/50 transition group">
                                 <div class="flex items-center justify-between mb-3">
-                                    <div class="w-8 h-8 rounded-xl bg-blue-400/20 border border-blue-500/20 text-blue-400 flex items-center justify-center text-sm">👥</div>
+                                    <div class="w-8 h-8 rounded-xl bg-[#7c3aed]/20 border border-[#7c3aed]/30 text-[#a78bfa] flex items-center justify-center text-sm">👥</div>
                                     <span class="text-[10px] text-gray-500 font-mono">MEMBERS</span>
                                 </div>
                                 <div class="text-2xl font-black text-white">${(botGuild?.memberCount || 0).toLocaleString()}</div>
-                                <p class="text-xs text-white mt-1 font-bold">إجمالي الأعضاء</p>
+                                <p class="text-xs text-gray-400 mt-1 font-bold">إجمالي الأعضاء</p>
                             </div>
-                            <div class="bg-[#0b1322] border border-emerald-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-emerald-500/40 transition group">
+                            <div class="bg-[#0c0916] border border-emerald-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-emerald-500/40 transition group">
                                 <div class="flex items-center justify-between mb-3">
                                     <div class="w-8 h-8 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-sm">🟢</div>
                                     <span class="text-[10px] text-gray-500 font-mono">ONLINE</span>
                                 </div>
                                 <div class="text-2xl font-black text-white" id="onlineMembersCount">…</div>
-                                <p class="text-xs text-white mt-1 font-bold">الأعضاء المتصلون</p>
+                                <p class="text-xs text-gray-400 mt-1 font-bold">الأعضاء المتصلون</p>
                             </div>
-                            <div class="bg-[#0b1322] border border-indigo-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-indigo-500/40 transition group">
+                            <div class="bg-[#0c0916] border border-[#6366f1]/20 p-5 rounded-2xl shadow-xl text-right hover:border-[#6366f1]/40 transition group">
                                 <div class="flex items-center justify-between mb-3">
-                                    <div class="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-sm">📁</div>
+                                    <div class="w-8 h-8 rounded-xl bg-[#6366f1]/20 border border-[#6366f1]/30 text-[#c084fc] flex items-center justify-center text-sm">📁</div>
                                     <span class="text-[10px] text-gray-500 font-mono">CHANNELS</span>
                                 </div>
                                 <div class="text-2xl font-black text-white">${(botGuild?.channels?.cache?.size || 0)}</div>
-                                <p class="text-xs text-white mt-1 font-bold">إجمالي القنوات</p>
+                                <p class="text-xs text-gray-400 mt-1 font-bold">إجمالي القنوات</p>
                             </div>
-                            <div class="bg-[#0b1322] border border-amber-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-amber-500/40 transition group">
+                            <div class="bg-[#0c0916] border border-amber-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-amber-500/40 transition group">
                                 <div class="flex items-center justify-between mb-3">
                                     <div class="w-8 h-8 rounded-xl bg-amber-600/20 border border-amber-500/30 text-amber-400 flex items-center justify-center text-sm">💎</div>
                                     <span class="text-[10px] text-gray-500 font-mono">BOOSTS</span>
                                 </div>
                                 <div class="text-2xl font-black text-white">${(botGuild?.premiumSubscriptionCount || 0)}</div>
-                                <p class="text-xs text-white mt-1 font-bold">بوستات السيرفر</p>
+                                <p class="text-xs text-gray-400 mt-1 font-bold">بوستات السيرفر</p>
                             </div>
                         </div>
 
                         <!-- Second Row Stats -->
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-blue-500/20 transition">
+                            <div class="bg-[#0c0916] border border-[#7c3aed]/20 p-5 rounded-2xl shadow-xl text-right hover:border-[#7c3aed]/50 transition">
                                 <div class="flex items-center justify-between mb-3">
                                     <div class="w-8 h-8 rounded-xl bg-pink-600/20 border border-pink-500/30 text-pink-400 flex items-center justify-center text-sm">🎖️</div>
                                     <span class="text-[10px] text-gray-500 font-mono">ROLES</span>
                                 </div>
                                 <div class="text-2xl font-black text-white">${(botGuild?.roles?.cache?.size || 0)}</div>
-                                <p class="text-xs text-white mt-1 font-bold">إجمالي الرتب</p>
+                                <p class="text-xs text-gray-400 mt-1 font-bold">إجمالي الرتب</p>
                             </div>
-                            <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-blue-500/20 transition">
+                            <div class="bg-[#0c0916] border border-[#7c3aed]/20 p-5 rounded-2xl shadow-xl text-right hover:border-[#7c3aed]/50 transition">
                                 <div class="flex items-center justify-between mb-3">
-                                    <div class="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/20 text-blue-400 flex items-center justify-center text-sm">😃</div>
+                                    <div class="w-8 h-8 rounded-xl bg-[#7c3aed]/20 border border-[#7c3aed]/30 text-[#a78bfa] flex items-center justify-center text-sm">😃</div>
                                     <span class="text-[10px] text-gray-500 font-mono">EMOJIS</span>
                                 </div>
                                 <div class="text-2xl font-black text-white">${(botGuild?.emojis?.cache?.size || 0)}</div>
-                                <p class="text-xs text-white mt-1 font-bold">الإيموجيات المخصصة</p>
+                                <p class="text-xs text-gray-400 mt-1 font-bold">الإيموجيات المخصصة</p>
                             </div>
-                            <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-blue-500/20 transition">
+                            <div class="bg-[#0c0916] border border-[#7c3aed]/20 p-5 rounded-2xl shadow-xl text-right hover:border-[#7c3aed]/50 transition">
                                 <div class="flex items-center justify-between mb-3">
-                                    <div class="w-8 h-8 rounded-xl bg-cyan-600/20 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-sm">🤖</div>
+                                    <div class="w-8 h-8 rounded-xl bg-[#6366f1]/20 border border-[#6366f1]/30 text-[#c084fc] flex items-center justify-center text-sm">🤖</div>
                                     <span class="text-[10px] text-gray-500 font-mono">BOTS</span>
                                 </div>
                                 <div class="text-2xl font-black text-white" id="botsCount">…</div>
-                                <p class="text-xs text-white mt-1 font-bold">عدد البوتات</p>
+                                <p class="text-xs text-gray-400 mt-1 font-bold">عدد البوتات</p>
                             </div>
-                            <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl shadow-xl text-right hover:border-blue-500/20 transition">
+                            <div class="bg-[#0c0916] border border-[#7c3aed]/20 p-5 rounded-2xl shadow-xl text-right hover:border-[#7c3aed]/50 transition">
                                 <div class="flex items-center justify-between mb-3">
-                                    <div class="w-8 h-8 rounded-xl bg-blue-400/20 border border-blue-500/20 text-blue-400 flex items-center justify-center text-sm">🎁</div>
+                                    <div class="w-8 h-8 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-400 flex items-center justify-center text-sm">🎁</div>
                                     <span class="text-[10px] text-gray-500 font-mono">GIVEAWAYS</span>
                                 </div>
                                 <div class="text-2xl font-black text-white" id="giveawaysCount">${guildGiveawaysList?.length || 0}</div>
-                                <p class="text-xs text-white mt-1 font-bold">إجمالي القيف اوايز</p>
+                                <p class="text-xs text-gray-400 mt-1 font-bold">إجمالي القيف اوايز</p>
                             </div>
                         </div>
 
                         <!-- Server Info & Boost Level -->
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <!-- Server Details -->
-                            <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-3xl shadow-xl space-y-3 text-right">
+                            <div class="bg-[#0c0916] border border-[#7c3aed]/20 p-6 rounded-3xl shadow-xl space-y-3 text-right">
                                 <h4 class="font-black text-white text-sm flex items-center justify-end gap-2"><span>🏰</span><span>Server Information</span></h4>
                                 <div class="space-y-2.5 text-xs text-white">
-                                    <div class="flex items-center justify-between bg-[#070d1d] p-3 rounded-xl border border-blue-500/20">
-                                        <span class="text-white font-bold font-mono">${new Date((parseInt(guildId) / 4194304 + 1420070400000)).toLocaleDateString('ar-IQ', {year:'numeric',month:'long',day:'numeric'})}</span>
+                                    <div class="flex items-center justify-between bg-[#07040e] p-3 rounded-xl border border-[#7c3aed]/20">
+                                        <span class="text-gray-300 font-bold font-mono">${new Date((parseInt(guildId) / 4194304 + 1420070400000)).toLocaleDateString('ar-IQ', {year:'numeric',month:'long',day:'numeric'})}</span>
                                         <span>Server Creation Date</span>
                                     </div>
-                                    <div class="flex items-center justify-between bg-[#070d1d] p-3 rounded-xl border border-blue-500/20">
-                                        <span class="text-white font-bold">مستوى ${botGuild?.premiumTier || 0}</span>
+                                    <div class="flex items-center justify-between bg-[#07040e] p-3 rounded-xl border border-[#7c3aed]/20">
+                                        <span class="text-gray-300 font-bold">مستوى ${botGuild?.premiumTier || 0}</span>
                                         <span>مستوى البوست</span>
                                     </div>
-                                    <div class="flex items-center justify-between bg-[#070d1d] p-3 rounded-xl border border-blue-500/20">
-                                        <span class="text-white font-bold font-mono">${botGuild?.vanityURLCode ? `discord.gg/${botGuild.vanityURLCode}` : '—'}</span>
+                                    <div class="flex items-center justify-between bg-[#07040e] p-3 rounded-xl border border-[#7c3aed]/20">
+                                        <span class="text-gray-300 font-bold font-mono">${botGuild?.vanityURLCode ? `discord.gg/${botGuild.vanityURLCode}` : '—'}</span>
                                         <span>Vanity URL</span>
                                     </div>
-                                    <div class="flex items-center justify-between bg-[#070d1d] p-3 rounded-xl border border-blue-500/20">
-                                        <span class="text-white font-bold">${botGuild?.verificationLevel === 0 ? 'لا يوجد' : botGuild?.verificationLevel === 1 ? 'منخفض' : botGuild?.verificationLevel === 2 ? 'متوسط' : botGuild?.verificationLevel === 3 ? 'عالي' : 'عالي جداً'}</span>
+                                    <div class="flex items-center justify-between bg-[#07040e] p-3 rounded-xl border border-[#7c3aed]/20">
+                                        <span class="text-gray-300 font-bold">${botGuild?.verificationLevel === 0 ? 'لا يوجد' : botGuild?.verificationLevel === 1 ? 'منخفض' : botGuild?.verificationLevel === 2 ? 'متوسط' : botGuild?.verificationLevel === 3 ? 'عالي' : 'عالي جداً'}</span>
                                         <span>مستوى التحقق</span>
                                     </div>
                                 </div>
@@ -11759,42 +11769,51 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
                 <style>
                     :root {
-                        --bg-main: #06050a;
-                        --bg-sidebar: #0a0812;
-                        --bg-card: #0f0c1b;
-                        --bg-card-hover: #161228;
-                        --primary: #7c3aed;
-                        --border: rgba(124, 58, 237, 0.25);
+                        --bg-main: #07040e;
+                        --bg-sidebar: #090513;
+                        --bg-card: #0f0a1c;
+                        --bg-card-hover: #170f2b;
+                        --primary: #8b5cf6;
+                        --border: rgba(139, 92, 246, 0.25);
                     }
-                    body { background-color: var(--bg-main) !important; color: #ffffff !important; font-family: 'Cairo', sans-serif !important; }
+                    body {
+                        background-color: #07040e !important;
+                        background-image: 
+                            radial-gradient(at 10% 10%, rgba(124, 58, 237, 0.20) 0px, transparent 50%),
+                            radial-gradient(at 90% 20%, rgba(99, 102, 241, 0.15) 0px, transparent 45%),
+                            radial-gradient(at 50% 90%, rgba(139, 92, 246, 0.12) 0px, transparent 55%) !important;
+                        background-attachment: fixed !important;
+                        color: #ffffff !important;
+                        font-family: 'Cairo', sans-serif !important;
+                    }
                     ::-webkit-scrollbar { width: 6px; height: 6px; }
-                    ::-webkit-scrollbar-track { background: #06050a; }
+                    ::-webkit-scrollbar-track { background: #07040e; }
                     ::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 10px; }
                     .probot-card { background: var(--bg-card) !important; border: 1px solid var(--border) !important; border-radius: 20px !important; }
                     .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
                     .toggle input { opacity: 0; width: 0; height: 0; }
-                    .slider { position: absolute; cursor: pointer; inset: 0; background: #141224; border-radius: 24px; transition: .3s; border: 1px solid rgba(124, 58, 237, 0.3); }
+                    .slider { position: absolute; cursor: pointer; inset: 0; background: #140e24; border-radius: 24px; transition: .3s; border: 1px solid rgba(139, 92, 246, 0.3); }
                     .slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 2px; bottom: 2px; background: white; border-radius: 50%; transition: .3s; }
-                    input:checked + .slider { background: #7c3aed; border-color: #a78bfa; }
+                    input:checked + .slider { background: #7c3aed; border-color: #c084fc; box-shadow: 0 0 12px rgba(124, 58, 237, 0.4); }
                     input:checked + .slider:before { transform: translateX(20px); }
                 </style>
                 <script src="/i18n.js"></script>
             </head>
-            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#06050a] text-white">
-                <header class="h-16 bg-[#081026]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
+            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col text-white">
+                <header class="h-16 bg-[#090513]/95 backdrop-blur-md border-b border-[#7c3aed]/25 px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-3">
-                        <button type="button" onclick="window.dropletI18n.toggleLang()" class="droplet-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-blue-500/20 text-blue-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
+                        <button type="button" onclick="window.dropletI18n.toggleLang()" class="droplet-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-[#7c3aed]/25 text-purple-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
                             <span class="text-sm">🌐</span>
                             <span class="font-black text-xs uppercase tracking-wider">EN</span>
                         </button>
                         <span class="text-gray-700">|</span>
-                        <a href="/dashboard/manage" data-i18n="back_to_dashboard" class="text-xs text-blue-400 font-bold hover:text-white transition">الرجوع للوحة التحكم</a>
+                        <a href="/dashboard/manage" data-i18n="back_to_dashboard" class="text-xs text-[#a78bfa] font-bold hover:text-white transition">الرجوع للوحة التحكم</a>
                         <span class="text-gray-700">|</span>
-                        <a href="https://discord.gg/zduGPYv7pE" target="_blank" data-i18n="support_server" class="text-xs text-white hover:text-blue-100 transition">الدعم الفني</a>
+                        <a href="https://discord.gg/zduGPYv7pE" target="_blank" data-i18n="support_server" class="text-xs text-white hover:text-[#a78bfa] transition">الدعم الفني</a>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="font-black text-sm text-white tracking-wide">Droplet</span>
-                        <img src="${botAvatarUrl}" class="w-8 h-8 rounded-xl object-cover ring-2 ring-blue-400/40 shadow-md shadow-blue-700/30">
+                        <img src="${botAvatarUrl}" class="w-8 h-8 rounded-xl object-cover ring-2 ring-[#7c3aed]/50 shadow-md shadow-[#7c3aed]/20">
                     </div>
                 </header>
 
@@ -11802,12 +11821,12 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     
                     <!-- Main Content Form Area -->
                     <main class="flex-1 p-8 overflow-y-auto ${section === 'embed' ? 'max-w-7xl' : 'max-w-4xl'} mx-auto">
-                        <div class="${section === 'logs' ? '' : 'probot-card border border-blue-500/20 rounded-3xl p-8 shadow-2xl mb-8'}">
-                            <div class="flex items-center justify-between pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
+                        <div class="${section === 'logs' ? '' : 'probot-card border border-[#7c3aed]/25 rounded-3xl p-8 shadow-2xl mb-8'}">
+                            <div class="flex items-center justify-between pb-6 mb-6 border-b border-[#7c3aed]/25${section === 'logs' ? ' hidden' : ''}">
                                 <label class="toggle"><input type="checkbox" onchange="toggleModule('${guildId}', '${section === 'levels' ? 'leveling_enabled' : section + '_enabled'}', this.checked)" ${section === 'levels' ? (settings.leveling_enabled !== 0 ? 'checked' : '') : 'checked'}><span class="slider"></span></label>
                                 <div class="text-right">
                                     <h2 class="text-2xl font-black text-white">${title}</h2>
-                                    <p class="text-white text-xs mt-1">يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.</p>
+                                    <p class="text-gray-300 text-xs mt-1">يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.</p>
                                 </div>
                             </div>
 
@@ -11820,8 +11839,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <form id="settingsForm" class="space-y-6">
                                 ${formFieldsHtml}
 
-                                <div class="pt-6 border-t border-blue-500/20 flex items-center justify-between flex-row-reverse${(section === 'embed' || section === 'logs' || section === 'store') ? ' hidden' : ''}">
-                                    <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-black/20 flex items-center gap-2">
+                                <div class="pt-6 border-t border-[#7c3aed]/25 flex items-center justify-between flex-row-reverse${(section === 'embed' || section === 'logs' || section === 'store') ? ' hidden' : ''}">
+                                    <button type="submit" class="px-8 py-3 bg-gradient-to-r from-[#7c3aed] to-[#6366f1] hover:from-[#8b5cf6] hover:to-[#4f46e5] text-white text-xs font-bold rounded-xl transition shadow-lg shadow-[#7c3aed]/30 flex items-center gap-2">
                                         <span>💾</span>
                                         <span>حفظ التغييرات</span>
                                     </button>
@@ -11836,21 +11855,21 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     </main>
 
                     <!-- Server Settings Navigation Sidebar (Novax Style) -->
-                    <aside class="w-72 bg-[#060b16] border-l border-blue-500/20 flex flex-col shrink-0 h-full select-none">
+                    <aside class="w-72 bg-[#090513] border-l border-[#7c3aed]/20 flex flex-col shrink-0 h-full select-none">
                         
                         <!-- Server Card Top -->
                         <div class="p-3">
-                            <div class="bg-[#0b1322] border border-blue-500/20 rounded-2xl p-3 flex items-center justify-between shadow-lg">
+                            <div class="bg-[#0f0a1c] border border-[#7c3aed]/25 rounded-2xl p-3 flex items-center justify-between shadow-lg">
                                 <div class="text-white text-xs">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <div class="text-right">
                                         <h3 class="font-bold text-white text-xs truncate max-w-[130px]">${guild.name}</h3>
-                                        <span class="text-[10px] text-white">الأعضاء: ${guild.memberCount || botGuild?.memberCount || 0}</span>
+                                        <span class="text-[10px] text-gray-400">الأعضاء: ${guild.memberCount || botGuild?.memberCount || 0}</span>
                                     </div>
                                     <div class="relative">
-                                        <img src="${guildIcon}" class="w-10 h-10 rounded-xl bg-[#14233c] object-cover ring-2 ring-blue-400/50 shadow-md">
+                                        <img src="${guildIcon}" class="w-10 h-10 rounded-xl bg-[#090513] object-cover ring-2 ring-[#7c3aed]/40 shadow-md">
                                     </div>
                                 </div>
                             </div>
@@ -11866,17 +11885,17 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <span class="flex items-center gap-1.5"><span>الأخيرة</span><span>🕒</span></span>
                                 </button>
                                 <div id="grp_sub_recent" class="space-y-1">
-                                    <a href="/dashboard/${guildId}/welcome" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'welcome' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/welcome" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'welcome' ? 'bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white font-black shadow-md shadow-[#7c3aed]/30' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
-                                        <span class="flex items-center gap-2"><span>الترحيب & المغادرة</span><span class="${section === 'welcome' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">👋</span></span>
+                                        <span class="flex items-center gap-2"><span>الترحيب & المغادرة</span><span class="${section === 'welcome' ? 'text-white' : 'text-white group-hover:text-[#a78bfa]'}">👋</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/autoresponder" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoresponder' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/autoresponder" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoresponder' ? 'bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white font-black shadow-md shadow-[#7c3aed]/30' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
-                                        <span class="flex items-center gap-2"><span>الرد التلقائي</span><span class="${section === 'autoresponder' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">💬</span></span>
+                                        <span class="flex items-center gap-2"><span>الرد التلقائي</span><span class="${section === 'autoresponder' ? 'text-white' : 'text-white group-hover:text-[#a78bfa]'}">💬</span></span>
                                     </a>
-                                    <a href="/dashboard/${guildId}/tickets" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tickets' ? 'bg-gradient-to-r from-[#00d2fe] to-[#2563eb] text-white font-black shadow-md shadow-[#00d2fe]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
+                                    <a href="/dashboard/${guildId}/tickets" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tickets' ? 'bg-gradient-to-r from-[#7c3aed] to-[#6366f1] text-white font-black shadow-md shadow-[#7c3aed]/30' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
                                         <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
-                                        <span class="flex items-center gap-2"><span>نظام التذاكر</span><span class="${section === 'tickets' ? 'text-white' : 'text-white group-hover:text-[#00d2fe]'}">🎫</span></span>
+                                        <span class="flex items-center gap-2"><span>نظام التذاكر</span><span class="${section === 'tickets' ? 'text-white' : 'text-white group-hover:text-[#a78bfa]'}">🎫</span></span>
                                     </a>
                                 </div>
                             </div>
