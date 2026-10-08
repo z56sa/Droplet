@@ -954,10 +954,10 @@
         // نتوقف عند document.body ولا نتحقق من <html> لأنه يحتوي على lang="ar"/"en" عالمي
         while (cur && cur !== document.documentElement && cur !== document) {
             if (cur.nodeType === Node.ELEMENT_NODE) {
-                if (cur.hasAttribute && (cur.hasAttribute('data-no-i18n') || cur.id === 'cmdsMgmtRoot' || cur.id === 'cmdsListContainer')) {
+                if (cur.hasAttribute && (cur.hasAttribute('data-no-i18n'))) {
                     return true;
                 }
-                if (cur.classList && (cur.classList.contains('lang-ar') || cur.classList.contains('lang-en') || cur.classList.contains('cmd-accordion') || cur.classList.contains('cmd-card-wrap'))) {
+                if (cur.classList && (cur.classList.contains('lang-ar') || cur.classList.contains('lang-en'))) {
                     return true;
                 }
                 if (cur !== document.body && cur.getAttribute) {
@@ -1249,7 +1249,7 @@
             try {
                 for (let j = 0; j < mutations.length; j++) {
                     const m = mutations[j];
-                    if (m.target && m.target.closest && m.target.closest('[data-no-i18n], #cmdsMgmtRoot, #cmdsListContainer, .cmd-accordion')) {
+                    if (m.target && m.target.closest && m.target.closest('[data-no-i18n]')) {
                         continue;
                     }
                     if (m.addedNodes && m.addedNodes.length) {
@@ -1262,7 +1262,7 @@
                     }
                     if (m.type === 'attributes' && m.target.nodeType === Node.ELEMENT_NODE) {
                         const el = m.target;
-                        if (el.closest && el.closest('[data-no-i18n], #cmdsMgmtRoot, #cmdsListContainer, .cmd-accordion')) continue;
+                        if (el.closest && el.closest('[data-no-i18n]')) continue;
                         if (m.attributeName === 'placeholder' && el.hasAttribute('placeholder')) {
                             el.setAttribute('placeholder', translateString(el.getAttribute('placeholder'), dict, keys));
                         }

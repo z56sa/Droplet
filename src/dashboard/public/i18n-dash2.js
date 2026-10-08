@@ -385,4 +385,11 @@ window.DropletDashDict2 = {
   "الغرف": "Rooms",
   "المخصصة": "Custom",
   "المخصص": "Custom",
-  "مخصصة": "Custom",};
+  "مخصصة": "Custom",  "لا توجد أوامر مطابقة 🔍": "No matching commands 🔍",
+  "اختصارات مخصصة": "Custom shortcuts",
+  "تفعيل الكل": "Enable all",
+  "تعطيل الكل": "Disable all",
+  "حفظ التغييرات": "Save changes",
+  "إلغاء": "Cancel",
+  "ابحث عن أمر": "Search commands"
+};
