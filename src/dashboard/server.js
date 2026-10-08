@@ -75,6 +75,11 @@ module.exports = function (app, client) {
     const requireGuildPermission = createGuildAuthMiddleware(client);
 
     app.use(express.static(require('path').join(__dirname, 'public'), { index: false }));
+    // Never cache dashboard HTML in browsers (stale titles/content after deploys)
+    app.use('/dashboard', function(req, res, next) {
+        res.set('Cache-Control', 'no-store, must-revalidate');
+        next();
+    });
     app.use(session({
         store: sessionStore,
         secret: sessionSecret,
@@ -1243,7 +1248,7 @@ module.exports = function (app, client) {
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>لوحة التحكم | Droplet BOT</title>
+                <title>Droplet Dashboard</title>
                 <!-- ✅ Tailwind - يُحمَّل بدون تجميد الصفحة -->
                 <link rel="stylesheet" href="/tw.css" onerror="this.remove()">
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
