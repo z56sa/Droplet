@@ -2742,10 +2742,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             var en = isEn(item.name);
             var bh = item.badge ? '<span class="px-2.5 py-0.5 bg-blue-800/60 text-white border border-blue-500/20 rounded-lg text-[10px] font-bold flex items-center gap-1"><span>' + escH(item.badge) + '</span><span>&#128737;</span></span>' : '';
             html += '<div class="cmd-card-wrap border border-blue-500/20 rounded-2xl bg-[#0b1322] overflow-hidden transition hover:border-blue-500/20' + (en ? '' : ' opacity-50') + '" data-cmd="' + escH(item.name) + '">' +
-                '<div class="p-4 flex items-center justify-between">' +
+                '<div class="cmd-card-header p-4 flex items-center justify-between cursor-pointer select-none" data-cmd="' + escH(item.name) + '">' +
                   '<div class="flex items-center gap-3">' +
-                    '<label class="toggle"><input type="checkbox" data-cmd="' + escH(item.name) + '"' + (en ? ' checked' : '') + '><span class="slider"></span></label>' +
-                    '<button type="button" class="cmd-expand-btn text-gray-500 hover:text-blue-400 p-1 text-xs transition cursor-pointer select-none" data-cmd="' + escH(item.name) + '">&#9660;</button>' +
+                    '<label class="toggle" onclick="event.stopPropagation();"><input type="checkbox" data-cmd="' + escH(item.name) + '"' + (en ? ' checked' : '') + '><span class="slider"></span></label>' +
+                    '<button type="button" class="cmd-expand-btn text-gray-500 hover:text-blue-400 p-1 text-xs transition cursor-pointer" data-cmd="' + escH(item.name) + '">&#9660;</button>' +
                   '</div>' +
                   '<div class="flex items-center gap-3">' +
                     '<div class="text-right">' +
@@ -2768,81 +2768,88 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
     }
 
     function loadAccordion(panel, cmdName) {
-        var cfg = commandConfigs[cmdName] || {};
-        var alias = (cfg.alias || '').replace(/^[\/!]+|[\/!]+$/g, '');
-        var aRoles = [];
-        if (Array.isArray(cfg.allowedRoles)) {
-            aRoles = cfg.allowedRoles;
-        } else if (typeof cfg.allowedRoles === 'string') {
-            try { aRoles = JSON.parse(cfg.allowedRoles); } catch(e) { aRoles = [cfg.allowedRoles]; }
-            if (!Array.isArray(aRoles)) aRoles = [];
-        }
-        var aChs = [];
-        if (Array.isArray(cfg.allowedChannels)) {
-            aChs = cfg.allowedChannels;
-        } else if (typeof cfg.allowedChannels === 'string') {
-            try { aChs = JSON.parse(cfg.allowedChannels); } catch(e) { aChs = [cfg.allowedChannels]; }
-            if (!Array.isArray(aChs)) aChs = [];
-        }
-
-        var rolesHtml = '';
-        var safeRoles = Array.isArray(guildRoles) ? guildRoles : [];
-        if (safeRoles.length === 0) {
-            rolesHtml = '<span class="text-[10px] text-gray-500 py-1 px-2">\u0644\u0627 \u062a\u0648\u062c\u062f \u0631\u062a\u0628 \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631</span>';
-        } else {
-            var rLimit = Math.min(safeRoles.length, 100);
-            for (var ri = 0; ri < rLimit; ri++) {
-                var r = safeRoles[ri];
-                var rChecked = aRoles.indexOf(r.id) !== -1;
-                rolesHtml += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-blue-500/20 bg-[#0b1322] hover:border-blue-500/20 cursor-pointer text-[10px] text-gray-300">' +
-                    '<span>' + escH(r.name) + '</span>' +
-                    '<input type="checkbox" class="cmd-role-chk accent-blue-400" data-cmd="' + escH(cmdName) + '" data-rid="' + escH(r.id) + '"' + (rChecked ? ' checked' : '') + '>' +
-                '</label>';
+        try {
+            var cfg = (commandConfigs && commandConfigs[cmdName]) || {};
+            var alias = (cfg.alias || '').replace(/^[\/!]+|[\/!]+$/g, '');
+            var aRoles = [];
+            if (Array.isArray(cfg.allowedRoles)) {
+                aRoles = cfg.allowedRoles;
+            } else if (typeof cfg.allowedRoles === 'string') {
+                try { aRoles = JSON.parse(cfg.allowedRoles); } catch(e) { aRoles = [cfg.allowedRoles]; }
+                if (!Array.isArray(aRoles)) aRoles = [];
             }
-            if (safeRoles.length > 100) {
-                rolesHtml += '<span class="text-[10px] text-gray-500 py-1 px-2">+' + (safeRoles.length - 100) + ' \u0631\u062a\u0628\u0629 \u0625\u0636\u0627\u0641\u064a\u0629</span>';
+            var aChs = [];
+            if (Array.isArray(cfg.allowedChannels)) {
+                aChs = cfg.allowedChannels;
+            } else if (typeof cfg.allowedChannels === 'string') {
+                try { aChs = JSON.parse(cfg.allowedChannels); } catch(e) { aChs = [cfg.allowedChannels]; }
+                if (!Array.isArray(aChs)) aChs = [];
             }
+
+            var rolesHtml = '';
+            var safeRoles = Array.isArray(guildRoles) ? guildRoles : [];
+            if (safeRoles.length === 0) {
+                rolesHtml = '<span class="text-[10px] text-gray-500 py-1 px-2">\u0644\u0627 \u062a\u0648\u062c\u062f \u0631\u062a\u0628 \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631</span>';
+            } else {
+                var rLimit = Math.min(safeRoles.length, 100);
+                for (var ri = 0; ri < rLimit; ri++) {
+                    var r = safeRoles[ri];
+                    if (!r) continue;
+                    var rChecked = aRoles.indexOf(r.id) !== -1;
+                    rolesHtml += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-blue-500/20 bg-[#0b1322] hover:border-blue-500/20 cursor-pointer text-[10px] text-gray-300">' +
+                        '<span>' + escH(r.name || r.id) + '</span>' +
+                        '<input type="checkbox" class="cmd-role-chk accent-blue-400" data-cmd="' + escH(cmdName) + '" data-rid="' + escH(r.id) + '"' + (rChecked ? ' checked' : '') + '>' +
+                    '</label>';
+                }
+                if (safeRoles.length > 100) {
+                    rolesHtml += '<span class="text-[10px] text-gray-500 py-1 px-2">+' + (safeRoles.length - 100) + ' \u0631\u062a\u0628\u0629 \u0625\u0636\u0627\u0641\u064a\u0629</span>';
+                }
+            }
+
+            var chsHtml = '';
+            var safeChs = Array.isArray(guildChannels) ? guildChannels : [];
+            if (safeChs.length === 0) {
+                chsHtml = '<span class="text-[10px] text-gray-500 py-1 px-2">\u0644\u0627 \u062a\u0648\u062c\u062f \u0642\u0646\u0648\u0627\u062a \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631</span>';
+            } else {
+                var cLimit = Math.min(safeChs.length, 100);
+                for (var ci = 0; ci < cLimit; ci++) {
+                    var ch = safeChs[ci];
+                    if (!ch) continue;
+                    var chChecked = aChs.indexOf(ch.id) !== -1;
+                    chsHtml += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-blue-500/20 bg-[#0b1322] hover:border-blue-500/20 cursor-pointer text-[10px] text-gray-300">' +
+                        '<span>#' + escH(ch.name || ch.id) + '</span>' +
+                        '<input type="checkbox" class="cmd-ch-chk accent-blue-400" data-cmd="' + escH(cmdName) + '" data-chid="' + escH(ch.id) + '"' + (chChecked ? ' checked' : '') + '>' +
+                    '</label>';
+                }
+                if (safeChs.length > 100) {
+                    chsHtml += '<span class="text-[10px] text-gray-500 py-1 px-2">+' + (safeChs.length - 100) + ' \u0642\u0646\u0627\u0629 \u0625\u0636\u0627\u0641\u064a\u0629</span>';
+                }
+            }
+
+            var h = '<div class="p-4 space-y-4">' +
+                '<div class="flex items-center justify-between gap-4 flex-wrap"><div class="flex-1 min-w-[200px]">' +
+                    '<label class="block text-[10px] text-white font-bold mb-1">\u0627\u062e\u062a\u0635\u0627\u0631 \u0645\u062e\u0635\u0635 \u0644\u0644\u0623\u0645\u0631 (Custom Alias)</label>' +
+                    '<input type="text" dir="ltr" class="cmd-alias-input w-full bg-[#0b1322] border border-blue-500/20 focus:border-blue-400 rounded-xl px-3 py-2 text-xs text-white outline-none text-left" placeholder="H \u0623\u0648 b \u0623\u0648 !help" data-cmd="' + escH(cmdName) + '" value="' + escH(alias) + '">' +
+                '</div></div>' +
+                '<div>' +
+                    '<label class="block text-[10px] text-white font-bold mb-1.5">\u0627\u0644\u0631\u062a\u0628 \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0644\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Roles)</label>' +
+                    '<div class="cmd-roles-box flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#0b1322]/50 border border-blue-500/20 rounded-xl justify-end">' + rolesHtml + '</div>' +
+                '</div>' +
+                '<div>' +
+                    '<label class="block text-[10px] text-white font-bold mb-1.5">\u0627\u0644\u0642\u0646\u0648\u0627\u062a \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0641\u064a\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Channels)</label>' +
+                    '<div class="cmd-chs-box flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#0b1322]/50 border border-blue-500/20 rounded-xl justify-end">' + chsHtml + '</div>' +
+                '</div>' +
+                '<div class="flex items-center justify-between pt-2 border-t border-blue-500/20">' +
+                    '<button type="button" class="cmd-reset-btn px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 rounded-xl text-xs font-bold transition cursor-pointer" data-cmd="' + escH(cmdName) + '">\u0625\u0639\u0627\u062f\u0629 \u0636\u0628\u0637</button>' +
+                    '<button type="button" class="cmd-save-btn px-4 py-1.5 bg-gradient-to-l from-purple-600 to-blue-500 hover:bg-gradient-to-l from-purple-600 to-blue-500 text-white rounded-xl text-xs font-bold transition shadow-lg cursor-pointer" data-cmd="' + escH(cmdName) + '">\u062d\u0641\u0638 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0623\u0645\u0631</button>' +
+                '</div>' +
+            '</div>';
+
+            panel.innerHTML = h;
+        } catch (err) {
+            console.error('loadAccordion error for', cmdName, err);
+            panel.innerHTML = '<div class="p-3 text-xs text-rose-400 text-center">\u062d\u062f\u062b \u062e\u0637\u0623 \u0623\u062b\u0646\u0627\u0621 \u062a\u062d\u0645\u064a\u0644 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0623\u0645\u0631</div>';
         }
-
-        var chsHtml = '';
-        var safeChs = Array.isArray(guildChannels) ? guildChannels : [];
-        if (safeChs.length === 0) {
-            chsHtml = '<span class="text-[10px] text-gray-500 py-1 px-2">\u0644\u0627 \u062a\u0648\u062c\u062f \u0642\u0646\u0648\u0627\u062a \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631</span>';
-        } else {
-            var cLimit = Math.min(safeChs.length, 100);
-            for (var ci = 0; ci < cLimit; ci++) {
-                var ch = safeChs[ci];
-                var chChecked = aChs.indexOf(ch.id) !== -1;
-                chsHtml += '<label class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-blue-500/20 bg-[#0b1322] hover:border-blue-500/20 cursor-pointer text-[10px] text-gray-300">' +
-                    '<span>#' + escH(ch.name) + '</span>' +
-                    '<input type="checkbox" class="cmd-ch-chk accent-blue-400" data-cmd="' + escH(cmdName) + '" data-chid="' + escH(ch.id) + '"' + (chChecked ? ' checked' : '') + '>' +
-                '</label>';
-            }
-            if (safeChs.length > 100) {
-                chsHtml += '<span class="text-[10px] text-gray-500 py-1 px-2">+' + (safeChs.length - 100) + ' \u0642\u0646\u0627\u0629 \u0625\u0636\u0627\u0641\u064a\u0629</span>';
-            }
-        }
-
-        var h = '<div class="p-4 space-y-4">' +
-            '<div class="flex items-center justify-between gap-4 flex-wrap"><div class="flex-1 min-w-[200px]">' +
-                '<label class="block text-[10px] text-white font-bold mb-1">\u0627\u062e\u062a\u0635\u0627\u0631 \u0645\u062e\u0635\u0635 \u0644\u0644\u0623\u0645\u0631 (Custom Alias)</label>' +
-                '<input type="text" dir="ltr" class="cmd-alias-input w-full bg-[#0b1322] border border-blue-500/20 focus:border-blue-400 rounded-xl px-3 py-2 text-xs text-white outline-none text-left" placeholder="H \u0623\u0648 b \u0623\u0648 !help" data-cmd="' + escH(cmdName) + '" value="' + escH(alias) + '">' +
-            '</div></div>' +
-            '<div>' +
-                '<label class="block text-[10px] text-white font-bold mb-1.5">\u0627\u0644\u0631\u062a\u0628 \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0644\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Roles)</label>' +
-                '<div class="cmd-roles-box flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#0b1322]/50 border border-blue-500/20 rounded-xl justify-end">' + rolesHtml + '</div>' +
-            '</div>' +
-            '<div>' +
-                '<label class="block text-[10px] text-white font-bold mb-1.5">\u0627\u0644\u0642\u0646\u0648\u0627\u062a \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0641\u064a\u0647\u0627 \u0641\u0642\u0637 \u0628\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0623\u0645\u0631 (Allowed Channels)</label>' +
-                '<div class="cmd-chs-box flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-[#0b1322]/50 border border-blue-500/20 rounded-xl justify-end">' + chsHtml + '</div>' +
-            '</div>' +
-            '<div class="flex items-center justify-between pt-2 border-t border-blue-500/20">' +
-                '<button type="button" class="cmd-reset-btn px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 border border-rose-800/40 rounded-xl text-xs font-bold transition cursor-pointer" data-cmd="' + escH(cmdName) + '">\u0625\u0639\u0627\u062f\u0629 \u0636\u0628\u0637</button>' +
-                '<button type="button" class="cmd-save-btn px-4 py-1.5 bg-gradient-to-l from-purple-600 to-blue-500 hover:bg-gradient-to-l from-purple-600 to-blue-500 text-white rounded-xl text-xs font-bold transition shadow-lg cursor-pointer" data-cmd="' + escH(cmdName) + '">\u062d\u0641\u0638 \u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0623\u0645\u0631</button>' +
-            '</div>' +
-        '</div>';
-
-        panel.innerHTML = h;
     }
 
     function updateCounters() {
@@ -2977,22 +2984,27 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
         // Click delegation: Expand/collapse, Save details, Reset command
         container.addEventListener('click', function(e) {
-            // 1. Expand / Collapse Arrow
+            // Ignore if clicked on toggle slider or input
+            if (e.target.closest('.toggle') || e.target.closest('input')) return;
+
+            // 1. Expand / Collapse: either clicking arrow button or clicking card header
             var expBtn = e.target.closest('.cmd-expand-btn');
-            if (expBtn) {
-                e.preventDefault();
-                e.stopPropagation();
-                var cmdName = expBtn.getAttribute('data-cmd');
-                var cardWrap = expBtn.closest('.cmd-card-wrap');
-                var panel = cardWrap ? cardWrap.querySelector('.cmd-accordion') : null;
+            var cardHeader = e.target.closest('.cmd-card-header');
+            if (expBtn || cardHeader) {
+                var cardWrap = (expBtn || cardHeader).closest('.cmd-card-wrap');
+                if (!cardWrap) return;
+                var panel = cardWrap.querySelector('.cmd-accordion');
+                var arrow = cardWrap.querySelector('.cmd-expand-btn');
                 if (!panel) return;
-                var isOpen = panel.style.display === 'block';
+                var cmdName = cardWrap.getAttribute('data-cmd') || (arrow ? arrow.getAttribute('data-cmd') : null);
+                
+                var isOpen = panel.style.display !== 'none' && panel.style.display !== '';
                 if (isOpen) {
                     panel.style.display = 'none';
-                    expBtn.innerHTML = '&#9660;';
+                    if (arrow) arrow.innerHTML = '&#9660;';
                 } else {
                     panel.style.display = 'block';
-                    expBtn.innerHTML = '&#9650;';
+                    if (arrow) arrow.innerHTML = '&#9650;';
                     if (!panel.getAttribute('data-loaded')) {
                         loadAccordion(panel, cmdName);
                         panel.setAttribute('data-loaded', '1');
