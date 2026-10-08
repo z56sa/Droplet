@@ -137,8 +137,39 @@ class TursoSync {
       try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN exempt_roles TEXT DEFAULT '';"); } catch(e) {}
       try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN is_active INTEGER DEFAULT 1;"); } catch(e) {}
       try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN uses_count INTEGER DEFAULT 0;"); } catch(e) {}
-      try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN created_at INTEGER DEFAULT (strftime('%s','now'));"); } catch(e) {}
+      // 1.7 Create staff_activity and staff_ranks tables in Turso
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS staff_activity (
+          guild_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          tickets_closed INTEGER DEFAULT 0,
+          mod_actions INTEGER DEFAULT 0,
+          bans_count INTEGER DEFAULT 0,
+          kicks_count INTEGER DEFAULT 0,
+          mutes_count INTEGER DEFAULT 0,
+          warns_count INTEGER DEFAULT 0,
+          messages_count INTEGER DEFAULT 0,
+          voice_seconds INTEGER DEFAULT 0,
+          streak_days INTEGER DEFAULT 0,
+          last_active_day TEXT,
+          points INTEGER DEFAULT 0,
+          shift_seconds INTEGER DEFAULT 0,
+          total_shifts INTEGER DEFAULT 0,
+          PRIMARY KEY (guild_id, user_id)
+        );
+      `);
 
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS staff_ranks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          guild_id TEXT NOT NULL,
+          role_id TEXT NOT NULL,
+          required_points INTEGER NOT NULL,
+          rank_name TEXT,
+          created_at INTEGER DEFAULT (strftime('%s','now')),
+          UNIQUE(guild_id, role_id)
+        );
+      `);
 
       console.log('[TURSO] ✅ Turso remote tables verified.');
 
@@ -274,6 +305,81 @@ class TursoSync {
         }
       } catch (gsErr) {
         console.error('[TURSO] ⚠️ Error restoring guild settings:', gsErr.message);
+      }
+
+      // 5. Restore staff_activity from Turso
+      try {
+        const staffRes = await this.client.execute('SELECT * FROM staff_activity');
+        if (staffRes?.rows?.length > 0) {
+          console.log(`[TURSO] 🔄 Restoring ${staffRes.rows.length} staff activity records from Turso into local SQLite...`);
+          const insStaff = localDb.prepare(`
+            INSERT INTO staff_activity (guild_id, user_id, tickets_closed, mod_actions, bans_count, kicks_count, mutes_count, warns_count, messages_count, voice_seconds, streak_days, last_active_day, points, shift_seconds, total_shifts)
+            VALUES (@guild_id, @user_id, @tickets_closed, @mod_actions, @bans_count, @kicks_count, @mutes_count, @warns_count, @messages_count, @voice_seconds, @streak_days, @last_active_day, @points, @shift_seconds, @total_shifts)
+            ON CONFLICT(guild_id, user_id) DO UPDATE SET
+              tickets_closed = MAX(staff_activity.tickets_closed, excluded.tickets_closed),
+              mod_actions = MAX(staff_activity.mod_actions, excluded.mod_actions),
+              points = MAX(staff_activity.points, excluded.points),
+              shift_seconds = MAX(staff_activity.shift_seconds, excluded.shift_seconds),
+              total_shifts = MAX(staff_activity.total_shifts, excluded.total_shifts);
+          `);
+          const tx = localDb.transaction((rows) => {
+            for (const r of rows) {
+              insStaff.run({
+                guild_id: String(r.guild_id),
+                user_id: String(r.user_id),
+                tickets_closed: Number(r.tickets_closed || 0),
+                mod_actions: Number(r.mod_actions || 0),
+                bans_count: Number(r.bans_count || 0),
+                kicks_count: Number(r.kicks_count || 0),
+                mutes_count: Number(r.mutes_count || 0),
+                warns_count: Number(r.warns_count || 0),
+                messages_count: Number(r.messages_count || 0),
+                voice_seconds: Number(r.voice_seconds || 0),
+                streak_days: Number(r.streak_days || 0),
+                last_active_day: r.last_active_day ? String(r.last_active_day) : null,
+                points: Number(r.points || 0),
+                shift_seconds: Number(r.shift_seconds || 0),
+                total_shifts: Number(r.total_shifts || 0)
+              });
+            }
+          });
+          tx(staffRes.rows);
+          console.log('[TURSO] ✅ Staff activity successfully restored from Turso!');
+        } else {
+          this.backupAllLocalStaffActivity(localDb);
+        }
+      } catch (staffErr) {
+        console.error('[TURSO] ⚠️ Error restoring staff activity:', staffErr.message);
+      }
+
+      // 6. Restore staff_ranks from Turso
+      try {
+        const ranksRes = await this.client.execute('SELECT * FROM staff_ranks');
+        if (ranksRes?.rows?.length > 0) {
+          const insRank = localDb.prepare(`
+            INSERT INTO staff_ranks (guild_id, role_id, required_points, rank_name)
+            VALUES (@guild_id, @role_id, @required_points, @rank_name)
+            ON CONFLICT(guild_id, role_id) DO UPDATE SET
+              required_points = excluded.required_points,
+              rank_name = excluded.rank_name;
+          `);
+          const rTx = localDb.transaction((rows) => {
+            for (const r of rows) {
+              insRank.run({
+                guild_id: String(r.guild_id),
+                role_id: String(r.role_id),
+                required_points: Number(r.required_points || 0),
+                rank_name: r.rank_name ? String(r.rank_name) : null
+              });
+            }
+          });
+          rTx(ranksRes.rows);
+          console.log('[TURSO] ✅ Staff ranks successfully restored from Turso!');
+        } else {
+          this.backupAllLocalStaffRanks(localDb);
+        }
+      } catch (rankErr) {
+        console.error('[TURSO] ⚠️ Error restoring staff ranks:', rankErr.message);
       }
 
 
@@ -493,6 +599,83 @@ class TursoSync {
         this.queueProfileSync(row);
       }
     } catch (e) {}
+  }
+
+  /**
+   * Syncs a single staff_activity row to Turso immediately
+   */
+  queueStaffActivitySync(guildId, userId, data) {
+    if (!this.enabled || !this.client || !guildId || !userId) return;
+    const sql = `
+      INSERT INTO staff_activity (guild_id, user_id, tickets_closed, mod_actions, bans_count, kicks_count, mutes_count, warns_count, messages_count, voice_seconds, streak_days, last_active_day, points, shift_seconds, total_shifts)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(guild_id, user_id) DO UPDATE SET
+        tickets_closed = MAX(staff_activity.tickets_closed, excluded.tickets_closed),
+        mod_actions = MAX(staff_activity.mod_actions, excluded.mod_actions),
+        bans_count = MAX(staff_activity.bans_count, excluded.bans_count),
+        kicks_count = MAX(staff_activity.kicks_count, excluded.kicks_count),
+        mutes_count = MAX(staff_activity.mutes_count, excluded.mutes_count),
+        warns_count = MAX(staff_activity.warns_count, excluded.warns_count),
+        messages_count = MAX(staff_activity.messages_count, excluded.messages_count),
+        voice_seconds = MAX(staff_activity.voice_seconds, excluded.voice_seconds),
+        points = MAX(staff_activity.points, excluded.points),
+        shift_seconds = MAX(staff_activity.shift_seconds, excluded.shift_seconds),
+        total_shifts = MAX(staff_activity.total_shifts, excluded.total_shifts),
+        last_active_day = COALESCE(excluded.last_active_day, staff_activity.last_active_day);
+    `;
+    const args = [
+      String(guildId), String(userId),
+      Number(data.tickets_closed || 0), Number(data.mod_actions || 0),
+      Number(data.bans_count || 0), Number(data.kicks_count || 0),
+      Number(data.mutes_count || 0), Number(data.warns_count || 0),
+      Number(data.messages_count || 0), Number(data.voice_seconds || 0),
+      Number(data.streak_days || 0), data.last_active_day ? String(data.last_active_day) : null,
+      Number(data.points || 0), Number(data.shift_seconds || 0), Number(data.total_shifts || 0)
+    ];
+    this.enqueue({ sql, args });
+  }
+
+  /**
+   * Pushes all local staff_activity rows to Turso
+   */
+  async backupAllLocalStaffActivity(localDb) {
+    if (!this.enabled || !this.client) return;
+    try {
+      const rows = localDb.prepare('SELECT * FROM staff_activity').all();
+      for (const row of rows) {
+        if (row && row.guild_id && row.user_id) {
+          this.queueStaffActivitySync(row.guild_id, row.user_id, row);
+        }
+      }
+      console.log(`[TURSO] 📤 Pushed ${rows.length} staff activity rows to Turso.`);
+    } catch (e) {
+      console.error('[TURSO] ⚠️ Failed to backup staff activity:', e.message);
+    }
+  }
+
+  /**
+   * Pushes all local staff_ranks rows to Turso
+   */
+  async backupAllLocalStaffRanks(localDb) {
+    if (!this.enabled || !this.client) return;
+    try {
+      const rows = localDb.prepare('SELECT * FROM staff_ranks').all();
+      for (const row of rows) {
+        if (row && row.guild_id && row.role_id) {
+          const sql = `
+            INSERT INTO staff_ranks (guild_id, role_id, required_points, rank_name)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(guild_id, role_id) DO UPDATE SET
+              required_points = excluded.required_points,
+              rank_name = excluded.rank_name;
+          `;
+          this.enqueue({ sql, args: [String(row.guild_id), String(row.role_id), Number(row.required_points || 0), row.rank_name ? String(row.rank_name) : null] });
+        }
+      }
+      console.log(`[TURSO] 📤 Pushed ${rows.length} staff ranks to Turso.`);
+    } catch (e) {
+      console.error('[TURSO] ⚠️ Failed to backup staff ranks:', e.message);
+    }
   }
 
   enqueue(statement) {

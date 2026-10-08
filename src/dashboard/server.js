@@ -11442,6 +11442,31 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     return { ...s, avatar, displayName, username };
                 }));
 
+                // ─── Fallback: إذا ما في نشاط مسجل، نعرض المدراء والأدمنز من السيرفر بـ 0 نقاط ───
+                if (enrichedLeaderboard.length === 0 && botGuild?.members?.cache) {
+                    const { PermissionsBitField } = require('discord.js');
+                    const settings = database.getGuildSettings ? database.getGuildSettings(guildId) : null;
+                    let staffRoleIds = [];
+                    try { staffRoleIds = JSON.parse(settings?.staff_roles || '[]'); } catch(e) {}
+                    const fallbackMembers = botGuild.members.cache
+                        .filter(m => !m.user.bot && (
+                            m.permissions.has(PermissionsBitField.Flags.Administrator) ||
+                            m.permissions.has(PermissionsBitField.Flags.ManageGuild) ||
+                            staffRoleIds.some(rid => m.roles.cache.has(rid))
+                        ))
+                        .first(10);
+                    const fbArr = Array.isArray(fallbackMembers) ? fallbackMembers : (fallbackMembers ? [fallbackMembers] : []);
+                    for (const m of fbArr) {
+                        enrichedLeaderboard.push({
+                            user_id: m.user.id,
+                            avatar: m.user.displayAvatarURL({ size: 64 }),
+                            displayName: m.displayName || m.user.username,
+                            username: m.user.tag || m.user.username,
+                            tickets_closed: 0, mod_actions: 0, points: 0
+                        });
+                    }
+                }
+
                 const enrichedRanks = ranks.map(r => {
                     const role = botGuild?.roles?.cache?.get(r.role_id);
                     return { ...r, roleName: role ? `@${role.name}` : `@رتبة (${r.role_id.slice(-4)})`, roleColor: role?.hexColor && role.hexColor !== '#000000' ? role.hexColor : '#60a5fa' };
