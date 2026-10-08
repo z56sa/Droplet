@@ -523,18 +523,6 @@ module.exports = {
       const cmd = resolveCommand(client, name);
       if (cmd) resolved = { command: cmd, commandName: name, matchedCmdKey: null, args: pArgs };
     }
-    // ✅ مرحلة ثالثة: تحقق من الـ aliases المدمجة في الأوامر (مثل h = help)
-    if (!resolved) {
-      const firstWordRaw = (trimmedContent.split(/ +/)[0] || '').toLowerCase().replace(/^[/#!.]+/, '');
-      const builtInName = client.aliases?.get(firstWordRaw);
-      if (builtInName) {
-        const cmd = client.prefixCommands?.get(builtInName);
-        if (cmd) {
-          const pArgs = trimmedContent.trim().split(/ +/).slice(1);
-          resolved = { command: cmd, commandName: builtInName, matchedCmdKey: null, args: pArgs };
-          dlog('[ALIAS DEBUG] Built-in alias matched:', firstWordRaw, '->', builtInName);
-        }
-      }
     }
     const isCommandMessage = !!resolved;
 

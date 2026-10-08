@@ -31,12 +31,14 @@ const PARTS = [
   '../lang/dict-events',
 ];
 
-const dict = { en: {}, ar: {} };
+const dict = { EN: {}, AR: {} };
 for (const partPath of PARTS) {
   const part = loadPart(partPath);
-  Object.assign(dict.en, part.en);
-  Object.assign(dict.ar, part.ar);
+  Object.assign(dict.EN, part.en);
+  Object.assign(dict.AR, part.ar);
 }
+dict.en = dict.EN;
+dict.ar = dict.AR;
 
 const SUPPORTED = ['AR', 'EN', 'TR', 'RU', 'ES', 'FR', 'DE', 'PT', 'JA'];
 
