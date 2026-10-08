@@ -1181,18 +1181,32 @@ module.exports = function (app, client) {
             return { xpLeaderboard: _lbCache.xp, coinsLeaderboard: _lbCache.coins };
         }
         const xpLeaderboard = rawDb.prepare(`
-            SELECT u.user_id, u.guild_id, u.xp, u.level, u.coins,
-                   COALESCE(p.display_name, u.user_id) as display_name,
-                   COALESCE(p.avatar_url, '') as avatar_url
+            SELECT u.user_id,
+                   SUM(u.xp) as xp,
+                   SUM(u.xp) as total_xp,
+                   MAX(u.level) as max_level,
+                   SUM(u.coins) as total_coins,
+                   COALESCE(p.display_name, p.username, u.user_id) as display_name,
+                   p.username as username,
+                   COALESCE(p.avatar_url, '') as avatar_url,
+                   p.avatar as avatar
             FROM users u LEFT JOIN user_profiles p ON u.user_id = p.user_id
-            ORDER BY u.xp DESC LIMIT 100
+            GROUP BY u.user_id
+            ORDER BY xp DESC LIMIT 100
         `).all();
         const coinsLeaderboard = rawDb.prepare(`
-            SELECT u.user_id, u.guild_id, u.xp, u.level, u.coins,
-                   COALESCE(p.display_name, u.user_id) as display_name,
-                   COALESCE(p.avatar_url, '') as avatar_url
+            SELECT u.user_id,
+                   SUM(u.coins) as total_coins,
+                   SUM(u.coins) as coins,
+                   MAX(u.level) as max_level,
+                   SUM(u.xp) as total_xp,
+                   COALESCE(p.display_name, p.username, u.user_id) as display_name,
+                   p.username as username,
+                   COALESCE(p.avatar_url, '') as avatar_url,
+                   p.avatar as avatar
             FROM users u LEFT JOIN user_profiles p ON u.user_id = p.user_id
-            ORDER BY u.coins DESC LIMIT 100
+            GROUP BY u.user_id
+            ORDER BY total_coins DESC LIMIT 100
         `).all();
         _lbCache.xp = xpLeaderboard;
         _lbCache.coins = coinsLeaderboard;
@@ -1355,18 +1369,18 @@ module.exports = function (app, client) {
                 const rowBg = i === 0 ? 'bg-amber-500/5 hover:bg-amber-500/10' : i === 1 ? 'bg-slate-500/5 hover:bg-slate-500/10' : i === 2 ? 'bg-orange-700/5 hover:bg-orange-700/10' : 'hover:bg-white/[0.02]';
                 const rankColor = i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-orange-400' : 'text-gray-500';
                 const isMe = r.user_id === user.id;
-                return `<div class="px-4 py-3 flex items-center justify-between transition-all ${rowBg} ${isMe ? 'ring-1 ring-inset ring-blue-400/30' : ''}">
-                    <div class="flex items-center gap-1.5 min-w-[60px]">
+                return `<div class="leaderboard-row px-4 py-3 flex items-center justify-between transition-all ${rowBg} ${isMe ? 'ring-1 ring-inset ring-blue-400/30' : ''}">
+                    <div class="lb-rank flex items-center gap-1.5 min-w-[50px]">
                         ${medal ? `<span class="text-xl">${medal}</span>` : `<span class="text-sm font-black font-mono ${rankColor} w-7 text-center">${i + 1}</span>`}
                     </div>
-                    <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                    <div class="lb-user flex items-center gap-3 flex-1 min-w-0">
                         <img src="${uAvatar}" alt="${uName}" class="w-8 h-8 rounded-xl object-cover shrink-0 ${isMe ? 'ring-2 ring-blue-400' : ''}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
-                        <div class="text-right min-w-0">
-                            <span class="text-xs text-white font-bold block truncate max-w-[130px] ${isMe ? 'text-white' : ''}">${uName}${isMe ? ' 👤' : ''}</span>
+                        <div class="min-w-0">
+                            <span class="text-xs text-white font-bold block truncate max-w-[150px]">${uName}${isMe ? ' 👤' : ''}</span>
                             <span class="text-[10px] text-gray-500 font-mono block">Lv.${r.max_level || 1}</span>
                         </div>
                     </div>
-                    <div class="text-left shrink-0">
+                    <div class="lb-stat shrink-0 text-left">
                         <span class="text-xs font-black font-mono text-blue-400">⚡ ${Number(r.total_xp || 0).toLocaleString()}</span>
                         <span class="text-[10px] text-gray-600 block">XP</span>
                     </div>
@@ -1381,18 +1395,18 @@ module.exports = function (app, client) {
                 const rowBg = i === 0 ? 'bg-amber-500/5 hover:bg-amber-500/10' : i === 1 ? 'bg-slate-500/5 hover:bg-slate-500/10' : i === 2 ? 'bg-orange-700/5 hover:bg-orange-700/10' : 'hover:bg-white/[0.02]';
                 const rankColor = i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-orange-400' : 'text-gray-500';
                 const isMe = r.user_id === user.id;
-                return `<div class="px-4 py-3 flex items-center justify-between transition-all ${rowBg} ${isMe ? 'ring-1 ring-inset ring-amber-500/30' : ''}">
-                    <div class="flex items-center gap-1.5 min-w-[60px]">
+                return `<div class="leaderboard-row px-4 py-3 flex items-center justify-between transition-all ${rowBg} ${isMe ? 'ring-1 ring-inset ring-amber-500/30' : ''}">
+                    <div class="lb-rank flex items-center gap-1.5 min-w-[50px]">
                         ${medal ? `<span class="text-xl">${medal}</span>` : `<span class="text-sm font-black font-mono ${rankColor} w-7 text-center">${i + 1}</span>`}
                     </div>
-                    <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                    <div class="lb-user flex items-center gap-3 flex-1 min-w-0">
                         <img src="${uAvatar}" alt="${uName}" class="w-8 h-8 rounded-xl object-cover shrink-0 ${isMe ? 'ring-2 ring-amber-500' : ''}" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
-                        <div class="text-right min-w-0">
-                            <span class="text-xs text-white font-bold block truncate max-w-[130px] ${isMe ? 'text-amber-300' : ''}">${uName}${isMe ? ' 👤' : ''}</span>
+                        <div class="min-w-0">
+                            <span class="text-xs text-white font-bold block truncate max-w-[150px] ${isMe ? 'text-amber-300' : ''}">${uName}${isMe ? ' 👤' : ''}</span>
                             <span class="text-[10px] text-gray-500 font-mono block">Lv.${r.max_level || 1}</span>
                         </div>
                     </div>
-                    <div class="text-left shrink-0">
+                    <div class="lb-stat shrink-0 text-left">
                         <span class="text-xs font-black font-mono text-amber-400">🪙 ${Number(r.total_coins || 0).toLocaleString()}</span>
                         <span class="text-[10px] text-gray-600 block">Gold</span>
                     </div>
@@ -1448,8 +1462,25 @@ module.exports = function (app, client) {
                     @keyframes spin { to { transform: rotate(360deg); } }
                     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(37, 99, 235, 0.2); border-radius: 50%; border-top-color: #3b82f6; animation: spin 0.8s linear infinite; }
                     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-                    .toast-enter { animation: slideUp 0.3s ease-out; }
-                /* Droplet blended headings */ h1[class*="text-white"]:not([style]), h2[class*="text-white"]:not([style]) { background:linear-gradient(90deg,#c084fc,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent !important; }</style>
+                    /* Direction and Layout fixes */
+                    [dir="rtl"] .text-right { text-align: right !important; }
+                    [dir="rtl"] .text-left { text-align: left !important; }
+                    .tab-content { width: 100%; }
+                    /* Droplet blended headings */ h1[class*="text-white"]:not([style]), h2[class*="text-white"]:not([style]) { background:linear-gradient(90deg,#c084fc,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent !important; }
+                    /* Leaderboard row alignment fix */
+                    .leaderboard-row {
+                        direction: rtl !important;
+                    }
+                    .leaderboard-row .lb-rank {
+                        order: 1;
+                    }
+                    .leaderboard-row .lb-user {
+                        order: 2;
+                    }
+                    .leaderboard-row .lb-stat {
+                        order: 3;
+                    }
+                </style>
             
     <script>
     function _t(text) {
@@ -11399,6 +11430,22 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 const ranks = database.getStaffRanks ? database.getStaffRanks(guildId) : [];
                 const tasks = database.getStaffTasks ? database.getStaffTasks(guildId) : [];
                 const leaderboard = database.getStaffLeaderboard ? database.getStaffLeaderboard(guildId, 10) : [];
+                const enrichedLeaderboard = await Promise.all(leaderboard.map(async (s) => {
+                    let member = botGuild?.members?.cache?.get(s.user_id);
+                    if (!member && botGuild?.members?.fetch) {
+                        try { member = await botGuild.members.fetch(s.user_id); } catch(e) {}
+                    }
+                    const profile = database.getUserProfile ? database.getUserProfile(s.user_id) : null;
+                    const avatar = member?.user?.displayAvatarURL?.({ size: 64 }) || profile?.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
+                    const displayName = member?.displayName || profile?.display_name || member?.user?.username || profile?.username || `مشرف (${String(s.user_id).slice(-4)})`;
+                    const username = member?.user?.tag || profile?.username || s.user_id;
+                    return { ...s, avatar, displayName, username };
+                }));
+
+                const enrichedRanks = ranks.map(r => {
+                    const role = botGuild?.roles?.cache?.get(r.role_id);
+                    return { ...r, roleName: role ? `@${role.name}` : `@رتبة (${r.role_id.slice(-4)})`, roleColor: role?.hexColor && role.hexColor !== '#000000' ? role.hexColor : '#60a5fa' };
+                });
 
                 formFieldsHtml = `
                     <div class="space-y-6 text-right" dir="rtl">
@@ -11438,11 +11485,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </button>
                             </div>
 
-                            ${ranks.length === 0 ? `
+                            ${enrichedRanks.length === 0 ? `
                                 <p class="text-xs text-gray-500">لا توجد رتب ترقية تلقائية مضبوطة بعد. استخدم النموذج أعلاه لإضافة أول رتبة.</p>
                             ` : `
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    ${ranks.map((r, i) => `
+                                    ${enrichedRanks.map((r, i) => `
                                         <div class="bg-[#070d1d] border border-blue-500/20 p-3 rounded-xl flex flex-col justify-between">
                                             <div>
                                                 <div class="flex items-center justify-between">
@@ -11450,7 +11497,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                     <span class="text-[10px] text-blue-400 font-mono font-bold">#${i + 1}</span>
                                                 </div>
                                                 <p class="text-xs text-emerald-400 font-bold mt-1">⭐ ${r.required_points} نقطة</p>
-                                                <span class="text-[10px] text-white block mt-1">الرتبة: &lt;@&amp;${r.role_id}&gt;</span>
+                                                <div class="mt-1 flex items-center gap-1.5">
+                                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-lg border border-white/10" style="color: ${r.roleColor}; background-color: ${r.roleColor}15;">${r.roleName}</span>
+                                                </div>
                                             </div>
                                             <button type="button" onclick="handleDeleteStaffRank('${guildId}', '${r.role_id}')" class="mt-2 text-left text-[11px] text-red-400 hover:text-red-300 font-bold">حذف 🗑️</button>
                                         </div>
@@ -11465,16 +11514,20 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <span>🏆 متصدري طاقم الإدارة (Staff Leaderboard)</span>
                             </h4>
                             <div class="space-y-2">
-                                ${leaderboard.length === 0 ? '<p class="text-xs text-gray-500">لا يوجد نشاط مسجل للستاف بعد.</p>' : leaderboard.map((s, idx) => `
-                                    <div class="flex items-center justify-between p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl text-xs">
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-bold text-amber-400 font-mono">#${idx + 1}</span>
-                                            <span class="text-white font-bold">&lt;@${s.user_id}&gt;</span>
+                                ${enrichedLeaderboard.length === 0 ? '<p class="text-xs text-gray-500">لا يوجد نشاط مسجل للستاف بعد.</p>' : enrichedLeaderboard.map((s, idx) => `
+                                    <div class="flex items-center justify-between p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl text-xs hover:border-blue-400/30 transition">
+                                        <div class="flex items-center gap-3">
+                                            <span class="font-bold text-amber-400 font-mono w-5 text-center">#${idx + 1}</span>
+                                            <img src="${s.avatar}" alt="${s.displayName}" class="w-8 h-8 rounded-full border border-blue-500/30 object-cover" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+                                            <div class="text-right">
+                                                <span class="text-white font-bold block">${s.displayName}</span>
+                                                <span class="text-[10px] text-gray-400 font-mono block">@${s.username}</span>
+                                            </div>
                                         </div>
-                                        <div class="flex gap-4 text-white">
-                                            <span>🎫 ${s.tickets_closed} تذكرة</span>
-                                            <span>🔨 ${s.mod_actions} إجراء</span>
-                                            <span class="text-blue-400 font-bold font-mono">⭐ ${s.points || 0} نقطة</span>
+                                        <div class="flex items-center gap-4 text-white">
+                                            <span class="bg-blue-950/40 border border-blue-500/20 px-2 py-1 rounded-lg">🎫 ${s.tickets_closed} تذكرة</span>
+                                            <span class="bg-blue-950/40 border border-blue-500/20 px-2 py-1 rounded-lg">🔨 ${s.mod_actions} إجراء</span>
+                                            <span class="text-amber-300 font-bold font-mono bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-lg">⭐ ${s.points || 0} نقطة</span>
                                         </div>
                                     </div>
                                 `).join('')}

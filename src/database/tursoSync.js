@@ -278,15 +278,91 @@ class TursoSync {
 
 
       // ✅ بعد انتهاء كل الاستعادة — مسح cache الداشبورد حتى يظهر الـ leaderboard بالبيانات الصحيحة
-
       if (typeof global._dropletDashboardClearCaches === 'function') {
         setTimeout(() => {
           try { global._dropletDashboardClearCaches(); } catch(e) {}
-        }, 1000); // نتأخر ثانية إضافية للتأكد من انتهاء كل العمليات
+        }, 1000);
+      }
+
+      // 🔄 جدولة مزامنة دورية خفيفة لسحب أحدث الرصيد والبروفايلات من Turso كل دقيقتين
+      if (!this._periodicSyncStarted) {
+        this._periodicSyncStarted = true;
+        setInterval(() => {
+          this.pullLatestFromTurso(localDb).catch(e => console.error('[TURSO] Periodic pull error:', e.message));
+        }, 2 * 60 * 1000);
       }
 
     } catch (err) {
       console.error('[TURSO] ⚠️ Error during initAndRestore:', err.message);
+    }
+  }
+
+  /**
+   * 🔄 يسحب أحدث العملات والبيانات من Turso لتحديث SQLite المحلي باستمرار
+   */
+  async pullLatestFromTurso(localDb) {
+    if (!this.enabled || !this.client) return;
+    try {
+      const res = await this.client.execute('SELECT user_id, guild_id, coins, bank_balance, xp, level, streak, last_daily, wallpaper FROM users');
+      if (res?.rows?.length > 0) {
+        const updateStmt = localDb.prepare(`
+          INSERT INTO users (user_id, guild_id, xp, level, coins, bank_balance, last_daily, wallpaper, streak)
+          VALUES (@user_id, @guild_id, @xp, @level, @coins, @bank_balance, @last_daily, @wallpaper, @streak)
+          ON CONFLICT(user_id, guild_id) DO UPDATE SET
+            coins = excluded.coins,
+            bank_balance = excluded.bank_balance,
+            xp = MAX(users.xp, excluded.xp),
+            level = MAX(users.level, excluded.level),
+            last_daily = MAX(users.last_daily, excluded.last_daily),
+            streak = MAX(users.streak, excluded.streak);
+        `);
+        const tx = localDb.transaction((rows) => {
+          for (const row of rows) {
+            updateStmt.run({
+              user_id: String(row.user_id),
+              guild_id: String(row.guild_id || 'global'),
+              xp: Number(row.xp || 0),
+              level: Number(row.level || 1),
+              coins: Number(row.coins || 0),
+              bank_balance: Number(row.bank_balance || 0),
+              last_daily: Number(row.last_daily || 0),
+              wallpaper: String(row.wallpaper || 'default'),
+              streak: Number(row.streak || 0)
+            });
+          }
+        });
+        tx(res.rows);
+      }
+
+      // أيضا سحب user_profiles
+      const profRes = await this.client.execute('SELECT user_id, username, display_name, avatar, avatar_url, updated_at FROM user_profiles');
+      if (profRes?.rows?.length > 0) {
+        const profStmt = localDb.prepare(`
+          INSERT INTO user_profiles (user_id, username, display_name, avatar, avatar_url, updated_at)
+          VALUES (@user_id, @username, @display_name, @avatar, @avatar_url, @updated_at)
+          ON CONFLICT(user_id) DO UPDATE SET
+            username = COALESCE(excluded.username, user_profiles.username),
+            display_name = COALESCE(excluded.display_name, user_profiles.display_name),
+            avatar = COALESCE(excluded.avatar, user_profiles.avatar),
+            avatar_url = COALESCE(excluded.avatar_url, user_profiles.avatar_url),
+            updated_at = excluded.updated_at
+        `);
+        const profTx = localDb.transaction((rows) => {
+          for (const r of rows) {
+            profStmt.run({
+              user_id: String(r.user_id),
+              username: r.username ? String(r.username) : null,
+              display_name: r.display_name ? String(r.display_name) : null,
+              avatar: r.avatar ? String(r.avatar) : null,
+              avatar_url: r.avatar_url ? String(r.avatar_url) : null,
+              updated_at: Number(r.updated_at || 0)
+            });
+          }
+        });
+        profTx(profRes.rows);
+      }
+    } catch (e) {
+      // ignore transient pull errors
     }
   }
 
