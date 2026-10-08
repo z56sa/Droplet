@@ -101,7 +101,11 @@ module.exports = function (app, client) {
     const getOAuthConfig = (req) => {
         const clientId = process.env.CLIENT_ID || process.env.DISCORD_CLIENT_ID || client?.user?.id || config.clientId;
         const clientSecret = process.env.CLIENT_SECRET || process.env.DISCORD_CLIENT_SECRET || 'MNeCz9uTvXRzXeEUp8lUckSQeviU-cRY';
-        const baseUrl = process.env.DASHBOARD_URL || config.dashboardUrl || `${req.protocol}://${req.get('host')}`;
+        // Dynamically deduce current active URL from request headers (works seamlessly regardless of Render custom domain or service rename)
+        const forwardedProto = req ? (req.headers['x-forwarded-proto'] || req.protocol) : 'https';
+        const host = req ? (req.headers['x-forwarded-host'] || req.get('host')) : null;
+        const hostUrl = host ? `${forwardedProto}://${host}` : null;
+        const baseUrl = hostUrl || process.env.DASHBOARD_URL || config.dashboardUrl;
         const redirectUri = `${baseUrl}/auth/discord/callback`;
         return { clientId, clientSecret, redirectUri };
     };
