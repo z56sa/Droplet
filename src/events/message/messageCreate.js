@@ -74,7 +74,13 @@ function createInteractionShim(message, args, client, commandName) {
       getBoolean: () => null,
       getUser: () => message.mentions.users.first() || null,
       getMember: () => message.mentions.members?.first() || null,
-      getChannel: () => message.mentions.channels.first() || null,
+      getChannel: (optName) => {
+        return message.mentions.channels.first() ||
+          (args[0] && message.guild.channels.cache.get(args[0])) ||
+          (args[0] && message.guild.channels.cache.find(c => c.name === args[0].replace(/^#/, ''))) ||
+          message.channel ||
+          null;
+      },
       getRole: () => message.mentions.roles.first() || null,
       getMentionable: () => message.mentions.members?.first() || message.mentions.roles.first() || null,
       getAttachment: () => message.attachments.first() || null,
@@ -522,7 +528,6 @@ module.exports = {
       const name = (pArgs.shift() || '').toLowerCase();
       const cmd = resolveCommand(client, name);
       if (cmd) resolved = { command: cmd, commandName: name, matchedCmdKey: null, args: pArgs };
-    }
     }
     const isCommandMessage = !!resolved;
 
