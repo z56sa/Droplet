@@ -641,6 +641,7 @@ try { db.exec("ALTER TABLE guild_settings ADD COLUMN suggestions_staff_roles TEX
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN suggestions_dm_notify INTEGER DEFAULT 1;"); } catch(e) {}
 // إعدادات الأوامر المعطلة وتحكم لوحة الداشبورد (Commands Toggle Control)
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN disabled_commands TEXT DEFAULT '[]';"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN command_configs TEXT DEFAULT '{}';"); } catch(e) {}
 // نظام مكافحة الغزو والأعضاء الوهميين (Anti-Raid)
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN antiraid_enabled INTEGER DEFAULT 1;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN raid_threshold INTEGER DEFAULT 5;"); } catch(e) {}

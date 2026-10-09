@@ -2750,7 +2750,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             var item = filtered[i];
             var en = isEn(item.name);
             var bh = item.badge ? '<span class="px-2.5 py-0.5 bg-blue-800/60 text-white border border-blue-500/20 rounded-lg text-[10px] font-bold flex items-center gap-1"><span>' + escH(item.badge) + '</span><span>&#128737;</span></span>' : '';
-            html += '<div class="cmd-card-wrap border border-blue-500/20 rounded-2xl bg-[#0b1322] overflow-hidden transition hover:border-blue-500/20' + (en ? '' : ' opacity-50') + '" data-cmd="' + escH(item.name) + '">' +
+            html += '<div class="cmd-card-wrap border border-blue-500/20 rounded-2xl bg-[#0b1322] overflow-hidden transition hover:border-blue-500/20' + (en ? '' : ' opacity-50') + '" data-cmd="' + escH(item.name) + '" data-no-i18n>' +
                 '<div class="cmd-card-header p-4 flex items-center justify-between cursor-pointer select-none" data-cmd="' + escH(item.name) + '" onclick="window.toggleCmdAccordion(this, event)">' +
                   '<div class="flex items-center gap-3">' +
                     '<label class="toggle" onclick="event.stopPropagation();"><input type="checkbox" data-cmd="' + escH(item.name) + '"' + (en ? ' checked' : '') + '><span class="slider"></span></label>' +
@@ -2764,7 +2764,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     '<div class="w-9 h-9 rounded-xl bg-[#070d1d] border border-blue-500/20 flex items-center justify-center text-sm shadow-inner">' + (item.icon || '&#9881;') + '</div>' +
                   '</div>' +
                 '</div>' +
-                '<div class="cmd-accordion border-t border-blue-500/20 bg-[#070d1d] rounded-b-2xl text-right" data-cmd="' + escH(item.name) + '" style="display:none;"></div>' +
+                '<div class="cmd-accordion border-t border-blue-500/20 bg-[#070d1d] rounded-b-2xl text-right" data-cmd="' + escH(item.name) + '" data-no-i18n style="display:none;"></div>' +
             '</div>';
         }
         container.innerHTML = html;
