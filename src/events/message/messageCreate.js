@@ -108,7 +108,7 @@ function matchCustomAlias(trimmedContent, cmdConfigs, prefix, client) {
   const firstWordClean = firstWord.replace(/^[/#!.]+/, '');
 
   const cfgKeys = Object.keys(cmdConfigs || {});
-  console.log(`[ALIAS] input="${trimmedContent}" | firstWord="${firstWord}" | cfgKeys=${cfgKeys.length} | keys=${cfgKeys.slice(0,10).join(',')}`);
+  console.log(`[ALIAS] guild=${message.guild?.id} channel=${message.channel?.id} input="${trimmedContent}" | firstWord="${firstWord}" | cfgKeys=${cfgKeys.length} | keys=${cfgKeys.slice(0,10).join(',')}`);
 
   for (const [cmdKey, cfg] of Object.entries(cmdConfigs)) {
     if (!cfg || !cfg.alias) continue;

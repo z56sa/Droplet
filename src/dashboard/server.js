@@ -12175,6 +12175,10 @@ ${embedScriptHtml}
                 const tursoSync = require('../database/tursoSync');
                 await tursoSync.flush(10000);
             } catch (e) {}
+            try {
+                const cc = settings && settings.command_configs ? String(settings.command_configs).length : 0;
+                console.log(`[SETTINGS SAVE] guild=${guildId} keys=${Object.keys(settings || {}).join(',')} command_configs_len=${cc}`);
+            } catch (e) {}
             // تطبيق اسم البوت في السيرفر في ديسكورد فوراً
             if (settings.bot_nickname !== undefined && client?.guilds?.cache) {
                 const targetGuild = client.guilds.cache.get(guildId);
