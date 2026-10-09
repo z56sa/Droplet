@@ -175,6 +175,13 @@ async function loginDashboardClient() {
 
 async function shutdown(signal) {
     console.log('[Dashboard] ' + signal + ' received. Shutting down...');
+    try {
+        const tursoSync = require('./database/tursoSync');
+        await Promise.race([
+            tursoSync.flush(8000),
+            new Promise(r => setTimeout(r, 9000))
+        ]);
+    } catch {}
     try { client.destroy(); } catch {}
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(0), 10000).unref();

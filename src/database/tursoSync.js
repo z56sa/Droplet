@@ -685,6 +685,24 @@ class TursoSync {
     }
   }
 
+  /**
+   * Flushes all pending queued writes to Turso and resolves when done.
+   * Use before responding to settings saves and before process shutdown
+   * so dashboard changes (aliases, prefixes, ...) are never lost on restart.
+   */
+  async flush(timeoutMs = 10000) {
+    if (!this.enabled || !this.client) return;
+    try {
+      if (!this.isProcessingQueue && this.syncQueue.length > 0) {
+        this.processQueue().catch(() => {});
+      }
+      const start = Date.now();
+      while ((this.isProcessingQueue || this.syncQueue.length > 0) && Date.now() - start < timeoutMs) {
+        await new Promise(r => setTimeout(r, 100));
+      }
+    } catch (e) {}
+  }
+
   async processQueue() {
     if (this.isProcessingQueue || this.syncQueue.length === 0) return;
     this.isProcessingQueue = true;

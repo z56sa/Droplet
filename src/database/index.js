@@ -43,7 +43,14 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 // حفظ البيانات فوراً عند إيقاف تشغيل البوت أو إعادة تشغيل السيرفر
-function safeExit() {
+async function safeExit() {
+  try {
+    // ✅ Flush pending Turso writes first so recent dashboard saves survive the restart
+    await Promise.race([
+      tursoSync.flush(8000),
+      new Promise(r => setTimeout(r, 9000))
+    ]);
+  } catch (e) {}
   try {
     console.log('[DB] 💾 Flushing and closing database safely...');
     db.pragma('wal_checkpoint(TRUNCATE)');
@@ -945,7 +952,7 @@ function getGuildSettings(guildId) {
 function setGuildSetting(guildId, key, value) {
   // تأكد السجل موجود
   db.prepare('INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)').run(guildId);
-  
+
   // تأكد أن العمود موجود في الجدول، وإذا لم يكن موجوداً يتم إنشاؤه تلقائياً
   try {
     db.prepare(`UPDATE guild_settings SET ${key} = ? WHERE guild_id = ?`).run(value, guildId);
@@ -957,11 +964,19 @@ function setGuildSetting(guildId, key, value) {
         db.prepare(`UPDATE guild_settings SET ${key} = ? WHERE guild_id = ?`).run(value, guildId);
       } catch (addErr) {
         console.error(`Failed to add column ${key}:`, addErr);
+        return;
       }
     } else {
       console.error(`Failed to update setting ${key}:`, err);
+      return;
     }
   }
+  // ✅ Sync full guild settings to Turso so single-key saves (dashboard toggles,
+  // /set-shortcut, etc.) survive Render restarts (ephemeral disk + restore-on-boot)
+  try {
+    const updatedRow = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
+    if (updatedRow) tursoSync.queueGuildSettingsSync(guildId, updatedRow);
+  } catch (e) {}
 }
 
 function updateGuildSettings(guildId, settingsObj) {

@@ -12161,7 +12161,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/settings', express.json(), validate(settingsSchema), (req, res) => {
+    app.post('/api/guild/:guildId/settings', express.json(), validate(settingsSchema), async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -12169,6 +12169,12 @@ ${embedScriptHtml}
             if (database.updateGuildSettings) {
                 database.updateGuildSettings(guildId, settings);
             }
+            // ✅ Write-through to Turso BEFORE responding, so aliases/prefixes
+            // survive Render restarts (ephemeral disk restores from Turso on boot)
+            try {
+                const tursoSync = require('../database/tursoSync');
+                await tursoSync.flush(10000);
+            } catch (e) {}
             // تطبيق اسم البوت في السيرفر في ديسكورد فوراً
             if (settings.bot_nickname !== undefined && client?.guilds?.cache) {
                 const targetGuild = client.guilds.cache.get(guildId);
