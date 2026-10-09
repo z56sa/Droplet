@@ -2909,19 +2909,25 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
     }
 
     var saveTimeout = null;
-    function saveStates() {
+    function saveStates(cb) {
         if (saveTimeout) clearTimeout(saveTimeout);
         saveTimeout = setTimeout(function() {
             try {
                 var gId = '${guildId}' || window.location.pathname.split('/')[2];
-                if (!gId) return;
+                if (!gId) { if (cb) cb(false); return; }
                 var disArr = Object.keys(disabledCmds).filter(function(k) { return disabledCmds[k] === true; });
                 var xhr = new XMLHttpRequest();
                 xhr.open('POST', '/api/guild/' + gId + '/settings', true);
                 xhr.setRequestHeader('Content-Type', 'application/json');
-                xhr.onload = function() { try { if (JSON.parse(xhr.responseText).success) showSaved(); } catch(e) {} };
+                xhr.onload = function() {
+                    var ok = false;
+                    try { ok = !!JSON.parse(xhr.responseText).success; } catch(e) { ok = false; }
+                    if (ok) showSaved();
+                    if (cb) cb(ok);
+                };
+                xhr.onerror = function() { if (cb) cb(false); };
                 xhr.send(JSON.stringify({ disabled_commands: JSON.stringify(disArr), command_configs: JSON.stringify(commandConfigs) }));
-            } catch(e) {}
+            } catch(e) { if (cb) cb(false); }
         }, 300);
     }
 
@@ -3054,15 +3060,28 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 commandConfigs[cmdName].allowedRoles = roles;
                 commandConfigs[cmdName].allowedChannels = chs;
                 var originalText = saveBtn.textContent;
-                saveBtn.textContent = '✓ \u062a\u0645 \u0627\u0644\u062d\u0641\u0638';
-                saveBtn.classList.remove('bg-gradient-to-l from-purple-600 to-blue-500', 'hover:bg-gradient-to-l from-purple-600 to-blue-500');
-                saveBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
-                setTimeout(function() {
-                    saveBtn.textContent = originalText;
-                    saveBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
-                    saveBtn.classList.add('bg-gradient-to-l from-purple-600 to-blue-500', 'hover:bg-gradient-to-l from-purple-600 to-blue-500');
-                }, 1500);
-                saveStates();
+                var originalCls = saveBtn.className;
+                saveBtn.textContent = '⏳ \u062c\u0627\u0631\u064d \u0627\u0644\u062d\u0641\u0638...';
+                saveStates(function(ok) {
+                    if (ok) {
+                        saveBtn.textContent = '✓ \u062a\u0645 \u0627\u0644\u062d\u0641\u0638';
+                        saveBtn.classList.remove('bg-gradient-to-l from-purple-600 to-blue-500', 'hover:bg-gradient-to-l from-purple-600 to-blue-500');
+                        saveBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+                        setTimeout(function() {
+                            saveBtn.textContent = originalText;
+                            saveBtn.className = originalCls;
+                        }, 1500);
+                    } else {
+                        saveBtn.textContent = '❌ \u0641\u0634\u0644 \u0627\u0644\u062d\u0641\u0638 - \u062d\u0627\u0648\u0644 \u0645\u062c\u062f\u062f\u0627\u064b';
+                        saveBtn.classList.remove('bg-gradient-to-l from-purple-600 to-blue-500', 'hover:bg-gradient-to-l from-purple-600 to-blue-500');
+                        saveBtn.classList.add('bg-rose-700', 'hover:bg-rose-800');
+                        alert('❌ \u0641\u0634\u0644 \u062d\u0641\u0638 \u0627\u0644\u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0641\u064a \u0627\u0644\u0633\u064a\u0631\u0641\u0631. \u062d\u062f\u0651\u062b \u0627\u0644\u0635\u0641\u062d\u0629 \u0648\u062d\u0627\u0648\u0644 \u0645\u062c\u062f\u062f\u0627\u064b.');
+                        setTimeout(function() {
+                            saveBtn.textContent = originalText;
+                            saveBtn.className = originalCls;
+                        }, 3000);
+                    }
+                });
                 updateCounters();
                 return;
             }
