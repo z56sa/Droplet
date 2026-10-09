@@ -107,6 +107,9 @@ function matchCustomAlias(trimmedContent, cmdConfigs, prefix, client) {
   const firstWord = (messageParts[0] || '').toLowerCase();
   const firstWordClean = firstWord.replace(/^[/#!.]+/, '');
 
+  const cfgKeys = Object.keys(cmdConfigs || {});
+  console.log(`[ALIAS] input="${trimmedContent}" | firstWord="${firstWord}" | cfgKeys=${cfgKeys.length} | keys=${cfgKeys.slice(0,10).join(',')}`);
+
   for (const [cmdKey, cfg] of Object.entries(cmdConfigs)) {
     if (!cfg || !cfg.alias) continue;
     const rawAlias = String(cfg.alias).trim().toLowerCase();
@@ -119,13 +122,16 @@ function matchCustomAlias(trimmedContent, cmdConfigs, prefix, client) {
       firstWord === (prefix + cleanAlias).toLowerCase() ||
       firstWord === ('/' + cleanAlias);
 
+    console.log(`[ALIAS] checking cmdKey="${cmdKey}" alias="${rawAlias}" cleanAlias="${cleanAlias}" → matched=${matched}`);
+
     if (!matched) continue;
 
     const rawName = cmdKey.replace(/^\//, '');
     const command = resolveCommand(client, rawName);
-    dlog('[ALIAS DEBUG] MATCHED', cmdKey, '| command found:', !!command);
+    console.log(`[ALIAS] MATCHED cmdKey="${cmdKey}" rawName="${rawName}" commandFound=${!!command}`);
     if (!command) {
       console.warn(`[ALIAS] الاختصار "${rawAlias}" مربوط بـ "${rawName}" بس الأمر مو موجود`);
+      console.log(`[ALIAS] client.commands keys: ${[...( client.commands?.keys() || [])].slice(0,20).join(',')}`);
       continue;
     }
     return { command, commandName: rawName, matchedCmdKey: cmdKey, args: messageParts.slice(1) };
