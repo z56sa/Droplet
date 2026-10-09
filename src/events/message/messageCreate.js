@@ -102,13 +102,14 @@ function resolveCommand(client, name) {
   return prefixCmd || slashCmd || null;
 }
 
-function matchCustomAlias(trimmedContent, cmdConfigs, prefix, client) {
+function matchCustomAlias(trimmedContent, cmdConfigs, prefix, client, ctx) {
   const messageParts = trimmedContent.split(/ +/);
   const firstWord = (messageParts[0] || '').toLowerCase();
   const firstWordClean = firstWord.replace(/^[/#!.]+/, '');
 
   const cfgKeys = Object.keys(cmdConfigs || {});
-  console.log(`[ALIAS] guild=${message.guild?.id} channel=${message.channel?.id} input="${trimmedContent}" | firstWord="${firstWord}" | cfgKeys=${cfgKeys.length} | keys=${cfgKeys.slice(0,10).join(',')}`);
+  const ctxTag = ctx && (ctx.guildId || ctx.channelId) ? ` guild=${ctx.guildId || '?'} channel=${ctx.channelId || '?'}` : '';
+  console.log(`[ALIAS]${ctxTag} input="${trimmedContent}" | firstWord="${firstWord}" | cfgKeys=${cfgKeys.length} | keys=${cfgKeys.slice(0,10).join(',')}`);
 
   for (const [cmdKey, cfg] of Object.entries(cmdConfigs)) {
     if (!cfg || !cfg.alias) continue;
@@ -528,7 +529,7 @@ module.exports = {
     const trimmedContent = message.content.trim();
     dlog('[ALIAS DEBUG] content:', trimmedContent, '| cmdConfigs keys:', Object.keys(cmdConfigs || {}));
 
-    let resolved = matchCustomAlias(trimmedContent, cmdConfigs, prefix, client);
+    let resolved = matchCustomAlias(trimmedContent, cmdConfigs, prefix, client, { guildId, channelId: message.channel?.id });
     if (!resolved && trimmedContent.startsWith(prefix)) {
       const pArgs = trimmedContent.slice(prefix.length).trim().split(/ +/);
       const name = (pArgs.shift() || '').toLowerCase();
