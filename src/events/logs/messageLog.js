@@ -8,6 +8,7 @@ module.exports = [
   {
     name: 'messageDelete',
     async execute(message) {
+      try { console.log(`[MSGLOG-DBG] messageDelete fired guild=${message.guildId || message.guild?.id} ch=${message.channelId} bot=${message.author?.bot}`); } catch {}
       if (!message.guild || message.author?.bot) return;
       try { if (message.partial) await message.fetch().catch(() => {}); } catch {}
       // تجاهل الغوست-بينج هنا — معالج messageDelete يرسل تنبيهه الخاص
@@ -36,6 +37,7 @@ module.exports = [
   {
     name: 'messageUpdate',
     async execute(oldMessage, newMessage) {
+      try { console.log(`[MSGLOG-DBG] messageUpdate fired guild=${newMessage.guildId || newMessage.guild?.id}`); } catch {}
       if (!newMessage.guild || newMessage.author?.bot) return;
       try { if (oldMessage.partial) await oldMessage.fetch().catch(() => {}); } catch {}
       try { if (newMessage.partial) await newMessage.fetch().catch(() => {}); } catch {}

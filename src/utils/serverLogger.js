@@ -41,6 +41,7 @@ async function sendServerLog(guild, eventId, catKey, embedData = {}) {
         let targetChannelId = (logCfg && logCfg.channel_id)
             || (catKey === 'automod' ? (settings.automod_log_channel || null) : null)
             || settings['log_channel_' + catKey] || settings.log_channel;
+        try { console.log(`[MSGLOG-DBG] sendServerLog event=${eventId} cat=${catKey} guild=${guild.id} target=${targetChannelId || 'NONE'} master=${settings.logs_enabled} cfg=${logCfg ? JSON.stringify(logCfg) : '{}'}`); } catch {}
         if (!targetChannelId) {
             // Find in categorized channels
             const catChannelNameMap = {
