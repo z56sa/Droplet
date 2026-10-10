@@ -10010,8 +10010,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     staff_login_channel: loginCh,
                                     staff_log_channel: logCh,
                                     staff_banner_url: bannerUrl,
-                                    staff_max_shift_hours: parseInt(maxHours, 10) || 8,
-                                    staff_inactivity_minutes: parseInt(inactMins, 10) ?? 30
+                                    staff_max_shift_hours: (function(v){ v = parseInt(v, 10); return Number.isNaN(v) ? 12 : Math.max(1, Math.min(24, v)); })(maxHours),
+                                    staff_inactivity_minutes: (function(v){ v = parseInt(v, 10); return Number.isNaN(v) ? 30 : Math.max(0, Math.min(480, v)); })(inactMins)
                                 })
                             });
                             const d = await r.json();

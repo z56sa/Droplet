@@ -176,7 +176,7 @@ function buildStatusEmbed(guild, logsConfig, settings, lang) {
     .setTitle(t(lang, 'admin.logs.status_title', { guild: guild.name }))
     .setDescription(t(lang, 'admin.logs.status_desc'))
     .addFields(
-      { name: t(lang, 'admin.logs.f_general'), value: settings.logs_enabled === 0 ? t(lang, 'admin.logs.v_off') : t(lang, 'admin.logs.v_on'), inline: true },
+      { name: t(lang, 'admin.logs.f_general'), value: (settings.logs_enabled === 0 || settings.logs_enabled === '0') ? t(lang, 'admin.logs.v_off') : t(lang, 'admin.logs.v_on'), inline: true },
       { name: t(lang, 'admin.logs.f_enabled'), value: `${enabledCount} / ${TOTAL_LOGS}`, inline: true },
       { name: t(lang, 'admin.logs.f_sections'), value: t(lang, 'admin.logs.sections_value'), inline: true }
     );

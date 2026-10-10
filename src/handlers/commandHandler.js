@@ -89,13 +89,10 @@ module.exports = async (client) => {
   };
 
   if (client.isReady() && client.user?.id) {
-    client.registerSlashCommands();
+    if (!client._slashRegistered) { client._slashRegistered = true; client.registerSlashCommands(); }
   } else {
     client.once('clientReady', () => {
-      client.registerSlashCommands();
-    });
-    client.once('ready', () => {
-      client.registerSlashCommands();
+      if (!client._slashRegistered) { client._slashRegistered = true; client.registerSlashCommands(); }
     });
   }
 };

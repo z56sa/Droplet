@@ -105,6 +105,14 @@ client.once('ready', async () => {
 
     // ✅ بدء مسّاح العقوبات التلقائي (auto_clear)
     try { require('./utils/autoClear').ensureAutoClear(); } catch (e) {}
+    // ✅ بدء خدمة شفتات الإدارة (انتهاء الشفتات/السجن/الكتم/الرتب المؤقتة والترقيات)
+    try {
+      const StaffShiftService = require('./services/staffShiftService');
+      if (!global._staffShiftSvc) {
+        global._staffShiftSvc = new StaffShiftService(client);
+        global._staffShiftSvc.start();
+      }
+    } catch (e) { console.error('[StaffShiftService] start failed:', e.message); }
 
     // Register slash commands to Discord globally
     if (client.registerSlashCommands) {

@@ -5,6 +5,7 @@
 
 const { EmbedBuilder } = require('discord.js');
 const db = require('../database');
+const { isEnabled } = require('../utils/isEnabled');
 
 class StaffShiftService {
     constructor(client) {
@@ -35,16 +36,16 @@ class StaffShiftService {
             for (const shift of activeShifts) {
                 const { guild_id, user_id, start_time } = shift;
                 const settings = db.getGuildSettings(guild_id);
-                if (settings.staff_auto_logout === 0) continue;
+                if (!isEnabled(settings.staff_auto_logout, true)) continue;
 
                 // ─── Fallback: فحص الحضور مباشرة (بديل عن presenceUpdate) ───
-                // إذا كان المستخدم offline/invisible في الكاش، نطرده فوراً
+                // نتصرف فقط عند معرفة الحالة فعلياً — تجاهل الكاش الفارغ لتفادي طرد خاطئ
                 const guild = this.client.guilds.cache.get(guild_id);
                 if (guild) {
                     const member = guild.members.cache.get(user_id);
                     const presence = member?.presence;
                     const status = presence?.status;
-                    if (status === 'offline' || status === 'invisible' || (!presence && member)) {
+                    if (status === 'offline' || status === 'invisible') {
                         const result = db.endStaffShift(guild_id, user_id, 'auto_offline');
                         if (result && result.success) {
                             const durationHours = Math.floor(result.duration / 3600);
@@ -72,7 +73,7 @@ class StaffShiftService {
                     }
                 }
 
-                const maxHours = Number(settings.staff_max_shift_hours) || 8;
+                const maxHours = Number(settings.staff_max_shift_hours) || 12;
                 const maxSeconds = maxHours * 3600;
                 const elapsed = now - start_time;
 
