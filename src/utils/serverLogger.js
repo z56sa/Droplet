@@ -27,12 +27,12 @@ async function sendServerLog(guild, eventId, catKey, embedData = {}) {
         const logCfg = logsConfig[eventId];
         
         // Logs are enabled by default UNLESS explicitly disabled (enabled === false or 0)
-        let isEnabled = true;
+        let eventOn = true;
         if (logCfg && (logCfg.enabled === false || logCfg.enabled === 0 || logCfg.enabled === '0')) {
-            isEnabled = false;
+            eventOn = false;
         }
 
-        if (!isEnabled) return;
+        if (!eventOn) return;
 
         // Channel determination priority:
         // 1. Specific event channel

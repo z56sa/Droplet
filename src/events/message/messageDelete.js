@@ -49,21 +49,8 @@ module.exports = {
       }
     }
 
-    // --- لوق الرسائل المحذوفة العادية ---
-    if (!settings.log_channel) return;
-    const logChannel = message.guild.channels.cache.get(settings.log_channel);
-    if (!logChannel) return;
-
-    const embed = new EmbedBuilder()
-      .setColor(config.colors.danger)
-      .setTitle('🗑️ رسالة محذوفة')
-      .addFields(
-        { name: '👤 الكاتب', value: `<@${message.author.id}> (${message.author.tag})`, inline: true },
-        { name: '💬 الروم', value: `<#${message.channel.id}>`, inline: true },
-        { name: '📄 المحتوى', value: message.content ? (message.content.length > 1000 ? message.content.substring(0, 1000) + '...' : message.content) : '*محتوى غير متوفر أو ملف ميديا*' }
-      )
-      .setTimestamp();
-
-    logChannel.send({ embeds: [embed] }).catch(() => {});
+    // --- لوق الرسائل المحذوفة العادية: عبر نظام السجلات الموحد (events/logs/messageLog.js) ---
+    // لا نرسل هنا لتفادي التكرار — معالج messageLog يراعي مفاتيح الداشبورد والقنوات.
+    return;
   }
 };
