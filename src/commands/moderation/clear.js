@@ -33,6 +33,11 @@ module.exports = {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageMessages))
       return interaction.reply({ content: t(lang, 'moderation.clear.no_perm'), flags: 64 });
 
+    const me = interaction.guild.members.me;
+    if (!me?.permissions.has(PermissionFlagsBits.ManageMessages) || !me?.permissions.has(PermissionFlagsBits.ReadMessageHistory)) {
+      return interaction.reply({ content: t(lang, 'moderation.clear.no_perm'), flags: 64 });
+    }
+
     // وقت انتظار (Cooldown) 3 ثواني
     const userId = interaction.user.id;
     const now = Date.now();

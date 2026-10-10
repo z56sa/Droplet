@@ -4,6 +4,7 @@ const embedUtil = require('../../utils/embed');
 const config = require('../../config.json');
 const { askAI } = require('../../utils/ai');
 const { getGuildLang, t } = require('../../utils/lang');
+const { isEnabled } = require('../../utils/isEnabled');
 
 const spamMap = new Map();
 
@@ -209,6 +210,7 @@ module.exports = {
       (settings.automod_whitelist_role && message.member?.roles.cache.has(settings.automod_whitelist_role)) ||
       (settings.automod_whitelist_channel && message.channel.id === settings.automod_whitelist_channel) ||
       (settings.automod_exempt_users && settings.automod_exempt_users.split(',').map(u => u.trim()).includes(userId)) ||
+      (settings.mod_exempt_roles && String(settings.mod_exempt_roles).split(/[,;\s]+/).filter(Boolean).some(rid => message.member?.roles.cache.has(rid))) ||
       (db.isUserWhitelisted && db.isUserWhitelisted(guildId, userId, 'whitelist'));
 
     const isStaff = isAdmin ||
@@ -271,9 +273,12 @@ module.exports = {
     };
 
     if (!isAutoModWhitelisted) {
+      // ✅ كلمات مسموحة تتجاوز فلتر الكلمات السيئة (تُحذف من النص قبل الفحص)
+      const _wlWords = String(settings.whitelist_words_list || '').split(/[\n,]+/).map(w => w.trim().toLowerCase()).filter(Boolean);
       if (settings.bad_words_enabled && settings.bad_words_list) {
         const rawList = settings.bad_words_list.split(/[\n,]+/).map(w => w.trim().toLowerCase()).filter(w => w.length > 0);
-        const lowerMsg = message.content.toLowerCase();
+        let lowerMsg = message.content.toLowerCase();
+        for (const w of _wlWords) { lowerMsg = lowerMsg.split(w).join(' '); }
         const foundBadWord = rawList.find(word => lowerMsg.includes(word));
 
         if (foundBadWord) {
@@ -403,6 +408,41 @@ module.exports = {
         await tempWarn(t(guildId, 'events.automod.long', { user: message.author }));
         return;
       }
+
+      // ✅ مكافحة سكام النيترو/الهدايا المزيفة
+      if (isEnabled(settings.anti_scam, false)) {
+        const scamRe = /(discord\.gift\/[a-z0-9]+|free\s+(nitro|discord\s*nitro)|nitro\s*(free|gift)|steamcommunity\.com\/.*login|verify\s+(your\s+)?wallet|airdrop.*claim|double\s+(your\s+)?(crypto|eth|btc))/i;
+        if (scamRe.test(message.content)) {
+          await message.delete().catch(() => {});
+          await tempWarn(`⚠️ ${message.author} تم حذف رسالة سكام مشبوهة.`);
+          if (settings.log_channel) {
+            const logCh = message.guild.channels.cache.get(settings.log_channel);
+            if (logCh) logCh.send({ embeds: [new EmbedBuilder().setColor('#ff9900').setTitle('⚠️ سكام محذوف').addFields({ name: 'العضو', value: `${message.author.tag}`, inline: true }, { name: 'القناة', value: `<#${message.channel.id}>`, inline: true }, { name: 'النص', value: '```' + message.content.substring(0, 500) + '```', inline: false }).setTimestamp()] }).catch(() => {});
+          }
+          return;
+        }
+      }
+
+      // ✅ محتوى NSFW في القنوات غير المخصصة (قائمة كلمات صريحة محافظة)
+      if (isEnabled(settings.anti_nsfw_content, false) && !message.channel.nsfw) {
+        const nsfwRe = /\b(pornhub|xvideos|xnxx|redtube|hentai|onlyfans|nsfw\s*leak|porn\s*(video|hub|site))\b/i;
+        if (nsfwRe.test(message.content)) {
+          await message.delete().catch(() => {});
+          await tempWarn(`⛔ ${message.author} المحتوى الإباحي ممنوع خارج قنوات NSFW.`);
+          return;
+        }
+      }
+
+      // ✅ سبام الويب هوك: حذف رسالة الويب هوك والويب هوك نفسه
+      if (isEnabled(settings.anti_webhook_spam, false) && message.webhookId) {
+        await message.delete().catch(() => {});
+        try {
+          const hooks = await message.channel.fetchWebhooks().catch(() => null);
+          const hook = hooks?.get(message.webhookId);
+          if (hook) await hook.delete('Anti webhook-spam').catch(() => {});
+        } catch {}
+        return;
+      }
     }
 
     // Anti-Link
@@ -454,28 +494,50 @@ module.exports = {
     }
 
     // XP & Leveling
-    if (settings.leveling_enabled !== 0) {
+    if (isEnabled(settings.leveling_enabled, true) && isEnabled(settings.level_text_xp_enabled, true)) {
+      // ✅ استثناءات القنوات/الرتب
+      const _exCh = String(settings.level_exempt_channels || '').split(/[,;\s]+/).filter(Boolean);
+      const _exRoles = String(settings.level_exempt_roles || '').split(/[,;\s]+/).filter(Boolean);
+      const _isExempt = _exCh.includes(message.channelId) || _exRoles.some(rid => message.member?.roles?.cache?.has(rid));
+      if (!_isExempt) {
       try {
         const userDb = db.getUser(userId, guildId) || {};
         const now = Date.now();
+        const cdSec = Math.max(5, parseInt(settings.level_cooldown_seconds) || 60);
         const economy = config.economy || { xpCooldownMs: 60000, xpPerMessage: 5 };
-        if (now - (userDb.last_message_xp || 0) >= economy.xpCooldownMs) {
+        const xpCooldownMs = (settings.level_cooldown_seconds !== undefined && settings.level_cooldown_seconds !== null && settings.level_cooldown_seconds !== '')
+          ? cdSec * 1000 : (economy.xpCooldownMs || 60000);
+        if (now - (userDb.last_message_xp || 0) >= xpCooldownMs) {
           const baseXP = Math.floor(Math.random() * 10) + economy.xpPerMessage;
           const xpGained = baseXP * (settings.level_multiplier || 1);
           const { level, leveledUp } = db.addXp(userId, guildId, xpGained);
 
           if (leveledUp) {
             try {
-              const rewards = db.getLevelRewards ? db.getLevelRewards(guildId).filter(r => r.level <= level) : [];
+              const allRewards = db.getLevelRewards ? db.getLevelRewards(guildId) : [];
+              const rewards = allRewards.filter(r => (r.reward_type || 'text') === 'text' && r.level <= level);
+              const stackOn = isEnabled(settings.level_stack_roles, false);
               for (const rew of rewards) {
                 const roleObj = message.guild.roles.cache.get(rew.role_id) || await message.guild.roles.fetch(rew.role_id).catch(() => null);
                 if (roleObj && message.member && !message.member.roles.cache.has(roleObj.id)) {
                   await message.member.roles.add(roleObj).catch(() => {});
                 }
               }
+              // بدون التراكم: إزالة رتب المستويات الأدنى السابقة
+              if (!stackOn && message.member) {
+                const eligibleIds = new Set(rewards.map(r => String(r.role_id)));
+                const staleIds = allRewards
+                  .filter(r => (r.reward_type || 'text') === 'text' && !eligibleIds.has(String(r.role_id)))
+                  .map(r => String(r.role_id));
+                for (const rid of staleIds) {
+                  if (message.member.roles.cache.has(rid)) {
+                    await message.member.roles.remove(rid).catch(() => {});
+                  }
+                }
+              }
             } catch (e) {}
 
-            if (settings.level_up_msg_enabled !== 0) {
+            if (isEnabled(settings.level_up_msg_enabled, true)) {
               const rawMsg = settings.level_message || t(guildId, 'events.levelup.default');
               const mention = `<@${message.author.id}>`;
               const formattedMsg = rawMsg
@@ -506,12 +568,17 @@ module.exports = {
                 const targetChan = message.guild.channels.cache.get(channelMode) || await message.guild.channels.fetch(channelMode).catch(() => null);
                 if (targetChan && targetChan.isTextBased()) targetChan.send({ embeds: [levelEmbed] }).catch(() => {});
               }
+              // ✅ إشعار DM الإضافي عند تفعيله (لا يتعارض مع قناة dm)
+              if (channelMode !== 'dm' && channelMode !== 'disabled' && isEnabled(settings.level_dm_msg_enabled, false)) {
+                message.author.send({ embeds: [levelEmbed] }).catch(() => {});
+              }
             }
           }
         }
       } catch (e) {
         console.error('[Leveling Error]:', e);
       }
+      } // end exempt-check
     }
 
     // 🎯 فحص الأوامر والاختصارات مبكراً
@@ -628,7 +695,7 @@ module.exports = {
     }
 
     // Suggestions Channel
-    if (!isCommandMessage && settings.suggestions_enabled !== 0 && settings.suggestions_channel &&
+    if (!isCommandMessage && isEnabled(settings.suggestions_enabled, true) && settings.suggestions_channel &&
         message.channel.id === settings.suggestions_channel) {
       const content = trimmedContent;
       if (content.length > 0) {
@@ -643,10 +710,15 @@ module.exports = {
         const components = buildSuggestionComponents({ upvotes: 0, downvotes: 0, lang: suggLang });
 
         await message.delete().catch(() => {});
-        const sentMsg = await message.channel.send({ embeds: [suggEmbed], components }).catch(() => null);
+        const _sgMode = String(settings.suggestion_mode || 'embed').toLowerCase();
+        const _sgLine = settings.suggestions_line || '';
+        const sentMsg = _sgMode === 'text'
+          ? await message.channel.send({ content: `💡 **اقتراح من ${message.author.tag}:**\n${content}${_sgLine ? `\n${_sgLine}` : ''}` }).catch(() => null)
+          : await message.channel.send({ embeds: [suggEmbed], components }).catch(() => null);
 
         if (sentMsg) {
-          if (settings.suggestions_auto_thread !== 0) {
+          if (_sgMode !== 'text' && _sgLine) message.channel.send({ content: _sgLine }).catch(() => {});
+          if (isEnabled(settings.suggestions_auto_thread, false)) {
             sentMsg.startThread({
               name: t(suggLang, 'general.suggest.thread_default', { user: message.author.username }).slice(0, 95),
               autoArchiveDuration: 1440

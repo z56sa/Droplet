@@ -193,7 +193,6 @@ module.exports = {
       ).setTimestamp();
     await message.reply({ embeds: [embed] });
     this.sendToLog(message.guild, embed);
-    this.sendToLog(message.guild, embed);
   },
 
   sendToLog(guild, embed) {

@@ -2,6 +2,7 @@ const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
 const db = require('../../database');
 const canvasUtil = require('../../utils/canvas');
 const { t } = require('../../utils/lang');
+const { isEnabled } = require('../../utils/isEnabled');
 
 module.exports = {
   name: 'rank',
@@ -14,7 +15,7 @@ module.exports = {
 
   async execute(interaction) {
     const settings = db.getGuildSettings(interaction.guild.id);
-    if (settings.leveling_enabled === 0) {
+    if (!isEnabled(settings.leveling_enabled, true)) {
       return interaction.reply({ content: t(interaction.guild.id, 'economy.leaderboard.disabled'), ephemeral: true });
     }
     await interaction.deferReply();
@@ -32,7 +33,7 @@ module.exports = {
 
   async executePrefix(message, args) {
     const settings = db.getGuildSettings(message.guild.id);
-    if (settings.leveling_enabled === 0) {
+    if (!isEnabled(settings.leveling_enabled, true)) {
       return message.reply(t(message.guild.id, 'economy.leaderboard.disabled'));
     }
     const targetUser = message.mentions.users.first() ||

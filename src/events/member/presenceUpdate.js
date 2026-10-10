@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const db = require('../../database');
+const { isEnabled } = require('../../utils/isEnabled');
 
 module.exports = {
   name: 'presenceUpdate',
@@ -15,7 +16,7 @@ module.exports = {
 
       const settings = db.getGuildSettings(guild.id);
       // التحقق من تفعيل ميزة الخروج التلقائي
-      if (settings.staff_auto_logout === 0) return;
+      if (!isEnabled(settings.staff_auto_logout, true)) return;
 
       const newStatus = newPresence.status; // 'online', 'idle', 'dnd', 'offline'
 

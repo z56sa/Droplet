@@ -57,10 +57,14 @@ module.exports = {
 
     if (member) await member.send({ embeds: [dmEmbed] }).catch(() => {});
 
-    await interaction.guild.bans.create(targetUser.id, {
-      reason: t(lang, 'moderation.ban.audit_by', { reason, tag: interaction.user.tag }),
-      deleteMessageSeconds: deleteDays * 86400
-    });
+    try {
+      await interaction.guild.bans.create(targetUser.id, {
+        reason: t(lang, 'moderation.ban.audit_by', { reason, tag: interaction.user.tag }),
+        deleteMessageSeconds: deleteDays * 86400
+      });
+    } catch {
+      return interaction.editReply({ content: t(lang, 'moderation.ban.no_perm') }).catch(() => {});
+    }
 
     if (db.recordStaffAction) {
       db.recordStaffAction(interaction.guild.id, interaction.user.id, 'ban', targetUser.id, reason, durationStr || 'دائم');
@@ -79,7 +83,9 @@ module.exports = {
       .setTimestamp();
 
     await interaction.deleteReply().catch(() => {});
-    await interaction.channel.send({ embeds: [banEmbed] });
+    await interaction.channel.send({ embeds: [banEmbed] }).catch(async () => {
+      await interaction.editReply({ embeds: [banEmbed] }).catch(() => {});
+    });
     this.sendToLog(interaction.guild, banEmbed);
 
     // رفع الحظر المؤقت بعد المدة

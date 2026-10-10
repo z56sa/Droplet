@@ -65,6 +65,7 @@ const client = new Client({
         GatewayIntentBits.GuildPresences,
         GatewayIntentBits.GuildEmojisAndStickers,
         GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.MessageContent
     ],
@@ -101,6 +102,9 @@ client.once('ready', async () => {
 
     // Attach Discord client to Auto-Healer so it can send owner DMs
     aiAutoHealer.init(client);
+
+    // ✅ بدء مسّاح العقوبات التلقائي (auto_clear)
+    try { require('./utils/autoClear').ensureAutoClear(); } catch (e) {}
 
     // Register slash commands to Discord globally
     if (client.registerSlashCommands) {

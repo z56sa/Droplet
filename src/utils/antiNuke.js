@@ -2,9 +2,33 @@ const { AuditLogEvent, EmbedBuilder, PermissionFlagsBits } = require('discord.js
 const db = require('../database');
 const config = require('../config.json');
 const logger = require('./logger');
+const { isEnabled } = require('./isEnabled');
 
 // تخزين محاولات الإجراءات الإدارية لكل مشرف: guildId -> { modId -> { channels: [], roles: [], bans: [], kicks: [] } }
 const actionTracking = new Map();
+
+// ✅ ربط المفاتيح التفصيلية للداشبورد بأنواع الإجراءات (الافتراضي: مفعل للحفاظ على السلوك الحالي)
+const ACTION_TOGGLE_MAP = {
+  channelDelete: ['anti_channel_delete'],
+  channelCreate: ['anti_channel_create'],
+  channelUpdate: ['anti_channel_update', 'anti_channel_permissions', 'anti_channel_move'],
+  roleDelete: ['anti_role_delete'],
+  roleCreate: ['anti_role_create'],
+  roleUpdate: ['anti_role_update'],
+  webhookCreate: ['anti_webhook_create'],
+  webhookDelete: ['anti_webhook_create', 'anti_webhook_update'],
+  webhookUpdate: ['anti_webhook_update'],
+  guildUpdate: ['anti_server_name_change', 'anti_server_icon_change'],
+  banAdd: ['anti_mass_ban'],
+  memberKick: ['anti_mass_kick'],
+};
+
+function isActionTypeEnabled(settings, actionType) {
+  const keys = ACTION_TOGGLE_MAP[actionType];
+  if (!keys) return true;
+  // يُفعّل النوع إذا كان أي مفتاح مرتبط به مفعلاً (الغائب = مفعل افتراضياً)
+  return keys.some(k => isEnabled(settings[k], true));
+}
 
 const antiNuke = {
   /**
@@ -12,10 +36,11 @@ const antiNuke = {
    */
   async checkAction(guild, actionType, logType) {
     const settings = db.getGuildSettings(guild.id) || {};
-    const isProtectionOn = (settings.anti_nuke_enabled !== 0 && settings.anti_nuke_enabled !== undefined && settings.anti_nuke_enabled !== null) 
-      ? !!settings.anti_nuke_enabled 
-      : (settings.antinuke_enabled !== 0 && settings.antinuke_enabled !== undefined && settings.antinuke_enabled !== null);
-    if (!isProtectionOn) return;
+    const _master = (settings.anti_nuke_enabled !== undefined && settings.anti_nuke_enabled !== null && settings.anti_nuke_enabled !== '')
+      ? settings.anti_nuke_enabled : settings.antinuke_enabled;
+    if (!isEnabled(_master, true)) return;
+    // ✅ المفتاح التفصيلي: إذا عطّل الإدارة هذا النوع، لا تراقبه
+    if (!isActionTypeEnabled(settings, actionType)) return;
 
     try {
       const fetchedLogs = await guild.fetchAuditLogs({
@@ -53,8 +78,14 @@ const antiNuke = {
         guildActions.set(executor.id, {
           channelDelete: [],
           channelCreate: [],
+          channelUpdate: [],
           roleDelete: [],
           roleCreate: [],
+          roleUpdate: [],
+          webhookCreate: [],
+          webhookDelete: [],
+          webhookUpdate: [],
+          guildUpdate: [],
           banAdd: [],
           memberKick: []
         });
@@ -74,12 +105,24 @@ const antiNuke = {
       } else if (actionType === 'channelCreate') {
         limit = settings.antinuke_channel_limit || 3;
         actionLabel = 'إنشاء قنوات مكثف بشكل مريب (Spam Channels)';
+      } else if (actionType === 'channelUpdate') {
+        limit = settings.antinuke_channel_limit || 3;
+        actionLabel = 'تعديل متكرر للقنوات والصلاحيات';
       } else if (actionType === 'roleDelete') {
         limit = settings.antinuke_role_limit || 3;
         actionLabel = 'حذف متكرر للرتب';
       } else if (actionType === 'roleCreate') {
         limit = settings.antinuke_role_limit || 3;
         actionLabel = 'إنشاء رتب مكثف بشكل مريب (Spam Roles)';
+      } else if (actionType === 'roleUpdate') {
+        limit = settings.antinuke_role_limit || 3;
+        actionLabel = 'تعديل متكرر للرتب والصلاحيات';
+      } else if (actionType === 'webhookCreate' || actionType === 'webhookDelete' || actionType === 'webhookUpdate') {
+        limit = 3;
+        actionLabel = 'تلاعب متكرر بالويب هوك';
+      } else if (actionType === 'guildUpdate') {
+        limit = 2;
+        actionLabel = 'تغيير متكرر لاسم/أيقونة السيرفر';
       } else if (actionType === 'banAdd') {
         limit = settings.antinuke_ban_limit || 3;
         actionLabel = 'حظر جماعي للأعضاء (Mass Ban)';
@@ -129,7 +172,7 @@ const antiNuke = {
         }
 
         // 3. إرسال تنبيه في قناة الطوارئ أو اللوق
-        const alertChannelId = settings.antinuke_alert_channel || settings.log_channel;
+        const alertChannelId = settings.antinuke_alert_channel || settings.antiraid_log_channel || settings.log_channel;
         if (alertChannelId) {
           const alertChannel = guild.channels.cache.get(alertChannelId);
           if (alertChannel) {

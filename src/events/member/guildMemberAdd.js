@@ -2,6 +2,7 @@ const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
 const db = require('../../database');
 const canvasUtil = require('../../utils/canvas');
 const config = require('../../config.json');
+const { isEnabled } = require('../../utils/isEnabled');
 
 // مخزن مؤقت لكشف الريد (Raid Detection Map)
 const raidMap = new Map(); // guildId => [timestamps]
@@ -14,7 +15,8 @@ module.exports = {
 
     // 0. فحوصات الأمان (Security Checks)
     // --- 0.1 Anti-Bot: طرد البوتات التلقائية ---
-    if (settings.anti_bot && member.user.bot) {
+    const _antiBotOn = isEnabled(settings.anti_bot, isEnabled(settings.anti_bot_add, false));
+    if (_antiBotOn && member.user.bot) {
       try {
         await member.kick('Anti-Bot Protection: بوتات غير مصرح بها ممنوعة');
         if (settings.log_channel) {
@@ -71,20 +73,25 @@ module.exports = {
       }
     }
 
-    // --- 0.3 Anti-Raid: كشف الريد (5 أعضاء في 10 ثواني) ---
-    if (settings.anti_raid) {
+    // --- 0.3 Anti-Raid: كشف الريد (يدعم antiraid_enabled + raid_threshold + antiraid_action) ---
+    const _raidOn = isEnabled(settings.antiraid_enabled, isEnabled(settings.anti_raid, isEnabled(settings.anti_raid_fast, false)));
+    if (_raidOn) {
+      const _threshold = Math.max(2, Math.min(20, parseInt(settings.raid_threshold) || 5));
+      const _action = String(settings.antiraid_action || 'kick').toLowerCase();
       const now = Date.now();
       const guildJoins = raidMap.get(guild.id) || [];
       const recentJoins = guildJoins.filter(t => now - t < 10000); // آخر 10 ثواني
       recentJoins.push(now);
       raidMap.set(guild.id, recentJoins);
 
-      if (recentJoins.length >= 5) {
+      if (recentJoins.length >= _threshold) {
         // كشف ريد! أرسل تنبيه للوق وعطّل الانضمام بكيك العضو
         try {
-          await member.kick('Anti-Raid Protection: تم اكتشاف هجوم ريد');
-          if (settings.log_channel) {
-            const logCh = guild.channels.cache.get(settings.log_channel);
+          if (_action === 'ban') await member.ban({ reason: 'Anti-Raid Protection: تم اكتشاف هجوم ريد' }).catch(() => {});
+          else await member.kick('Anti-Raid Protection: تم اكتشاف هجوم ريد');
+          const _raidLogId = settings.antiraid_log_channel || settings.log_channel;
+          if (_raidLogId) {
+            const logCh = guild.channels.cache.get(_raidLogId);
             if (logCh) {
               logCh.send({
                 embeds: [new EmbedBuilder()
@@ -93,7 +100,7 @@ module.exports = {
                   .setDescription(`⚠️ **تم اكتشاف هجوم Raid!**\nانضم **${recentJoins.length} عضو** في أقل من 10 ثواني!\nتم طرد العضو الأخير: **${member.user.tag}** تلقائياً.`)
                   .addFields(
                     { name: '📊 معدل الانضمام', value: `${recentJoins.length} عضو / 10 ثواني`, inline: true },
-                    { name: '🛡️ الإجراء', value: 'طرد تلقائي للأعضاء الجدد', inline: true }
+                    { name: '🛡️ الإجراء', value: _action === 'ban' ? 'حظر تلقائي' : 'طرد تلقائي للأعضاء الجدد', inline: true }
                   )
                   .setTimestamp()
                 ]
@@ -121,17 +128,34 @@ module.exports = {
     const inviterCount = inviterStats ? inviterStats.total : 0;
 
     // 1.5 نظام الرتب التلقائية (Auto-Role for Members & Bots)
-    if (settings.autoroles_enabled !== 0) {
-      const targetRoleId = member.user.bot 
-        ? (settings.autorole_bot_id || settings.auto_role_bot)
-        : (settings.autorole_id || settings.auto_role);
+    // ✅ FIX: فحص صريح (0/1) + دعم عدة رتب مفصولة بفاصلة + توافق مع auto_role القديم
+    const _arEnabledRaw = (settings.autoroles_enabled === undefined || settings.autoroles_enabled === null) ? 1 : settings.autoroles_enabled;
+    const _arEnabled = Number(_arEnabledRaw) !== 0 && String(_arEnabledRaw).toLowerCase() !== 'false';
+    if (_arEnabled) {
+      const rawIds = member.user.bot
+        ? (settings.autorole_bot_id || '')
+        : (settings.autorole_id || settings.auto_role || '');
+      const targetRoleIds = String(rawIds || '').split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
 
-      if (targetRoleId) {
+      for (const targetRoleId of targetRoleIds) {
         try {
           const role = guild.roles.cache.get(targetRoleId) || await guild.roles.fetch(targetRoleId).catch(() => null);
-          if (role && guild.members.me?.permissions.has('ManageRoles') && role.position < (guild.members.me.roles.highest?.position || 0)) {
-            await member.roles.add(role).catch(e => console.error('فشل إعطاء الرتبة التلقائية:', e.message));
+          if (!role) {
+            console.warn(`[AUTOROLE] guild=${guild.id} role ${targetRoleId} not found, skipping.`);
+            continue;
           }
+          const me = guild.members.me;
+          if (!me?.permissions.has('ManageRoles')) {
+            console.warn(`[AUTOROLE] guild=${guild.id} missing ManageRoles, cannot assign ${role.id}.`);
+            break;
+          }
+          const highest = me.roles.highest?.position || 0;
+          if (role.position >= highest) {
+            console.warn(`[AUTOROLE] guild=${guild.id} role ${role.id} (${role.name}) is above bot role, cannot assign.`);
+            continue;
+          }
+          if (member.roles.cache.has(role.id)) continue;
+          await member.roles.add(role).catch(e => console.error('فشل إعطاء الرتبة التلقائية:', e.message));
         } catch (err) {
           console.error('خطأ في إعطاء الرتبة التلقائية:', err.message);
         }
@@ -146,7 +170,7 @@ module.exports = {
       }
       
       // Fallback: If no custom channel set or not found, check system channel
-      if (!welcomeChannel && settings.welcome_enabled) {
+      if (!welcomeChannel && isEnabled(settings.welcome_enabled, true)) {
         welcomeChannel = guild.systemChannel;
       }
 
@@ -180,9 +204,9 @@ module.exports = {
 
         const sendPayload = {};
 
-        if (settings.welcome_embed_enabled !== 0) {
+        if (isEnabled(settings.welcome_embed_enabled, true)) {
           const welcomeEmbed = new EmbedBuilder()
-            .setColor(config.colors.primary || '#9333ea')
+            .setColor(settings.welcome_embed_color || config.colors.primary || '#9333ea')
             .setTitle(`🎉 مرحباً بك في ${guild.name}!`)
             .setDescription(msg)
             .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }))

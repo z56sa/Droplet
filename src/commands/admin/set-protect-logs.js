@@ -19,6 +19,7 @@ module.exports = {
       return interaction.reply({ content: t(lang, 'admin.common.no_admin'), flags: 64 });
     }
     const ch = interaction.options.getChannel('channel');
+    db.updateGuildSetting(interaction.guild.id, 'antinuke_alert_channel', ch.id);
     db.updateGuildSetting(interaction.guild.id, 'antinuke_log_channel', ch.id);
     return interaction.reply({ content: t(lang, 'admin.setprotectlogs.success') });
   }

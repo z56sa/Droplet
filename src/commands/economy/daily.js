@@ -24,10 +24,11 @@ module.exports = {
 
   async handleDaily(user, guildId, reply) {
     const lang = getGuildLang(guildId);
+    const settings = db.getGuildSettings ? db.getGuildSettings(guildId) : {};
     const userData = db.getUser(user.id, guildId);
     const now = Date.now();
     const cooldown = 24 * 60 * 60 * 1000;
-    const lastDaily = db.getLastDaily(user.id);
+    const lastDaily = db.getLastDaily(user.id, guildId);
 
     if (now - lastDaily < cooldown) {
       const remaining = cooldown - (now - lastDaily);
@@ -52,13 +53,15 @@ module.exports = {
       streak = 1;
     }
 
-    // حساب المكافأة
-    let reward = 200;
+    // حساب المكافأة (daily_amount من الإعدادات كمضاعف للأساس، افتراضي 500)
+    const _base = Math.max(50, Math.min(5000, parseInt(settings.daily_amount) || 500));
+    const _scale = _base / 500;
+    let reward = Math.round(200 * _scale);
     let bonusText = '';
-    if (streak >= 100) { reward = 1200; bonusText = t(lang, 'economy.daily.bonus_100'); }
-    else if (streak >= 30) { reward = 700; bonusText = t(lang, 'economy.daily.bonus_30'); }
-    else if (streak >= 7) { reward = 500; bonusText = t(lang, 'economy.daily.bonus_7'); }
-    else if (streak >= 3) { reward = 300; bonusText = t(lang, 'economy.daily.bonus_3'); }
+    if (streak >= 100) { reward = Math.round(1200 * _scale); bonusText = t(lang, 'economy.daily.bonus_100'); }
+    else if (streak >= 30) { reward = Math.round(700 * _scale); bonusText = t(lang, 'economy.daily.bonus_30'); }
+    else if (streak >= 7) { reward = Math.round(500 * _scale); bonusText = t(lang, 'economy.daily.bonus_7'); }
+    else if (streak >= 3) { reward = Math.round(300 * _scale); bonusText = t(lang, 'economy.daily.bonus_3'); }
 
     // تحديث قاعدة البيانات
     db.addCoins(user.id, guildId, reward);

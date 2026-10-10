@@ -28,10 +28,13 @@ module.exports = {
 
     if (!role) {
       db.updateGuildSetting(interaction.guild.id, 'autorole_id', null);
+      db.updateGuildSetting(interaction.guild.id, 'auto_role', null);
       return interaction.reply(t(lang, 'admin.setautorole.disabled'));
     }
 
     db.updateGuildSetting(interaction.guild.id, 'autorole_id', role.id);
+    db.updateGuildSetting(interaction.guild.id, 'auto_role', role.id);
+    db.updateGuildSetting(interaction.guild.id, 'autoroles_enabled', 1);
     await interaction.reply({ content: t(lang, 'admin.setautorole.set', { name: role.name, id: role.id }) });
   },
 
@@ -45,6 +48,8 @@ module.exports = {
     if (!role) return message.reply(t(lang, 'admin.setautorole.prefix_need_mention'));
 
     db.updateGuildSetting(message.guild.id, 'autorole_id', role.id);
+    db.updateGuildSetting(message.guild.id, 'auto_role', role.id);
+    db.updateGuildSetting(message.guild.id, 'autoroles_enabled', 1);
     message.reply(t(lang, 'admin.setautorole.prefix_set', { name: role.name }));
   }
 };

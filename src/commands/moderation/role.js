@@ -38,11 +38,14 @@ module.exports = {
     if (sub === 'add' || sub === 'remove') {
       const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
       if (!member) return interaction.editReply({ content: t(lang, 'moderation.role.not_found') });
+      if (!interaction.guild.members.me?.permissions.has(PermissionFlagsBits.ManageRoles))
+        return interaction.editReply({ content: t(lang, 'moderation.role.higher') });
       if (role.position >= interaction.guild.members.me.roles.highest.position)
         return interaction.editReply({ content: t(lang, 'moderation.role.higher') });
 
       if (sub === 'add') {
-        await member.roles.add(role);
+        try { await member.roles.add(role); }
+        catch { return interaction.editReply({ content: t(lang, 'moderation.role.higher') }); }
         const embed = new EmbedBuilder().setColor(config.colors?.success || '#2ecc71')
           .setTitle(t(lang, 'moderation.role.title_add'))
           .addFields(
@@ -52,7 +55,8 @@ module.exports = {
           ).setTimestamp();
         await interaction.editReply({ embeds: [embed] });
       } else {
-        await member.roles.remove(role);
+        try { await member.roles.remove(role); }
+        catch { return interaction.editReply({ content: t(lang, 'moderation.role.higher') }); }
         const embed = new EmbedBuilder().setColor(config.colors?.danger || '#e74c3c')
           .setTitle(t(lang, 'moderation.role.title_remove'))
           .addFields(
@@ -72,7 +76,8 @@ module.exports = {
       const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
       if (!member) return interaction.editReply({ content: t(lang, 'moderation.role.not_found') });
 
-      await member.roles.add(role);
+      try { await member.roles.add(role); }
+      catch { return interaction.editReply({ content: t(lang, 'moderation.role.higher') }); }
       const embed = new EmbedBuilder().setColor('#9b59b6')
         .setTitle(t(lang, 'moderation.role.title_temp'))
         .addFields(
@@ -124,10 +129,12 @@ module.exports = {
     const role = message.mentions.roles.first();
     if (!target || !role) return message.reply(t(lang, 'moderation.role.prefix_usage'));
     if (action === 'add') {
-      await target.roles.add(role);
+      try { await target.roles.add(role); }
+      catch { return message.reply(t(lang, 'moderation.role.higher')); }
       message.reply(t(lang, 'moderation.role.prefix_added', { role: role.id, tag: target.user.tag }));
     } else if (action === 'remove') {
-      await target.roles.remove(role);
+      try { await target.roles.remove(role); }
+      catch { return message.reply(t(lang, 'moderation.role.higher')); }
       message.reply(t(lang, 'moderation.role.prefix_removed', { role: role.id, tag: target.user.tag }));
     } else {
       message.reply(t(lang, 'moderation.role.prefix_usage_full'));

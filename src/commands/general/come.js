@@ -12,8 +12,22 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.MoveMembers),
 
   async execute(interaction) {
+    if (!interaction.guild) {
+      return interaction.reply({ content: 'Guild only.', flags: 64 }).catch(() => {});
+    }
+    if (!interaction.member.permissions.has(PermissionFlagsBits.MoveMembers)) {
+      return interaction.reply({ content: t(interaction.guild.id, 'general.come.no_perm') || '❌ تحتاج صلاحية نقل الأعضاء.', flags: 64 });
+    }
+    const voiceChannel = interaction.member.voice?.channel;
+    if (!voiceChannel) {
+      return interaction.reply({ content: t(interaction.guild.id, 'general.come.need_voice') || '❌ يجب أن تكون في روم صوتي أولاً.', flags: 64 });
+    }
     const user = interaction.options.getUser('user');
-    await user.send({ content: t(interaction.guild.id, 'general.come.dm', { channel: interaction.channel.id, guild: interaction.guild.name }) }).catch(() => {});
-    return interaction.reply({ content: t(interaction.guild.id, 'general.come.sent') });
+    try {
+      await user.send({ content: t(interaction.guild.id, 'general.come.dm', { channel: voiceChannel.id, guild: interaction.guild.name }) });
+      return interaction.reply({ content: t(interaction.guild.id, 'general.come.sent') });
+    } catch {
+      return interaction.reply({ content: t(interaction.guild.id, 'general.come.dm_fail') || '⚠️ تعذر إرسال الخاص (مغلق).', flags: 64 });
+    }
   }
 };

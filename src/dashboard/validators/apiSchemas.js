@@ -85,7 +85,7 @@ const warnPunishmentSchema = z.object({
 const levelRewardSchema = z.object({
     level: z.union([z.number(), z.string()]).transform(v => parseInt(v, 10)).pipe(z.number().int().min(1).max(1000)),
     roleId: z.string().min(15).max(22),
-    rewardType: z.enum(['text', 'voice']).optional().default('text'),
+    rewardType: z.enum(['text', 'voice', 'shared']).optional().default('text'),
     voiceLevel: z.union([z.number(), z.string()]).optional().default(0)
 });
 
@@ -122,7 +122,10 @@ const giveawaySchema = z.object({
     color: z.string().max(10).optional(),
     image: z.string().url().optional().or(z.literal('')),
     emoji: z.string().max(50).optional(),
-    reqRole: z.string().max(22).optional().or(z.literal(''))
+    reqRole: z.string().max(22).optional().or(z.literal('')),
+    btnStyle: z.enum(['Primary', 'Success', 'Danger', 'Secondary']).optional().default('Primary'),
+    entryMode: z.enum(['button', 'reaction']).optional().default('button'),
+    notifyWinners: z.union([z.number(), z.string(), z.boolean()]).optional().default(1)
 });
 
 // Suggestions Validation

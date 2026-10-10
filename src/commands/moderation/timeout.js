@@ -51,7 +51,11 @@ module.exports = {
       ).setTimestamp();
     await member.send({ embeds: [dmEmbed] }).catch(() => {});
 
-    await member.timeout(durationMs, t(lang, 'moderation.timeout.audit_by', { reason, tag: interaction.user.tag }));
+    try {
+      await member.timeout(durationMs, t(lang, 'moderation.timeout.audit_by', { reason, tag: interaction.user.tag }));
+    } catch {
+      return interaction.editReply({ content: t(lang, 'moderation.timeout.higher') }).catch(() => {});
+    }
 
     if (db.recordStaffAction) {
       db.recordStaffAction(interaction.guild.id, interaction.user.id, 'timeout', targetUser.id, reason, durationStr);
@@ -91,7 +95,11 @@ module.exports = {
     }
 
     const reason = args.slice(2).join(' ') || t(lang, 'moderation.timeout.default_reason');
-    await member.timeout(durationMs, t(lang, 'moderation.timeout.audit_by', { reason, tag: message.author.tag }));
+    try {
+      await member.timeout(durationMs, t(lang, 'moderation.timeout.audit_by', { reason, tag: message.author.tag }));
+    } catch {
+      return message.reply(t(lang, 'moderation.timeout.higher'));
+    }
 
     if (db.recordStaffAction) {
       db.recordStaffAction(message.guild.id, message.author.id, 'timeout', targetUser.id, reason, durationStr);

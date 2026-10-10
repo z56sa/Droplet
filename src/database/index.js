@@ -576,6 +576,15 @@ try { db.exec("ALTER TABLE giveaways ADD COLUMN min_account_age INTEGER DEFAULT 
 try { db.exec("ALTER TABLE giveaways ADD COLUMN extra_role TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE giveaways ADD COLUMN hosted_by TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE giveaways ADD COLUMN guild_id TEXT;"); } catch(e) {}
+// ✅ حفظ مظهر الجائزة (الوصف/اللون/الصورة/الإيموجي) حتى تبقى بعد إعادة التشغيل
+try { db.exec("ALTER TABLE giveaways ADD COLUMN description TEXT DEFAULT '';"); } catch(e) {}
+try { db.exec("ALTER TABLE giveaways ADD COLUMN color TEXT DEFAULT '';"); } catch(e) {}
+try { db.exec("ALTER TABLE giveaways ADD COLUMN image TEXT DEFAULT '';"); } catch(e) {}
+try { db.exec("ALTER TABLE giveaways ADD COLUMN emoji TEXT DEFAULT '';"); } catch(e) {}
+// ✅ خيارات الإنشاء من الداشبورد (ستايل الزر/طريقة الدخول/إعلان الفائزين)
+try { db.exec("ALTER TABLE giveaways ADD COLUMN btn_style TEXT DEFAULT 'Primary';"); } catch(e) {}
+try { db.exec("ALTER TABLE giveaways ADD COLUMN entry_mode TEXT DEFAULT 'button';"); } catch(e) {}
+try { db.exec("ALTER TABLE giveaways ADD COLUMN notify_winners INTEGER DEFAULT 1;"); } catch(e) {}
 
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN economy_enabled INTEGER DEFAULT 1;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN daily_amount INTEGER DEFAULT 500;"); } catch(e) {}
@@ -609,7 +618,40 @@ try {
 } catch(e) {}
 
 // إعدادات الرتب التلقائية واللفل المتقدمة (Autoroles & Leveling Settings)
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN autorole_id TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN autoroles_enabled INTEGER DEFAULT 1;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN autorole_bot_id TEXT;"); } catch(e) {}
+// ✅ FIX: أعمدة ناقصة كانت تعتمد على الإنشاء التلقائي — تثبيتها صراحة لضمان عمل كل الأنظمة
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN welcome_enabled INTEGER DEFAULT 1;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN welcome_embed_color TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN leave_embed_enabled INTEGER DEFAULT 0;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN leave_embed_color TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN tickets_enabled INTEGER DEFAULT 1;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN boost_msg_enabled INTEGER DEFAULT 1;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN booster_reward_role TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN temp_voice_name_template TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN temp_voice_user_limit INTEGER DEFAULT 0;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN colors_enabled INTEGER DEFAULT 1;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN color_picker_channel TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN colors_required_role TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN color_role_ids TEXT DEFAULT '';"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN staff_max_shift_hours INTEGER DEFAULT 12;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN staff_inactivity_minutes INTEGER DEFAULT 30;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN suggestions_auto_thread INTEGER DEFAULT 0;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN security_logs_enabled INTEGER DEFAULT 1;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN mod_logs_enabled INTEGER DEFAULT 1;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN lock_dashboard INTEGER DEFAULT 0;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN shop_items TEXT DEFAULT '[]';"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN shop_channel_id TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN verify_role TEXT;"); } catch(e) {}
+// ✅ مفاتيح الحماية والسجلات المقروءة فعلياً من المحركات
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN antinuke_alert_channel TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN antinuke_whitelist_role TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN antinuke_punishment TEXT DEFAULT 'strip_roles';"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN antinuke_ban_limit INTEGER DEFAULT 3;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN antinuke_role_limit INTEGER DEFAULT 3;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN antinuke_channel_limit INTEGER DEFAULT 3;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN antinuke_kick_limit INTEGER DEFAULT 3;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN level_text_xp_enabled INTEGER DEFAULT 1;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN level_voice_xp_enabled INTEGER DEFAULT 1;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN level_cooldown_seconds INTEGER DEFAULT 120;"); } catch(e) {}
@@ -1118,7 +1160,11 @@ const transferCoins = db.transaction((guildId, senderId, receiverId, amount) => 
   };
 });
 
-function getLastDaily(userId) {
+function getLastDaily(userId, guildId = null) {
+  if (guildId) {
+    const row = db.prepare('SELECT last_daily FROM users WHERE user_id = ? AND guild_id = ?').get(userId, guildId);
+    return row?.last_daily || 0;
+  }
   const row = db.prepare('SELECT MAX(last_daily) as last_daily FROM users WHERE user_id = ?').get(userId);
   return row?.last_daily || 0;
 }
@@ -1126,9 +1172,9 @@ function getLastDaily(userId) {
 function setLastDaily(userId, guildId, timestamp, streak = null) {
   getUser(userId, guildId);
   if (streak !== null && streak !== undefined) {
-    db.prepare('UPDATE users SET last_daily = ?, streak = ? WHERE user_id = ?').run(timestamp, streak, userId);
+    db.prepare('UPDATE users SET last_daily = ?, streak = ? WHERE user_id = ? AND guild_id = ?').run(timestamp, streak, userId, guildId);
   } else {
-    db.prepare('UPDATE users SET last_daily = ? WHERE user_id = ?').run(timestamp, userId);
+    db.prepare('UPDATE users SET last_daily = ? WHERE user_id = ? AND guild_id = ?').run(timestamp, userId, guildId);
   }
   const u = getUser(userId, guildId);
   tursoSync.queueUserSync(u);
@@ -1682,12 +1728,31 @@ function getStars(guildId, userId) {
 // ==========================================
 // Giveaways (نظام السحوبات المتقدم)
 // ==========================================
-function createGiveaway(messageId, channelId, guildId, prize, winnersCount, endTime, hostId, requiredRole = null, minLevel = 0, minAccountAge = 0, extraRole = null) {
-  db.prepare(`
-    INSERT OR REPLACE INTO giveaways 
-    (message_id, channel_id, guild_id, prize, winners_count, host_id, end_time, required_role, min_level, min_account_age, extra_role, status, entries)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', '[]')
-  `).run(messageId, channelId, guildId, prize, winnersCount || 1, hostId, endTime, requiredRole, minLevel || 0, minAccountAge || 0, extraRole);
+function createGiveaway(messageId, channelId, guildId, prize, winnersCount, endTime, hostId, requiredRole = null, minLevel = 0, minAccountAge = 0, extraRole = null, opts = {}) {
+  const desc = (opts && typeof opts === 'object' ? (opts.description ?? opts.desc) : '') || '';
+  const color = (opts && typeof opts === 'object' ? opts.color : '') || '';
+  const image = (opts && typeof opts === 'object' ? opts.image : '') || '';
+  const emoji = (opts && typeof opts === 'object' ? opts.emoji : '') || '';
+  const btnStyle = (opts && typeof opts === 'object' && opts.btnStyle) || 'Primary';
+  const entryMode = (opts && typeof opts === 'object' && opts.entryMode) || 'button';
+  const notifyWinners = (opts && typeof opts === 'object' && (opts.notifyWinners === 0 || opts.notifyWinners === '0' || opts.notifyWinners === false)) ? 0 : 1;
+  // توافق: إذا مُرر extraRole ككائن opts من استدعاءات قديمة
+  let _extra = extraRole;
+  if (_extra && typeof _extra === 'object') { _extra = null; }
+  try {
+    db.prepare(`
+      INSERT OR REPLACE INTO giveaways
+      (message_id, channel_id, guild_id, prize, winners_count, host_id, end_time, required_role, min_level, min_account_age, extra_role, status, entries, description, color, image, emoji, btn_style, entry_mode, notify_winners)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', '[]', ?, ?, ?, ?, ?, ?, ?)
+    `).run(messageId, channelId, guildId, prize, winnersCount || 1, hostId, endTime, requiredRole, minLevel || 0, minAccountAge || 0, _extra, desc, color, image, emoji, btnStyle, entryMode, notifyWinners);
+  } catch (e) {
+    // توافق مع قواعد قديمة بدون الأعمدة الجديدة
+    db.prepare(`
+      INSERT OR REPLACE INTO giveaways
+      (message_id, channel_id, guild_id, prize, winners_count, host_id, end_time, required_role, min_level, min_account_age, extra_role, status, entries)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', '[]')
+    `).run(messageId, channelId, guildId, prize, winnersCount || 1, hostId, endTime, requiredRole, minLevel || 0, minAccountAge || 0, _extra);
+  }
 
   return db.prepare('SELECT * FROM giveaways WHERE message_id = ?').get(messageId);
 }

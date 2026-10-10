@@ -199,6 +199,10 @@ module.exports = {
       await message.edit({ embeds: [endedEmbed], components: [] }).catch(() => { });
     }
 
+    // إعلان الفوز (حسب notify_winners من الداشبورد — الغائب = معلن)
+    const _notify = (giveaway.notify_winners === 0 || giveaway.notify_winners === '0') ? false : true;
+    if (!_notify) return;
+
     // إرسال إعلان الفوز
     await channel.send({
       content: t(gid, 'general.giveaway.finish_announce', { winners: winnersMention, prize: giveaway.prize, host: `<@${hostId}>` })

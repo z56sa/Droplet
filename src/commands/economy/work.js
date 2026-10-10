@@ -25,13 +25,15 @@ module.exports = {
 
   async handleWork(user, guildId, reply) {
     const lang = getGuildLang(guildId);
+    const settings = db.getGuildSettings ? db.getGuildSettings(guildId) : {};
+    const WORK_CD = Math.max(1, Math.min(24, parseInt(settings.work_cooldown) || 4)) * 60 * 60 * 1000;
     const JOBS = JOB_LISTS[lang] || JOB_LISTS.EN;
     const userData = db.getUser(user.id, guildId);
     const lastWork = userData.last_work || 0;
     const now = Date.now();
 
-    if (now - lastWork < WORK_COOLDOWN) {
-      const remaining = WORK_COOLDOWN - (now - lastWork);
+    if (now - lastWork < WORK_CD) {
+      const remaining = WORK_CD - (now - lastWork);
       const h = Math.floor(remaining / 3600000);
       const m = Math.floor((remaining % 3600000) / 60000);
       const embed = new EmbedBuilder().setColor('#e74c3c')

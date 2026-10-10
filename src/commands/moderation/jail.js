@@ -86,6 +86,12 @@ module.exports = {
       if (member.roles.highest.position >= interaction.member.roles.highest.position && interaction.user.id !== guild.ownerId) {
         return interaction.reply({ content: t(lang, 'moderation.jail.higher'), flags: 64 });
       }
+      if (!guild.members.me?.permissions.has(PermissionFlagsBits.ManageRoles)) {
+        return interaction.reply({ content: t(lang, 'moderation.jail.higher'), flags: 64 });
+      }
+      if (!member.manageable) {
+        return interaction.reply({ content: t(lang, 'moderation.jail.higher'), flags: 64 });
+      }
 
       // إذا لم تكن رتبة السجن موجودة، نقوم بإنشائها تلقائياً
       if (!jailRole && guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {

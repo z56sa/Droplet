@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const db = require('../../database');
 const { getGuildLang, t } = require('../../utils/lang');
+const { isEnabled } = require('../../utils/isEnabled');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -52,7 +53,7 @@ module.exports = {
     };
 
     const settings = db.getGuildSettings(guild.id);
-    if (settings.suggestions_enabled === 0) {
+    if (!isEnabled(settings.suggestions_enabled, true)) {
       return safeReply(t(guild.id, 'general.suggest.disabled'));
     }
 
@@ -101,14 +102,19 @@ module.exports = {
     });
 
     try {
-      const sentMsg = await targetChannel.send({ embeds: [suggEmbed], components });
+      const _m = String(settings.suggestion_mode || 'embed').toLowerCase();
+      const _line = settings.suggestions_line || '';
+      const sentMsg = _m === 'text'
+        ? await targetChannel.send({ content: `💡 **${title ? title + '\n' : ''}**${content}${_line ? `\n${_line}` : ''}` })
+        : await targetChannel.send({ embeds: [suggEmbed], components });
 
-      if (settings.suggestions_auto_thread !== 0) {
+      if (isEnabled(settings.suggestions_auto_thread, false)) {
         sentMsg.startThread({
           name: title ? t(guild.id, 'general.suggest.thread_title', { title: title.slice(0, 90) }) : t(guild.id, 'general.suggest.thread_default', { user: user.username }),
           autoArchiveDuration: 1440
         }).catch(() => {});
       }
+      if (_m !== 'text' && _line) targetChannel.send({ content: _line }).catch(() => {});
 
       db.createSuggestion({
         guild_id: guild.id,

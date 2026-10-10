@@ -186,8 +186,11 @@ module.exports = function (app, client) {
 
     // ─── Shop Settings API ───
     app.post('/api/shop/settings', express.json(), async (req, res) => {
+        if (!req.session?.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
         const { guildId, shopItems, shopChannelId } = req.body;
         if (!guildId) return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
+        const allowed = (req.session.guilds || []).some(g => g.id === guildId);
+        if (!allowed) return res.status(403).json({ success: false, message: 'Forbidden' });
         try {
             if (shopItems) database.updateGuildSetting(guildId, 'shop_items', JSON.stringify(shopItems));
             if (shopChannelId) database.updateGuildSetting(guildId, 'shop_channel_id', shopChannelId);
@@ -199,8 +202,11 @@ module.exports = function (app, client) {
 
     // ─── Shop Send Embed API ───
     app.post('/api/shop/send-embed', express.json(), async (req, res) => {
+        if (!req.session?.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
         const { guildId, channelId } = req.body;
         if (!guildId || !channelId) return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
+        const allowed = (req.session.guilds || []).some(g => g.id === guildId);
+        if (!allowed) return res.status(403).json({ success: false, message: 'Forbidden' });
         try {
             const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
             if (!guild) return res.status(404).json({ success: false, message: 'السيرفر غير موجود' });
@@ -241,19 +247,28 @@ module.exports = function (app, client) {
 
     // ─── Staff Auto-Promotion Ranks API ───
     app.post('/api/staff/ranks', express.json(), (req, res) => {
+        if (!req.session?.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
         const { guildId, roleId, points, name } = req.body;
         if (!guildId || !roleId || !points) {
             return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
+        }
+        const allowed = (req.session.guilds || []).some(g => g.id === guildId);
+        if (!allowed) return res.status(403).json({ success: false, message: 'Forbidden' });
+        if (!/^\d{15,22}$/.test(String(roleId)) || isNaN(Number(points))) {
+            return res.status(400).json({ success: false, message: 'بيانات غير صالحة' });
         }
         database.setStaffRank(guildId, roleId, points, name || null);
         return res.json({ success: true });
     });
 
     app.post('/api/staff/ranks/delete', express.json(), (req, res) => {
+        if (!req.session?.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
         const { guildId, roleId } = req.body;
         if (!guildId || !roleId) {
             return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
         }
+        const allowed = (req.session.guilds || []).some(g => g.id === guildId);
+        if (!allowed) return res.status(403).json({ success: false, message: 'Forbidden' });
         database.removeStaffRank(guildId, roleId);
         return res.json({ success: true });
     });
@@ -3304,7 +3319,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- مكافحة السبام المتقدم -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_spam_adv" value="1" checked onchange="saveAutomodSetting('anti_spam_adv', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_spam_adv" value="1" ${settings.anti_spam_adv ? 'checked' : ''} onchange="saveAutomodSetting('anti_spam_adv', this.checked)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_spam_adv', 'مكافحة السبام المتقدم')" class="text-white hover:text-gray-300 p-1 text-xs" title="إعدادات">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-right">
@@ -4346,7 +4361,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- مكافحة سبام الويب هوك -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-400/60 transition shadow-inner">
-                                    <label class="toggle"><input type="checkbox" name="anti_webhook_spam" value="1" checked onchange="saveProtectionSetting('anti_webhook_spam', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_webhook_spam" value="1" ${settings.anti_webhook_spam ? 'checked' : ''} onchange="saveProtectionSetting('anti_webhook_spam', this.checked)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">مكافحة سبام الويب هوك</h5>
@@ -5796,31 +5811,52 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     </script>
 `;
             } else if (section === 'autoroles') {
+                // ✅ FIX: حساب حالة النظام والتحذيرات قبل العرض
+                const _arEnabledChecked = (settings.autoroles_enabled === 0 || settings.autoroles_enabled === '0') ? '' : 'checked';
+                const _arMemberId = settings.autorole_id || settings.auto_role || '';
+                const _arBotId = settings.autorole_bot_id || '';
+                const _botHighestPos = (botGuild && botGuild.members && botGuild.members.me && botGuild.members.me.roles && botGuild.members.me.roles.highest) ? botGuild.members.me.roles.highest.position : 0;
+                const _botCanManage = (botGuild && botGuild.members && botGuild.members.me && botGuild.members.me.permissions) ? (typeof botGuild.members.me.permissions.has === 'function' ? botGuild.members.me.permissions.has('ManageRoles') : true) : true;
+                const _findRole = (id) => (botGuild ? (Array.from(botGuild.roles.cache.values()).find(r => String(r.id) === String(id)) || null) : null);
+                const _memberRole = _arMemberId ? _findRole(_arMemberId) : null;
+                const _botRole = _arBotId ? _findRole(_arBotId) : null;
+                const _memberWarn = (_arMemberId && !_memberRole) ? `<div class="bg-rose-950/40 border border-rose-500/30 rounded-xl px-4 py-2.5 text-[11px] text-rose-300 font-bold">⚠️ الرتبة المحفوظة (<span class="font-mono">${_arMemberId}</span>) غير موجودة في السيرفر — اختر رتبة جديدة ثم احفظ.</div>` : ((_memberRole && _botCanManage && _memberRole.position >= _botHighestPos) ? `<div class="bg-amber-950/40 border border-amber-500/30 rounded-xl px-4 py-2.5 text-[11px] text-amber-300 font-bold">⚠️ رتبة الأعضاء (@${_memberRole.name}) أعلى من رتبة البوت — انقل رتبة البوت للأعلى وفعّل ManageRoles حتى يعمل الإعطاء التلقائي.</div>` : '');
+                const _botWarn = (_arBotId && !_botRole) ? `<div class="bg-rose-950/40 border border-rose-500/30 rounded-xl px-4 py-2.5 text-[11px] text-rose-300 font-bold">⚠️ رتبة البوتات المحفوظة غير موجودة — اختر رتبة جديدة ثم احفظ.</div>` : ((_botRole && _botCanManage && _botRole.position >= _botHighestPos) ? `<div class="bg-amber-950/40 border border-amber-500/30 rounded-xl px-4 py-2.5 text-[11px] text-amber-300 font-bold">⚠️ رتبة البوتات (@${_botRole.name}) أعلى من رتبة البوت — انقل رتبة البوت للأعلى.</div>` : '');
+                const _noRolesWarn = (guildRoles.length === 0) ? `<div class="bg-rose-950/40 border border-rose-500/30 rounded-xl px-4 py-3 text-[11px] text-rose-300 font-bold">⚠️ البوت غير متصل بالسيرفر حالياً أو لا توجد رتب — تأكد أن البوت داخل السيرفر ثم حدّث الصفحة.</div>` : '';
+                const _permWarn = (!_botCanManage) ? `<div class="bg-rose-950/40 border border-rose-500/30 rounded-xl px-4 py-3 text-[11px] text-rose-300 font-bold">⛔ البوت يفتقد صلاحية <span class="font-mono">ManageRoles</span> — فعّلها من إعدادات السيرفر حتى تُمنح الرتب تلقائياً.</div>` : '';
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
 
-                        <!-- Master Header Card (Exact to Image 1) -->
+                        <!-- Master Header Card -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl flex items-center justify-between shadow-xl">
                             <label class="toggle">
-                                <input type="checkbox" name="autoroles_enabled" value="1" ${settings.autoroles_enabled !== 0 ? 'checked' : ''}>
+                                <input type="checkbox" name="autoroles_enabled" value="1" ${_arEnabledChecked} onchange="saveAutoroleField('autoroles_enabled', this.checked ? 1 : 0)">
                                 <span class="slider"></span>
                             </label>
                             <div class="flex items-center gap-3">
-                                <span class="text-xs font-black text-white">مفعل</span>
+                                <div class="text-right">
+                                    <h4 class="font-black text-white text-sm">نظام الرتب التلقائية 🎖️</h4>
+                                    <p class="text-gray-500 text-[10px] mt-0.5">يُمنح الدور فور انضمام العضو — بدون الحاجة لأي أمر</p>
+                                </div>
                                 <div class="w-10 h-10 rounded-xl bg-amber-600/20 text-amber-400 flex items-center justify-center text-lg border border-amber-500/30">
                                     🛡️
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Card: رتب الأعضاء الجدد & رتبة البوتات الجديدة (Exact to Image 1) -->
+                        ${_permWarn}
+                        ${_noRolesWarn}
+
+                        <!-- Card: رتب الأعضاء الجدد & رتبة البوتات الجديدة -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl space-y-6 shadow-xl">
                             <!-- رتب الأعضاء الجدد -->
                             <div class="space-y-2">
                                 <div class="flex items-center justify-end gap-1 text-xs font-bold text-gray-300">
                                     <span>رتب الأعضاء الجدد</span>
                                 </div>
-                                ${renderRoleSelect('autorole_id', settings.autorole_id || settings.auto_role || '')}
-                                <p class="text-[10px] text-gray-500 text-right">الرتب التي تُعطى للأعضاء الجدد عند الانضمام</p>
+                                ${renderRoleSelect('autorole_id', _arMemberId)}
+                                <p class="text-[10px] text-gray-500 text-right">الرتبة التي تُعطى للأعضاء الجدد عند الانضمام</p>
+                                ${_memberWarn}
+                                <p class="text-[10px] text-gray-600 text-right font-mono" id="autoroleMemberStatus">${_memberRole ? ('الحالية: @' + _memberRole.name) : (_arMemberId ? 'الحالية: ' + _arMemberId : 'لم يتم اختيار رتبة بعد')}</p>
                             </div>
 
                             <!-- رتبة البوتات الجديدة -->
@@ -5828,37 +5864,35 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="flex items-center justify-end gap-1 text-xs font-bold text-gray-300">
                                     <span>رتبة البوتات الجديدة</span>
                                 </div>
-                                ${renderRoleSelect('autorole_bot_id', settings.autorole_bot_id || '')}
+                                ${renderRoleSelect('autorole_bot_id', _arBotId)}
                                 <p class="text-[10px] text-gray-500 text-right">الرتبة التي تُعطى للبوتات عند إضافتها للسيرفر</p>
+                                ${_botWarn}
+                                <p class="text-[10px] text-gray-600 text-right font-mono" id="autoroleBotStatus">${_botRole ? ('الحالية: @' + _botRole.name) : (_arBotId ? 'الحالية: ' + _arBotId : 'لم يتم اختيار رتبة بعد')}</p>
                             </div>
                         </div>
+
+                        <p class="text-[10px] text-gray-600 text-right">💡 التغيير يُحفظ تلقائياً عند التبديل أو اختيار رتبة — وزر «حفظ التغييرات» بالأسفل يحفظ أيضاً. تأكد أن رتبة البوت أعلى من الرتب المختارة.</p>
 
                     </div>
 
 <script>
 (function() {
     var guildId = '${guildId}';
-    function fetchStats() {
-        fetch('/api/guild/' + guildId + '/online-count')
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (!data.success) return;
-                var elOnline = document.getElementById('onlineMembersCount');
-                if (elOnline) elOnline.textContent = (data.online || 0).toLocaleString();
-                var elBots = document.getElementById('botsCount');
-                if (elBots) elBots.textContent = (data.bots || 0).toLocaleString();
-                var elGw = document.getElementById('giveawaysCount');
-                if (elGw) elGw.textContent = (data.giveaways || 0).toLocaleString();
-            })
-            .catch(function() {
-                var elOnline = document.getElementById('onlineMembersCount');
-                if (elOnline && elOnline.textContent === '\u2026') elOnline.textContent = '0';
-                var elBots = document.getElementById('botsCount');
-                if (elBots && elBots.textContent === '\u2026') elBots.textContent = '0';
-            });
-    }
-    fetchStats();
-    setInterval(fetchStats, 30000);
+    function showOk() { if (typeof showSaveStatus === 'function') showSaveStatus(); }
+    window.saveAutoroleField = function(key, value) {
+        fetch('/api/guild/' + guildId + '/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify((function(){ var o = {}; o[key] = value; return o; })())
+        }).then(function(r){ return r.json(); }).then(function(d){
+            if (d && d.success) showOk();
+            else alert('❌ فشل الحفظ: ' + ((d && d.error) || 'خطأ غير معروف'));
+        }).catch(function(e){ console.error('autorole save error', e); });
+    };
+    var selMember = document.getElementById('autorole_id');
+    if (selMember) selMember.addEventListener('change', function(){ window.saveAutoroleField('autorole_id', this.value || ''); });
+    var selBot = document.getElementById('autorole_bot_id');
+    if (selBot) selBot.addEventListener('change', function(){ window.saveAutoroleField('autorole_bot_id', this.value || ''); });
 })();
 </script>
 `;
@@ -6955,6 +6989,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         const image = document.getElementById('gwImage').value.trim();
                         const emoji = document.getElementById('gwEmoji').value.trim() || '🎉';
                         const reqRole = document.getElementById('gwReqRole')?.value;
+                        const btnStyle = document.getElementById('gwBtnStyle')?.value || 'Primary';
+                        const entryMode = document.getElementById('gwEntryMode')?.value || 'button';
+                        const notifyWinners = document.getElementById('gwNotifyWinners')?.checked ? 1 : 0;
 
                         if (!prize) { alert('يرجى كتابة اسم الجائزة'); return; }
                         if (!channelId) { alert('يرجى اختيار القناة التي سيتم نشر القيف اواي فيها'); return; }
@@ -6963,7 +7000,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             const res = await fetch('/api/guild/${guildId}/giveaways', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ prize, channelId, duration, winners, desc, color, image, emoji, reqRole })
+                                body: JSON.stringify({ prize, channelId, duration, winners, desc, color, image, emoji, reqRole, btnStyle, entryMode, notifyWinners })
                             });
                             const data = await res.json();
                             if (data.success) {
@@ -7537,7 +7574,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="bg-[#070d1d] p-3 rounded-2xl border border-blue-500/20 flex items-center justify-between">
                                     <span class="text-xs text-gray-500 font-mono">ID: ${tv.channel_id}</span>
                                     <div class="text-right">
-                                        <span class="text-xs font-bold text-white block">صاحب الروم: <@${tv.owner_id}></span>
+                                        <span class="text-xs font-bold text-white block">صاحب الروم: <@${tv.user_id || tv.owner_id}></span>
                                     </div>
                                 </div>
                             `).join('')}
@@ -7572,6 +7609,21 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <label class="block text-xs font-bold text-gray-300 mb-2">رتب الألوان المتاحة (Role IDs مفصولة بفواصل)</label>
                                 <textarea name="color_role_ids" rows="3" placeholder="أيدي_رتبة_1, أيدي_رتبة_2, أيدي_رتبة_3..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs text-white outline-none font-mono text-right leading-relaxed">${settings.color_role_ids || ''}</textarea>
                             </div>
+                            <div class="pt-2">
+                                <button type="button" onclick="publishColorPicker('${guildId}')" class="w-full px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white rounded-xl text-xs font-black transition shadow-lg">🎨 نشر لوحة الألوان في القناة المحددة</button>
+                                <p class="text-[10px] text-gray-500 text-right mt-2">احفظ التغييرات أولاً ثم انشر اللوحة — سيتم إنشاء أزرار لكل رتبة لون.</p>
+                            </div>
+                        </div>
+                        <script>
+                        async function publishColorPicker(guildId) {
+                            try {
+                                const res = await fetch('/api/guild/' + guildId + '/colors/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                                const data = await res.json();
+                                if (data && data.success) { alert('✅ تم نشر لوحة الألوان بنجاح!'); if (typeof showSaveStatus === 'function') showSaveStatus(); }
+                                else alert('❌ فشل النشر: ' + ((data && data.error) || 'تأكد من حفظ الإعدادات وصلاحيات البوت'));
+                            } catch(e) { alert('❌ خطأ في الاتصال'); }
+                        }
+                        </script>
                         </div>
                     </div>`;
             } else if (section === 'boost') {
@@ -7602,6 +7654,26 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="pt-2">
                                 <label class="block text-xs font-bold text-gray-300 mb-2">نص رسالة البوست (يدعم {user} و {count})</label>
                                 <textarea name="boost_message" rows="3" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs text-white outline-none text-right leading-relaxed">${settings.boost_message || 'شكراً لك {user} على تعزيز السيرفر 💎! أصبح عدد البوستات الآن {count} بوست!'}</textarea>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                                <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between">
+                                    <label class="toggle"><input type="checkbox" name="boost_embed_enabled" value="1" ${settings.boost_embed_enabled ? 'checked' : ''}><span class="slider"></span></label>
+                                    <div class="text-right">
+                                        <h5 class="text-xs font-bold text-white">إرسال كإمبد</h5>
+                                        <p class="text-[10px] text-gray-500">عرض رسالة البوست بتنسيق إمبد</p>
+                                    </div>
+                                </div>
+                                <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between">
+                                    <label class="toggle"><input type="checkbox" name="boost_dm_enabled" value="1" ${settings.boost_dm_enabled ? 'checked' : ''}><span class="slider"></span></label>
+                                    <div class="text-right">
+                                        <h5 class="text-xs font-bold text-white">رسالة شكر بالخاص</h5>
+                                        <p class="text-[10px] text-gray-500">إرسال شكر للبوستر في الخاص</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pt-2">
+                                <label class="block text-xs font-bold text-gray-300 mb-2">نص رسالة الخاص (يدعم {user} و {server})</label>
+                                <textarea name="boost_dm_message" rows="2" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs text-white outline-none text-right leading-relaxed">${settings.boost_dm_message || 'شكراً جزيلاً لدعمك سيرفر {server} بالبوست! 🚀'}</textarea>
                             </div>
                         </div>
                     </div>`;
@@ -9166,9 +9238,7 @@ console.log('[Droplet LOGS] Script loaded successfully. logsState keys:', Object
                     <div class="bg-[#0b1322] border ${hasChannel ? 'border-blue-500/20' : 'border-blue-500/20'} rounded-2xl p-4 flex items-center justify-between gap-4 hover:border-blue-500/20 transition" id="stat-row-${type}">
                         <div class="flex items-center gap-3">
                             ${hasChannel ? `
-                            <form method="POST" action="/api/guild/${guildId}/stat-channels/${configured.id}/delete" class="inline">
-                                <button type="submit" class="px-3 py-2 bg-rose-900/40 hover:bg-rose-700/50 text-rose-300 rounded-xl text-xs font-bold border border-rose-800/30 transition" title="حذف هذه القناة">🗑️</button>
-                            </form>
+                            <button type="button" onclick="deleteStatChannel('${guildId}', '${configured.id}')" class="px-3 py-2 bg-rose-900/40 hover:bg-rose-700/50 text-rose-300 rounded-xl text-xs font-bold border border-rose-800/30 transition" title="حذف هذه القناة">🗑️</button>
                             ` : `
                             <button onclick="openAddStatChannel('${type}', '${def.label}')" class="px-4 py-2 bg-gradient-to-l from-purple-600 to-blue-500 hover:bg-gradient-to-l from-purple-600 to-blue-500 text-white rounded-xl text-xs font-bold shadow transition">إنشاء</button>
                             `}
@@ -9288,6 +9358,15 @@ formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
             alert('❌ خطأ في الاتصال');
         }
     });
+    async function deleteStatChannel(guildId, id) {
+        if (!confirm('حذف قناة الإحصائيات؟')) return;
+        try {
+            const res = await fetch('/api/guild/' + guildId + '/stat-channels/' + id + '/delete', { method: 'POST' });
+            const json = await res.json();
+            if (json.success) location.reload();
+            else alert('❌ ' + (json.error || 'حدث خطأ'));
+        } catch(err) { alert('❌ خطأ في الاتصال'); }
+    }
     </script>
 
 </div>`;
@@ -9487,9 +9566,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <h4 class="font-black text-white text-sm">لغة البوت</h4>
                                 </div>
 
-                                <input type="hidden" name="bot_language" id="inpHiddenLang" value="${settings.bot_language || 'EN'}">
+                                <input type="hidden" name="bot_language" id="inpHiddenLang" value="${(settings.bot_language || 'EN') === 'AR' ? 'AR' : 'EN'}">
 
-                                <div class="grid grid-cols-3 gap-2.5 text-center">
+                                <div class="grid grid-cols-2 gap-2.5 text-center">
                                     <!-- IQ / AR -->
                                     <button type="button" onclick="selectBotLanguage('AR', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${(settings.bot_language || 'EN') === 'AR' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
                                         <span class="text-xs font-black">IQ</span>
@@ -9497,53 +9576,12 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </button>
 
                                     <!-- US / EN -->
-                                    <button type="button" onclick="selectBotLanguage('EN', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${(settings.bot_language || 'EN') === 'EN' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
+                                    <button type="button" onclick="selectBotLanguage('EN', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${(settings.bot_language || 'EN') !== 'AR' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
                                         <span class="text-xs font-black">US</span>
                                         <span class="text-[10px] font-bold text-white">EN</span>
                                     </button>
-
-                                    <!-- TR -->
-                                    <button type="button" onclick="selectBotLanguage('TR', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'TR' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
-                                        <span class="text-xs font-black">TR</span>
-                                        <span class="text-[10px] font-bold text-white">TR</span>
-                                    </button>
-
-                                    <!-- RU -->
-                                    <button type="button" onclick="selectBotLanguage('RU', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'RU' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
-                                        <span class="text-xs font-black">RU</span>
-                                        <span class="text-[10px] font-bold text-white">RU</span>
-                                    </button>
-
-                                    <!-- ES -->
-                                    <button type="button" onclick="selectBotLanguage('ES', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'ES' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
-                                        <span class="text-xs font-black">ES</span>
-                                        <span class="text-[10px] font-bold text-white">ES</span>
-                                    </button>
-
-                                    <!-- FR -->
-                                    <button type="button" onclick="selectBotLanguage('FR', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'FR' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
-                                        <span class="text-xs font-black">FR</span>
-                                        <span class="text-[10px] font-bold text-white">FR</span>
-                                    </button>
-
-                                    <!-- DE -->
-                                    <button type="button" onclick="selectBotLanguage('DE', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'DE' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
-                                        <span class="text-xs font-black">DE</span>
-                                        <span class="text-[10px] font-bold text-white">DE</span>
-                                    </button>
-
-                                    <!-- BR / PT -->
-                                    <button type="button" onclick="selectBotLanguage('PT', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'PT' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
-                                        <span class="text-xs font-black">BR</span>
-                                        <span class="text-[10px] font-bold text-white">PT</span>
-                                    </button>
-
-                                    <!-- JP / JA -->
-                                    <button type="button" onclick="selectBotLanguage('JA', this)" class="lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 ${settings.bot_language === 'JA' ? 'bg-blue-700/30 border-blue-400 text-white font-black shadow-lg shadow-blue-800/50' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300 hover:border-blue-500/20'}">
-                                        <span class="text-xs font-black">JP</span>
-                                        <span class="text-[10px] font-bold text-white">JA</span>
-                                    </button>
                                 </div>
+                                <p class="text-[10px] text-gray-500 text-right">اللغات المدعومة حالياً: العربية والإنجليزية فقط.</p>
                             </div>
 
                         </div>
@@ -9591,20 +9629,12 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <!-- أنواع العقوبات المشمولة (Punishment Types Pills) -->
                                 <div>
                                     <span class="block text-xs font-bold text-white mb-2.5 text-right">أنواع العقوبات المشمولة</span>
+                                    <input type="hidden" name="auto_clear_types" id="inpClearTypes" value="${settings.auto_clear_types || 'all'}">
                                     <div class="flex flex-wrap items-center gap-2 justify-end">
-                                        <span class="px-3 py-1.5 rounded-xl bg-blue-400/30 text-white border border-blue-500/20 text-xs font-bold">كل الأنواع</span>
-                                        <span class="px-3 py-1.5 rounded-xl bg-[#070d1d] text-white border border-blue-500/20 text-xs font-medium">حظر</span>
-                                        <span class="px-3 py-1.5 rounded-xl bg-[#070d1d] text-white border border-blue-500/20 text-xs font-medium">حظر مؤقت</span>
-                                        <span class="px-3 py-1.5 rounded-xl bg-[#070d1d] text-white border border-blue-500/20 text-xs font-medium">ميوت</span>
-                                        <span class="px-3 py-1.5 rounded-xl bg-[#070d1d] text-white border border-blue-500/20 text-xs font-medium">ميوت صوتي</span>
-                                        <span class="px-3 py-1.5 rounded-xl bg-[#070d1d] text-white border border-blue-500/20 text-xs font-medium">سجن</span>
-                                        <span class="px-3 py-1.5 rounded-xl bg-[#070d1d] text-white border border-blue-500/20 text-xs font-medium">تحذير</span>
-                                        <span class="px-3 py-1.5 rounded-xl bg-[#070d1d] text-white border border-blue-500/20 text-xs font-medium">طرد</span>
-                                        <span class="px-3 py-1.5 rounded-xl bg-[#070d1d] text-white border border-blue-500/20 text-xs font-medium">داون</span>
-                                        <span class="px-3 py-1.5 rounded-xl bg-[#070d1d] text-white border border-blue-500/20 text-xs font-medium">بلوك</span>
-                                        <span class="px-3 py-1.5 rounded-xl bg-[#070d1d] text-white border border-blue-500/20 text-xs font-medium">بلاك لست</span>
-                                        <span class="px-3 py-1.5 rounded-xl bg-[#070d1d] text-white border border-blue-500/20 text-xs font-medium">تايم اوت</span>
+                                        <button type="button" onclick="selectClearTypes('all', this)" class="type-btn px-3 py-1.5 rounded-xl border text-xs font-bold transition ${(settings.auto_clear_types || 'all') === 'all' ? 'bg-blue-400/30 text-white border-blue-500/20' : 'bg-[#070d1d] text-white border-blue-500/20'}">كل الأنواع</button>
+                                        <button type="button" onclick="selectClearTypes('warn', this)" class="type-btn px-3 py-1.5 rounded-xl border text-xs font-bold transition ${settings.auto_clear_types === 'warn' ? 'bg-blue-400/30 text-white border-blue-500/20' : 'bg-[#070d1d] text-white border-blue-500/20'}">تحذيرات فقط</button>
                                     </div>
+                                    <p class="text-[10px] text-gray-500 text-right mt-2">المسح التلقائي يشمل التحذيرات المنتهية حسب الفترة أعلاه.</p>
                                 </div>
                             </div>
 
@@ -9631,6 +9661,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                     <script>
                     function selectBotLanguage(lang, btn) {
+                        if (lang !== 'AR' && lang !== 'EN') return;
                         document.getElementById('inpHiddenLang').value = lang;
                         document.querySelectorAll('.lang-btn').forEach(b => {
                             b.className = 'lang-btn p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-0.5 bg-[#070d1d] border-blue-500/20 text-blue-300 hover:text-white hover:border-blue-500/20';
@@ -9644,6 +9675,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             b.className = 'period-btn py-3 px-4 rounded-2xl border text-xs font-bold transition bg-[#070d1d] border-blue-500/20 text-blue-300 hover:text-white';
                         });
                         btn.className = 'period-btn py-3 px-4 rounded-2xl border text-xs font-bold transition bg-blue-700/40 border-blue-400 text-white shadow-md';
+                    }
+
+                    function selectClearTypes(type, btn) {
+                        if (type !== 'all' && type !== 'warn') return;
+                        document.getElementById('inpClearTypes').value = type;
+                        document.querySelectorAll('.type-btn').forEach(b => {
+                            b.className = 'type-btn px-3 py-1.5 rounded-xl border text-xs font-bold transition bg-[#070d1d] text-white border-blue-500/20';
+                        });
+                        btn.className = 'type-btn px-3 py-1.5 rounded-xl border text-xs font-bold transition bg-blue-400/30 text-white border-blue-500/20';
                     }
 
                     async function confirmResetGuildData() {
@@ -10530,17 +10570,19 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                     <!-- Author Name -->
                                     <div>
-                                        <input type="hidden" id="embAuthorIcon" value="">
                                         <label class="block text-xs font-bold text-gray-300 mb-1">اسم الكاتب أو الهيدر (Author)</label>
                                         <input type="text" id="embAuthor" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: إدارة السيرفر / Droplet Support" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right">
+                                        <label class="block text-xs font-bold text-gray-300 mb-1 mt-2">رابط أيقونة الكاتب (اختياري)</label>
+                                        <input type="url" id="embAuthorIcon" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="https://..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono" dir="ltr">
                                         <p class="text-[10px] text-gray-500 mt-1">يظهر كعنوان صغير أعلى الإيمبد</p>
                                     </div>
 
                                     <!-- Main Title -->
-                                    <input type="hidden" id="embTitleUrl" value="">
                                     <div>
                                         <label class="block text-xs font-bold text-gray-300 mb-1">العنوان الرئيسي (Title)</label>
                                         <input type="text" id="embTitle" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: مرحباً بكم في مجتمعنا!" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right font-bold">
+                                        <label class="block text-xs font-bold text-gray-300 mb-1 mt-2">رابط العنوان (اختياري — يجعل العنوان قابلاً للضغط)</label>
+                                        <input type="url" id="embTitleUrl" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="https://..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono" dir="ltr">
                                         <p class="text-[10px] text-gray-500 mt-1">عنوان بارز وواضح بخط عريض</p>
                                     </div>
 
@@ -10638,9 +10680,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
 
                                     <div>
-                                        <input type="hidden" id="embFooterIcon" value="">
                                         <label class="block text-xs font-bold text-gray-300 mb-1">نص التذييل (Footer Text)</label>
                                         <input type="text" id="embFooter" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: Droplet Bot • نظام الدعم التلقائي" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
+                                        <label class="block text-xs font-bold text-gray-300 mb-1 mt-2">رابط أيقونة التذييل (اختياري)</label>
+                                        <input type="url" id="embFooterIcon" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="https://..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono" dir="ltr">
                                     </div>
                                 </div>
 
@@ -10945,18 +10988,19 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                     function getEmbedPayload() {
                         function g(id) { return document.getElementById(id); }
+                        function httpUrl(v) { v = (v || '').trim(); if (!v) return ''; if (!/^https?:\/\//i.test(v)) return ''; return v.slice(0, 1000); }
                         return {
                             channelId: (g('embedChannel') || {}).value || '',
                             color: (g('embColor') || {}).value || '#60a5fa',
                             title: ((g('embTitle') || {}).value || '').trim(),
-                            titleUrl: '',
+                            titleUrl: httpUrl((g('embTitleUrl') || {}).value),
                             desc: ((g('embDesc') || {}).value || '').trim(),
                             author: ((g('embAuthor') || {}).value || '').trim(),
-                            authorIcon: '',
+                            authorIcon: httpUrl((g('embAuthorIcon') || {}).value),
                             image: ((g('embImage') || {}).value || '').trim(),
                             thumbnail: ((g('embThumbnail') || {}).value || '').trim(),
                             footer: ((g('embFooter') || {}).value || '').trim(),
-                            footerIcon: '',
+                            footerIcon: httpUrl((g('embFooterIcon') || {}).value),
                             timestamp: (g('embTimestampToggle') || {}).checked !== false,
                             fields: embedFields.filter(function(f) { return f.name || f.value; })
                         };
@@ -11600,7 +11644,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <main class="flex-1 p-8 overflow-y-auto ${section === 'embed' ? 'max-w-7xl' : 'max-w-4xl'} mx-auto">
                         <div class="${section === 'logs' ? '' : 'probot-card border border-blue-500/20 rounded-3xl p-8 shadow-2xl mb-8'}">
                             <div class="flex items-center justify-between pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
-                                <label class="toggle"><input type="checkbox" onchange="toggleModule('${guildId}', '${section === 'levels' ? 'leveling_enabled' : section + '_enabled'}', this.checked)" ${section === 'levels' ? (settings.leveling_enabled !== 0 ? 'checked' : '') : 'checked'}><span class="slider"></span></label>
+                                <label class="toggle"><input type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled'};return _m[section]||(section+'_enabled');})(), this.checked)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return 'checked';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
                                 <div class="text-right">
                                     <h2 class="text-2xl font-black text-white">${title}</h2>
                                     <p class="text-white text-xs mt-1">يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.</p>
@@ -11928,8 +11972,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     e.preventDefault();
                     const formData = new FormData(this);
                     const payload = {};
-                    
+                    // ✅ FIX: تجاهل حقول المودالات المؤقتة حتى لا تلوث guild_settings بأعمدة خردة
+                    const _junk = new Set(['gwChannel','gwReqRole','gwPrize','gwDesc','gwWinners','gwDuration','gwEmoji','gwColorInput','gwImage','gwBtnStyle','gwEntryMode','gwNotifyWinners','arTrigger','arReply','arCase','arDeleteTrigger','arCooldown','arAllowedChan','arExemptChan','arAllowedRole','arExemptRole','appTitleInput','appDescInput','appLogChannel','appAcceptedRole','appReviewerRole','catDefaultChannel','channel_id','custom_prefix','stat_type','bonusUserId','bonusAmount']);
                     for (let [k, v] of formData.entries()) {
+                        if (_junk.has(k)) continue;
                         if (payload[k]) {
                             if (Array.isArray(payload[k])) {
                                 payload[k].push(v);
@@ -12185,6 +12231,21 @@ ${embedScriptHtml}
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
             const settings = req.body;
+            // ✅ قفل الداشبورد: يمنع أي حفظ ما لم يتضمن الطلب مفتاح القفل نفسه (للسماح بإلغاء القفل)
+            try {
+              const current = database.getGuildSettings ? database.getGuildSettings(guildId) : {};
+              if (Number(current.lock_dashboard) === 1 && settings.lock_dashboard === undefined) {
+                return res.status(403).json({ success: false, error: 'الداشبورد مقفل (lock_dashboard). عطّل القفل أولاً.' });
+              }
+            } catch {}
+            // ✅ FIX: مزامنة الرتب التلقائية مع العمود القديم auto_role للتوافق الخلفي
+            if (settings && settings.autorole_id !== undefined && settings.auto_role === undefined) {
+                settings.auto_role = settings.autorole_id;
+            }
+            // ✅ اللغات المدعومة فعلياً AR/EN فقط — تطبيع القيم القديمة
+            if (settings && settings.bot_language !== undefined) {
+                settings.bot_language = (String(settings.bot_language).toUpperCase() === 'AR') ? 'AR' : 'EN';
+            }
             if (database.updateGuildSettings) {
                 database.updateGuildSettings(guildId, settings);
             }
@@ -12204,6 +12265,17 @@ ${embedScriptHtml}
                 if (targetGuild?.members?.me) {
                     targetGuild.members.me.setNickname(settings.bot_nickname || null).catch(() => {});
                 }
+            }
+            // ✅ تطبيق صورة البوت والبنر على حساب البوت فوراً (bot_about يُحفظ للعرض فقط — لا API له في ديسكورد)
+            if ((settings.bot_avatar !== undefined && settings.bot_avatar) || (settings.bot_banner !== undefined && settings.bot_banner)) {
+                try {
+                    if (settings.bot_avatar && client?.user?.setAvatar) {
+                        await client.user.setAvatar(String(settings.bot_avatar)).catch(() => {});
+                    }
+                    if (settings.bot_banner && client?.user?.setBanner) {
+                        await client.user.setBanner(String(settings.bot_banner)).catch(() => {});
+                    }
+                } catch {}
             }
             res.json({ success: true });
         } catch (e) {
@@ -12484,7 +12556,7 @@ ${embedScriptHtml}
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
-            const { prize, channelId, duration, winners, desc, color, image, emoji, reqRole } = req.body;
+            const { prize, channelId, duration, winners, desc, color, image, emoji, reqRole, btnStyle, entryMode, notifyWinners } = req.body;
 
             const channel = client.channels.cache.get(channelId) || await client.channels.fetch(channelId).catch(() => null);
             if (!channel || !channel.isTextBased()) return res.status(404).json({ success: false, error: 'Channel not found' });
@@ -12514,19 +12586,24 @@ ${embedScriptHtml}
 
             if (image) gwEmbed.setImage(image);
 
+            const _styles = { Primary: ButtonStyle.Primary, Success: ButtonStyle.Success, Danger: ButtonStyle.Danger, Secondary: ButtonStyle.Secondary };
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId('gw_enter_btn')
                     .setLabel('مشاركة في القيف اواي')
                     .setEmoji(emoji || '🎉')
-                    .setStyle(ButtonStyle.Primary)
+                    .setStyle(_styles[btnStyle] || ButtonStyle.Primary)
             );
 
             const msg = await channel.send({ embeds: [gwEmbed], components: [row] });
+            // ✅ وضع التفاعل: تفاعل تلقائي بالإيموجي + دخول عبر التفاعل
+            if (entryMode === 'reaction') {
+                await msg.react(emoji || '🎉').catch(() => {});
+            }
 
             if (database.createGiveaway) {
                 // الترتيب الصحيح: (messageId, channelId, guildId, prize, winnersCount, endTime, hostId, reqRole)
-                database.createGiveaway(msg.id, channel.id, guildId, prize, winners || 1, endTime, req.session.user.id, reqRole);
+                database.createGiveaway(msg.id, channel.id, guildId, prize, winners || 1, endTime, req.session.user.id, reqRole, 0, 0, null, { description: desc || '', color: color || '', image: image || '', emoji: emoji || '', btnStyle: btnStyle || 'Primary', entryMode: entryMode || 'button', notifyWinners: notifyWinners });
             }
 
             res.json({ success: true, messageId: msg.id });
@@ -12713,6 +12790,54 @@ ${embedScriptHtml}
             res.json({ success: true });
         } catch(e) {
             console.error('Error sending ticket panel:', e);
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // =============================================
+    // Colors Picker Publish API (نشر لوحة الألوان)
+    // =============================================
+    app.post('/api/guild/:guildId/colors/publish', express.json(), async (req, res) => {
+        try {
+            if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
+            const { guildId } = req.params;
+            const settings = database.getGuildSettings(guildId);
+            const channelId = settings.color_picker_channel;
+            if (!channelId) return res.status(400).json({ success: false, error: 'حدد قناة لوحة الألوان أولاً ثم احفظ' });
+            const roleIds = String(settings.color_role_ids || '').split(/[,;\s]+/).map(s => s.trim()).filter(Boolean).slice(0, 25);
+            if (!roleIds.length) return res.status(400).json({ success: false, error: 'أضف رتب ألوان أولاً ثم احفظ' });
+
+            const channel = client?.channels?.cache?.get(channelId) || await client?.channels?.fetch(channelId).catch(() => null);
+            if (!channel || !channel.isTextBased()) return res.status(400).json({ success: false, error: 'القناة غير موجودة أو ليست نصية' });
+            const guildObj = client?.guilds?.cache?.get(guildId);
+            const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+
+            const validRoles = [];
+            for (const rid of roleIds) {
+              const r = guildObj?.roles?.cache?.get(rid) || await guildObj?.roles?.fetch(rid).catch(() => null);
+              if (r) validRoles.push(r);
+            }
+            if (!validRoles.length) return res.status(400).json({ success: false, error: 'لا توجد رتب صالحة من القائمة' });
+
+            const embed = new EmbedBuilder()
+              .setColor('#f472b6')
+              .setTitle('🎨 لوحة اختيار اللون')
+              .setDescription('اختر لونك المفضل بالضغط على الزر — سيُستبدل لونك الحالي تلقائياً.')
+              .setFooter({ text: guildObj?.name || 'Color Picker', iconURL: guildObj?.iconURL({ dynamic: true }) || undefined })
+              .setTimestamp();
+
+            const rows = [];
+            for (let i = 0; i < validRoles.length; i += 5) {
+              const row = new ActionRowBuilder();
+              for (const r of validRoles.slice(i, i + 5)) {
+                row.addComponents(new ButtonBuilder().setCustomId('color_pick_' + r.id).setLabel(r.name.slice(0, 80)).setStyle(ButtonStyle.Secondary));
+              }
+              rows.push(row);
+            }
+            await channel.send({ embeds: [embed], components: rows });
+            res.json({ success: true, count: validRoles.length });
+        } catch(e) {
+            console.error('Error publishing color picker:', e);
             res.status(500).json({ success: false, error: e.message });
         }
     });
@@ -13101,18 +13226,8 @@ ${embedScriptHtml}
 
 
     // =============================================
-    // Staff Activity Reset API
+    // Staff Activity Reset API (duplicate removed — canonical route at 12839 with limiter)
     // =============================================
-    app.post('/api/guild/:guildId/staff/reset', async (req, res) => {
-        try {
-            if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-            const { guildId } = req.params;
-            if (database.resetStaffStats) database.resetStaffStats(guildId);
-            res.json({ success: true });
-        } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
-        }
-    });
 
     // =============================================
     // Invites API (Add Bonus & Reset)

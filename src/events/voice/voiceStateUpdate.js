@@ -1,6 +1,8 @@
 const { EmbedBuilder, ChannelType, PermissionFlagsBits } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
+const { isEnabled } = require('../../utils/isEnabled');
+const { ensureVoiceXp } = require('../../utils/voiceXp');
 
 // مخزن مؤقت لحساب وقت الستاف في الرومات الصوتية (Staff Voice Tracker)
 const staffVoiceMap = new Map();
@@ -13,6 +15,8 @@ module.exports = {
 
     const guild = newState.guild || oldState.guild;
     const settings = db.getGuildSettings(guild.id);
+    // تشغيل محرك XP الصوتي (مرة واحدة لكل عملية)
+    try { ensureVoiceXp(guild.client); } catch {}
 
     // 👮 Staff Activity: تتبع وقت الرومات الصوتية للستاف
     const isStaff = member.permissions.has(PermissionFlagsBits.Administrator) ||
@@ -42,13 +46,17 @@ module.exports = {
     // ==========================================
     // 1. نظام الرومات الصوتية المؤقتة (Temp Voice)
     // ==========================================
-    if (settings.temp_voice_channel && newState.channelId === settings.temp_voice_channel) {
+    if (isEnabled(settings.temp_voice_enabled, true) && settings.temp_voice_channel && newState.channelId === settings.temp_voice_channel) {
       try {
         const categoryId = settings.temp_voice_category || newState.channel?.parentId;
+        const tpl = String(settings.temp_voice_name_template || '🔊 | {user}').slice(0, 90) || '🔊 | {user}';
+        const chName = tpl.replace(/\{user\}|\[user\]/gi, member.user.username).replace(/\{name\}|\[name\]/gi, member.displayName || member.user.username);
+        const userLimit = Math.max(0, Math.min(99, parseInt(settings.temp_voice_user_limit) || 0));
         const tempVoiceChannel = await guild.channels.create({
-          name: `🔊 | ${member.user.username}`,
+          name: chName,
           type: ChannelType.GuildVoice,
           parent: categoryId || null,
+          ...(userLimit > 0 ? { userLimit } : {}),
           permissionOverwrites: [
             {
               id: member.id,

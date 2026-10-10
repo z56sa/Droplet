@@ -57,6 +57,12 @@ module.exports = {
       if (member.roles.highest.position >= interaction.member.roles.highest.position && interaction.user.id !== guild.ownerId) {
         return interaction.reply({ content: t(lang, 'moderation.mute.higher'), flags: 64 });
       }
+      if (!guild.members.me?.permissions.has(PermissionFlagsBits.ManageRoles) || !guild.members.me?.permissions.has(PermissionFlagsBits.ModerateMembers)) {
+        return interaction.reply({ content: t(lang, 'moderation.mute.higher'), flags: 64 });
+      }
+      if (!member.manageable || !member.moderatable) {
+        return interaction.reply({ content: t(lang, 'moderation.mute.higher'), flags: 64 });
+      }
 
       await interaction.deferReply().catch(() => {});
       const durationStr = interaction.options.getString('duration');

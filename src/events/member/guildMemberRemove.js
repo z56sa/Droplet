@@ -2,6 +2,7 @@ const { AuditLogEvent, EmbedBuilder } = require('discord.js');
 const antiNuke = require('../../utils/antiNuke');
 const db = require('../../database');
 const config = require('../../config.json');
+const { isEnabled } = require('../../utils/isEnabled');
 
 module.exports = {
   name: 'guildMemberRemove',
@@ -23,7 +24,7 @@ module.exports = {
     } catch (e) {}
 
     // 2. نظام رسائل المغادرة (Leave / Goodbye Message)
-    if (settings.leave_enabled && settings.leave_channel) {
+    if (isEnabled(settings.leave_enabled, false) && settings.leave_channel) {
       try {
         const leaveChannel = guild.channels.cache.get(settings.leave_channel) || await guild.channels.fetch(settings.leave_channel).catch(() => null);
         if (leaveChannel && leaveChannel.isTextBased()) {
@@ -39,7 +40,7 @@ module.exports = {
             .replace(/\{memberCount\}/gi, guild.memberCount.toString());
 
           const leaveEmbed = new EmbedBuilder()
-            .setColor('#ef4444')
+            .setColor(settings.leave_embed_color || '#ef4444')
             .setDescription(msg)
             .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }))
             .setFooter({ text: `عدد الأعضاء الحالي: ${guild.memberCount}` })

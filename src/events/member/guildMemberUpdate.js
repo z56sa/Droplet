@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const db = require('../../database');
+const { isEnabled } = require('../../utils/isEnabled');
 
 module.exports = {
   name: 'guildMemberUpdate',
@@ -8,9 +9,26 @@ module.exports = {
     const settings = db.getGuildSettings(guild.id);
 
     if (!settings) return;
-    // التحقق من تفعيل ميزة البوست (دعم الاسمين لضمان التوافق)
-    const isEnabled = settings.boost_enabled !== 0 && settings.boost_msg_enabled !== 0;
-    if (!isEnabled) return;
+    // ✅ حماية رتب الانضمام الخطرة: سحب الإدارة الممنوحة حديثاً دون وجه حق
+    try {
+      const { PermissionFlagsBits: _PFB } = require('discord.js');
+      const _dangerOn = isEnabled(settings.anti_join_danger_roles, isEnabled(settings.anti_onboarding_danger, false));
+      if (_dangerOn && oldMember && newMember) {
+        const hadAdmin = oldMember.roles.cache.some(r => r.permissions.has(_PFB.Administrator));
+        const gained = newMember.roles.cache.filter(r => !oldMember.roles.cache.has(r.id) && r.permissions.has(_PFB.Administrator));
+        if (!hadAdmin && gained.size > 0 && newMember.id !== guild.ownerId) {
+          for (const [, r] of gained) await newMember.roles.remove(r).catch(() => {});
+          const _logId = settings.antinuke_alert_channel || settings.log_channel;
+          const _ch = _logId ? guild.channels.cache.get(_logId) : null;
+          if (_ch && _ch.isTextBased()) _ch.send(`⚠️ تم سحب رتبة إدارية مُنحت حديثاً لـ <@${newMember.id}> تلقائياً (حماية رتب الانضمام).`).catch(() => {});
+          return;
+        }
+      }
+    } catch {}
+    // التحقق من تفعيل ميزة البوست (يكفي boost_msg_enabled؛ مع fallback لـ boost_enabled القديم)
+    const boostMsg = (settings.boost_msg_enabled !== undefined && settings.boost_msg_enabled !== null && settings.boost_msg_enabled !== '')
+      ? settings.boost_msg_enabled : settings.boost_enabled;
+    if (!isEnabled(boostMsg, true)) return;
 
     // التحقق هل العضو قام بعمل بوست جديد
     const oldBoost = oldMember.premiumSince;
@@ -57,7 +75,7 @@ module.exports = {
           const rawMessage = settings.boost_message || '🎉 شكراً [user] لدعمك السيرفر بالبوست! أصبح عدد البوستات الآن [totalBoosts]!';
           const formattedMessage = formatText(rawMessage);
 
-          if (settings.boost_embed_enabled) {
+          if (isEnabled(settings.boost_embed_enabled, false)) {
             const embed = new EmbedBuilder()
               .setColor('#f47fff') // Nitro Pink
               .setTitle('🚀 دفعة بوست جديدة!')
@@ -77,7 +95,7 @@ module.exports = {
       }
 
       // 2. إرسال رسالة شكر في الخاص إذا كانت مفعلة
-      if (settings.boost_dm_enabled) {
+      if (isEnabled(settings.boost_dm_enabled, false)) {
         try {
           const dmRaw = settings.boost_dm_message || 'شكراً جزيلاً لدعمك سيرفر [serverName] بالبوست! 🚀';
           const dmFormatted = formatText(dmRaw);

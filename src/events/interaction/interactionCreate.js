@@ -241,9 +241,12 @@ module.exports = {
 
       // 2.1.1 التعامل مع قبول أو رفض أو دراسة الاقتراح إدارياً (Suggestion Staff Decision)
       if (interaction.isButton() && (interaction.customId === 'sugg_accept_btn' || interaction.customId === 'sugg_reject_btn' || interaction.customId === 'sugg_consider_btn')) {
+        const _sgSettings = db.getGuildSettings ? db.getGuildSettings(interaction.guildId) : {};
+        const _sgStaffRoles = String(_sgSettings.suggestions_staff_roles || '').split(/[,;\s]+/).filter(Boolean);
         const isStaffOrAdmin = interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) ||
-                               interaction.member.permissions.has(PermissionFlagsBits.Administrator) ||
-                               interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers);
+                                interaction.member.permissions.has(PermissionFlagsBits.Administrator) ||
+                                interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers) ||
+                                _sgStaffRoles.some(rid => interaction.member.roles.cache.has(rid));
 
         if (!isStaffOrAdmin) {
           return interaction.reply({ content: t(interaction.guildId, 'suggest.staff.only'), flags: 64 });
@@ -527,7 +530,8 @@ module.exports = {
         const settings = db.getGuildSettings(interaction.guild.id);
 
         if (isMatch) {
-          const verifiedRole = interaction.guild.roles.cache.get(settings.verification_role);
+          const _vRoleId = settings.verification_role || settings.verify_role;
+          const verifiedRole = interaction.guild.roles.cache.get(_vRoleId);
           if (verifiedRole) {
             try {
               await interaction.member.roles.add(verifiedRole);
@@ -671,6 +675,11 @@ module.exports = {
 
       if (isTicketButton || isTicketSelect) {
         await interaction.deferReply({ flags: 64 }).catch(() => { });
+        try {
+          const _tSettings = db.getGuildSettings ? db.getGuildSettings(interaction.guildId) : {};
+          const _tOn = (_tSettings.tickets_enabled === undefined || _tSettings.tickets_enabled === null || _tSettings.tickets_enabled === '') ? true : (!['0', 'false', 'off', 'no'].includes(String(_tSettings.tickets_enabled).toLowerCase()) && Number(_tSettings.tickets_enabled) !== 0);
+          if (!_tOn) return interaction.editReply({ content: '🎫 نظام التذاكر معطل حالياً.' }).catch(() => {});
+        } catch {}
 
         let panelId = null;
         let selectedCategoryType = 'General';
@@ -805,6 +814,12 @@ module.exports = {
 
         // Set thumbnail (User Avatar or Server Icon)
         welcomeEmbed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true, size: 256 }));
+
+        // رسالة الترحيب المخصصة من الداشبورد (ticket_welcome_msg)
+        try {
+          const _twSet = db.getGuildSettings ? db.getGuildSettings(interaction.guildId) : {};
+          if (_twSet.ticket_welcome_msg) welcomeEmbed.setDescription(String(_twSet.ticket_welcome_msg).slice(0, 4000));
+        } catch {}
 
         // Check if server or panel has a welcome image
         const welcomeImg = panel?.welcome_image || settings.ticket_welcome_image;
@@ -1158,8 +1173,12 @@ module.exports = {
           console.error('Error updating suggestion message:', editErr);
         }
 
-        // إرسال إشعار في الخاص لصاحب الاقتراح
+        // إرسال إشعار في الخاص لصاحب الاقتراح (حسب suggestions_dm_notify)
         try {
+          const _dmSet = db.getGuildSettings ? db.getGuildSettings(interaction.guildId) : {};
+          const _dmVal = _dmSet.suggestions_dm_notify;
+          const _dmOn = (_dmVal === undefined || _dmVal === null || _dmVal === '') ? true : (String(_dmVal).toLowerCase() !== '0' && String(_dmVal).toLowerCase() !== 'false' && Number(_dmVal) !== 0);
+          if (_dmOn) {
           const owner = await client.users.fetch(sugg.user_id).catch(() => null);
           if (owner) {
             const statusTitles = {
@@ -1179,7 +1198,19 @@ module.exports = {
               .setTimestamp();
             await owner.send({ embeds: [notifyEmbed] }).catch(() => {});
           }
+          } // end _dmOn
         } catch (e) {}
+
+        // سجل قرارات الاقتراحات في روم اللوق المحدد
+        try {
+          const _lgSet = db.getGuildSettings ? db.getGuildSettings(interaction.guildId) : {};
+          if (_lgSet.suggestions_log_channel) {
+            const _lgCh = interaction.guild.channels.cache.get(_lgSet.suggestions_log_channel) || await interaction.guild.channels.fetch(_lgSet.suggestions_log_channel).catch(() => null);
+            if (_lgCh && _lgCh.isTextBased()) {
+              await _lgCh.send({ embeds: [new EmbedBuilder().setColor(newStatus === 'accepted' ? '#22c55e' : newStatus === 'rejected' ? '#ef4444' : '#3b82f6').setTitle('💡 قرار اقتراح: ' + newStatus).addFields({ name: 'المقترح', value: `<@${sugg.user_id}>`, inline: true }, { name: 'المراجع', value: `<@${interaction.user.id}>`, inline: true }, { name: 'السبب', value: String(reason).slice(0, 1000) || '—', inline: false }).setTimestamp()] }).catch(() => {});
+            }
+          }
+        } catch {}
 
         const actionLabels = { accept: t(interaction.guildId, 'suggest.button.accept'), reject: t(interaction.guildId, 'suggest.button.reject'), consider: t(interaction.guildId, 'suggest.action.consider_label') };
         return interaction.editReply({
@@ -1334,11 +1365,12 @@ module.exports = {
       if (interaction.isButton() && interaction.customId === 'verify_user_btn') {
         await interaction.deferReply({ flags: 64 }).catch(() => { });
         const settings = db.getGuildSettings(interaction.guild.id);
-        if (!settings.verify_role) {
+        const _verifyRoleId = settings.verify_role || settings.verification_role;
+        if (!_verifyRoleId) {
           return interaction.editReply({ content: t(interaction.guildId, 'events.verify2.no_role') });
         }
 
-        const role = interaction.guild.roles.cache.get(settings.verify_role);
+        const role = interaction.guild.roles.cache.get(_verifyRoleId);
         if (!role) {
           return interaction.editReply({ content: t(interaction.guildId, 'events.verify2.role_missing') });
         }
@@ -1352,6 +1384,39 @@ module.exports = {
           return interaction.editReply({ content: t(interaction.guildId, 'events.verify2.done', { role: role.name }) });
         } catch (err) {
           return interaction.editReply({ content: t(interaction.guildId, 'events.verify2.error') });
+        }
+      }
+
+      // 7.5 اختيار لون العضو (Color Picker Buttons: color_pick_<roleId>)
+      if (interaction.isButton() && interaction.customId.startsWith('color_pick_')) {
+        await interaction.deferReply({ flags: 64 }).catch(() => { });
+        try {
+          const settings = db.getGuildSettings(interaction.guild.id);
+          const { isEnabled } = require('../../utils/isEnabled');
+          if (!isEnabled(settings.colors_enabled, true)) {
+            return interaction.editReply({ content: '🎨 نظام الألوان معطل حالياً.' });
+          }
+          if (settings.colors_required_role && !interaction.member.roles.cache.has(settings.colors_required_role)) {
+            return interaction.editReply({ content: '⛔ تحتاج الرتبة المطلوبة لاستخدام لوحة الألوان.' });
+          }
+          const roleId = interaction.customId.replace('color_pick_', '');
+          const pool = String(settings.color_role_ids || '').split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+          if (!pool.includes(roleId)) {
+            return interaction.editReply({ content: '⚠️ هذه الرتبة لم تعد ضمن قائمة الألوان.' });
+          }
+          const role = interaction.guild.roles.cache.get(roleId) || await interaction.guild.roles.fetch(roleId).catch(() => null);
+          if (!role) return interaction.editReply({ content: '⚠️ الرتبة غير موجودة.' });
+          for (const rid of pool) {
+            if (rid !== roleId && interaction.member.roles.cache.has(rid)) {
+              await interaction.member.roles.remove(rid).catch(() => {});
+            }
+          }
+          if (!interaction.member.roles.cache.has(roleId)) {
+            await interaction.member.roles.add(role).catch(() => {});
+          }
+          return interaction.editReply({ content: `✅ تم تعيين لونك: **${role.name}**` });
+        } catch {
+          return interaction.editReply({ content: '❌ حدث خطأ أثناء تعيين اللون.' });
         }
       }
 

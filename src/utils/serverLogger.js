@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const db = require('../database');
+const { isEnabled } = require('./isEnabled');
 
 /**
  * Dispatch an audit log event
@@ -13,7 +14,10 @@ async function sendServerLog(guild, eventId, catKey, embedData = {}) {
 
     try {
         const settings = db.getGuildSettings(guild.id) || {};
-        if (settings.logs_enabled === 0) return;
+        if (!isEnabled(settings.logs_enabled, true)) return;
+        // ✅ بوابات السجلات التفصيلية (الغائب = مفعل)
+        if (catKey === 'moderation' && !isEnabled(settings.mod_logs_enabled, true)) return;
+        if ((catKey === 'server' || catKey === 'automod') && !isEnabled(settings.security_logs_enabled, true)) return;
 
         let logsConfig = {};
         try {
@@ -30,11 +34,13 @@ async function sendServerLog(guild, eventId, catKey, embedData = {}) {
 
         if (!isEnabled) return;
 
-        // Channel determination priority: 
+        // Channel determination priority:
         // 1. Specific event channel
-        // 2. Specific category channel (e.g. log_channel_messages)
+        // 2. Dedicated module channel (automod/antiraid) then category channel (e.g. log_channel_messages)
         // 3. General fallback log_channel
-        let targetChannelId = (logCfg && logCfg.channel_id) || settings['log_channel_' + catKey] || settings.log_channel;
+        let targetChannelId = (logCfg && logCfg.channel_id)
+            || (catKey === 'automod' ? (settings.automod_log_channel || null) : null)
+            || settings['log_channel_' + catKey] || settings.log_channel;
         if (!targetChannelId) {
             // Find in categorized channels
             const catChannelNameMap = {

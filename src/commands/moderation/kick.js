@@ -42,7 +42,11 @@ module.exports = {
       .setTimestamp();
 
     await member.send({ embeds: [dmEmbed] }).catch(() => {});
-    await member.kick(t(lang, 'moderation.kick.audit_by', { reason, tag: interaction.user.tag }));
+    try {
+      await member.kick(t(lang, 'moderation.kick.audit_by', { reason, tag: interaction.user.tag }));
+    } catch {
+      return interaction.editReply({ content: t(lang, 'moderation.kick.not_kickable') }).catch(() => {});
+    }
 
     if (db.recordStaffAction) {
       db.recordStaffAction(interaction.guild.id, interaction.user.id, 'kick', targetUser.id, reason);
@@ -60,7 +64,9 @@ module.exports = {
       .setTimestamp();
 
     await interaction.deleteReply().catch(() => {});
-    await interaction.channel.send({ embeds: [embed] });
+    await interaction.channel.send({ embeds: [embed] }).catch(async () => {
+      await interaction.editReply({ embeds: [embed] }).catch(() => {});
+    });
     this.sendToLog(interaction.guild, embed);
   },
 
@@ -78,7 +84,11 @@ module.exports = {
     if (!member || !member.kickable) return message.reply(t(lang, 'moderation.kick.not_kickable'));
 
     await member.send(t(lang, 'moderation.kick.prefix_dm', { guild: message.guild.name, reason })).catch(() => {});
-    await member.kick(t(lang, 'moderation.kick.audit_by', { reason, tag: message.author.tag }));
+    try {
+      await member.kick(t(lang, 'moderation.kick.audit_by', { reason, tag: message.author.tag }));
+    } catch {
+      return message.reply(t(lang, 'moderation.kick.not_kickable'));
+    }
 
     const embed = new EmbedBuilder()
       .setColor(config.colors?.warning || '#f39c12')
