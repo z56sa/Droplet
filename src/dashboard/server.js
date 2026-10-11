@@ -12890,8 +12890,6 @@ ${embedScriptHtml}
                 }
             }
 
-            const embed = new EmbedBuilder();
-
             // تحقق أن القناة تابعة لنفس السيرفر (حماية)
             if (channel.guild && channel.guild.id !== guildId) {
                 return res.status(403).json({ success: false, error: 'القناة المختارة ليست من هذا السيرفر' });
