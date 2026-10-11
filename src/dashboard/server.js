@@ -12159,6 +12159,48 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         window.saveWelcomeBannerNow(url);
                     };
                 }
+                // ✅ الرفع نفسه عالمياً أيضاً — يعمل حتى لو سكربت قسم الترحيب لم يُنفذ
+                if (typeof window.uploadWelcomeBanner !== 'function') {
+                    window.uploadWelcomeBanner = function(input) {
+                        try {
+                            var file = input.files && input.files[0];
+                            if (!file) return;
+                            try { input.value = ''; } catch (e) {}
+                            if (!file.type || file.type.indexOf('image/') !== 0) { alert('❌ يرجى اختيار ملف صورة صالح'); return; }
+                            if (file.size > 15 * 1024 * 1024) { alert('❌ حجم الصورة يتجاوز 15 ميجابايت'); return; }
+                            var bt = document.getElementById('btn_text_welcome_banner_image');
+                            if (bt) bt.innerText = 'جاري الرفع... ⏳';
+                            var reader = new FileReader();
+                            reader.onerror = function() { if (bt) bt.innerText = 'رفع الصورة'; alert('❌ تعذر قراءة الصورة'); };
+                            reader.onload = function(e) {
+                                var gId = window.location.pathname.split('/')[2];
+                                fetch('/api/guild/' + gId + '/upload-image', {
+                                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ imageBase64: e.target.result, fieldName: 'welcome_banner_image' })
+                                }).then(function(r) { return r.json().then(function(d) { return { status: r.status, body: d }; }); }).then(function(out) {
+                                    var d = out.body || {};
+                                    if (out.status === 200 && d.success && d.url) {
+                                        var hi = document.getElementById('input_welcome_banner_image');
+                                        if (hi) hi.value = d.url;
+                                        var im = document.getElementById('img_welcome_banner_image');
+                                        var ph = document.getElementById('placeholder_welcome_banner_image');
+                                        if (im) { im.src = d.url; im.classList.remove('hidden'); }
+                                        if (ph) ph.classList.add('hidden');
+                                        if (bt) bt.innerText = '✅ تم الرفع';
+                                        window.saveWelcomeBannerNow(d.url);
+                                        if (!d.persistent) alert('⚠️ تم الرفع لكن الاستضافة الدائمة فشلت.');
+                                        setTimeout(function() { if (bt) bt.innerText = 'رفع الصورة'; }, 3000);
+                                    } else {
+                                        var msg = '❌ فشل [' + out.status + ']: ' + (d.error || 'خطأ');
+                                        if (bt) bt.innerText = msg;
+                                        alert(msg);
+                                    }
+                                }).catch(function() { if (bt) bt.innerText = 'رفع الصورة'; alert('❌ خطأ اتصال'); });
+                            };
+                            reader.readAsDataURL(file);
+                        } catch (err) { alert('❌ ' + (err && err.message ? err.message : err)); }
+                    };
+                }
                 document.addEventListener('click', function(e) {
                     var t = e.target && e.target.closest ? e.target.closest('#btnSendEmbed,#btnSaveEmbedDraft,#btnClearEmbed') : null;
                     if (!t) return;
