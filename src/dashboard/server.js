@@ -4929,14 +4929,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
 
                                     <!-- زر الرفع -->
-                                    <div class="w-full md:w-auto flex justify-end">
+                                    <div class="w-full md:w-auto flex flex-col items-end gap-2">
                                         <input type="file" id="file_welcome_banner_image" accept="image/*" class="hidden" onchange="uploadImageFile(this, 'welcome_banner_image', function(url){ saveWelcomeBannerNow(url); if (window.checkBannerUrl) window.checkBannerUrl(); })">
                                         <input type="hidden" id="input_welcome_banner_image" name="welcome_banner_image" value="${settings.welcome_banner_image || ''}">
                                         <button type="button" onclick="document.getElementById('file_welcome_banner_image').click()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-blue-700/30 flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
                                             <span>📤</span>
                                             <span id="btn_text_welcome_banner_image">رفع الصورة</span>
                                         </button>
-                                        <p id="bannerUrlStatus" class="text-[10px] mt-2 text-right"></p>
+                                        <p id="bannerUrlStatus" class="text-[10px] mt-1 text-right max-w-[220px] break-words"></p>
                                     </div>
                                 </div>
                                 <script>
