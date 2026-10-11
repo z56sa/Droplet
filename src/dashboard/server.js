@@ -7794,7 +7794,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </span>
                                     <span class="px-3 py-1.5 bg-[#16345c] rounded-xl text-gray-300 font-medium flex items-center gap-1.5">
                                         <i class="fa-solid fa-folder-tree text-amber-400"></i>
-                                        <span>13 الأقسام</span>
+                                        <span>9 الأقسام</span>
                                     </span>
                                     <span class="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-medium flex items-center gap-1.5">
                                         <i class="fa-solid fa-circle-check"></i>
@@ -7803,67 +7803,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </span>
                                     <span class="px-3 py-1.5 bg-blue-400/10 text-blue-400 border border-blue-500/20 rounded-xl font-medium flex items-center gap-1.5">
                                         <i class="fa-solid fa-bars-progress"></i>
-                                        <span>105 إجمالي السجلات</span>
+                                        <span>32 إجمالي السجلات</span>
                                     </span>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Auto Setup Channels Card -->
-                        <div class="bg-[#0c1526] border border-[#16345c] rounded-2xl p-6 shadow-xl">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center gap-2">
-                                    <i class="fa-solid fa-gear text-blue-400"></i>
-                                    <h2 class="font-bold text-white text-base">إعداد تلقائي للقنوات</h2>
-                                </div>
-                                <span class="text-xs text-white">إنشاء قنوات السجلات تلقائياً لجميع الأقسام بضغطة واحدة</span>
-                            </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <!-- Normal Channels Setup -->
-                                <button type="button" onclick="window.autoSetupLogsChannels('grouped')" class="group bg-[#070d1d] hover:bg-[#13233c] border border-[#16345c] hover:border-blue-400/50 rounded-xl p-4 text-right transition flex flex-col justify-between gap-3 relative overflow-hidden cursor-pointer">
-                                    <div class="absolute top-0 right-0 w-24 h-24 bg-blue-400/5 rounded-full blur-xl group-hover:bg-blue-400/15 transition"></div>
-                                    <div class="flex items-center justify-between w-full">
-                                        <div class="w-10 h-10 rounded-xl bg-blue-400/10 text-blue-400 flex items-center justify-center group-hover:scale-110 transition">
-                                            <i class="fa-solid fa-thumbtack"></i>
-                                        </div>
-                                        <span class="text-xs font-semibold text-blue-400 bg-blue-400/10 px-2.5 py-1 rounded-lg">شائع</span>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-bold text-white text-sm">إنشاء قنوات عادية</h3>
-                                        <p class="text-xs text-white mt-1">قناة واحدة لكل قسم (أعضاء، رسائل، أدوار...) — مناسب لأغلب السيرفرات</p>
-                                    </div>
-                                </button>
-
-                                <!-- Detailed Channels Setup -->
-                                <button type="button" onclick="window.autoSetupLogsChannels('detailed')" class="group bg-[#070d1d] hover:bg-[#13233c] border border-[#16345c] hover:border-blue-400/50 rounded-xl p-4 text-right transition flex flex-col justify-between gap-3 relative overflow-hidden cursor-pointer">
-                                    <div class="absolute top-0 right-0 w-24 h-24 bg-blue-400/5 rounded-full blur-xl group-hover:bg-blue-400/15 transition"></div>
-                                    <div class="flex items-center justify-between w-full">
-                                        <div class="w-10 h-10 rounded-xl bg-blue-400/10 text-blue-400 flex items-center justify-center group-hover:scale-110 transition">
-                                            <i class="fa-solid fa-folder-open"></i>
-                                        </div>
-                                        <span class="text-xs font-semibold text-blue-400 bg-blue-400/10 px-2.5 py-1 rounded-lg">متقدم</span>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-bold text-white text-sm">إنشاء قنوات مفصلة</h3>
-                                        <p class="text-xs text-white mt-1">قناة منفصلة لكل نوع سجل — للسيرفرات الكبيرة التي تحتاج تنظيم دقيق</p>
-                                    </div>
-                                </button>
-
-                                <!-- Delete Channels Setup -->
-                                <button type="button" onclick="window.deleteLogsChannels()" class="group bg-[#070d1d] hover:bg-red-500/10 border border-[#16345c] hover:border-red-500/40 rounded-xl p-4 text-right transition flex flex-col justify-between gap-3 relative overflow-hidden cursor-pointer">
-                                    <div class="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full blur-xl group-hover:bg-red-500/15 transition"></div>
-                                    <div class="flex items-center justify-between w-full">
-                                        <div class="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center group-hover:scale-110 transition">
-                                            <i class="fa-solid fa-trash-can"></i>
-                                        </div>
-                                        <span class="text-xs font-semibold text-red-400 bg-red-500/10 px-2.5 py-1 rounded-lg">إزالة</span>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-bold text-white text-sm">حذف قنوات السجلات</h3>
-                                        <p class="text-xs text-white mt-1">حذف كاتيغوري Droplet Server Logs وجميع القنوات بداخله وتعطيل السجلات</p>
-                                    </div>
-                                </button>
                             </div>
                         </div>
 
@@ -7885,105 +7827,49 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                         </div>
 
-                        <!-- Main Two-Column View: Categories Sidebar + Active Category Content -->
-                        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-
-                            <!-- Sidebar: 13 Categories -->
-                            <div class="lg:col-span-1 space-y-1 bg-[#0c1526] border border-[#16345c] p-3 rounded-2xl shadow-xl h-fit">
-                                <button type="button" onclick="window.toggleLogsCategoriesDropdown()" class="w-full flex items-center justify-between text-xs font-black text-white px-2 py-2 border-b border-[#16345c] mb-1 cursor-pointer hover:text-white transition">
-                                    <i id="logsCategoriesDropdownArrow" class="fa-solid fa-chevron-down text-white text-xs"></i>
-                                    <span class="flex items-center gap-2">
-                                        <span>الأقسام (13 قسم)</span>
-                                        <i class="fa-solid fa-folder text-amber-400"></i>
-                                    </span>
-                                </button>
-                                <div id="logsCategoriesList" class="space-y-1 transition-all"></div>
-                            </div>
-
-                            <!-- Right Display Area: Active Category Header + Section Default Channel/Color + Logs Grid -->
-                            <div class="lg:col-span-3 space-y-6">
-
-                                <!-- Active Category Card Header -->
-                                <div class="bg-[#0c1526] border border-[#16345c] rounded-2xl p-6 shadow-xl space-y-6">
-                                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                        <div class="flex items-center gap-3.5">
-                                            <div id="activeCatIconBox" class="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500/20 to-blue-400/20 border border-pink-500/30 text-pink-400 flex items-center justify-center shadow-lg text-xl">
-                                                <span id="activeCatIcon">🎯</span>
-                                            </div>
-                                            <div>
-                                                <h2 id="activeCatTitle" class="text-lg font-black text-white">الأعضاء</h2>
-                                                <span id="activeCatCount" class="text-xs text-white">17 سجل</span>
-                                            </div>
-                                        </div>
-
-                                        <!-- Category Actions: Enable All / Disable All -->
-                                        <div class="flex items-center gap-2">
-                                            <button type="button" onclick="window.toggleActiveCategoryLogs(false)" class="px-3.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer">
-                                                <i class="fa-solid fa-xmark"></i>
-                                                <span>تعطيل الكل</span>
-                                            </button>
-                                            <button type="button" onclick="window.toggleActiveCategoryLogs(true)" class="px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer">
-                                                <i class="fa-solid fa-check"></i>
-                                                <span>تفعيل الكل</span>
-                                            </button>
+                        <!-- Unified Logs View: one channel for all + flat list -->
+                        <div class="space-y-6">
+                            <div class="bg-[#0c1526] border border-[#16345c] rounded-2xl p-6 shadow-xl space-y-5">
+                                <div class="flex items-center justify-between border-b border-[#16345c] pb-3">
+                                    <div class="flex items-center gap-2 text-white font-bold text-sm">
+                                        <i class="fa-solid fa-gear text-blue-400"></i>
+                                        <span>القناة الموحدة لجميع السجلات</span>
+                                    </div>
+                                    <span class="text-xs text-gray-500">تُطبق على جميع السجلات المفعلة — والقناة المخصصة من زر ⚙️ تتفوق عليها</span>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+                                            <i class="fa-solid fa-bullhorn text-pink-400 text-sm"></i>
+                                            <span>قناة السجلات</span>
+                                        </label>
+                                        <div class="relative">
+                                            ${renderChannelSelect('catDefaultChannel', settings.log_channel || '')}
                                         </div>
                                     </div>
-
-                                    <!-- Section Settings Form Block -->
-                                    <div class="bg-[#070d1d] border border-[#16345c] rounded-2xl p-5 space-y-5">
-                                        <div class="flex items-center justify-between border-b border-[#16345c] pb-3">
-                                            <div class="flex items-center gap-2 text-white font-bold text-sm">
-                                                <i class="fa-solid fa-gear text-blue-400"></i>
-                                                <span>إعدادات القسم</span>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+                                            <i class="fa-solid fa-palette text-pink-400 text-sm"></i>
+                                            <span>اللون الافتراضي</span>
+                                        </label>
+                                        <div class="flex items-center gap-3">
+                                            <div class="relative w-10 h-10 rounded-xl overflow-hidden border border-[#16345c] cursor-pointer shrink-0">
+                                                <input type="color" id="catColorPicker" value="#60a5fa" class="absolute -top-2 -right-2 w-16 h-16 cursor-pointer opacity-0" onchange="document.getElementById('catColorHex').value = this.value; document.getElementById('catColorPreviewBox').style.backgroundColor = this.value;">
+                                                <div id="catColorPreviewBox" class="w-full h-full bg-[#60a5fa]"></div>
                                             </div>
-                                            <span class="text-xs text-gray-500">طبق نفس الإعدادات على جميع السجلات المفعلة بالقسم</span>
-                                        </div>
-
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                            <!-- Default Channel Dropdown -->
-                                            <div class="space-y-2">
-                                                <label class="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                                                    <i class="fa-solid fa-bullhorn text-pink-400 text-sm"></i>
-                                                    <span>القناة الافتراضية</span>
-                                                </label>
-                                                <div class="relative">
-                                                    ${renderChannelSelect('catDefaultChannel', settings.log_channel_members || settings.log_channel || '')}
-                                                </div>
-                                            </div>
-
-                                            <!-- Default Color Picker Input -->
-                                            <div class="space-y-2">
-                                                <label class="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                                                    <i class="fa-solid fa-palette text-pink-400 text-sm"></i>
-                                                    <span>اللون الافتراضي</span>
-                                                </label>
-                                                <div class="flex items-center gap-3">
-                                                    <div class="relative w-10 h-10 rounded-xl overflow-hidden border border-[#16345c] cursor-pointer shrink-0">
-                                                        <input type="color" id="catColorPicker" value="#60a5fa" class="absolute -top-2 -right-2 w-16 h-16 cursor-pointer opacity-0" onchange="document.getElementById('catColorHex').value = this.value; document.getElementById('catColorPreviewBox').style.backgroundColor = this.value;">
-                                                        <div id="catColorPreviewBox" class="w-full h-full bg-[#60a5fa]"></div>
-                                                    </div>
-                                                    <input type="text" id="catColorHex" value="#60a5fa" class="w-full bg-[#0c1526] border border-[#16345c] focus:border-blue-400 rounded-xl py-2.5 px-3.5 text-xs text-white font-mono focus:outline-none transition" dir="ltr" onchange="document.getElementById('catColorPicker').value = this.value; document.getElementById('catColorPreviewBox').style.backgroundColor = this.value;">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Apply to All Enabled Logs Button -->
-                                        <div class="pt-2">
-                                            <button type="button" onclick="window.applyCatSettingsToAll()" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-400/20 transition flex items-center justify-center gap-2 cursor-pointer">
-                                                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                                                <span>تطبيق على جميع السجلات المفعلة</span>
-                                            </button>
+                                            <input type="text" id="catColorHex" value="#60a5fa" class="w-full bg-[#0c1526] border border-[#16345c] focus:border-blue-400 rounded-xl py-2.5 px-3.5 text-xs text-white font-mono focus:outline-none transition" dir="ltr" onchange="document.getElementById('catColorPicker').value = this.value; document.getElementById('catColorPreviewBox').style.backgroundColor = this.value;">
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Logs Cards 2-Column Grid -->
-                                <div id="logsCardsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-
+                                <div class="pt-2">
+                                    <button type="button" onclick="window.applyCatSettingsToAll()" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-400/20 transition flex items-center justify-center gap-2 cursor-pointer">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                        <span>تطبيق على جميع السجلات المفعلة</span>
+                                    </button>
+                                </div>
                             </div>
+                            <div id="logsCardsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                         </div>
-
-                    </div>
 
                     <!-- Individual Log Edit Modal -->
                     <div id="editLogModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
@@ -8294,28 +8180,26 @@ function renderCategoriesSidebar() {
 function renderLogsGrid() {
     var container = document.getElementById('logsCardsGrid');
     if (!container) { console.warn('[LOGS] logsCardsGrid not found'); return; }
-    var cat = LOG_CATEGORIES[currentCategory] || LOG_CATEGORIES.members;
-    var titleEl = document.getElementById('activeCatTitle');
-    var iconEl  = document.getElementById('activeCatIcon');
-    var countEl = document.getElementById('activeCatCount');
-    if (titleEl) titleEl.textContent = cat.title;
-    if (iconEl)  iconEl.textContent  = cat.icon;
-    if (countEl) countEl.textContent = (cat.items ? cat.items.length : 0) + ' سجل';
     var searchInp = document.getElementById('logSearchInput');
     var searchVal = (searchInp && searchInp.value) ? searchInp.value.toLowerCase().trim() : '';
-    var itemsList = cat.items || [];
+    // قائمة موحدة: كل السجلات من كل الأقسام في مكان واحد
+    var catKeys = Object.keys(LOG_CATEGORIES);
     var filtered = [];
-    for (var fi = 0; fi < itemsList.length; fi++) {
-        var itm = itemsList[fi];
-        var en = isLogEnabled(itm.id);
-        if (currentFilter === 'enabled' && !en) continue;
-        if (currentFilter === 'disabled' && en) continue;
-        if (searchVal) {
-            var tMatch = itm.title && itm.title.toLowerCase().indexOf(searchVal) !== -1;
-            var dMatch = itm.desc  && itm.desc.toLowerCase().indexOf(searchVal) !== -1;
-            if (!tMatch && !dMatch) continue;
+    for (var k = 0; k < catKeys.length; k++) {
+        var cat = LOG_CATEGORIES[catKeys[k]];
+        var itemsList = cat.items || [];
+        for (var fi = 0; fi < itemsList.length; fi++) {
+            var itm = itemsList[fi];
+            var en = isLogEnabled(itm.id);
+            if (currentFilter === 'enabled' && !en) continue;
+            if (currentFilter === 'disabled' && en) continue;
+            if (searchVal) {
+                var tMatch = itm.title && itm.title.toLowerCase().indexOf(searchVal) !== -1;
+                var dMatch = itm.desc  && itm.desc.toLowerCase().indexOf(searchVal) !== -1;
+                if (!tMatch && !dMatch) continue;
+            }
+            filtered.push({ item: itm, cat: cat });
         }
-        filtered.push(itm);
     }
     if (!filtered.length) {
         container.innerHTML = '<div class="col-span-full py-12 bg-[#070d1d] border border-blue-500/20 rounded-3xl text-center text-xs text-gray-500 font-bold">لا توجد سجلات مطابقة للبحث أو الفلتر 🔍</div>';
@@ -8323,7 +8207,8 @@ function renderLogsGrid() {
     }
     var html = '';
     for (var i = 0; i < filtered.length; i++) {
-        var item = filtered[i];
+        var item = filtered[i].item;
+        var cat = filtered[i].cat;
         var enabled = isLogEnabled(item.id);
         var customCfg   = logsState[item.id] || {};
         var customChan  = customCfg.channel_id || '';
@@ -8339,6 +8224,7 @@ function renderLogsGrid() {
         if (item.isSpecial) html += '<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-lg text-[9px] font-bold flex items-center gap-1"><span>بوتات خاصة فقط</span><i class="fa-solid fa-lock text-[8px]"></i></span>';
         if (customChan)     html += '<span class="px-2 py-0.5 bg-blue-400/10 text-blue-400 border border-blue-500/20 rounded-lg text-[9px] font-bold flex items-center gap-1"><span>قناة مخصصة</span><i class="fa-solid fa-hashtag text-[8px]"></i></span>';
         html += '<span class="font-bold text-white text-xs">' + item.title + '</span>';
+        html += '<span class="px-2 py-0.5 bg-[#16345c] text-gray-300 rounded-lg text-[9px] font-bold">' + cat.title + '</span>';
         html += '<span class="w-2.5 h-2.5 rounded-full shadow-sm" style="background-color:' + customColor + '" title="لون الإيمبد"></span>';
         html += '</div>';
         html += '<p class="text-[10px] text-white mt-0.5">' + item.desc + '</p>';
@@ -8447,31 +8333,37 @@ window.toggleAllLogsGlobally = function(enable) {
 };
 
 window.applyCatSettingsToAll = function() {
-    var cat = LOG_CATEGORIES[currentCategory];
-    if (!cat || !cat.items) return;
     var colorInp = document.getElementById('catColorHex');
     var color = colorInp ? colorInp.value : '#60a5fa';
     var chanInp = document.getElementById('catDefaultChannel');
     var chan = chanInp ? chanInp.value : '';
     var appliedCount = 0;
-    for (var i = 0; i < cat.items.length; i++) {
-        var id = cat.items[i].id;
-        if (!isLogEnabled(id)) continue;
-        if (!logsState[id]) logsState[id] = { enabled: true };
-        if (color) logsState[id].color = color;
-        if (chan)  logsState[id].channel_id = chan;
-        appliedCount++;
+    var catKeys = Object.keys(LOG_CATEGORIES);
+    var extra = {};
+    for (var k = 0; k < catKeys.length; k++) {
+        var items = LOG_CATEGORIES[catKeys[k]].items || [];
+        for (var i = 0; i < items.length; i++) {
+            var id = items[i].id;
+            if (!isLogEnabled(id)) continue;
+            if (!logsState[id]) logsState[id] = { enabled: true };
+            if (color) logsState[id].color = color;
+            if (chan)  logsState[id].channel_id = chan;
+            appliedCount++;
+        }
+        if (chan) { categoryChannels[catKeys[k]] = chan; extra['log_channel_' + catKeys[k]] = chan; }
     }
-    if (chan) categoryChannels[currentCategory] = chan;
+    if (!chan && !color) {
+        showToast('⚠️ حدد القناة أو اللون أولاً!', 'danger');
+        return;
+    }
     if (appliedCount === 0) {
-        showToast('⚠️ لا توجد سجلات مفعلة في القسم الحالي لتطبيق الإعدادات عليها!', 'danger');
+        showToast('⚠️ لا توجد سجلات مفعلة لتطبيق الإعدادات عليها! فعّل سجلاً أولاً.', 'danger');
+        // still persist channel keys if chosen
+        if (chan) saveLogsConfigToServer(extra);
         return;
     }
     showToast('✨ تم تطبيق القناة واللون بنجاح على ' + appliedCount + ' سجل', 'success');
-    renderCategoriesSidebar();
     renderLogsGrid();
-    var extra = {};
-    if (chan) extra['log_channel_' + currentCategory] = chan;
     saveLogsConfigToServer(extra);
 };
 

@@ -123,11 +123,11 @@ async function runSetup(guild, mode) {
     }
   }
 
-  // 3. Enable all known events and assign channels
+  // 3. Assign channels to already-known events WITHOUT enabling (user enables manually)
   for (const eventId of Object.keys(logsConfig)) {
     for (const catKey of Object.keys(LOG_CATEGORIES)) {
       if (categoryMatchesEvent(catKey, eventId)) {
-        logsConfig[eventId].enabled = true;
+        if (!logsConfig[eventId]) logsConfig[eventId] = {};
         logsConfig[eventId].channel_id = eventChannelMap[eventId] || catChannelIds[catKey];
         break;
       }
@@ -386,7 +386,7 @@ module.exports = {
           title: t(lang, 'admin.logs.test_title', { icon: cat.icon, title: catTitle(lang, category) }),
           desc: t(lang, 'admin.logs.test_desc', { title: catTitle(lang, category) }),
           footer: t(lang, 'admin.logs.test_footer')
-        });
+        }, { force: true });
 
         const embed = new EmbedBuilder()
           .setColor(config.colors.success)
@@ -494,7 +494,7 @@ module.exports = {
           title: t(lang, 'admin.logs.test_title', { icon: cat.icon, title: catTitle(lang, categoryKey) }),
           desc: t(lang, 'admin.logs.test_desc', { title: catTitle(lang, categoryKey) }),
           footer: t(lang, 'admin.logs.test_footer')
-        });
+        }, { force: true });
         message.reply(t(lang, 'admin.logs.prefix_test_sent', { icon: cat.icon, title: catTitle(lang, categoryKey) }));
 
       } else if (action === 'delete' || action === 'delete-channels') {

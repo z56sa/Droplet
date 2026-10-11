@@ -22,7 +22,7 @@ const ALLOWED_LOG_EVENTS = new Set([
  * @param {string} catKey 
  * @param {object} embedData - { title, desc, fields, color, author, thumbnail, footer }
  */
-async function sendServerLog(guild, eventId, catKey, embedData = {}) {
+async function sendServerLog(guild, eventId, catKey, embedData = {}, opts = {}) {
     if (!guild) return;
     if (!ALLOWED_LOG_EVENTS.has(eventId)) return;
 
@@ -40,13 +40,13 @@ async function sendServerLog(guild, eventId, catKey, embedData = {}) {
 
         const logCfg = logsConfig[eventId];
         
-        // Logs are enabled by default UNLESS explicitly disabled (enabled === false or 0)
-        let eventOn = true;
-        if (logCfg && (logCfg.enabled === false || logCfg.enabled === 0 || logCfg.enabled === '0')) {
-            eventOn = false;
+        // ✅ مطفي افتراضياً — يُرسل فقط عند التفعيل الصريح من الداشبورد (أو opts.force للاختبار)
+        let eventOn = false;
+        if (logCfg && (logCfg.enabled === true || logCfg.enabled === 1 || logCfg.enabled === '1')) {
+            eventOn = true;
         }
 
-        if (!eventOn) return;
+        if (!eventOn && !(opts && opts.force)) return;
 
         // Channel determination priority:
         // 1. Specific event channel
