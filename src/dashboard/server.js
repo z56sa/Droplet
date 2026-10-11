@@ -4930,14 +4930,37 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                     <!-- زر الرفع -->
                                     <div class="w-full md:w-auto flex justify-end">
-                                        <input type="file" id="file_welcome_banner_image" accept="image/*" class="hidden" onchange="uploadImageFile(this, 'welcome_banner_image')">
+                                        <input type="file" id="file_welcome_banner_image" accept="image/*" class="hidden" onchange="uploadImageFile(this, 'welcome_banner_image', function(){ if (window.checkBannerUrl) window.checkBannerUrl(); })">
                                         <input type="hidden" id="input_welcome_banner_image" name="welcome_banner_image" value="${settings.welcome_banner_image || ''}">
                                         <button type="button" onclick="document.getElementById('file_welcome_banner_image').click()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-blue-700/30 flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
                                             <span>📤</span>
                                             <span id="btn_text_welcome_banner_image">رفع الصورة</span>
                                         </button>
+                                        <p id="bannerUrlStatus" class="text-[10px] mt-2 text-right"></p>
                                     </div>
                                 </div>
+                                <script>
+                                (function() {
+                                    window.checkBannerUrl = function() {
+                                        var el = document.getElementById('bannerUrlStatus');
+                                        var inp = document.getElementById('input_welcome_banner_image');
+                                        if (!el) return;
+                                        var url = inp ? (inp.value || '').trim() : '';
+                                        if (!url) { el.innerHTML = '<span class="text-gray-500">لا توجد صورة محفوظة — ارفع صورة ثم احفظ.</span>'; return; }
+                                        var host = '';
+                                        try { host = new URL(url).hostname; } catch (e) { host = url.slice(0, 40); }
+                                        el.innerHTML = '<span class="text-gray-400">فحص الرابط (' + host + ')...</span>';
+                                        var done = false;
+                                        var im = new Image();
+                                        im.onload = function() { if (done) return; done = true; el.innerHTML = '<span class="text-emerald-400">✅ الرابط يعمل (' + host + ') — احفظ ثم جرّب دخول عضو.</span>'; };
+                                        im.onerror = function() { if (done) return; done = true; el.innerHTML = '<span class="text-rose-400">❌ الرابط ميت (' + host + ') — أعد الرفع ثم احفظ.</span>'; };
+                                        im.src = url;
+                                        setTimeout(function() { if (!done) { done = true; el.innerHTML = '<span class="text-amber-400">⏳ تعذر التأكد (مهلة) — أعد الرفع.</span>'; } }, 12000);
+                                    };
+                                    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.checkBannerUrl);
+                                    else window.checkBannerUrl();
+                                })();
+                                </script>
                             </div>
 
                             <!-- Card 4: تخصيص رسالة الترحيب / الإيمبد (Live Preview & Embed Customizer - Exact to Image 2 & 3) -->
