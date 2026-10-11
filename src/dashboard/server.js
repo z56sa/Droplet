@@ -4907,34 +4907,85 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         </ul>
                                     </div>
                                     <div class="w-full md:w-auto flex flex-col items-end gap-2">
-                                        <input type="file" id="file_welcome_banner_image" accept="image/*" class="hidden" onchange="uploadImageFile(this, 'welcome_banner_image', function(url){ saveWelcomeBannerNow(url); if (window.checkBannerUrl) window.checkBannerUrl(); })">
+                                        <input type="file" id="file_welcome_banner_image" accept="image/*" class="hidden" onchange="uploadWelcomeBanner(this)">
                                         <input type="hidden" id="input_welcome_banner_image" name="welcome_banner_image" value="${settings.welcome_banner_image || ''}">
                                         <button type="button" onclick="document.getElementById('file_welcome_banner_image').click()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 text-white rounded-xl text-xs font-black transition shadow-lg flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
                                             <span>📤</span>
                                             <span id="btn_text_welcome_banner_image">رفع الصورة</span>
                                         </button>
                                         <p id="bannerUrlStatus" class="text-[10px] mt-1 text-right max-w-[220px] break-words"></p>
-                                        <div class="flex items-center gap-2 w-full">
-                                            <button type="button" onclick="useBannerUrlManual()" class="px-4 py-2 bg-[#14233c] hover:bg-[#1d3355] border border-blue-500/20 text-white rounded-xl text-xs font-bold transition cursor-pointer shrink-0">استخدام الرابط</button>
-                                            <input type="url" id="banner_url_manual" placeholder="الصق رابط الصورة هنا" dir="ltr" class="flex-1 min-w-0 bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-3 py-2 text-xs text-white outline-none font-mono placeholder-gray-600">
-                                        </div>
                                     </div>
                                 </div>
                                 <script>
                                 (function() {
-                                    window.useBannerUrlManual = function() {
-                                        var uEl = document.getElementById('banner_url_manual');
-                                        var url = uEl ? (uEl.value || '').trim() : '';
-                                        if (!url) { alert('❌ الصق رابط الصورة أولاً'); return; }
-                                        if (!/^https?:\/\//i.test(url)) { alert('❌ الرابط يجب أن يبدأ بـ http(s)://'); return; }
+                                    function wlSetBtn(t) { var b = document.getElementById('btn_text_welcome_banner_image'); if (b) b.innerText = t; }
+                                    function wlShowPreview(url) {
                                         var hiddenInput = document.getElementById('input_welcome_banner_image');
                                         if (hiddenInput) hiddenInput.value = url;
                                         var imgElem = document.getElementById('img_welcome_banner_image');
                                         var placeholderElem = document.getElementById('placeholder_welcome_banner_image');
                                         if (imgElem) { imgElem.src = url; imgElem.classList.remove('hidden'); }
                                         if (placeholderElem) { placeholderElem.classList.add('hidden'); }
-                                        saveWelcomeBannerNow(url);
-                                        if (window.checkBannerUrl) window.checkBannerUrl();
+                                    }
+                                    window.uploadWelcomeBanner = function(input) {
+                                        var file = input.files && input.files[0];
+                                        if (!file) return;
+                                        try { input.value = ''; } catch (e) {}
+                                        if (!file.type || file.type.indexOf('image/') !== 0) { wlSetBtn('❌ ملف غير صالح'); alert('❌ يرجى اختيار ملف صورة صالح (PNG, JPG, GIF, WEBP)'); wlSetBtn('رفع الصورة'); return; }
+                                        if (file.size > 15 * 1024 * 1024) { wlSetBtn('❌ كبير جداً'); alert('❌ حجم الصورة يتجاوز 15 ميجابايت'); wlSetBtn('رفع الصورة'); return; }
+                                        wlSetBtn('جاري الرفع... ⏳');
+                                        var t = setTimeout(function() { wlSetBtn('❌ انتهت المهلة — أعد المحاولة'); }, 90000);
+                                        function finishSend(blob) {
+                                            var reader = new FileReader();
+                                            reader.onerror = function() { clearTimeout(t); wlSetBtn('❌ تعذر القراءة'); alert('❌ تعذر قراءة الصورة من جهازك'); };
+                                            reader.onload = function(e) {
+                                                var gId = window.location.pathname.split('/')[2];
+                                                fetch('/api/guild/' + gId + '/upload-image', {
+                                                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ imageBase64: e.target.result, fieldName: 'welcome_banner_image' })
+                                                }).then(function(r) { return r.json().then(function(d) { return { status: r.status, body: d }; }); }).then(function(out) {
+                                                    clearTimeout(t);
+                                                    var d = out.body || {};
+                                                    if (out.status === 200 && d.success && d.url) {
+                                                        wlShowPreview(d.url);
+                                                        saveWelcomeBannerNow(d.url);
+                                                        wlSetBtn('✅ تم الرفع');
+                                                        if (!d.persistent) alert('⚠️ تم الرفع لكن الاستضافة الدائمة فشلت — تحقق من صلاحيات البوت.');
+                                                        setTimeout(function() { wlSetBtn('رفع الصورة'); }, 3000);
+                                                    } else {
+                                                        var msg = '❌ فشل [' + out.status + ']: ' + (d.error || 'خطأ غير معروف');
+                                                        wlSetBtn(msg); alert(msg);
+                                                    }
+                                                }).catch(function(err) {
+                                                    clearTimeout(t);
+                                                    var msg = (err && err.name === 'AbortError') ? '❌ انتهت المهلة' : '❌ خطأ اتصال';
+                                                    wlSetBtn(msg); alert(msg);
+                                                });
+                                            };
+                                            reader.readAsDataURL(blob);
+                                        }
+                                        try {
+                                            if (/^image\/(jpeg|jpg|png|webp)$/.test(file.type) && file.size > 900 * 1024) {
+                                                var url = URL.createObjectURL(file);
+                                                var img = new Image();
+                                                img.onload = function() {
+                                                    try {
+                                                        var maxDim = 1280, w = img.naturalWidth, h = img.naturalHeight;
+                                                        var sc = Math.min(1, maxDim / Math.max(w, h));
+                                                        if (!sc || sc >= 1) { URL.revokeObjectURL(url); finishSend(file); return; }
+                                                        var cv = document.createElement('canvas');
+                                                        cv.width = Math.round(w * sc); cv.height = Math.round(h * sc);
+                                                        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+                                                        URL.revokeObjectURL(url);
+                                                        var mime = (file.type === 'image/png') ? 'image/png' : 'image/jpeg';
+                                                        if (cv.toBlob) cv.toBlob(function(b) { finishSend(b || file); }, mime, 0.85);
+                                                        else finishSend(file);
+                                                    } catch (e) { try { URL.revokeObjectURL(url); } catch (_) {} finishSend(file); }
+                                                };
+                                                img.onerror = function() { try { URL.revokeObjectURL(url); } catch (_) {} finishSend(file); };
+                                                img.src = url;
+                                            } else { finishSend(file); }
+                                        } catch (e) { finishSend(file); }
                                     };
                                     window.saveWelcomeBannerNow = function(url) {
                                         saveWl('welcome_banner_image', url);
