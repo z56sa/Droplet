@@ -55,7 +55,8 @@ app.use((req, _res, next) => {
 });
 
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json({ limit: '1mb' }));
+// ✅ حد مرتفع لأن رفع الصور يمر JSON (base64) عبر هذا المحلل أولاً قبل حدود المسارات
+app.use(express.json({ limit: '20mb' }));
 
 const client = new Client({
     intents: [
