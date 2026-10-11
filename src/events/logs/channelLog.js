@@ -49,6 +49,18 @@ module.exports = [
           { name: '📝 التغييرات', value: changes.join('\n'), inline: false }
         ]
       });
+      // ✅ صلاحيات الروم: مقارنة منفصلة بسجل مستقل
+      try {
+        const oldPerms = JSON.stringify([...(oldChannel.permissionOverwrites?.cache?.values() || [])].map(o => [o.id, o.allow.bitfield.toString(), o.deny.bitfield.toString()]).sort());
+        const newPerms = JSON.stringify([...(newChannel.permissionOverwrites?.cache?.values() || [])].map(o => [o.id, o.allow.bitfield.toString(), o.deny.bitfield.toString()]).sort());
+        if (oldPerms !== newPerms) {
+          await sendServerLog(newChannel.guild, 'channel_perms_update', 'channels', {
+            title: '🔒 صلاحيات الروم',
+            desc: `تم تعديل صلاحيات قناة **${newChannel.name}**`,
+            fields: [{ name: '📌 القناة', value: `<#${newChannel.id}>`, inline: true }]
+          });
+        }
+      } catch {}
     }
   },
   {
@@ -75,6 +87,26 @@ module.exports = [
         fields: [
           { name: '💬 اسم الثريد', value: thread.name, inline: true },
           { name: '📌 القناة الأصلية', value: thread.parentId ? `<#${thread.parentId}>` : 'غير معروف', inline: true }
+        ]
+      });
+    }
+  },
+  {
+    name: 'threadUpdate',
+    async execute(oldThread, newThread) {
+      if (!newThread.guild) return;
+      const changes = [];
+      if (oldThread.name !== newThread.name) changes.push(`الاسم: \`${oldThread.name}\` → \`${newThread.name}\``);
+      if (oldThread.archived !== newThread.archived) changes.push(newThread.archived ? 'تمت أرشفة الثريد' : 'تم إلغاء أرشفة الثريد');
+      if (oldThread.locked !== newThread.locked) changes.push(newThread.locked ? 'تم قفل الثريد' : 'تم فتح الثريد');
+      if (oldThread.rateLimitPerUser !== newThread.rateLimitPerUser) changes.push(`بطيء المحادثة: ${oldThread.rateLimitPerUser}ث → ${newThread.rateLimitPerUser}ث`);
+      if (!changes.length) return;
+      await sendServerLog(newThread.guild, 'thread_update', 'channels', {
+        title: '✏️ تعديل ثريد',
+        desc: `تم تعديل ثريد **${newThread.name}**`,
+        fields: [
+          { name: '💬 الثريد', value: `<#${newThread.id}>`, inline: true },
+          { name: '📝 التغييرات', value: changes.join('\n'), inline: false }
         ]
       });
     }

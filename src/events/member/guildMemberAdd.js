@@ -38,6 +38,23 @@ module.exports = {
       }
     }
 
+    // --- 0.1.5 سجل إضافة بوت (bot_add) — للبوتات التي دخلت ولم تُطرد ---
+    if (member.user.bot) {
+      try {
+        const { sendServerLog } = require('../../utils/serverLogger');
+        await sendServerLog(guild, 'bot_add', 'integrations', {
+          title: 'إضافة بوت',
+          desc: `تمت إضافة بوت جديد إلى السيرفر`,
+          fields: [
+            { name: '🤖 البوت', value: `<@${member.id}> (${member.user.tag})`, inline: true },
+            { name: '🆔 الأيدي', value: `${member.id}`, inline: true },
+            { name: '📅 تاريخ إنشاء الحساب', value: `<t:${Math.floor(member.user.createdTimestamp / 1000)}:R>`, inline: false }
+          ],
+          thumbnail: member.user.displayAvatarURL({ dynamic: true })
+        });
+      } catch {}
+    }
+
     // --- 0.2 Anti-Alt: طرد الحسابات الجديدة (Alt Accounts) ---
     if (settings.anti_alt_days && settings.anti_alt_days > 0) {
       const accountAgeDays = (Date.now() - member.user.createdTimestamp) / (1000 * 60 * 60 * 24);

@@ -5,22 +5,17 @@ module.exports = [
     name: 'guildUpdate',
     async execute(oldGuild, newGuild) {
       const changes = [];
-      let eventId = 'server_update';
       
       if (oldGuild.name !== newGuild.name) {
-        eventId = 'server_name_change';
         changes.push(`الاسم: \`${oldGuild.name}\` → \`${newGuild.name}\``);
       }
       if (oldGuild.icon !== newGuild.icon) {
-        eventId = 'server_icon_change';
         changes.push('تم تغيير أيقونة السيرفر');
       }
       if (oldGuild.banner !== newGuild.banner) {
-        eventId = 'server_banner_change';
         changes.push('تم تغيير بانر السيرفر');
       }
       if (oldGuild.vanityURLCode !== newGuild.vanityURLCode) {
-        eventId = 'server_vanity_change';
         changes.push(`رابط الفانيتي: \`${oldGuild.vanityURLCode || 'لا يوجد'}\` → \`${newGuild.vanityURLCode || 'لا يوجد'}\``);
       }
       if (oldGuild.premiumTier !== newGuild.premiumTier) {
@@ -29,7 +24,7 @@ module.exports = [
       }
       if (!changes.length) return;
 
-      await sendServerLog(newGuild, eventId, 'server', {
+      await sendServerLog(newGuild, 'server_update', 'server', {
         title: '✏️ تعديل السيرفر',
         desc: `تم تعديل إعدادات السيرفر **${newGuild.name}**`,
         fields: [

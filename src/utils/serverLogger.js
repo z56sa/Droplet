@@ -2,6 +2,19 @@ const { EmbedBuilder } = require('discord.js');
 const db = require('../database');
 const { isEnabled } = require('./isEnabled');
 
+// ✅ السجلات المدعومة فقط (32 سجل) — أي حدث آخر يُتجاهل بصمت
+const ALLOWED_LOG_EVENTS = new Set([
+  'member_ban', 'member_timeout', 'member_kick', 'member_unban', 'member_join', 'member_leave', 'member_nick_change',
+  'role_give_member', 'role_remove_member', 'role_create', 'role_update', 'role_delete',
+  'msg_delete', 'msg_purge', 'msg_update',
+  'channel_create', 'channel_update', 'channel_delete', 'thread_create', 'thread_update', 'thread_delete', 'channel_perms_update',
+  'server_update',
+  'emoji_update', 'sticker_update',
+  'invite_create',
+  'vc_join', 'vc_leave', 'vc_switch', 'vc_disconnect', 'vc_mute_server',
+  'bot_add'
+]);
+
 /**
  * Dispatch an audit log event
  * @param {import('discord.js').Guild} guild 
@@ -11,6 +24,7 @@ const { isEnabled } = require('./isEnabled');
  */
 async function sendServerLog(guild, eventId, catKey, embedData = {}) {
     if (!guild) return;
+    if (!ALLOWED_LOG_EVENTS.has(eventId)) return;
 
     try {
         const settings = db.getGuildSettings(guild.id) || {};

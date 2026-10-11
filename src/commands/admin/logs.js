@@ -4,62 +4,46 @@ const config = require('../../config.json');
 const { getGuildLang, t } = require('../../utils/lang');
 const dictAdmin = require('../../lang/dict-admin');
 
-// 13 Category definitions (identical to dashboard logs section)
+// 9 Category definitions (matches trimmed dashboard logs section: 32 logs)
 const LOG_CATEGORIES = {
   members: { title: 'الأعضاء', icon: '🎯', color: '#5865F2', channelName: '🎯┃سجل-الأعضاء' },
   roles: { title: 'الرتب', icon: '🎖️', color: '#9333ea', channelName: '🎖️┃سجل-الرتب' },
   channels: { title: 'القنوات', icon: '📌', color: '#3b82f6', channelName: '📌┃سجل-القنوات' },
   messages: { title: 'الرسائل', icon: '💬', color: '#10b981', channelName: '💬┃سجل-الرسائل' },
-  voice: { title: 'الصوت', icon: '🎙️', color: '#ec4899', channelName: '🎙️┃سجل-الصوتيات' },
-  moderation: { title: 'الإشراف', icon: '🛡️', color: '#ef4444', channelName: '🛡️┃سجل-الإشراف' },
   server: { title: 'السيرفر', icon: '⚙️', color: '#f59e0b', channelName: '⚙️┃سجل-السيرفر' },
-  invites: { title: 'الدعوات', icon: '🔗', color: '#06b6d4', channelName: '🔗┃سجل-الدعوات' },
   emojis: { title: 'الإيموجي والستيكرز', icon: '😃', color: '#8b5cf6', channelName: '😃┃سجل-الإيموجي' },
-  events: { title: 'الأحداث', icon: '📅', color: '#14b8a6', channelName: '📅┃سجل-الفعاليات' },
-  integrations: { title: 'التكاملات', icon: '🔌', color: '#6366f1', channelName: '🔌┃سجل-التكاملات' },
-  automod: { title: 'الأوتو مود', icon: '🤖', color: '#f43f5e', channelName: '🤖┃سجل-الرقابة' },
-  stage: { title: 'المنصة', icon: '📢', color: '#84cc16', channelName: '📢┃سجل-المنصة' }
+  invites: { title: 'الدعوات', icon: '🔗', color: '#06b6d4', channelName: '🔗┃سجل-الدعوات' },
+  voice: { title: 'الصوت', icon: '🎙️', color: '#ec4899', channelName: '🎙️┃سجل-الصوتيات' },
+  integrations: { title: 'التكاملات', icon: '🔌', color: '#6366f1', channelName: '🔌┃سجل-التكاملات' }
 };
 
 // Event id prefixes per category (must match dashboard LOG_CATEGORIES ids)
 const CATEGORY_EVENT_PREFIXES = {
-  members: ['member'],
-  roles: ['role'],
-  channels: ['channel', 'thread'],
-  messages: ['msg'],
-  voice: ['vc'],
-  moderation: ['mod'],
-  server: ['server'],
-  invites: ['invite'],
-  emojis: ['emoji', 'sticker'],
-  events: ['event'],
-  integrations: ['integration', 'webhook', 'bot'],
-  automod: ['automod'],
-  stage: ['stage']
+  members: ['member_ban', 'member_timeout', 'member_kick', 'member_unban', 'member_join', 'member_leave', 'member_nick_change'],
+  roles: ['role_give_member', 'role_remove_member', 'role_create', 'role_update', 'role_delete'],
+  channels: ['channel_create', 'channel_update', 'channel_delete', 'thread_create', 'thread_update', 'thread_delete', 'channel_perms_update'],
+  messages: ['msg_delete', 'msg_purge', 'msg_update'],
+  server: ['server_update'],
+  emojis: ['emoji_update', 'sticker_update'],
+  invites: ['invite_create'],
+  voice: ['vc_join', 'vc_leave', 'vc_switch', 'vc_disconnect', 'vc_mute_server'],
+  integrations: ['bot_add']
 };
 
 // Detailed mode: extra channels for the busiest categories
 const DETAILED_SUBCHANNELS = {
   members: [
-    { name: '📥┃سجل-الدخول-والخروج', prefixes: ['member_join', 'member_leave'] },
-    { name: '🪓┃سجل-الحظر-والطرد', prefixes: ['member_ban', 'member_unban', 'member_kick'] },
-    { name: '⏳┃سجل-العزل-والإسكات', prefixes: ['member_timeout', 'member_untimeout', 'member_mute', 'member_unmute', 'member_prison', 'member_unprison'] },
-    { name: '✏️┃سجل-تغييرات-الأعضاء', prefixes: ['member_nick', 'member_avatar', 'member_username', 'member_boost', 'member_suspicious'] }
+    { name: '🪓┃سجل-الحظر-والطرد', prefixes: ['member_ban', 'member_unban', 'member_kick', 'member_timeout'] },
+    { name: '📥┃سجل-الدخول-والخروج', prefixes: ['member_join', 'member_leave', 'member_nick_change'] }
   ],
   messages: [
-    { name: '🗑️┃سجل-حذف-الرسائل', prefixes: ['msg_delete', 'msg_image_delete', 'msg_purge'] },
-    { name: '✏️┃سجل-تعديل-الرسائل', prefixes: ['msg_update'] },
-    { name: '📌┃سجل-التثبيت-والتفاعلات', prefixes: ['msg_pin', 'msg_unpin', 'msg_reaction'] }
-  ],
-  voice: [
-    { name: '🔁┃سجل-حركة-الرومات', prefixes: ['vc_join', 'vc_leave', 'vc_switch', 'vc_disconnect'] },
-    { name: '🔇┃سجل-كتم-الصوت', prefixes: ['vc_mute', 'vc_unmute', 'vc_deafen', 'vc_undeafen', 'vc_self'] },
-    { name: '📺┃سجل-البث-والكاميرا', prefixes: ['vc_stream', 'vc_video'] }
+    { name: '🗑️┃سجل-حذف-الرسائل', prefixes: ['msg_delete', 'msg_purge'] },
+    { name: '✏️┃سجل-تعديل-الرسائل', prefixes: ['msg_update'] }
   ]
 };
 
 const LOGS_CATEGORY_NAME = 'Droplet Server Logs';
-const TOTAL_LOGS = 105;
+const TOTAL_LOGS = 32;
 
 function getLogsConfig(guildId) {
   const settings = db.getGuildSettings(guildId) || {};
@@ -206,7 +190,7 @@ function catTitle(lang, key) {
 
 module.exports = {
   name: 'logs',
-  description: 'نظام سجلات السيرفر الشاملة (Audit Logs) — إعداد وإدارة 105 سجلات في 13 قسم',
+  description: 'نظام سجلات السيرفر الأساسية — 32 سجل في 9 أقسام',
   aliases: ['سجلات', 'لوق', 'سجل'],
   data: new SlashCommandBuilder()
     .setName('logs')
@@ -395,7 +379,7 @@ module.exports = {
         const settings = db.getGuildSettings(guildId) || {};
 
         const { sendServerLog } = require('../../utils/serverLogger');
-        const TEST_EVENT_IDS = { members: 'member_join', messages: 'msg_delete', roles: 'role_create', voice: 'vc_join', channels: 'channel_create', moderation: 'mod_warn_add', server: 'server_update', invites: 'invite_create', emojis: 'emoji_create', events: 'event_create', integrations: 'bot_add', automod: 'automod_rule_create', stage: 'stage_create' };
+        const TEST_EVENT_IDS = { members: 'member_ban', messages: 'msg_delete', roles: 'role_create', channels: 'channel_create', integrations: 'bot_add', server: 'server_update', emojis: 'emoji_update', invites: 'invite_create', voice: 'vc_join' };
         const testEventId = TEST_EVENT_IDS[category] || (category + '_test');
 
         await sendServerLog(guild, testEventId, category, {
@@ -506,7 +490,7 @@ module.exports = {
         }
         const cat = LOG_CATEGORIES[categoryKey];
         const { sendServerLog } = require('../../utils/serverLogger');
-        await sendServerLog(guild, categoryKey === 'members' ? 'member_join' : categoryKey === 'messages' ? 'msg_delete' : categoryKey === 'roles' ? 'role_create' : categoryKey === 'voice' ? 'vc_join' : categoryKey + '_test', categoryKey, {
+        await sendServerLog(guild, categoryKey === 'members' ? 'member_ban' : categoryKey === 'messages' ? 'msg_delete' : categoryKey === 'roles' ? 'role_create' : categoryKey === 'channels' ? 'channel_create' : categoryKey === 'server' ? 'server_update' : categoryKey === 'emojis' ? 'emoji_update' : categoryKey === 'invites' ? 'invite_create' : categoryKey === 'voice' ? 'vc_join' : 'bot_add', categoryKey, {
           title: t(lang, 'admin.logs.test_title', { icon: cat.icon, title: catTitle(lang, categoryKey) }),
           desc: t(lang, 'admin.logs.test_desc', { title: catTitle(lang, categoryKey) }),
           footer: t(lang, 'admin.logs.test_footer')

@@ -21,7 +21,7 @@ module.exports = [
         }
       } catch {}
       const hasImage = message.attachments?.some(a => a.contentType?.startsWith('image'));
-      const eventId = hasImage ? 'msg_image_delete' : 'msg_delete';
+      const eventId = 'msg_delete';
       await sendServerLog(message.guild, eventId, 'messages', {
         title: hasImage ? '🖼️ حذف صورة' : '🗑️ حذف رسالة',
         desc: `تم حذف رسالة في <#${message.channelId}>`,
