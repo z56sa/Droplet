@@ -12112,7 +12112,29 @@ ${embedScriptHtml}
 
             const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
             const host = req.get('host');
-            const fullUrl = `${protocol}://${host}/uploads/${fileName}`;
+            let fullUrl = `${protocol}://${host}/uploads/${fileName}`;
+
+            // ✅ استضافة دائمة: القرص المحلي مؤقت على الاستضافات المجانية — نرفع نسخة لقناة ديسكورد ونستخدم رابطها الدائم
+            try {
+              const _g = client?.guilds?.cache?.get(req.params.guildId);
+              if (_g && dataBuffer.length <= 10 * 1024 * 1024) {
+                const _gs = database.getGuildSettings ? database.getGuildSettings(req.params.guildId) : {};
+                const _pref = [_gs.log_channel, _gs.log_channel_server].filter(Boolean);
+                let _ch = null;
+                for (const cid of _pref) {
+                  _ch = _g.channels.cache.get(cid) || await _g.channels.fetch(cid).catch(() => null);
+                  if (_ch && _ch.isTextBased()) break; else _ch = null;
+                }
+                if (!_ch) {
+                  _ch = _g.channels.cache.find(c => c.isTextBased() && c.permissionsFor?.(_g.members.me)?.has('SendMessages')) || null;
+                }
+                if (_ch) {
+                  const sent = await _ch.send({ files: [{ attachment: dataBuffer, name: fileName }] }).catch(() => null);
+                  const cdn = sent?.attachments?.first?.()?.url;
+                  if (cdn) fullUrl = cdn;
+                }
+              }
+            } catch {}
 
             res.json({ success: true, url: fullUrl });
         } catch (e) {
