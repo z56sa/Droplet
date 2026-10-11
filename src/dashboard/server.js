@@ -4913,8 +4913,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <span>📤</span>
                                             <span id="btn_text_welcome_banner_image">رفع الصورة</span>
                                         </label>
-                                        <p id="bannerUrlStatus" class="text-[10px] mt-1 text-right max-w-[220px] break-words">${(function(){ try { const _u = String(settings.welcome_banner_image || '').trim(); if (!_u || _u.toLowerCase() === 'null') return '<span class="text-gray-500">لا توجد صورة محفوظة.</span>'; if (_u.includes('cdn.discordapp.com')) return '<span class="text-emerald-400">✅ رابط دائم (ديسكورد).</span>'; const _m = _u.match(/\/uploads\/([^?#\/]+)$/); if (_m) { try { const _p = require('path'); const _f = require('fs'); if (_f.existsSync(_p.join(__dirname, 'public', 'uploads', _m[1]))) return '<span class="text-emerald-400">✅ الصورة موجودة على الخادم.</span>'; } catch (e) {} return '<span class="text-rose-400">❌ ملف الصورة غير موجود على الخادم — أعد الرفع.</span>'; } return '<span class="text-gray-400">رابط خارجي — يُفحص عند الإرسال.</span>'; } catch (e) { return ''; } })()}
-                                        <button type="button" onclick="sendWelcomeTest()" class="px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/30 text-emerald-300 rounded-xl text-xs font-bold transition cursor-pointer w-full md:w-auto">🧪 إرسال ترحيب تجريبي</button>
+                                        <p id="bannerUrlStatus" class="text-[10px] mt-1 text-right max-w-[220px] break-words"></p>
                                     </div>
                                 </div>
                                 <script>
@@ -4988,23 +4987,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             } else { finishSend(file); }
                                         } catch (e) { finishSend(file); }
                                     };
-                                    window.sendWelcomeTest = function() {
-                                        var gId = window.location.pathname.split('/')[2];
-                                        var btns = document.querySelectorAll('button[onclick="sendWelcomeTest()"],button[onclick="removeWelcomeBanner()"]');
-                                        btns.forEach(function(b){ b.disabled = true; b.style.opacity = '0.6'; });
-                                        var done = function(){ btns.forEach(function(b){ b.disabled = false; b.style.opacity = ''; }); };
-                                        fetch('/api/guild/' + gId + '/welcome-test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
-                                        .then(function(r) { return r.text().then(function(t){ var d = null; try { d = JSON.parse(t); } catch(e){ throw new Error('رد غير صالح من الخادم (HTTP ' + r.status + ')'); } if (!r.ok && !(d && d.error)) throw new Error('HTTP ' + r.status); return d; }); })
-                                        .then(function(d) { done(); if (d && d.success) alert('✅ تم إرسال الترحيب التجريبي!\\nالوضع: ' + (d.mode || '?') + '\\nالبانر: ' + (d.bannerApplied ? 'مطبق ✅' : 'غير مطبق (' + (d.bannerReason || '؟') + ')')); else alert('❌ فشل: ' + ((d && d.error) || 'خطأ')); })
-                                        .catch(function(e) { done(); alert('❌ ' + (e && e.message ? e.message : 'خطأ اتصال')); });
-                                    };
+                                    // (أُزيل زر الترحيب التجريبي حسب الطلب — الترحيب الحقيقي يرسل النص والصورة معاً)
                                     window.removeWelcomeBanner = function() {
                                         var hi = document.getElementById('input_welcome_banner_image');
                                         var im = document.getElementById('img_welcome_banner_image');
                                         var ph = document.getElementById('placeholder_welcome_banner_image');
                                         var st = document.getElementById('bannerUrlStatus');
                                         var btn = document.getElementById('btn_remove_welcome_banner');
-                                        var oldSrc = im ? im.src : '';
+                                        var oldSrc = (hi && hi.value) ? hi.value : ((im && im.getAttribute && im.getAttribute('src')) || '');
                                         if (hi) hi.value = '';
                                         if (im) { try { im.removeAttribute('src'); } catch(e){ im.src = ''; } im.classList.add('hidden'); }
                                         if (ph) ph.classList.remove('hidden');
@@ -12255,16 +12245,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         } catch (err) { alert('❌ ' + (err && err.message ? err.message : err)); }
                     };
                 }
-                // ✅ زرّا الترحيب التجريبي والإزالة عالمياً — يعملان حتى لو سكربت قسم الترحيب لم يُنفذ
-                if (typeof window.sendWelcomeTest !== 'function') {
-                    window.sendWelcomeTest = function() {
-                        var gId = window.location.pathname.split('/')[2];
-                        fetch('/api/guild/' + gId + '/welcome-test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
-                        .then(function(r) { return r.text().then(function(t){ var d = null; try { d = JSON.parse(t); } catch(e){ throw new Error('رد غير صالح من الخادم (HTTP ' + r.status + ')'); } if (!r.ok && !(d && d.error)) throw new Error('HTTP ' + r.status); return d; }); })
-                        .then(function(d) { if (d && d.success) alert('✅ تم إرسال الترحيب التجريبي!\\nالوضع: ' + (d.mode || '?') + '\\nالبانر: ' + (d.bannerApplied ? 'مطبق ✅' : 'غير مطبق (' + (d.bannerReason || '؟') + ')')); else alert('❌ فشل: ' + ((d && d.error) || 'خطأ')); })
-                        .catch(function(e) { alert('❌ ' + (e && e.message ? e.message : 'خطأ اتصال')); });
-                    };
-                }
+                // ✅ زر إزالة بانر الترحيب عالمياً — يعمل حتى لو سكربت قسم الترحيب لم يُنفذ
                 if (typeof window.removeWelcomeBanner !== 'function') {
                     window.removeWelcomeBanner = function() {
                         var hi = document.getElementById('input_welcome_banner_image');
@@ -12357,7 +12338,8 @@ ${embedScriptHtml}
             const host = req.get('host');
             let fullUrl = `${protocol}://${host}/uploads/${fileName}`;
 
-            // ✅ استضافة دائمة: القرص المحلي مؤقت على الاستضافات المجانية — نرفع نسخة لقناة ديسكورد ونستخدم رابطها الدائم
+            // ✅ استضافة دائمة بصمت: نرفع نسخة لقناة ديسكورد لأخذ رابط CDN الدائم ثم نحذف الرسالة فوراً حتى لا تظهر الصورة وحيدة في الشات
+            let persistent = false;
             try {
               const _g = client?.guilds?.cache?.get(req.params.guildId);
               if (_g && dataBuffer.length <= 10 * 1024 * 1024) {
@@ -12374,12 +12356,14 @@ ${embedScriptHtml}
                 if (_ch) {
                   const sent = await _ch.send({ files: [{ attachment: dataBuffer, name: fileName }] }).catch(() => null);
                   const cdn = sent?.attachments?.first?.()?.url;
-                  if (cdn) fullUrl = cdn;
+                  if (cdn) { fullUrl = cdn; persistent = true; }
+                  // حذف رسالة الاستضافة فوراً — الرابط يبقى صالحاً بعد الحذف
+                  if (sent) { try { await sent.delete().catch(() => {}); } catch {} }
                 }
               }
             } catch {}
 
-            res.json({ success: true, url: fullUrl });
+            res.json({ success: true, url: fullUrl, persistent });
         } catch (e) {
             console.error('Upload image error:', e);
             res.status(500).json({ success: false, error: e.message });

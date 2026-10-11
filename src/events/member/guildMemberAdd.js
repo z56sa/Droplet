@@ -260,9 +260,21 @@ module.exports = {
           sendPayload.embeds = [welcomeEmbed];
         } else {
           sendPayload.content = msg;
-          if (settings.welcome_banner_image) {
-            sendPayload.files = [{ attachment: settings.welcome_banner_image, name: 'welcome_banner.png' }];
-          }
+          // ✅ البانر يُرفق مع النص في نفس الرسالة — نحمله كمخزن مؤقت لأن ديسكورد لا يقبل روابط URL كمرفقات
+          try {
+            const _bu = (settings.welcome_banner_image && String(settings.welcome_banner_image).trim()) || '';
+            if (_bu && _bu.toLowerCase() !== 'null') {
+              const _sig = (() => { try { return AbortSignal.timeout(8000); } catch { return undefined; } })();
+              const _r = await fetch(_bu, { signal: _sig }).catch(() => null);
+              const _ct = _r && _r.headers ? String(_r.headers.get('content-type') || '') : '';
+              if (_r && _r.ok && _ct.includes('image')) {
+                const _bf = Buffer.from(await _r.arrayBuffer());
+                if (_bf && _bf.length > 0 && _bf.length <= 10 * 1024 * 1024) {
+                  sendPayload.files = [{ attachment: _bf, name: 'welcome_banner.png' }];
+                }
+              }
+            }
+          } catch {}
         }
 
         if (settings.welcome_image) {
