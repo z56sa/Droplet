@@ -11953,6 +11953,108 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     if (fileInput) fileInput.value = '';
                     if (typeof onDone === 'function') onDone();
                 }
+
+                // ✅ مسار احتياطي لأزرار محرر الإمبد — يعمل حتى لو تعطل سكربت القسم
+                function __embVal(id) { var el = document.getElementById(id); return el ? (el.value || '').trim() : ''; }
+                function __embHttp(v) { v = (v || '').trim(); if (!v) return ''; if (!/^https?:\/\//i.test(v)) return ''; return v.slice(0, 1000); }
+                function __embToast(msg, ok) {
+                    try {
+                        if (typeof showSaveStatus === 'function' && ok) { showSaveStatus(); }
+                        var t = document.getElementById('embedFixedToast');
+                        if (!t) {
+                            t = document.createElement('div');
+                            t.id = 'embedFixedToast';
+                            t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:999999;padding:12px 24px;border-radius:16px;font-size:13px;font-weight:bold;background:rgba(16,185,129,0.95);color:#dbeafe;min-width:280px;text-align:center;direction:rtl;';
+                            document.body.appendChild(t);
+                        }
+                        t.textContent = msg;
+                        t.style.background = ok ? 'rgba(16,185,129,0.95)' : 'rgba(239,68,68,0.95)';
+                        t.style.display = 'block';
+                        setTimeout(function() { t.style.display = 'none'; }, 4000);
+                    } catch (e) { try { alert(msg); } catch (_) {} }
+                }
+                function __embFields() {
+                    var out = [];
+                    try {
+                        var c = document.getElementById('fieldsContainer');
+                        if (!c) return out;
+                        var divs = c.querySelectorAll(':scope > div');
+                        for (var i = 0; i < divs.length; i++) {
+                            var txts = divs[i].querySelectorAll('input[type="text"]');
+                            var chk = divs[i].querySelector('input[type="checkbox"]');
+                            if (!txts || txts.length < 2) continue;
+                            var nm = (txts[0].value || '').trim(), vl = (txts[1].value || '').trim();
+                            if (!nm && !vl) continue;
+                            out.push({ name: nm || '​', value: vl || '​', inline: !!(chk && chk.checked) });
+                        }
+                    } catch (e) {}
+                    return out;
+                }
+                function __embPayload() {
+                    var ch = document.getElementById('embedChannel');
+                    return {
+                        channelId: ch ? (ch.value || '') : '',
+                        color: __embVal('embColor') || '#60a5fa',
+                        title: __embVal('embTitle'),
+                        titleUrl: __embHttp(__embVal('embTitleUrl')),
+                        desc: __embVal('embDesc'),
+                        author: __embVal('embAuthor'),
+                        authorIcon: __embHttp(__embVal('embAuthorIcon')),
+                        image: __embVal('embImage'),
+                        thumbnail: __embVal('embThumbnail'),
+                        footer: __embVal('embFooter'),
+                        footerIcon: __embHttp(__embVal('embFooterIcon')),
+                        timestamp: (function() { var t = document.getElementById('embTimestampToggle'); return t ? !!t.checked : true; })(),
+                        fields: __embFields()
+                    };
+                }
+                async function __embSendFallback() {
+                    var p = __embPayload();
+                    if (!p.channelId) { __embToast('⚠️ يرجى اختيار القناة المستهدفة أولاً!', false); return; }
+                    if (!p.desc && !p.title) { __embToast('⚠️ يرجى كتابة عنوان أو محتوى قبل الإرسال!', false); return; }
+                    var gId = window.location.pathname.split('/')[2];
+                    try {
+                        var res = await fetch('/api/guild/' + gId + '/send-embed', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(p)
+                        });
+                        var data = await res.json();
+                        if (data && data.success) __embToast('✅ تم إرسال الإيمبد بنجاح!', true);
+                        else __embToast('❌ ' + ((data && data.error) || 'فشل الإرسال'), false);
+                    } catch (e) { __embToast('❌ خطأ في الاتصال', false); }
+                }
+                function __embSaveFallback() {
+                    try {
+                        var gId = window.location.pathname.split('/')[2];
+                        localStorage.setItem('droplet_embed_draft_' + gId, JSON.stringify(__embPayload()));
+                        __embToast('💾 تم حفظ المسودة في المتصفح بنجاح!', true);
+                    } catch (e) { __embToast('❌ فشل حفظ المسودة', false); }
+                }
+                function __embClearFallback() {
+                    ['embTitle', 'embDesc', 'embAuthor', 'embTitleUrl', 'embAuthorIcon', 'embFooter', 'embFooterIcon', 'embImage', 'embThumbnail'].forEach(function(id) {
+                        var el = document.getElementById(id); if (el) el.value = '';
+                    });
+                    var c = document.getElementById('embColor'); if (c) c.value = '#60a5fa';
+                    var h = document.getElementById('embHexInput'); if (h) h.value = '#60a5fa';
+                    var fc = document.getElementById('fieldsContainer'); if (fc) fc.innerHTML = '';
+                    try {
+                        var gId = window.location.pathname.split('/')[2];
+                        localStorage.removeItem('droplet_embed_draft_' + gId);
+                    } catch (e) {}
+                    if (typeof window.updateEmbedPreview === 'function') { try { window.updateEmbedPreview(); } catch (e) {} }
+                    __embToast('🗑️ تم مسح جميع محتويات الإيمبد', true);
+                }
+                document.addEventListener('click', function(e) {
+                    var t = e.target && e.target.closest ? e.target.closest('#btnSendEmbed,#btnSaveEmbedDraft,#btnClearEmbed') : null;
+                    if (!t) return;
+                    if (t.id === 'btnSendEmbed' && typeof window.sendEmbedDirect === 'function') return;
+                    if (t.id === 'btnSaveEmbedDraft' && typeof window.saveEmbedDraft === 'function') return;
+                    if (t.id === 'btnClearEmbed' && typeof window.clearEmbedFields === 'function') return;
+                    e.preventDefault(); e.stopPropagation();
+                    if (t.id === 'btnSendEmbed') __embSendFallback();
+                    else if (t.id === 'btnSaveEmbedDraft') __embSaveFallback();
+                    else __embClearFallback();
+                });
                 </script>
                 ${embedScriptHtml ? `<script>
 ${embedScriptHtml}

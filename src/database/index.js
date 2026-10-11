@@ -848,6 +848,15 @@ try {
 } catch(e) {}
 
 // ✅ Performance Indexes - تسريع استعلامات الداشبورد
+// 🔇 منع رسائل الترحيب المكررة (تداخل النسخ أثناء النشر أو انضمام متكرر)
+try { db.db.exec(`
+  CREATE TABLE IF NOT EXISTS recent_welcomes (
+    guild_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    sent_at INTEGER NOT NULL,
+    PRIMARY KEY (guild_id, user_id)
+  );
+`); } catch(e) {}
 try { db.exec('CREATE INDEX IF NOT EXISTS idx_users_user_id ON users(user_id);'); } catch(e) {}
 try { db.exec('CREATE INDEX IF NOT EXISTS idx_users_guild_id ON users(guild_id);'); } catch(e) {}
 try { db.exec('CREATE INDEX IF NOT EXISTS idx_users_coins ON users(coins DESC);'); } catch(e) {}

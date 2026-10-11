@@ -192,6 +192,23 @@ module.exports = {
       }
 
       if (welcomeChannel && welcomeChannel.isTextBased()) {
+        // ✅ إسقاط التكرار: نفس العضو خلال 90 ثانية = نسخة مكررة
+        try {
+          const nowSec = Math.floor(Date.now() / 1000);
+          const prev = db.db.prepare('SELECT sent_at FROM recent_welcomes WHERE guild_id = ? AND user_id = ?').get(guild.id, member.id);
+          if (prev && (nowSec - prev.sent_at) < 90) {
+            console.log(`[WELCOME] ⏭️ تخطي ترحيب مكرر لـ ${member.user.tag} في ${guild.id}`);
+          } else {
+            db.db.prepare('INSERT OR REPLACE INTO recent_welcomes (guild_id, user_id, sent_at) VALUES (?, ?, ?)').run(guild.id, member.id, nowSec);
+            try { db.db.prepare('DELETE FROM recent_welcomes WHERE sent_at < ?').run(nowSec - 3600); } catch {}
+            await sendWelcome();
+          }
+        } catch (e) {
+          await sendWelcome();
+        }
+      }
+
+      async function sendWelcome() {
         let msg = settings.welcome_message || 'أهلاً بك يا [user] في سيرفر **[server]**! 🎉 أنت العضو رقم [memberCount] (تمت دعوتك بواسطة [inviter])';
         msg = msg
           .replace(/\[user\]/gi, `<@${member.id}>`)
@@ -255,7 +272,7 @@ module.exports = {
         }
 
         await welcomeChannel.send(sendPayload).catch((e) => console.error('فشل إرسال رسالة الترحيب:', e.message));
-      }
+        } // end sendWelcome()
     } catch (welcomeErr) {
       console.error('خطأ في معالجة الترحيب:', welcomeErr);
     }
