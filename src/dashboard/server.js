@@ -4831,7 +4831,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <span class="text-amber-300">👋</span>
                             </button>
                         </div>
-                        <p class="text-[11px] text-gray-500">💾 كل تغيير يُحفظ تلقائياً فور تعديله — لا حاجة لزر الحفظ. <span class="text-[9px] font-mono text-gray-600">[BUILD-41894C]</span></p>
+                        <p class="text-[11px] text-gray-500">💾 كل تغيير يُحفظ تلقائياً فور تعديله — لا حاجة لزر الحفظ. <span class="text-[9px] font-mono text-gray-600">[BUILD-b0a6564]</span></p>
 
                         <!-- ============ WELCOME ============ -->
                         <div id="sectionWelcomeBox" class="space-y-6">

@@ -121,26 +121,30 @@ function drawEmblemBadge(ctx, x, y, size, type, active = true) {
   ctx.restore();
 }
 
-// تحميل صورة البانر: ملفات uploads المحلية تُقرأ من القرص مباشرة (أضمن من HTTP للذات)، والباقي عبر الرابط
+// تحميل صورة البانر: بايتات مباشرة، أو ملفات uploads المحلية من القرص، أو رابط — مع سجل تشخيصي
 async function loadBannerImage(bannerUrl) {
   try {
     if (bannerUrl && Buffer.isBuffer(bannerUrl) && bannerUrl.length > 0) {
-      try { return await loadImage(bannerUrl); } catch { return null; }
+      try { return await loadImage(bannerUrl); } catch (e) { console.log('[welcome-card] banner buffer failed:', e.message); return null; }
     }
   } catch {}
   const raw = (typeof bannerUrl === 'string' ? bannerUrl.trim() : '');
-  if (!raw || raw.toLowerCase() === 'null') return null;
+  if (!raw || raw.toLowerCase() === 'null') { console.log('[welcome-card] no banner configured, using gradient'); return null; }
   try {
     const m = raw.match(/\/uploads\/([^?#\/]+)$/);
     if (m) {
       const fp = path.join(__dirname, '..', 'dashboard', 'public', 'uploads', path.basename(m[1]));
       if (fs.existsSync(fp)) {
-        try { return await loadImage(fp); } catch {}
+        try { const img = await loadImage(fp); console.log('[welcome-card] banner loaded from disk:', path.basename(m[1])); return img; }
+        catch (e) { console.log('[welcome-card] disk banner failed:', e.message); }
+      } else {
+        console.log('[welcome-card] disk file missing:', path.basename(m[1]));
       }
       if (!/^https?:\/\//i.test(raw)) return null;
     }
-  } catch {}
-  try { return await loadImage(raw); } catch { return null; }
+  } catch (e) { console.log('[welcome-card] disk check error:', e.message); }
+  try { const img = await loadImage(raw); console.log('[welcome-card] banner loaded from URL'); return img; }
+  catch (e) { console.log('[welcome-card] URL banner failed:', e.message); return null; }
 }
 
 const canvasUtil = {
