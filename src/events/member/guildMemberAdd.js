@@ -261,7 +261,7 @@ module.exports = {
 
         if (settings.welcome_image) {
           try {
-            const cardBuffer = await canvasUtil.createWelcomeCard(member);
+            const cardBuffer = await canvasUtil.createWelcomeCard(member, settings.welcome_banner_image);
             if (cardBuffer) {
               const attachment = new AttachmentBuilder(cardBuffer, { name: 'welcome.png' });
               sendPayload.files = [attachment];

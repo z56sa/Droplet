@@ -125,18 +125,35 @@ const canvasUtil = {
   /**
    * إنشاء بطاقة ترحيب عصرية
    */
-  async createWelcomeCard(member) {
+  async createWelcomeCard(member, bannerUrl = null) {
     const width = 800;
     const height = 350;
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
-    const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-    bgGradient.addColorStop(0, '#0f172a');
-    bgGradient.addColorStop(0.5, '#1e1b4b');
-    bgGradient.addColorStop(1, '#0f172a');
-    ctx.fillStyle = bgGradient;
-    ctx.fillRect(0, 0, width, height);
+    // ✅ خلفية البانر المخصص (من الداشبورد) أو التدرج الافتراضي
+    let bannerDrawn = false;
+    if (bannerUrl && typeof bannerUrl === 'string' && bannerUrl.trim() !== '' && bannerUrl.trim().toLowerCase() !== 'null') {
+      try {
+        const bg = await loadImage(bannerUrl.trim());
+        // تغطية كاملة مع الحفاظ على الأبعاد (cover)
+        const scale = Math.max(width / bg.width, height / bg.height);
+        const dw = bg.width * scale, dh = bg.height * scale;
+        ctx.drawImage(bg, (width - dw) / 2, (height - dh) / 2, dw, dh);
+        // تعتيم خفيف لقراءة النصوص
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.55)';
+        ctx.fillRect(0, 0, width, height);
+        bannerDrawn = true;
+      } catch {}
+    }
+    if (!bannerDrawn) {
+      const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+      bgGradient.addColorStop(0, '#0f172a');
+      bgGradient.addColorStop(0.5, '#1e1b4b');
+      bgGradient.addColorStop(1, '#0f172a');
+      ctx.fillStyle = bgGradient;
+      ctx.fillRect(0, 0, width, height);
+    }
 
     ctx.strokeStyle = '#6366f1';
     ctx.lineWidth = 4;
