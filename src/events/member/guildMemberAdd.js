@@ -264,14 +264,27 @@ module.exports = {
           try {
             const _bu = (settings.welcome_banner_image && String(settings.welcome_banner_image).trim()) || '';
             if (_bu && _bu.toLowerCase() !== 'null') {
-              const _sig = (() => { try { return AbortSignal.timeout(8000); } catch { return undefined; } })();
-              const _r = await fetch(_bu, { signal: _sig }).catch(() => null);
-              const _ct = _r && _r.headers ? String(_r.headers.get('content-type') || '') : '';
-              if (_r && _r.ok && _ct.includes('image')) {
-                const _bf = Buffer.from(await _r.arrayBuffer());
-                if (_bf && _bf.length > 0 && _bf.length <= 10 * 1024 * 1024) {
-                  sendPayload.files = [{ attachment: _bf, name: 'welcome_banner.png' }];
+              let _bf = null;
+              // ملف uploads محلي؟ اقرأ من القرص مباشرة (أضمن من HTTP للذات)
+              try {
+                const _m = _bu.match(/\/uploads\/([^?#\/]+)$/);
+                if (_m && !_bu.includes('cdn.discordapp.com')) {
+                  const _p = require('path'), _f = require('fs');
+                  const _fp = _p.join(__dirname, '..', '..', 'dashboard', 'public', 'uploads', _p.basename(_m[1]));
+                  if (_f.existsSync(_fp)) _bf = _f.readFileSync(_fp);
                 }
+              } catch {}
+              if (!_bf && /^https?:\/\//i.test(_bu)) {
+                const _sig = (() => { try { return AbortSignal.timeout(8000); } catch { return undefined; } })();
+                const _r = await fetch(_bu, { signal: _sig }).catch(() => null);
+                const _ct = _r && _r.headers ? String(_r.headers.get('content-type') || '') : '';
+                if (_r && _r.ok && _ct.includes('image')) {
+                  const _tmp = Buffer.from(await _r.arrayBuffer());
+                  if (_tmp && _tmp.length > 0 && _tmp.length <= 10 * 1024 * 1024) _bf = _tmp;
+                }
+              }
+              if (_bf && _bf.length > 0 && _bf.length <= 10 * 1024 * 1024) {
+                sendPayload.files = [{ attachment: _bf, name: 'welcome_banner.png' }];
               }
             }
           } catch {}

@@ -121,6 +121,23 @@ function drawEmblemBadge(ctx, x, y, size, type, active = true) {
   ctx.restore();
 }
 
+// تحميل صورة البانر: ملفات uploads المحلية تُقرأ من القرص مباشرة (أضمن من HTTP للذات)، والباقي عبر الرابط
+async function loadBannerImage(bannerUrl) {
+  const raw = (typeof bannerUrl === 'string' ? bannerUrl.trim() : '');
+  if (!raw || raw.toLowerCase() === 'null') return null;
+  try {
+    const m = raw.match(/\/uploads\/([^?#\/]+)$/);
+    if (m) {
+      const fp = path.join(__dirname, '..', 'dashboard', 'public', 'uploads', path.basename(m[1]));
+      if (fs.existsSync(fp)) {
+        try { return await loadImage(fp); } catch {}
+      }
+      if (!/^https?:\/\//i.test(raw)) return null;
+    }
+  } catch {}
+  try { return await loadImage(raw); } catch { return null; }
+}
+
 const canvasUtil = {
   /**
    * إنشاء بطاقة ترحيب عصرية
@@ -133,9 +150,9 @@ const canvasUtil = {
 
     // ✅ خلفية البانر المخصص (من الداشبورد) أو التدرج الافتراضي
     let bannerDrawn = false;
-    if (bannerUrl && typeof bannerUrl === 'string' && bannerUrl.trim() !== '' && bannerUrl.trim().toLowerCase() !== 'null') {
+    const bg = await loadBannerImage(bannerUrl);
+    if (bg) {
       try {
-        const bg = await loadImage(bannerUrl.trim());
         // تغطية كاملة مع الحفاظ على الأبعاد (cover)
         const scale = Math.max(width / bg.width, height / bg.height);
         const dw = bg.width * scale, dh = bg.height * scale;
