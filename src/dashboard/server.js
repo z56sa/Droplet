@@ -4896,7 +4896,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                 <span>لا توجد صورة</span>
                                             </div>
                                         </div>
-                                        <button type="button" onclick="(function(){var hi=document.getElementById('input_welcome_banner_image');if(hi)hi.value='';var im=document.getElementById('img_welcome_banner_image');if(im){im.src='';im.classList.add('hidden');}var ph=document.getElementById('placeholder_welcome_banner_image');if(ph)ph.classList.remove('hidden');var gId=window.location.pathname.split('/')[2];fetch('/api/guild/'+gId+'/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({welcome_banner_image:null})}).then(function(r){return r.json();}).then(function(d){if(d&&d.success){var st=document.getElementById('bannerUrlStatus');if(st)st.innerHTML='<span class=\'text-gray-500\'>تمت الإزالة ✅</span>';}else{alert('❌ فشل الحذف: '+((d&&d.error)||'خطأ'));}}).catch(function(){alert('❌ خطأ اتصال أثناء الحذف');});})()" class="text-xs text-rose-400 hover:text-rose-300 font-bold py-1 px-3 rounded-lg hover:bg-rose-950/30 cursor-pointer">🗑️ إزالة الصورة</button>
+                                        <button type="button" id="btn_remove_welcome_banner" onclick="removeWelcomeBanner()" class="text-xs text-rose-400 hover:text-rose-300 font-bold py-1 px-3 rounded-lg hover:bg-rose-950/30 cursor-pointer">🗑️ إزالة الصورة</button>
                                     </div>
                                     <div class="flex-1 text-right space-y-1 w-full">
                                         <h5 class="text-sm font-black text-white">صورة بانر الترحيب 🖼️</h5>
@@ -4988,7 +4988,59 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             } else { finishSend(file); }
                                         } catch (e) { finishSend(file); }
                                     };
-                                    window.sendWelcomeTest = function() { var gId = window.location.pathname.split('/')[2]; fetch('/api/guild/' + gId + '/welcome-test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(function(r) { return r.json(); }).then(function(d) { if (d && d.success) alert('✅ تم إرسال الترحيب التجريبي!\nالبانر: ' + (d.bannerApplied ? 'مطبق ✅' : 'غير مطبق (' + (d.bannerReason || '؟') + ')')); else alert('❌ فشل: ' + ((d && d.error) || 'خطأ')); }).catch(function() { alert('❌ خطأ اتصال'); }); };
+                                    window.sendWelcomeTest = function() {
+                                        var gId = window.location.pathname.split('/')[2];
+                                        var btns = document.querySelectorAll('button[onclick="sendWelcomeTest()"],button[onclick="removeWelcomeBanner()"]');
+                                        btns.forEach(function(b){ b.disabled = true; b.style.opacity = '0.6'; });
+                                        var done = function(){ btns.forEach(function(b){ b.disabled = false; b.style.opacity = ''; }); };
+                                        fetch('/api/guild/' + gId + '/welcome-test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+                                        .then(function(r) { return r.text().then(function(t){ var d = null; try { d = JSON.parse(t); } catch(e){ throw new Error('رد غير صالح من الخادم (HTTP ' + r.status + ')'); } if (!r.ok && !(d && d.error)) throw new Error('HTTP ' + r.status); return d; }); })
+                                        .then(function(d) { done(); if (d && d.success) alert('✅ تم إرسال الترحيب التجريبي!\\nالوضع: ' + (d.mode || '?') + '\\nالبانر: ' + (d.bannerApplied ? 'مطبق ✅' : 'غير مطبق (' + (d.bannerReason || '؟') + ')')); else alert('❌ فشل: ' + ((d && d.error) || 'خطأ')); })
+                                        .catch(function(e) { done(); alert('❌ ' + (e && e.message ? e.message : 'خطأ اتصال')); });
+                                    };
+                                    window.removeWelcomeBanner = function() {
+                                        var hi = document.getElementById('input_welcome_banner_image');
+                                        var im = document.getElementById('img_welcome_banner_image');
+                                        var ph = document.getElementById('placeholder_welcome_banner_image');
+                                        var st = document.getElementById('bannerUrlStatus');
+                                        var btn = document.getElementById('btn_remove_welcome_banner');
+                                        var oldSrc = im ? im.src : '';
+                                        if (hi) hi.value = '';
+                                        if (im) { try { im.removeAttribute('src'); } catch(e){ im.src = ''; } im.classList.add('hidden'); }
+                                        if (ph) ph.classList.remove('hidden');
+                                        if (st) st.innerHTML = '<span class="text-gray-400">جاري الإزالة... ⏳</span>';
+                                        if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+                                        var gId = window.location.pathname.split('/')[2];
+                                        function restore() {
+                                            if (im && oldSrc) { im.src = oldSrc; im.classList.remove('hidden'); }
+                                            if (ph && oldSrc) ph.classList.add('hidden');
+                                            if (hi) hi.value = oldSrc || '';
+                                        }
+                                        function finish(ok, msg) {
+                                            if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+                                            if (ok) { if (st) st.innerHTML = '<span class="text-gray-500">تمت الإزالة ✅</span>'; if (typeof showSaveStatus === 'function') { try { showSaveStatus(); } catch(e){} } }
+                                            else { restore(); if (st) st.innerHTML = '<span class="text-rose-400">❌ فشل الحذف</span>'; alert(msg); }
+                                        }
+                                        fetch('/api/guild/' + gId + '/welcome-banner/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+                                        .then(function(r) { return r.text().then(function(t){ var d = null; try { d = JSON.parse(t); } catch(e){ throw new Error('رد غير صالح (HTTP ' + r.status + ')'); } if (!r.ok && !(d && d.success)) throw new Error((d && d.error) || ('HTTP ' + r.status)); return d; }); })
+                                        .then(function(d) {
+                                            if (d && d.success) finish(true);
+                                            else {
+                                                // fallback للمسار العام
+                                                fetch('/api/guild/' + gId + '/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ welcome_banner_image: null }) })
+                                                .then(function(r2){ return r2.json(); })
+                                                .then(function(d2){ if (d2 && d2.success) finish(true); else finish(false, '❌ فشل الحذف: ' + ((d2 && d2.error) || (d && d.error) || 'خطأ')); })
+                                                .catch(function(){ finish(false, '❌ خطأ اتصال أثناء الحذف'); });
+                                            }
+                                        })
+                                        .catch(function(e) {
+                                            // Endpoint جديد قد لا يوجد في نسخة قديمة — جرّب المسار العام
+                                            fetch('/api/guild/' + gId + '/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ welcome_banner_image: null }) })
+                                            .then(function(r2){ return r2.json(); })
+                                            .then(function(d2){ if (d2 && d2.success) finish(true); else finish(false, '❌ فشل الحذف: ' + ((d2 && d2.error) || (e && e.message) || 'خطأ')); })
+                                            .catch(function(){ finish(false, '❌ ' + (e && e.message ? e.message : 'خطأ اتصال أثناء الحذف')); });
+                                        });
+                                    };
                                     window.saveWelcomeBannerNow = function(url) {
                                         saveWl('welcome_banner_image', url);
                                     };
@@ -12203,6 +12255,38 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         } catch (err) { alert('❌ ' + (err && err.message ? err.message : err)); }
                     };
                 }
+                // ✅ زرّا الترحيب التجريبي والإزالة عالمياً — يعملان حتى لو سكربت قسم الترحيب لم يُنفذ
+                if (typeof window.sendWelcomeTest !== 'function') {
+                    window.sendWelcomeTest = function() {
+                        var gId = window.location.pathname.split('/')[2];
+                        fetch('/api/guild/' + gId + '/welcome-test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+                        .then(function(r) { return r.text().then(function(t){ var d = null; try { d = JSON.parse(t); } catch(e){ throw new Error('رد غير صالح من الخادم (HTTP ' + r.status + ')'); } if (!r.ok && !(d && d.error)) throw new Error('HTTP ' + r.status); return d; }); })
+                        .then(function(d) { if (d && d.success) alert('✅ تم إرسال الترحيب التجريبي!\\nالوضع: ' + (d.mode || '?') + '\\nالبانر: ' + (d.bannerApplied ? 'مطبق ✅' : 'غير مطبق (' + (d.bannerReason || '؟') + ')')); else alert('❌ فشل: ' + ((d && d.error) || 'خطأ')); })
+                        .catch(function(e) { alert('❌ ' + (e && e.message ? e.message : 'خطأ اتصال')); });
+                    };
+                }
+                if (typeof window.removeWelcomeBanner !== 'function') {
+                    window.removeWelcomeBanner = function() {
+                        var hi = document.getElementById('input_welcome_banner_image');
+                        var im = document.getElementById('img_welcome_banner_image');
+                        var ph = document.getElementById('placeholder_welcome_banner_image');
+                        var st = document.getElementById('bannerUrlStatus');
+                        if (hi) hi.value = '';
+                        if (im) { try { im.removeAttribute('src'); } catch(e){ im.src = ''; } im.classList.add('hidden'); }
+                        if (ph) ph.classList.remove('hidden');
+                        if (st) st.innerHTML = '<span class="text-gray-400">جاري الإزالة... ⏳</span>';
+                        var gId = window.location.pathname.split('/')[2];
+                        fetch('/api/guild/' + gId + '/welcome-banner/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+                        .then(function(r){ return r.json(); })
+                        .then(function(d){
+                            if (d && d.success) { if (st) st.innerHTML = '<span class="text-gray-500">تمت الإزالة ✅</span>'; }
+                            else return fetch('/api/guild/' + gId + '/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ welcome_banner_image: null }) }).then(function(r2){ return r2.json(); }).then(function(d2){ if (d2 && d2.success) { if (st) st.innerHTML = '<span class="text-gray-500">تمت الإزالة ✅</span>'; } else alert('❌ فشل الحذف: ' + ((d2 && d2.error) || (d && d.error) || 'خطأ')); });
+                        })
+                        .catch(function(){
+                            fetch('/api/guild/' + gId + '/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ welcome_banner_image: null }) }).then(function(r2){ return r2.json(); }).then(function(d2){ if (d2 && d2.success) { if (st) st.innerHTML = '<span class="text-gray-500">تمت الإزالة ✅</span>'; } else alert('❌ فشل الحذف: ' + ((d2 && d2.error) || 'خطأ')); }).catch(function(){ alert('❌ خطأ اتصال أثناء الحذف'); });
+                        });
+                    };
+                }
                 document.addEventListener('click', function(e) {
                     var t = e.target && e.target.closest ? e.target.closest('#btnSendEmbed,#btnSaveEmbedDraft,#btnClearEmbed') : null;
                     if (!t) return;
@@ -12303,44 +12387,197 @@ ${embedScriptHtml}
     });
 
     // =============================================
-    // Welcome Test API (ترحيب تجريبي فوري مع تقرير البانر)
+    // Welcome Banner Remove API (إزالة صورة البانر + حذف الملف المحلي)
+    // =============================================
+    app.post('/api/guild/:guildId/welcome-banner/remove', express.json(), async (req, res) => {
+        try {
+            if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
+            const { guildId } = req.params;
+            let prev = null;
+            try { prev = database.getGuildSettings ? database.getGuildSettings(guildId) : null; } catch {}
+            const prevUrl = prev ? String(prev.welcome_banner_image || '') : '';
+            if (database.updateGuildSettings) {
+                database.updateGuildSettings(guildId, { welcome_banner_image: null });
+            } else if (database.setGuildSetting) {
+                database.setGuildSetting(guildId, 'welcome_banner_image', null);
+            }
+            // حذف الملف المحلي إن كان مستضافاً على نفس الخادم (غير CDN ديسكورد)
+            try {
+                const m = prevUrl.match(/\/uploads\/([^?#\/]+)$/);
+                if (m && !prevUrl.includes('cdn.discordapp.com')) {
+                    const path = require('path');
+                    const fs = require('fs');
+                    const fp = path.join(__dirname, 'public', 'uploads', m[1]);
+                    if (fs.existsSync(fp)) { try { fs.unlinkSync(fp); } catch {} }
+                }
+            } catch {}
+            try {
+                const tursoSync = require('../database/tursoSync');
+                await tursoSync.flush(10000);
+            } catch {}
+            res.json({ success: true });
+        } catch (e) {
+            console.error('[welcome-banner-remove] Error:', e);
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // =============================================
+    // Welcome Test API (ترحيب تجريبي فوري — يطابق رسالة الترحيب الحقيقية)
     // =============================================
     app.post('/api/guild/:guildId/welcome-test', express.json(), async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
             const settings = database.getGuildSettings ? database.getGuildSettings(guildId) : {};
-            const channelId = settings.welcome_channel;
-            if (!channelId) return res.status(400).json({ success: false, error: 'حدد قناة الترحيب أولاً' });
+            const channelId = (req.body && req.body.channelId) || settings.welcome_channel;
+            if (!channelId) return res.status(400).json({ success: false, error: 'حدد قناة الترحيب أولاً ثم احفظ' });
             const guild = client?.guilds?.cache?.get(guildId) || await client?.guilds?.fetch(guildId).catch(() => null);
-            if (!guild) return res.status(404).json({ success: false, error: 'السيرفر غير متصل' });
+            if (!guild) return res.status(404).json({ success: false, error: 'السيرفر غير متصل بالبوت حالياً' });
             const channel = guild.channels.cache.get(channelId) || await guild.channels.fetch(channelId).catch(() => null);
-            if (!channel || !channel.isTextBased()) return res.status(404).json({ success: false, error: 'قناة الترحيب غير موجودة' });
-            const member = await guild.members.fetch(req.session.user.id).catch(() => null);
-            if (!member) return res.status(404).json({ success: false, error: 'تعذر جلب عضويتك' });
-
-            const bannerRaw = settings.welcome_banner_image;
-            let bannerApplied = false, bannerReason = 'لا توجد صورة مضبوطة';
-            let files = [];
+            if (!channel || !channel.isTextBased()) return res.status(404).json({ success: false, error: 'قناة الترحيب غير موجودة أو ليست نصية' });
+            // صلاحيات البوت في القناة قبل الإرسال لرسالة خطأ واضحة
             try {
-              const canvasUtil = require('../utils/canvas');
-              if (bannerRaw && String(bannerRaw).trim() !== '' && String(bannerRaw).trim().toLowerCase() !== 'null') {
-                bannerReason = 'رابط الصورة لا يعمل';
+                const me = guild.members.me;
+                const perms = channel.permissionsFor?.(me);
+                if (perms && !perms.has('SendMessages')) {
+                    return res.status(403).json({ success: false, error: 'البوت لا يملك صلاحية إرسال الرسائل في قناة الترحيب' });
+                }
+            } catch {}
+
+            // جلب العضو للمعاينة — مع بدائل متدرجة حتى لا يفشل الزر أبداً بسبب العضوية
+            const sessionUid = req.session.user.id;
+            let member = await guild.members.fetch(sessionUid).catch(() => null);
+            if (!member) member = guild.members.cache.get(sessionUid) || null;
+            if (!member) {
                 try {
-                  const testBuf = await canvasUtil.createWelcomeCard(member, bannerRaw);
-                  if (testBuf && testBuf.length > 0) { bannerApplied = true; files = [{ attachment: testBuf, name: 'welcome_test.png' }]; }
-                } catch (e) { bannerReason = 'فشل تحميل الصورة: ' + (e.message || '؟'); }
-              }
-            } catch (e) { bannerReason = 'تعذر بناء البطاقة'; }
-            if (!files.length) {
-              try {
-                const canvasUtil = require('../utils/canvas');
-                const fallback = await canvasUtil.createWelcomeCard(member, null);
-                if (fallback) files = [{ attachment: fallback, name: 'welcome_test.png' }];
-              } catch {}
+                    const u = await client?.users?.fetch(sessionUid).catch(() => null);
+                    if (u) {
+                        member = {
+                            id: u.id,
+                            user: u,
+                            guild,
+                            displayName: u.username,
+                        };
+                    }
+                } catch {}
             }
-            await channel.send({ content: `🧪 ترحيب تجريبي لـ <@${member.id}>`, files });
-            res.json({ success: true, bannerApplied, bannerReason, bannerHost: (() => { try { return new URL(String(bannerRaw || '')).hostname; } catch { return null; } })() });
+            if (!member) {
+                // آخر بديل: استخدم مالك السيرفر أو أول عضو متاح للمعاينة
+                try {
+                    member = await guild.members.fetch(guild.ownerId).catch(() => null)
+                        || guild.members.cache.first()
+                        || null;
+                } catch {}
+            }
+            if (!member) return res.status(404).json({ success: false, error: 'تعذر جلب أي عضو للمعاينة — تأكد أن البوت لديه صلاحية عرض الأعضاء' });
+
+            const memberId = member.id || sessionUid;
+            const memberName = (member.user && member.user.username) || member.displayName || 'عضو';
+            const avatarURL = (() => { try { return member.user.displayAvatarURL({ extension: 'png', size: 256 }); } catch { return null; } })();
+
+            // بناء نص الترحيب بنفس متغيرات الحدث الحقيقي
+            let msg = settings.welcome_message || 'مرحباً {user} في سيرفر **{server}**! 🎉 أنت العضو رقم **{memberCount}**';
+            try {
+                msg = String(msg)
+                    .replace(/\{user\}/gi, `<@${memberId}>`)
+                    .replace(/\{username\}/gi, memberName)
+                    .replace(/\{server\}/gi, guild.name)
+                    .replace(/\{memberCount\}/gi, String(guild.memberCount || 0))
+                    .replace(/\{inviter\}/gi, 'صديق')
+                    .replace(/\{joinDate\}/gi, new Date().toLocaleDateString('ar'));
+            } catch {}
+
+            const { EmbedBuilder } = require('discord.js');
+            const timeoutSignal = (ms) => { try { return AbortSignal.timeout(ms); } catch { return undefined; } };
+            const isEmbed = Number(settings.welcome_embed_enabled) === 1;
+            const wantImage = Number(settings.welcome_image) === 1;
+            const bannerRaw = settings.welcome_banner_image;
+            const hasBanner = bannerRaw && String(bannerRaw).trim() !== '' && String(bannerRaw).trim().toLowerCase() !== 'null';
+            let bannerApplied = false, bannerReason = 'لا توجد صورة مضبوطة';
+            if (hasBanner) bannerReason = 'رابط الصورة لا يعمل';
+            const files = [];
+            const payload = {};
+
+            if (isEmbed) {
+                const emb = new EmbedBuilder()
+                    .setColor(settings.welcome_embed_color || '#ef5700')
+                    .setTitle(`🎉 مرحباً بك في ${guild.name}!`)
+                    .setDescription(msg || '🎉')
+                    .setFooter({ text: `العضو رقم #${guild.memberCount || 0} • تجربة`, iconURL: guild.iconURL() || undefined })
+                    .setTimestamp();
+                try {
+                    if (avatarURL) emb.setThumbnail(avatarURL);
+                    else if (member.user && member.user.displayAvatarURL) emb.setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }));
+                } catch {}
+                // تحقق فعلي من صلاحية رابط البانر قبل setImage (مهلة قصيرة)
+                if (hasBanner) {
+                    try {
+                        const testRes = await fetch(String(bannerRaw).trim(), { method: 'HEAD', signal: timeoutSignal(8000) }).catch(() => null);
+                        const ct = testRes && testRes.headers ? String(testRes.headers.get('content-type') || '') : '';
+                        if (testRes && testRes.ok && (ct.includes('image') || ct === '')) {
+                            emb.setImage(String(bannerRaw).trim());
+                            bannerApplied = true;
+                        } else if (!testRes) {
+                            // لا يمكن HEAD (بعض المضيفين يمنعه) — جرّب الإرفاق كملف عبر Canvas
+                            bannerReason = 'تعذر فحص الرابط (HEAD محظور) — جرّب Canvas';
+                        } else {
+                            bannerReason = `رابط الصورة لا يعمل (HTTP ${testRes.status})`;
+                        }
+                    } catch (e) { bannerReason = 'فشل فحص الصورة: ' + (e.message || '؟'); }
+                }
+                payload.embeds = [emb];
+                if (msg && msg.trim() !== '') payload.content = `🧪 ترحيب تجريبي لـ <@${memberId}>`;
+                else payload.content = `🧪 ترحيب تجريبي لـ <@${memberId}>`;
+            } else {
+                payload.content = `🧪 ترحيب تجريبي لـ <@${memberId}>\n${msg}`;
+                if (hasBanner) {
+                    // للنص العادي: أرسل البانر كمرفق مباشر إن كان الرابط يعمل
+                    try {
+                        const r = await fetch(String(bannerRaw).trim(), { method: 'GET', signal: timeoutSignal(12000) }).catch(() => null);
+                        if (r && r.ok) {
+                            const ct = String(r.headers.get('content-type') || '');
+                            if (ct.includes('image')) {
+                                const buf = Buffer.from(await r.arrayBuffer());
+                                if (buf && buf.length > 0 && buf.length <= 10 * 1024 * 1024) {
+                                    const ext = ct.includes('png') ? 'png' : (ct.includes('gif') ? 'gif' : (ct.includes('webp') ? 'webp' : 'jpg'));
+                                    files.push({ attachment: buf, name: `welcome_banner.${ext}` });
+                                    bannerApplied = true;
+                                } else bannerReason = 'حجم الصورة غير صالح';
+                            } else bannerReason = 'الرابط لا يشير لصورة مباشرة';
+                        } else bannerReason = r ? `رابط الصورة لا يعمل (HTTP ${r.status})` : 'تعذر الوصول لرابط الصورة';
+                    } catch (e) { bannerReason = 'فشل تحميل الصورة: ' + (e.message || '؟'); }
+                }
+            }
+
+            // بطاقة Canvas إن كان نوع الترحيب صورة (تطابق الحدث الحقيقي: تُرفق فوق أي بانر)
+            if (wantImage) {
+                try {
+                    const canvasUtil = require('../utils/canvas');
+                    const card = await canvasUtil.createWelcomeCard(member, hasBanner ? String(bannerRaw).trim() : null);
+                    if (card && card.length > 0) {
+                        files.length = 0;
+                        files.push({ attachment: card, name: 'welcome_test.png' });
+                        if (hasBanner) {
+                            // createWelcomeCard يرسم تدرجاً عند فشل البانر — نميّز عبر محاولة تحميل البانر
+                            if (!bannerApplied) {
+                                try {
+                                    const chk = await fetch(String(bannerRaw).trim(), { method: 'HEAD', signal: timeoutSignal(8000) }).catch(() => null);
+                                    if (chk && chk.ok) { bannerApplied = true; bannerReason = ''; }
+                                } catch {}
+                            }
+                        } else { bannerReason = 'بطاقة افتراضية (لا توجد صورة مضبوطة)'; }
+                    }
+                } catch (e) { bannerReason = 'فشل بناء البطاقة: ' + (e.message || '؟'); }
+            }
+            if (files.length) payload.files = files;
+
+            try {
+                await channel.send(payload);
+            } catch (e) {
+                return res.status(403).json({ success: false, error: 'فشل الإرسال لقناة الترحيب: ' + (e.message || 'نقص صلاحيات (أرفق/إيمبد)'), bannerApplied, bannerReason });
+            }
+            res.json({ success: true, bannerApplied, bannerReason, mode: isEmbed ? 'embed' : (wantImage ? 'image' : 'text'), bannerHost: (() => { try { return new URL(String(bannerRaw || '')).hostname; } catch { return null; } })() });
         } catch (e) {
             console.error('[welcome-test] Error:', e);
             res.status(500).json({ success: false, error: e.message });
@@ -12369,7 +12606,7 @@ ${embedScriptHtml}
             }
             // ✅ تنظيف النصوص: 'null' النصية والفارغ إلى null
             if (settings) {
-                for (const k of ['staff_banner_url', 'bot_about', 'bot_avatar', 'bot_banner']) {
+                for (const k of ['staff_banner_url', 'bot_about', 'bot_avatar', 'bot_banner', 'welcome_banner_image']) {
                     if (settings[k] !== undefined && (settings[k] === null || String(settings[k]).trim() === '' || String(settings[k]).trim().toLowerCase() === 'null')) {
                         settings[k] = null;
                     }
