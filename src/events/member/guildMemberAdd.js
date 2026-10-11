@@ -192,18 +192,24 @@ module.exports = {
       }
 
       if (welcomeChannel && welcomeChannel.isTextBased()) {
-        // ✅ إسقاط التكرار: نفس العضو خلال 90 ثانية = نسخة مكررة
+        // ✅ إسقاط التكرار: نفس العضو خلال 90 ثانية = نسخة مكررة (آمن ضد التسابق بين النسخ)
+        let _dup = false;
         try {
           const nowSec = Math.floor(Date.now() / 1000);
-          const prev = db.db.prepare('SELECT sent_at FROM recent_welcomes WHERE guild_id = ? AND user_id = ?').get(guild.id, member.id);
-          if (prev && (nowSec - prev.sent_at) < 90) {
-            console.log(`[WELCOME] ⏭️ تخطي ترحيب مكرر لـ ${member.user.tag} في ${guild.id}`);
-          } else {
-            db.db.prepare('INSERT OR REPLACE INTO recent_welcomes (guild_id, user_id, sent_at) VALUES (?, ?, ?)').run(guild.id, member.id, nowSec);
-            try { db.db.prepare('DELETE FROM recent_welcomes WHERE sent_at < ?').run(nowSec - 3600); } catch {}
-            await sendWelcome();
+          try {
+            db.db.prepare('INSERT INTO recent_welcomes (guild_id, user_id, sent_at) VALUES (?, ?, ?)').run(guild.id, member.id, nowSec);
+          } catch (insErr) {
+            const prev = db.db.prepare('SELECT sent_at FROM recent_welcomes WHERE guild_id = ? AND user_id = ?').get(guild.id, member.id);
+            if (prev && (nowSec - prev.sent_at) < 90) {
+              console.log(`[WELCOME] ⏭️ تخطي ترحيب مكرر لـ ${member.user.tag} في ${guild.id}`);
+              _dup = true;
+            } else {
+              db.db.prepare('UPDATE recent_welcomes SET sent_at = ? WHERE guild_id = ? AND user_id = ?').run(nowSec, guild.id, member.id);
+            }
           }
-        } catch (e) {
+          try { db.db.prepare('DELETE FROM recent_welcomes WHERE sent_at < ?').run(nowSec - 3600); } catch {}
+        } catch (e) {}
+        if (!_dup) {
           await sendWelcome();
         }
       }
