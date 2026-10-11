@@ -10815,7 +10815,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                     function getEmbedPayload() {
                         function g(id) { return document.getElementById(id); }
-                        function httpUrl(v) { v = (v || '').trim(); if (!v) return ''; if (!/^https?:\/\//i.test(v)) return ''; return v.slice(0, 1000); }
+                        function httpUrl(v) { v = (v || '').trim(); if (!v) return ''; var l = v.toLowerCase(); if (l.indexOf('http://') !== 0 && l.indexOf('https://') !== 0) return ''; return v.slice(0, 1000); }
                         return {
                             channelId: (g('embedChannel') || {}).value || '',
                             color: (g('embColor') || {}).value || '#60a5fa',
@@ -12042,7 +12042,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                 // ✅ مسار احتياطي لأزرار محرر الإمبد — يعمل حتى لو تعطل سكربت القسم
                 function __embVal(id) { var el = document.getElementById(id); return el ? (el.value || '').trim() : ''; }
-                function __embHttp(v) { v = (v || '').trim(); if (!v) return ''; if (!/^https?:\/\//i.test(v)) return ''; return v.slice(0, 1000); }
+                function __embHttp(v) { v = (v || '').trim(); if (!v) return ''; var l = v.toLowerCase(); if (l.indexOf('http://') !== 0 && l.indexOf('https://') !== 0) return ''; return v.slice(0, 1000); }
                 function __embToast(msg, ok) {
                     try {
                         if (typeof showSaveStatus === 'function' && ok) { showSaveStatus(); }
@@ -12086,8 +12086,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         desc: __embVal('embDesc'),
                         author: __embVal('embAuthor'),
                         authorIcon: __embHttp(__embVal('embAuthorIcon')),
-                        image: __embVal('embImage'),
-                        thumbnail: __embVal('embThumbnail'),
+                        image: __embHttp(__embVal('embImage')),
+                        thumbnail: __embHttp(__embVal('embThumbnail')),
                         footer: __embVal('embFooter'),
                         footerIcon: __embHttp(__embVal('embFooterIcon')),
                         timestamp: (function() { var t = document.getElementById('embTimestampToggle'); return t ? !!t.checked : true; })(),
@@ -12095,7 +12095,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     };
                 }
                 async function __embSendFallback() {
-                    var p = __embPayload();
+                    var p = null;
+                    try { p = __embPayload(); } catch (e) { __embToast('❌ تعذر قراءة الحقول: ' + (e && e.message ? e.message : e), false); return; }
+                    if (!p) { __embToast('❌ تعذر قراءة الحقول', false); return; }
                     if (!p.channelId) { __embToast('⚠️ يرجى اختيار القناة المستهدفة أولاً!', false); return; }
                     if (!p.desc && !p.title) { __embToast('⚠️ يرجى كتابة عنوان أو محتوى قبل الإرسال!', false); return; }
                     var gId = window.location.pathname.split('/')[2];
