@@ -12111,6 +12111,75 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         else __embToast('❌ ' + ((data && data.error) || 'فشل الإرسال'), false);
                     } catch (e) { __embToast('❌ خطأ في الاتصال', false); }
                 }
+                // ✅ معاينة حية مستقلة: تعمل حتى لو تعطل سكربت المحرر الرئيسي — تحديث فوري مع كل كتابة
+                (function() {
+                    function __hasEmb() { return !!document.getElementById('embTitle'); }
+                    function __gv(id) { var el = document.getElementById(id); return el ? (el.value || '').trim() : ''; }
+                    function __basicPreview() {
+                        if (!__hasEmb()) return;
+                        try {
+                            var color = __gv('embColor') || '#60a5fa';
+                            var box = document.getElementById('previewEmbedBox');
+                            if (box) { box.style.borderLeftColor = color; box.style.borderRightColor = color; }
+                            var author = __gv('embAuthor');
+                            var ar = document.getElementById('prevAuthorRow');
+                            var at = document.getElementById('prevAuthorText');
+                            if (ar) {
+                                if (author) { ar.classList.remove('hidden'); ar.classList.add('flex'); if (at) at.textContent = author; }
+                                else { ar.classList.add('hidden'); ar.classList.remove('flex'); }
+                            }
+                            var t = __gv('embTitle');
+                            var pt = document.getElementById('prevTitle');
+                            if (pt) { if (t) { pt.style.display = 'block'; pt.textContent = t; } else { pt.style.display = 'none'; pt.textContent = ''; } }
+                            var pd = document.getElementById('prevDesc');
+                            if (pd) pd.textContent = __gv('embDesc') || 'محتوى الإيمبد سيظهر هنا مباشرة...';
+                            var im = __gv('embImage');
+                            var pir = document.getElementById('prevImageRow');
+                            var pmi = document.getElementById('prevMainImg');
+                            if (pir && pmi) { if (im) { pmi.src = im; pir.classList.remove('hidden'); } else { pir.classList.add('hidden'); } }
+                            var th = __gv('embThumbnail');
+                            var ptw = document.getElementById('prevThumbnailWrap');
+                            var pti = document.getElementById('prevThumbnailImg');
+                            if (ptw && pti) { if (th) { pti.src = th; ptw.classList.remove('hidden'); } else { ptw.classList.add('hidden'); } }
+                        } catch (e) {}
+                    }
+                    if (typeof window.updateEmbedPreview !== 'function') { window.updateEmbedPreview = __basicPreview; }
+                    if (typeof window.selectColor !== 'function') {
+                        window.selectColor = function(hex) {
+                            var c = document.getElementById('embColor'); if (c) c.value = hex;
+                            var h = document.getElementById('embHexInput'); if (h) h.value = String(hex).toUpperCase();
+                            __basicPreview();
+                        };
+                    }
+                    if (typeof window.onColorPickerChange !== 'function') {
+                        window.onColorPickerChange = function(hex) {
+                            var h = document.getElementById('embHexInput'); if (h) h.value = String(hex).toUpperCase();
+                            __basicPreview();
+                        };
+                    }
+                    if (typeof window.setCustomHex !== 'function') {
+                        window.setCustomHex = function(hex) {
+                            if (/^#[0-9A-Fa-f]{6}$/.test(hex)) { var c = document.getElementById('embColor'); if (c) c.value = hex; __basicPreview(); }
+                        };
+                    }
+                    document.addEventListener('input', function(e) {
+                        try {
+                            if (!__hasEmb()) return;
+                            var id = (e && e.target && e.target.id) || '';
+                            if (id.indexOf('emb') === 0) __basicPreview();
+                        } catch (x) {}
+                    });
+                    document.addEventListener('change', function(e) {
+                        try {
+                            if (!__hasEmb()) return;
+                            var id = (e && e.target && e.target.id) || '';
+                            if (id.indexOf('emb') === 0) __basicPreview();
+                        } catch (x) {}
+                    });
+                    function __bootPrev() { if (__hasEmb()) { try { __basicPreview(); } catch (x) {} } }
+                    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', function() { __bootPrev(); setTimeout(__bootPrev, 600); }); }
+                    else { __bootPrev(); setTimeout(__bootPrev, 600); }
+                })();
                 function __embSaveFallback() {
                     try {
                         var gId = window.location.pathname.split('/')[2];
