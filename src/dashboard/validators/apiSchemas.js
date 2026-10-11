@@ -89,19 +89,19 @@ const levelRewardSchema = z.object({
     voiceLevel: z.union([z.number(), z.string()]).optional().default(0)
 });
 
-// Send Embed Validation
+// Send Embed Validation (الحقول البصرية تُعقّم في المعالج — القبول واسع والتنظيف لاحقاً)
 const sendEmbedSchema = z.object({
     channelId: z.string().min(15).max(22),
     color: z.string().max(10).optional(),
     title: z.string().max(256).optional(),
-    titleUrl: z.string().url().max(1000).optional().or(z.literal('')),
+    titleUrl: z.string().max(1000).optional().or(z.literal('')),
     desc: z.string().max(4096).optional(),
     author: z.string().max(256).optional(),
-    authorIcon: z.string().url().optional().or(z.literal('')),
-    image: z.string().url().optional().or(z.literal('')),
-    thumbnail: z.string().url().optional().or(z.literal('')),
+    authorIcon: z.string().max(1000).optional().or(z.literal('')),
+    image: z.string().max(1000).optional().or(z.literal('')),
+    thumbnail: z.string().max(1000).optional().or(z.literal('')),
     footer: z.string().max(2048).optional(),
-    footerIcon: z.string().url().optional().or(z.literal('')),
+    footerIcon: z.string().max(1000).optional().or(z.literal('')),
     timestamp: z.boolean().optional(),
     fields: z.array(z.object({
         name: z.string().max(256).optional().default('\u200b'),

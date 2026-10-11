@@ -10869,8 +10869,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             desc: ((g('embDesc') || {}).value || '').trim(),
                             author: ((g('embAuthor') || {}).value || '').trim(),
                             authorIcon: httpUrl((g('embAuthorIcon') || {}).value),
-                            image: ((g('embImage') || {}).value || '').trim(),
-                            thumbnail: ((g('embThumbnail') || {}).value || '').trim(),
+                            image: httpUrl((g('embImage') || {}).value),
+                            thumbnail: httpUrl((g('embThumbnail') || {}).value),
                             footer: ((g('embFooter') || {}).value || '').trim(),
                             footerIcon: httpUrl((g('embFooterIcon') || {}).value),
                             timestamp: (g('embTimestampToggle') || {}).checked !== false,
@@ -11009,7 +11009,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 if (Array.isArray(d.fields)) { embedFields = d.fields; renderFieldsEditor(); }
                             }
                         } catch(e) { console.warn('[Embed Editor] Draft load error:', e); }
-                        updateEmbedPreview();
 
                         var btnSend = document.getElementById('btnSendEmbed');
                         var btnSave = document.getElementById('btnSaveEmbedDraft');
@@ -11017,6 +11016,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         if (btnSend) btnSend.onclick = function(ev) { ev.preventDefault(); ev.stopPropagation(); sendEmbedDirect(); return false; };
                         if (btnSave) btnSave.onclick = function(ev) { ev.preventDefault(); ev.stopPropagation(); saveEmbedDraft(); return false; };
                         if (btnClear) btnClear.onclick = function(ev) { ev.preventDefault(); ev.stopPropagation(); clearEmbedFields(); return false; };
+                        try { updateEmbedPreview(); } catch (e) { console.warn('[Embed Editor] preview error:', e); }
 
                         ['embTitle','embDesc','embAuthor','embFooter'].forEach(function(id) {
                             var el = document.getElementById(id);
@@ -11846,7 +11846,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     const formData = new FormData(this);
                     const payload = {};
                     // ✅ FIX: تجاهل حقول المودالات المؤقتة حتى لا تلوث guild_settings بأعمدة خردة
-                    const _junk = new Set(['gwChannel','gwReqRole','gwPrize','gwDesc','gwWinners','gwDuration','gwEmoji','gwColorInput','gwImage','gwBtnStyle','gwEntryMode','gwNotifyWinners','arTrigger','arReply','arCase','arDeleteTrigger','arCooldown','arAllowedChan','arExemptChan','arAllowedRole','arExemptRole','appTitleInput','appDescInput','appLogChannel','appAcceptedRole','appReviewerRole','catDefaultChannel','channel_id','custom_prefix','stat_type','bonusUserId','bonusAmount']);
+                    const _junk = new Set(['gwChannel','gwReqRole','gwPrize','gwDesc','gwWinners','gwDuration','gwEmoji','gwColorInput','gwImage','gwBtnStyle','gwEntryMode','gwNotifyWinners','arTrigger','arReply','arCase','arDeleteTrigger','arCooldown','arAllowedChan','arExemptChan','arAllowedRole','arExemptRole','appTitleInput','appDescInput','appLogChannel','appAcceptedRole','appReviewerRole','catDefaultChannel','channel_id','custom_prefix','stat_type','bonusUserId','bonusAmount','embedChannel']);
                     for (let [k, v] of formData.entries()) {
                         if (_junk.has(k)) continue;
                         if (payload[k]) {
@@ -12892,20 +12892,51 @@ ${embedScriptHtml}
 
             const embed = new EmbedBuilder();
 
-            if (color) embed.setColor(color);
-            if (title) embed.setTitle(title);
-            if (titleUrl) embed.setURL(titleUrl);
-            if (desc) embed.setDescription(desc);
-            if (author) embed.setAuthor({ name: author, iconURL: authorIcon || undefined });
-            if (image) embed.setImage(image);
-            if (thumbnail) embed.setThumbnail(thumbnail);
-            if (footer) embed.setFooter({ text: footer, iconURL: footerIcon || undefined });
-            if (timestamp) embed.setTimestamp();
-            if (Array.isArray(fields) && fields.length > 0) {
-                embed.addFields(fields.map(f => ({ name: f.name || '\u200b', value: f.value || '\u200b', inline: !!f.inline })));
+            // تحقق أن القناة تابعة لنفس السيرفر (حماية)
+            if (channel.guild && channel.guild.id !== guildId) {
+                return res.status(403).json({ success: false, error: 'القناة المختارة ليست من هذا السيرفر' });
             }
 
-            await channel.send({ embeds: [embed] });
+            const httpOnly = (v) => {
+                const s = (v || '').trim();
+                if (!s) return '';
+                return /^https?:\/\//i.test(s) ? s.slice(0, 1000) : '';
+            };
+            const safeColor = /^#[0-9A-Fa-f]{6}$/.test(color || '') ? color : '#5865F2';
+            const _zw = String.fromCharCode(8203);
+            const safeFields = (Array.isArray(fields) ? fields : [])
+                .filter(f => f && (f.name || f.value))
+                .slice(0, 25)
+                .map(f => ({
+                    name: String(f.name || _zw).slice(0, 256),
+                    value: String(f.value || _zw).slice(0, 1024),
+                    inline: !!f.inline
+                }));
+
+            let embed;
+            try {
+                embed = new EmbedBuilder().setColor(safeColor);
+                if (title) embed.setTitle(String(title).slice(0, 256));
+                const _tu = httpOnly(titleUrl);
+                if (_tu) embed.setURL(_tu);
+                if (desc) embed.setDescription(String(desc).slice(0, 4096));
+                if (author) embed.setAuthor({ name: String(author).slice(0, 256), iconURL: httpOnly(authorIcon) || undefined });
+                const _im = httpOnly(image);
+                if (_im) embed.setImage(_im);
+                const _th = httpOnly(thumbnail);
+                if (_th) embed.setThumbnail(_th);
+                if (footer) embed.setFooter({ text: String(footer).slice(0, 2048), iconURL: httpOnly(footerIcon) || undefined });
+                if (timestamp) embed.setTimestamp();
+                if (safeFields.length > 0) embed.addFields(safeFields);
+            } catch (e) {
+                return res.status(400).json({ success: false, error: 'تعذر بناء الإيمبد — تحقق من الحقول: ' + (e.message || 'قيم غير صالحة') });
+            }
+
+            try {
+                await channel.send({ embeds: [embed] });
+            } catch (e) {
+                return res.status(403).json({ success: false, error: 'فشل الإرسال — تحقق من صلاحيات البوت (إرسال الرسائل + روابط الإيمبد): ' + (e.message || '') });
+            }
             console.log('[send-embed] ✅ sent successfully to', channelId);
             res.json({ success: true });
         } catch (e) {
