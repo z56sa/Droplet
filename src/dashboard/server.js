@@ -4813,10 +4813,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 })();
 </script>
 `;
-            } else if (section === 'welcome') {
+                        } else if (section === 'welcome') {
+                const _wlOn = Number(settings.welcome_enabled) === 1;
+                const _lvOn = Number(settings.leave_enabled) === 1;
+                const _wlType = Number(settings.welcome_embed_enabled) === 1 ? 'embed' : (settings.welcome_image ? 'image' : 'text');
+                const _lvType = Number(settings.leave_embed_enabled) === 1 ? 'embed' : 'text';
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
 
-                        <!-- Top Tab Switcher (رسائل الترحيب / رسائل المغادرة) -->
+                        <!-- Tabs -->
                         <div class="flex items-center gap-3 bg-[#080e1c] border border-blue-500/20 p-2 rounded-2xl w-fit">
                             <button type="button" onclick="switchWelcomeTab('leave')" id="btnTabLeave" class="px-5 py-2 rounded-xl text-xs font-bold transition text-white hover:text-gray-300">
                                 <span>رسائل المغادرة</span>
@@ -4827,43 +4831,29 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <span class="text-amber-300">👋</span>
                             </button>
                         </div>
+                        <p class="text-[11px] text-gray-500">💾 كل تغيير يُحفظ تلقائياً فور تعديله — لا حاجة لزر الحفظ.</p>
 
-                        <!-- ========================================================= -->
-                        <!-- 1. قسم رسائل الترحيب (Welcome Section - Exact to Image 2 & 3) -->
-                        <!-- ========================================================= -->
+                        <!-- ============ WELCOME ============ -->
                         <div id="sectionWelcomeBox" class="space-y-6">
-                            <!-- Card 1: Master Header Card -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl flex items-center justify-between shadow-xl">
                                 <label class="toggle">
-                                    <input type="checkbox" name="welcome_enabled" value="1" ${Number(settings.welcome_enabled) === 1 ? 'checked' : ''}>
+                                    <input type="checkbox" name="welcome_enabled" value="1" ${_wlOn ? 'checked' : ''} onchange="saveWl('welcome_enabled', this.checked ? 1 : 0)">
                                     <span class="slider"></span>
                                 </label>
-                                <div class="flex items-center gap-3">
-                                    <div class="text-right">
-                                        <div class="flex items-center justify-end gap-2 text-white font-black text-base">
-                                            <span>مفعل</span>
-                                            <span class="text-emerald-400">🎁</span>
-                                        </div>
-                                        <p class="text-white text-xs mt-0.5">إرسال رسالة أو إمبد ترحيبي عند انضمام عضو جديد للسيرفر</p>
-                                    </div>
+                                <div class="text-right">
+                                    <h4 class="font-black text-white text-base">تفعيل الترحيب 🎁</h4>
+                                    <p class="text-white text-xs mt-0.5">إرسال رسالة أو إمبد ترحيبي عند انضمام عضو جديد للسيرفر</p>
                                 </div>
                             </div>
 
-                            <!-- Card 2: قناة الترحيب والرسالة -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl space-y-4 shadow-xl">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">قناة الترحيب <span class="text-blue-400">*</span></label>
                                     ${renderChannelSelect('welcome_channel', settings.welcome_channel || '')}
                                 </div>
-
                                 <div class="space-y-2">
-                                    <div class="flex items-center justify-between text-xs text-white font-bold">
-                                        <span>☺</span>
-                                        <span>رسالة الترحيب (نص عادي)</span>
-                                    </div>
-                                    <textarea name="welcome_message" id="welcomeText" rows="3" oninput="updateWelcomePreview()" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl p-4 text-xs text-white outline-none leading-relaxed text-right">${settings.welcome_message || 'مرحباً {user} في سيرفر **{server}**! 🎉 أنت العضو رقم **{memberCount}**'}</textarea>
-                                    
-                                    <!-- Variables Pill Badges -->
+                                    <label class="block text-xs text-white font-bold">رسالة الترحيب (نص عادي)</label>
+                                    <textarea name="welcome_message" id="welcomeText" rows="3" oninput="updateWelcomePreview();saveWlDebounced('welcome_message', this.value)" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl p-4 text-xs text-white outline-none leading-relaxed text-right">${settings.welcome_message || 'مرحباً {user} في سيرفر **{server}**! 🎉 أنت العضو رقم **{memberCount}**'}</textarea>
                                     <div class="flex items-center justify-between pt-1">
                                         <span class="text-[10px] text-gray-500">إذا تريد فقط Embed أو صورة بدون نص، اترك الرسالة فارغة.</span>
                                         <div class="flex flex-wrap gap-1.5 justify-end">
@@ -4878,17 +4868,16 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                             </div>
 
-                            <!-- Card 3: خيارات الترحيب الثلاثة (نص فقط / صورة ترحيب / رسالة Embed) -->
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <button type="button" onclick="setWelcomeType('text')" id="btnWlTypeText" class="p-4 rounded-2xl border ${Number(settings.welcome_embed_enabled) !== 1 && !settings.welcome_image ? 'border-blue-400 bg-orange-950/20 text-white' : 'border-blue-500/20 bg-[#0b1322] text-white'} text-center transition">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="wlTypeRow">
+                                <button type="button" onclick="setWelcomeType('text')" id="btnWlTypeText" data-wltype="text" class="p-4 rounded-2xl border text-center transition">
                                     <h5 class="font-bold text-xs">نص فقط</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">رسالة نصية بسيطة</p>
                                 </button>
-                                <button type="button" onclick="setWelcomeType('image')" id="btnWlTypeImage" class="p-4 rounded-2xl border ${settings.welcome_image ? 'border-blue-400 bg-orange-950/20 text-white' : 'border-blue-500/20 bg-[#0b1322] text-white'} text-center transition">
+                                <button type="button" onclick="setWelcomeType('image')" id="btnWlTypeImage" data-wltype="image" class="p-4 rounded-2xl border text-center transition">
                                     <h5 class="font-bold text-xs">صورة ترحيب</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">صورة مخصصة مع اسم العضو</p>
                                 </button>
-                                <button type="button" onclick="setWelcomeType('embed')" id="btnWlTypeEmbed" class="p-4 rounded-2xl border ${Number(settings.welcome_embed_enabled) === 1 ? 'border-blue-400 bg-orange-950/20 text-white' : 'border-blue-500/20 bg-[#0b1322] text-white'} text-center transition">
+                                <button type="button" onclick="setWelcomeType('embed')" id="btnWlTypeEmbed" data-wltype="embed" class="p-4 rounded-2xl border text-center transition">
                                     <h5 class="font-bold text-xs">رسالة Embed</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">رسالة منسقة مع ألوان</p>
                                 </button>
@@ -4897,42 +4886,30 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <input type="hidden" name="welcome_embed_enabled" id="welcome_embed_enabled" value="${Number(settings.welcome_embed_enabled) === 1 ? 1 : 0}">
                             <input type="hidden" name="welcome_image" id="welcome_image" value="${settings.welcome_image ? 1 : 0}">
 
-                            <!-- Upload Card: صورة الترحيب بنمط Wicks -->
-                            <div class="bg-[#070d1d] border border-blue-500/20 hover:border-blue-500/20 rounded-2xl p-5 transition shadow-lg" id="welcomeImageUploadCard">
+                            <div class="bg-[#070d1d] border border-blue-500/20 rounded-2xl p-5 transition shadow-lg">
                                 <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                                    <!-- المعاينة وزر الحذف -->
                                     <div class="w-full md:w-auto flex flex-col items-center gap-2">
-                                        <div class="w-full md:w-56 h-28 rounded-xl border border-blue-500/20 bg-[#0b1322] overflow-hidden flex items-center justify-center relative group">
+                                        <div class="w-full md:w-56 h-28 rounded-xl border border-blue-500/20 bg-[#0b1322] overflow-hidden flex items-center justify-center relative">
                                             <img id="img_welcome_banner_image" src="${settings.welcome_banner_image || ''}" class="w-full h-full object-cover ${settings.welcome_banner_image ? '' : 'hidden'}">
                                             <div id="placeholder_welcome_banner_image" class="text-gray-500 text-xs flex flex-col items-center gap-1 ${settings.welcome_banner_image ? 'hidden' : ''}">
                                                 <span class="text-2xl">🖼️</span>
                                                 <span>لا توجد صورة</span>
                                             </div>
                                         </div>
-                                        <button type="button" onclick="clearUploadedImageInDOM('welcome_banner_image', function(){ saveWelcomeBannerNow(null); if (window.checkBannerUrl) window.checkBannerUrl(); })" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1.5 transition font-bold py-1 px-3 rounded-lg hover:bg-rose-950/30 cursor-pointer">
-                                            <span>🗑️</span>
-                                            <span>إزالة الصورة</span>
-                                        </button>
+                                        <button type="button" onclick="clearUploadedImageInDOM('welcome_banner_image', function(){ saveWelcomeBannerNow(null); if (window.checkBannerUrl) window.checkBannerUrl(); })" class="text-xs text-rose-400 hover:text-rose-300 font-bold py-1 px-3 rounded-lg hover:bg-rose-950/30 cursor-pointer">🗑️ إزالة الصورة</button>
                                     </div>
-
-                                    <!-- نصوص الشرح -->
                                     <div class="flex-1 text-right space-y-1 w-full">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <h5 class="text-sm font-black text-white">صورة بانر الترحيب</h5>
-                                            <span class="text-blue-400 text-base">🖼️</span>
-                                        </div>
+                                        <h5 class="text-sm font-black text-white">صورة بانر الترحيب 🖼️</h5>
                                         <ul class="text-[11px] text-white space-y-0.5 list-disc list-inside">
                                             <li>ستظهر هذه الصورة كبانر رئيسي مع رسالة الترحيب بالأعضاء الجدد.</li>
                                             <li>الحد الأدنى الموصى به للحجم هو 1024x512 بكسل.</li>
                                             <li>الصيغ المدعومة: PNG, JPG, GIF, WEBP.</li>
                                         </ul>
                                     </div>
-
-                                    <!-- زر الرفع -->
                                     <div class="w-full md:w-auto flex flex-col items-end gap-2">
                                         <input type="file" id="file_welcome_banner_image" accept="image/*" class="hidden" onchange="uploadImageFile(this, 'welcome_banner_image', function(url){ saveWelcomeBannerNow(url); if (window.checkBannerUrl) window.checkBannerUrl(); })">
                                         <input type="hidden" id="input_welcome_banner_image" name="welcome_banner_image" value="${settings.welcome_banner_image || ''}">
-                                        <button type="button" onclick="document.getElementById('file_welcome_banner_image').click()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-blue-700/30 flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
+                                        <button type="button" onclick="document.getElementById('file_welcome_banner_image').click()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 text-white rounded-xl text-xs font-black transition shadow-lg flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
                                             <span>📤</span>
                                             <span id="btn_text_welcome_banner_image">رفع الصورة</span>
                                         </button>
@@ -4942,29 +4919,23 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <script>
                                 (function() {
                                     window.saveWelcomeBannerNow = function(url) {
-                                        var gId = window.location.pathname.split('/')[2];
-                                        fetch('/api/guild/' + gId + '/settings', {
-                                            method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ welcome_banner_image: url })
-                                        }).then(function(r) { return r.json(); }).then(function(d) {
-                                            if (window.checkBannerUrl) window.checkBannerUrl();
-                                        }).catch(function() {});
+                                        saveWl('welcome_banner_image', url);
                                     };
                                     window.checkBannerUrl = function() {
                                         var el = document.getElementById('bannerUrlStatus');
                                         var inp = document.getElementById('input_welcome_banner_image');
                                         if (!el) return;
                                         var url = inp ? (inp.value || '').trim() : '';
-                                        if (!url) { el.innerHTML = '<span class="text-gray-500">لا توجد صورة محفوظة — ارفع صورة ثم احفظ.</span>'; return; }
+                                        if (!url) { el.innerHTML = '<span class="text-gray-500">لا توجد صورة محفوظة — ارفع صورة.</span>'; return; }
                                         var host = '';
                                         try { host = new URL(url).hostname; } catch (e) { host = url.slice(0, 40); }
                                         el.innerHTML = '<span class="text-gray-400">فحص الرابط (' + host + ')...</span>';
                                         var done = false;
                                         var im = new Image();
-                                        im.onload = function() { if (done) return; done = true; el.innerHTML = '<span class="text-emerald-400">✅ الرابط يعمل (' + host + ') — احفظ ثم جرّب دخول عضو.</span>'; };
-                                        im.onerror = function() { if (done) return; done = true; el.innerHTML = '<span class="text-rose-400">❌ الرابط ميت (' + host + ') — أعد الرفع ثم احفظ.</span>'; };
+                                        im.onload = function() { if (done) return; done = true; el.innerHTML = '<span class="text-emerald-400">✅ الرابط يعمل (' + host + ')</span>'; };
+                                        im.onerror = function() { if (done) return; done = true; el.innerHTML = '<span class="text-rose-400">❌ الرابط ميت (' + host + ') — أعد الرفع.</span>'; };
                                         im.src = url;
-                                        setTimeout(function() { if (!done) { done = true; el.innerHTML = '<span class="text-amber-400">⏳ تعذر التأكد (مهلة) — أعد الرفع.</span>'; } }, 12000);
+                                        setTimeout(function() { if (!done) { done = true; el.innerHTML = '<span class="text-amber-400">⏳ تعذر التأكد (مهلة).</span>'; } }, 12000);
                                     };
                                     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.checkBannerUrl);
                                     else window.checkBannerUrl();
@@ -4972,7 +4943,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </script>
                             </div>
 
-                            <!-- Card 4: تخصيص رسالة الترحيب / الإيمبد (Live Preview & Embed Customizer - Exact to Image 2 & 3) -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl space-y-4 shadow-xl">
                                 <div class="flex items-center justify-between border-b border-blue-500/20 pb-3">
                                     <div class="flex flex-wrap gap-1.5">
@@ -4985,93 +4955,50 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
                                     <h5 class="text-xs font-black text-white">تخصيص رسالة الترحيب</h5>
                                 </div>
-
-                                <!-- Color Pickers Palette -->
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-2">
-                                        <span class="text-xs font-mono text-white">#EF5700</span>
-                                        <input type="color" name="welcome_embed_color" id="wlColorInput" value="${settings.welcome_embed_color || '#ef5700'}" class="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0">
+                                        <span class="text-xs font-mono text-white" id="wlColorLabel">${settings.welcome_embed_color || '#ef5700'}</span>
+                                        <input type="color" name="welcome_embed_color" id="wlColorInput" value="${settings.welcome_embed_color || '#ef5700'}" onchange="saveWl('welcome_embed_color', this.value); document.getElementById('wlPreviewEmbed').style.borderRightColor = this.value; document.getElementById('wlColorLabel').innerText = this.value;" class="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0">
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs font-bold text-gray-300">لون الإيمبد</span>
-                                        <div class="flex items-center gap-1.5">
-                                            <button type="button" onclick="setWlColor('#93c5fd')" class="w-4 h-4 rounded-md bg-[#93c5fd]"></button>
-                                            <button type="button" onclick="setWlColor('#93c5fd')" class="w-4 h-4 rounded-md bg-[#93c5fd]"></button>
-                                            <button type="button" onclick="setWlColor('#10b981')" class="w-4 h-4 rounded-md bg-[#10b981]"></button>
-                                            <button type="button" onclick="setWlColor('#ec4899')" class="w-4 h-4 rounded-md bg-[#ec4899]"></button>
-                                            <button type="button" onclick="setWlColor('#ef4444')" class="w-4 h-4 rounded-md bg-[#ef4444]"></button>
-                                            <button type="button" onclick="setWlColor('#60a5fa')" class="w-4 h-4 rounded-md bg-[#60a5fa]"></button>
-                                            <button type="button" onclick="setWlColor('#ef5700')" class="w-4 h-4 rounded-md bg-[#ef5700] ring-2 ring-blue-300/50"></button>
-                                        </div>
-                                    </div>
+                                    <span class="text-xs font-bold text-gray-300">لون الإيمبد</span>
                                 </div>
-
-                                <!-- Live Interactive Embed Card (Exact to Image 3) -->
                                 <div id="wlPreviewEmbed" class="bg-[#070d1d] border-r-4 border-blue-400 rounded-xl p-5 space-y-4 text-right shadow-inner">
                                     <div class="flex items-center justify-end gap-2 text-xs font-bold text-white">
                                         <span>${guild.name}</span>
                                         <img src="${guildIcon}" class="w-5 h-5 rounded-full object-cover">
                                     </div>
-
                                     <div class="space-y-1">
-                                        <h4 class="text-sm font-black text-white flex items-center justify-end gap-1.5">
-                                            <span>مرحباً بك!</span>
-                                            <span>🎉</span>
-                                        </h4>
+                                        <h4 class="text-sm font-black text-white">🎉 مرحباً بك!</h4>
                                         <p id="pvWlMsg" class="text-xs text-gray-300">مرحباً {user} في سيرفر **{server}**! أنت العضو رقم **{memberCount}**</p>
                                     </div>
-
                                     <div class="border border-dashed border-blue-500/20 rounded-xl p-6 text-center text-gray-600 text-xs">
                                         <span>🖼️ [صورة البنر أو بطاقة الترحيب]</span>
-                                    </div>
-
-                                    <div class="flex items-center justify-between text-[10px] text-gray-500 border-t border-blue-500/20 pt-2 font-mono">
-                                        <span>نتمنى لك وقتاً ممتعاً 🕒</span>
-                                        <div class="flex items-center gap-1">
-                                            <input type="checkbox" checked id="wlShowTime">
-                                            <label for="wlShowTime">إظهار الوقت</label>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- ========================================================= -->
-                        <!-- 2. قسم رسائل المغادرة (Leave Section - Exact to Image 4 & 5) -->
-                        <!-- ========================================================= -->
+                        <!-- ============ LEAVE ============ -->
                         <div id="sectionLeaveBox" class="space-y-6 hidden">
-                            <!-- Card 1: Master Header Card -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl flex items-center justify-between shadow-xl">
                                 <label class="toggle">
-                                    <input type="checkbox" name="leave_enabled" value="1" ${settings.leave_enabled ? 'checked' : ''}>
+                                    <input type="checkbox" name="leave_enabled" value="1" ${_lvOn ? 'checked' : ''} onchange="saveWl('leave_enabled', this.checked ? 1 : 0)">
                                     <span class="slider"></span>
                                 </label>
-                                <div class="flex items-center gap-3">
-                                    <div class="text-right">
-                                        <div class="flex items-center justify-end gap-2 text-white font-black text-base">
-                                            <span>مفعل</span>
-                                            <span class="text-rose-400">🚪</span>
-                                        </div>
-                                        <p class="text-white text-xs mt-0.5">إرسال رسالة عند مغادرة عضو من السيرفر</p>
-                                    </div>
+                                <div class="text-right">
+                                    <h4 class="font-black text-white text-base">تفعيل المغادرة 🚪</h4>
+                                    <p class="text-white text-xs mt-0.5">إرسال رسالة عند مغادرة عضو من السيرفر</p>
                                 </div>
                             </div>
 
-                            <!-- Card 2: قناة المغادرة والرسالة -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl space-y-4 shadow-xl">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">قناة المغادرة <span class="text-rose-400">*</span></label>
                                     ${renderChannelSelect('leave_channel', settings.leave_channel || '')}
                                 </div>
-
                                 <div class="space-y-2">
-                                    <div class="flex items-center justify-between text-xs text-white font-bold">
-                                        <span>☺</span>
-                                        <span>رسالة المغادرة (نص عادي)</span>
-                                    </div>
-                                    <textarea name="leave_message" id="leaveText" rows="3" oninput="updateLeavePreview()" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-rose-500 rounded-xl p-4 text-xs text-white outline-none leading-relaxed text-right">${settings.leave_message || 'وداعاً **{user}**، نتمنى لك التوفيق 👋'}</textarea>
-                                    
-                                    <!-- Variables Pill Badges -->
+                                    <label class="block text-xs text-white font-bold">رسالة المغادرة (نص عادي)</label>
+                                    <textarea name="leave_message" id="leaveText" rows="3" oninput="updateLeavePreview();saveWlDebounced('leave_message', this.value)" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-rose-500 rounded-xl p-4 text-xs text-white outline-none leading-relaxed text-right">${settings.leave_message || 'وداعاً **{user}**، نتمنى لك التوفيق 👋'}</textarea>
                                     <div class="flex items-center justify-end gap-1.5 pt-1">
                                         <span class="text-[10px] font-mono bg-[#14233c] text-rose-400 px-2 py-0.5 rounded-lg border border-rose-500/20 cursor-pointer" onclick="insertVar('leaveText', '{user}')">{user}</span>
                                         <span class="text-[10px] font-mono bg-[#14233c] text-rose-400 px-2 py-0.5 rounded-lg border border-rose-500/20 cursor-pointer" onclick="insertVar('leaveText', '{username}')">{username}</span>
@@ -5081,21 +5008,18 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                             </div>
 
-                            <!-- Card 3: خيارات المغادرة (رسالة نصية / رسالة Embed) -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <button type="button" onclick="setLeaveType('text')" id="btnLvTypeText" class="p-4 rounded-2xl border ${Number(settings.leave_embed_enabled) !== 1 ? 'border-rose-500 bg-rose-950/20 text-white' : 'border-blue-500/20 bg-[#0b1322] text-white'} text-center transition">
+                                <button type="button" onclick="setLeaveType('text')" id="btnLvTypeText" class="p-4 rounded-2xl border text-center transition">
                                     <h5 class="font-bold text-xs">رسالة نصية</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">رسالة بسيطة</p>
                                 </button>
-                                <button type="button" onclick="setLeaveType('embed')" id="btnLvTypeEmbed" class="p-4 rounded-2xl border ${Number(settings.leave_embed_enabled) === 1 ? 'border-rose-500 bg-rose-950/20 text-white' : 'border-blue-500/20 bg-[#0b1322] text-white'} text-center transition">
+                                <button type="button" onclick="setLeaveType('embed')" id="btnLvTypeEmbed" class="p-4 rounded-2xl border text-center transition">
                                     <h5 class="font-bold text-xs">رسالة Embed</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">رسالة منسقة مع ألوان</p>
                                 </button>
                             </div>
-
                             <input type="hidden" name="leave_embed_enabled" id="leave_embed_enabled" value="${Number(settings.leave_embed_enabled) === 1 ? 1 : 0}">
 
-                            <!-- Card 4: تخصيص رسالة المغادرة (Live Preview & Colors) -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl space-y-4 shadow-xl">
                                 <div class="flex items-center justify-between border-b border-blue-500/20 pb-3">
                                     <div class="flex flex-wrap gap-1.5">
@@ -5106,43 +5030,19 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
                                     <h5 class="text-xs font-black text-white">تخصيص رسالة المغادرة</h5>
                                 </div>
-
-                                <!-- Color Pickers Palette -->
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-2">
-                                        <span class="text-xs font-mono text-white">#EF4444</span>
-                                        <input type="color" name="leave_embed_color" id="lvColorInput" value="${settings.leave_embed_color || '#ef4444'}" class="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0">
+                                        <span class="text-xs font-mono text-white" id="lvColorLabel">${settings.leave_embed_color || '#ef4444'}</span>
+                                        <input type="color" name="leave_embed_color" id="lvColorInput" value="${settings.leave_embed_color || '#ef4444'}" onchange="saveWl('leave_embed_color', this.value); document.getElementById('lvPreviewEmbed').style.borderRightColor = this.value; document.getElementById('lvColorLabel').innerText = this.value;" class="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0">
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs font-bold text-gray-300">لون الإيمبد</span>
-                                        <div class="flex items-center gap-1.5">
-                                            <button type="button" onclick="setLvColor('#ef4444')" class="w-4 h-4 rounded-md bg-[#ef4444] ring-2 ring-blue-300/50"></button>
-                                            <button type="button" onclick="setLvColor('#60a5fa')" class="w-4 h-4 rounded-md bg-[#60a5fa]"></button>
-                                            <button type="button" onclick="setLvColor('#eab308')" class="w-4 h-4 rounded-md bg-[#eab308]"></button>
-                                            <button type="button" onclick="setLvColor('#10b981')" class="w-4 h-4 rounded-md bg-[#10b981]"></button>
-                                            <button type="button" onclick="setLvColor('#06b6d4')" class="w-4 h-4 rounded-md bg-[#06b6d4]"></button>
-                                            <button type="button" onclick="setLvColor('#93c5fd')" class="w-4 h-4 rounded-md bg-[#93c5fd]"></button>
-                                        </div>
-                                    </div>
+                                    <span class="text-xs font-bold text-gray-300">لون الإيمبد</span>
                                 </div>
-
-                                <!-- Live Interactive Leave Embed Card -->
                                 <div id="lvPreviewEmbed" class="bg-[#070d1d] border-r-4 border-rose-500 rounded-xl p-5 space-y-4 text-right shadow-inner">
                                     <div class="flex items-center justify-end gap-2 text-xs font-bold text-white">
                                         <span>${guild.name}</span>
                                         <img src="${guildIcon}" class="w-5 h-5 rounded-full object-cover">
                                     </div>
-
-                                    <div class="space-y-1">
-                                        <h4 class="text-sm font-black text-white flex items-center justify-end gap-1.5">
-                                            <span>وداعاً 👋</span>
-                                        </h4>
-                                        <p id="pvLvMsg" class="text-xs text-gray-300">وداعاً **{username}**، نتمنى لك التوفيق</p>
-                                    </div>
-
-                                    <div class="border border-dashed border-blue-500/20 rounded-xl p-6 text-center text-gray-600 text-xs">
-                                        <span>🖼️ [صورة البنر أو بطاقة المغادرة]</span>
-                                    </div>
+                                    <p id="pvLvMsg" class="text-xs text-gray-300">وداعاً **{user}**، نتمنى لك التوفيق</p>
                                 </div>
                             </div>
                         </div>
@@ -5150,17 +5050,45 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     </div>
 
                     <script>
+                    var _wlGuildId = window.location.pathname.split('/')[2];
+                    var _wlSaveTimer = {};
+                    function saveWl(key, value) {
+                        var body = {};
+                        body[key] = value;
+                        fetch('/api/guild/' + _wlGuildId + '/settings', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body)
+                        }).then(function(r) { return r.json(); }).then(function(d) {
+                            if (d && d.success) { if (typeof showSaveStatus === 'function') showSaveStatus(); }
+                        }).catch(function() {});
+                    }
+                    function saveWlDebounced(key, value) {
+                        if (_wlSaveTimer[key]) clearTimeout(_wlSaveTimer[key]);
+                        _wlSaveTimer[key] = setTimeout(function() { saveWl(key, value); }, 800);
+                    }
+                    function paintWlTypes() {
+                        var emb = document.getElementById('welcome_embed_enabled').value === '1';
+                        var img = !emb && document.getElementById('welcome_image').value === '1';
+                        var cur = emb ? 'embed' : (img ? 'image' : 'text');
+                        var on = 'p-4 rounded-2xl border border-blue-400 bg-orange-950/20 text-white text-center transition';
+                        var off = 'p-4 rounded-2xl border border-blue-500/20 bg-[#0b1322] text-white text-center transition';
+                        var t = document.getElementById('btnWlTypeText'); if (t) t.className = (cur === 'text') ? on : off;
+                        var im = document.getElementById('btnWlTypeImage'); if (im) im.className = (cur === 'image') ? on : off;
+                        var em = document.getElementById('btnWlTypeEmbed'); if (em) em.className = (cur === 'embed') ? on : off;
+                        var lvEmb = document.getElementById('leave_embed_enabled').value === '1';
+                        var lt = document.getElementById('btnLvTypeText'); if (lt) lt.className = (!lvEmb) ? on.replace(/blue-/g, 'rose-').replace('orange-950/20', 'rose-950/20') : off;
+                        var le = document.getElementById('btnLvTypeEmbed'); if (le) le.className = lvEmb ? on.replace(/blue-/g, 'rose-').replace('orange-950/20', 'rose-950/20') : off;
+                    }
                     function switchWelcomeTab(tab) {
-                        const secWl = document.getElementById('sectionWelcomeBox');
-                        const secLv = document.getElementById('sectionLeaveBox');
-                        const btnWl = document.getElementById('btnTabWelcome');
-                        const btnLv = document.getElementById('btnTabLeave');
-
+                        var secWl = document.getElementById('sectionWelcomeBox');
+                        var secLv = document.getElementById('sectionLeaveBox');
+                        var btnWl = document.getElementById('btnTabWelcome');
+                        var btnLv = document.getElementById('btnTabLeave');
                         if (tab === 'welcome') {
                             secWl.classList.remove('hidden');
                             secLv.classList.add('hidden');
                             btnWl.className = "px-5 py-2 rounded-xl text-xs font-bold transition bg-gradient-to-r from-blue-400 to-blue-600 text-white shadow-lg";
-                            btnLv.className = "px-5 py-2 rounded-xl text-xs font-bold transition text-blue-300 hover:text-white";
+                            btnLv.className = "px-5 py-2 rounded-xl text-xs font-bold transition text-white hover:text-gray-300";
                         } else {
                             secWl.classList.add('hidden');
                             secLv.classList.remove('hidden');
@@ -5168,54 +5096,59 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             btnWl.className = "px-5 py-2 rounded-xl text-xs font-bold transition text-blue-300 hover:text-white";
                         }
                     }
-
                     function insertVar(targetId, varName) {
-                        const el = document.getElementById(targetId);
+                        var el = document.getElementById(targetId);
                         if (!el) return;
                         el.value += ' ' + varName;
-                        if (targetId === 'welcomeText') updateWelcomePreview();
-                        if (targetId === 'leaveText') updateLeavePreview();
+                        if (targetId === 'welcomeText') { updateWelcomePreview(); saveWlDebounced('welcome_message', el.value); }
+                        if (targetId === 'leaveText') { updateLeavePreview(); saveWlDebounced('leave_message', el.value); }
                     }
-
                     function updateWelcomePreview() {
-                        const msg = document.getElementById('welcomeText').value;
-                        const pv = document.getElementById('pvWlMsg');
-                        if (pv) pv.innerText = msg || 'مرحباً {user} في سيرفر **{server}**!';
+                        var el = document.getElementById('welcomeText');
+                        var pv = document.getElementById('pvWlMsg');
+                        if (pv && el) pv.innerText = el.value || 'مرحباً {user} في سيرفر **{server}**!';
                     }
-
                     function updateLeavePreview() {
-                        const msg = document.getElementById('leaveText').value;
-                        const pv = document.getElementById('pvLvMsg');
-                        if (pv) pv.innerText = msg || 'وداعاً **{user}**، نتمنى لك التوفيق';
+                        var el = document.getElementById('leaveText');
+                        var pv = document.getElementById('pvLvMsg');
+                        if (pv && el) pv.innerText = el.value || 'وداعاً **{user}**، نتمنى لك التوفيق';
                     }
-
                     function setWelcomeType(type) {
                         document.getElementById('welcome_embed_enabled').value = type === 'embed' ? 1 : 0;
                         document.getElementById('welcome_image').value = type === 'image' ? 1 : 0;
-                        
-                        document.getElementById('btnWlTypeText').className = type === 'text' ? 'p-4 rounded-2xl border border-blue-400 bg-orange-950/20 text-white text-center transition' : 'p-4 rounded-2xl border border-blue-500/20 bg-[#0b1322] text-blue-300 text-center transition';
-                        document.getElementById('btnWlTypeImage').className = type === 'image' ? 'p-4 rounded-2xl border border-blue-400 bg-orange-950/20 text-white text-center transition' : 'p-4 rounded-2xl border border-blue-500/20 bg-[#0b1322] text-blue-300 text-center transition';
-                        document.getElementById('btnWlTypeEmbed').className = type === 'embed' ? 'p-4 rounded-2xl border border-blue-400 bg-orange-950/20 text-white text-center transition' : 'p-4 rounded-2xl border border-blue-500/20 bg-[#0b1322] text-blue-300 text-center transition';
+                        saveWl('welcome_embed_enabled', type === 'embed' ? 1 : 0);
+                        saveWl('welcome_image', type === 'image' ? 1 : 0);
+                        paintWlTypes();
                     }
-
                     function setLeaveType(type) {
                         document.getElementById('leave_embed_enabled').value = type === 'embed' ? 1 : 0;
-                        document.getElementById('btnLvTypeText').className = type === 'text' ? 'p-4 rounded-2xl border border-rose-500 bg-rose-950/20 text-white text-center transition' : 'p-4 rounded-2xl border border-blue-500/20 bg-[#0b1322] text-blue-300 text-center transition';
-                        document.getElementById('btnLvTypeEmbed').className = type === 'embed' ? 'p-4 rounded-2xl border border-rose-500 bg-rose-950/20 text-white text-center transition' : 'p-4 rounded-2xl border border-blue-500/20 bg-[#0b1322] text-blue-300 text-center transition';
+                        saveWl('leave_embed_enabled', type === 'embed' ? 1 : 0);
+                        paintWlTypes();
                     }
-
                     function setWlColor(c) {
-                        document.getElementById('wlColorInput').value = c;
-                        document.getElementById('wlPreviewEmbed').style.borderRightColor = c;
+                        var i = document.getElementById('wlColorInput'); if (i) i.value = c;
+                        var p = document.getElementById('wlPreviewEmbed'); if (p) p.style.borderRightColor = c;
+                        var l = document.getElementById('wlColorLabel'); if (l) l.innerText = c;
+                        saveWl('welcome_embed_color', c);
                     }
-
                     function setLvColor(c) {
-                        document.getElementById('lvColorInput').value = c;
-                        document.getElementById('lvPreviewEmbed').style.borderRightColor = c;
+                        var i = document.getElementById('lvColorInput'); if (i) i.value = c;
+                        var p = document.getElementById('lvPreviewEmbed'); if (p) p.style.borderRightColor = c;
+                        var l = document.getElementById('lvColorLabel'); if (l) l.innerText = c;
+                        saveWl('leave_embed_color', c);
                     }
+                    // selects inside the generic form also submit via footer — add instant save too
+                    (function() {
+                        var wc = document.querySelector('select[name="welcome_channel"]');
+                        if (wc) wc.addEventListener('change', function() { saveWl('welcome_channel', this.value); });
+                        var lc = document.querySelector('select[name="leave_channel"]');
+                        if (lc) lc.addEventListener('change', function() { saveWl('leave_channel', this.value); });
+                        paintWlTypes();
+                    })();
                     </script>
 `;
-            } else if (section === 'autoresponder') {
+
+} else if (section === 'autoresponder') {
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
 
                         <!-- 1. Master Header Card (Exact to Image 1) -->
