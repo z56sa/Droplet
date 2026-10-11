@@ -567,6 +567,8 @@ try { db.exec("ALTER TABLE tickets ADD COLUMN close_reason TEXT;"); } catch(e) {
 try { db.exec("ALTER TABLE tickets ADD COLUMN transcript_url TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE applications ADD COLUMN panel_image TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN welcome_banner_image TEXT;"); } catch(e) {}
+// ✅ bytes بانر الترحيب (ثبات دائم بلا أي رسالة ديسكورد — تُزامَن مع Turso وتُستعاد عند الإقلاع)
+try { db.exec("CREATE TABLE IF NOT EXISTS guild_banners (guild_id TEXT PRIMARY KEY, mime TEXT, data_b64 TEXT, updated_at INTEGER);"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN level_up_image TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN broadcast_image TEXT;"); } catch(e) {}
 
@@ -1054,6 +1056,35 @@ function updateGuildSettings(guildId, settingsObj) {
 // alias
 function updateGuildSetting(guildId, key, value) {
   return setGuildSetting(guildId, key, value);
+}
+
+// ==========================================
+// Guild Banner Bytes (بانر الترحيب — ثبات دائم بلا أي رسالة ديسكورد)
+// ==========================================
+function saveGuildBanner(guildId, buffer, ext) {
+  if (!guildId || !buffer || !buffer.length) return false;
+  try {
+    const mime = ext === 'jpg' ? 'image/jpeg' : (ext === 'gif' ? 'image/gif' : (ext === 'webp' ? 'image/webp' : 'image/png'));
+    db.prepare(`INSERT INTO guild_banners (guild_id, mime, data_b64, updated_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(guild_id) DO UPDATE SET mime = excluded.mime, data_b64 = excluded.data_b64, updated_at = excluded.updated_at`)
+      .run(String(guildId), mime, Buffer.from(buffer).toString('base64'), Date.now());
+    return true;
+  } catch (e) { console.error('[banner] save failed:', e.message); return false; }
+}
+
+function getGuildBanner(guildId) {
+  try {
+    const row = db.prepare('SELECT mime, data_b64 FROM guild_banners WHERE guild_id = ?').get(String(guildId));
+    if (!row || !row.data_b64) return null;
+    const buf = Buffer.from(String(row.data_b64), 'base64');
+    if (!buf || !buf.length) return null;
+    return { mime: row.mime || 'image/png', buffer: buf };
+  } catch { return null; }
+}
+
+function deleteGuildBanner(guildId) {
+  try { db.prepare('DELETE FROM guild_banners WHERE guild_id = ?').run(String(guildId)); } catch {}
 }
 
 // ==========================================
@@ -2322,6 +2353,9 @@ module.exports = {
   setGuildSetting,
   updateGuildSetting,
   updateGuildSettings,
+  saveGuildBanner,
+  getGuildBanner,
+  deleteGuildBanner,
   getUser,
   addXp,
   addCoins,

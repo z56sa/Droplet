@@ -93,6 +93,16 @@ class TursoSync {
       // Add settings_json column to existing guild_settings table if missing
       try { await this.client.execute("ALTER TABLE guild_settings ADD COLUMN settings_json TEXT DEFAULT '{}';"); } catch (e) {}
 
+      // 1.4b Banner bytes table (بانر الترحيب — منفصل عن settings_json حتى لا تتضخم المزامنة)
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS guild_banners (
+          guild_id TEXT PRIMARY KEY,
+          mime TEXT,
+          data_b64 TEXT,
+          updated_at INTEGER DEFAULT 0
+        );
+      `);
+
       // 1.5 Create user_profiles table in Turso for persistent usernames & avatars
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS user_profiles (
@@ -305,6 +315,49 @@ class TursoSync {
         }
       } catch (gsErr) {
         console.error('[TURSO] ⚠️ Error restoring guild settings:', gsErr.message);
+      }
+
+      // 4.5 Restore guild banner bytes from Turso + rewrite local files so /uploads URLs keep working
+      try {
+        const bannerRes = await this.client.execute('SELECT guild_id, mime, data_b64 FROM guild_banners');
+        if (bannerRes?.rows?.length > 0) {
+          console.log(`[TURSO] 🔄 Restoring ${bannerRes.rows.length} guild banners from Turso...`);
+          const upBanner = localDb.prepare(`
+            INSERT INTO guild_banners (guild_id, mime, data_b64, updated_at)
+            VALUES (@guild_id, @mime, @data_b64, @updated_at)
+            ON CONFLICT(guild_id) DO UPDATE SET
+              mime = excluded.mime, data_b64 = excluded.data_b64, updated_at = excluded.updated_at
+          `);
+          const fs = require('fs');
+          const path = require('path');
+          const upDir = path.join(__dirname, '..', 'dashboard', 'public', 'uploads');
+          try { if (!fs.existsSync(upDir)) fs.mkdirSync(upDir, { recursive: true }); } catch {}
+          const txB = localDb.transaction((rows) => {
+            for (const r of rows) {
+              try {
+                const gid = String(r.guild_id);
+                const b64 = r.data_b64 ? String(r.data_b64) : '';
+                if (!b64) continue;
+                upBanner.run({ guild_id: gid, mime: r.mime ? String(r.mime) : 'image/png', data_b64: b64, updated_at: Date.now() });
+                // أعد كتابة الملف المحلي بنفس الاسم المخزن في welcome_banner_image حتى يعمل الرابط مجدداً
+                try {
+                  const gs = localDb.prepare('SELECT welcome_banner_image FROM guild_settings WHERE guild_id = ?').get(gid);
+                  const m = String(gs?.welcome_banner_image || '').match(/\/uploads\/([^?#\/]+)$/);
+                  if (m) {
+                    const fp = path.join(upDir, path.basename(m[1]));
+                    if (!fs.existsSync(fp)) fs.writeFileSync(fp, Buffer.from(b64, 'base64'));
+                  }
+                } catch {}
+              } catch {}
+            }
+          });
+          txB(bannerRes.rows);
+          console.log('[TURSO] ✅ Guild banners restored (bytes + files).');
+        } else {
+          this.backupAllLocalBanners(localDb);
+        }
+      } catch (bErr) {
+        console.error('[TURSO] ⚠️ Error restoring guild banners:', bErr.message);
       }
 
       // 5. Restore staff_activity from Turso
@@ -527,6 +580,36 @@ class TursoSync {
         settings_json = excluded.settings_json;
     `;
     this.enqueue({ sql, args: [String(guildId), settingsJson] });
+  }
+
+  /**
+   * ✅ Syncs a guild's banner bytes to Turso (separate table — never touches settings_json).
+   */
+  queueBannerSync(guildId, mime, dataB64) {
+    if (!this.enabled || !this.client || !guildId || !dataB64) return;
+    const sql = `
+      INSERT INTO guild_banners (guild_id, mime, data_b64, updated_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(guild_id) DO UPDATE SET
+        mime = excluded.mime, data_b64 = excluded.data_b64, updated_at = excluded.updated_at;
+    `;
+    this.enqueue({ sql, args: [String(guildId), String(mime || 'image/png'), String(dataB64), Date.now()] });
+  }
+
+  queueBannerDelete(guildId) {
+    if (!this.enabled || !this.client || !guildId) return;
+    this.enqueue({ sql: 'DELETE FROM guild_banners WHERE guild_id = ?', args: [String(guildId)] });
+  }
+
+  async backupAllLocalBanners(localDb) {
+    if (!this.enabled || !this.client) return;
+    try {
+      const rows = localDb.prepare('SELECT guild_id, mime, data_b64 FROM guild_banners').all();
+      for (const row of rows) {
+        if (row && row.guild_id && row.data_b64) this.queueBannerSync(row.guild_id, row.mime, String(row.data_b64));
+      }
+      console.log(`[TURSO] 📤 Pushed ${rows.length} guild banners to Turso.`);
+    } catch (e) {}
   }
 
   /**

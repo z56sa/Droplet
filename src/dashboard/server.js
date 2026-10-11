@@ -12338,30 +12338,17 @@ ${embedScriptHtml}
             const host = req.get('host');
             let fullUrl = `${protocol}://${host}/uploads/${fileName}`;
 
-            // ✅ استضافة دائمة بصمت: نرفع نسخة لقناة ديسكورد لأخذ رابط CDN الدائم ثم نحذف الرسالة فوراً حتى لا تظهر الصورة وحيدة في الشات
+            // ✅ ثبات دائم بدون أي رسالة في الشات: نخزن bytes الصورة في guild_banners (تُزامَن لـ Turso) ونقدّمها من سيرفرنا
             let persistent = false;
             try {
-              const _g = client?.guilds?.cache?.get(req.params.guildId);
-              if (_g && dataBuffer.length <= 10 * 1024 * 1024) {
-                const _gs = database.getGuildSettings ? database.getGuildSettings(req.params.guildId) : {};
-                const _pref = [_gs.log_channel, _gs.log_channel_server].filter(Boolean);
-                let _ch = null;
-                for (const cid of _pref) {
-                  _ch = _g.channels.cache.get(cid) || await _g.channels.fetch(cid).catch(() => null);
-                  if (_ch && _ch.isTextBased()) break; else _ch = null;
-                }
-                if (!_ch) {
-                  _ch = _g.channels.cache.find(c => c.isTextBased() && c.permissionsFor?.(_g.members.me)?.has('SendMessages')) || null;
-                }
-                if (_ch) {
-                  const sent = await _ch.send({ files: [{ attachment: dataBuffer, name: fileName }] }).catch(() => null);
-                  const cdn = sent?.attachments?.first?.()?.url;
-                  if (cdn) { fullUrl = cdn; persistent = true; }
-                  // حذف رسالة الاستضافة فوراً — الرابط يبقى صالحاً بعد الحذف
-                  if (sent) { try { await sent.delete().catch(() => {}); } catch {} }
-                }
+              if (database.saveGuildBanner && database.saveGuildBanner(req.params.guildId, dataBuffer, ext)) {
+                const tursoSync = require('../database/tursoSync');
+                const _mime = ext === 'jpg' ? 'image/jpeg' : (ext === 'gif' ? 'image/gif' : (ext === 'webp' ? 'image/webp' : 'image/png'));
+                tursoSync.queueBannerSync(req.params.guildId, _mime, dataBuffer.toString('base64'));
+                await tursoSync.flush(10000);
+                persistent = true;
               }
-            } catch {}
+            } catch (e) { console.error('[banner persist] Error:', e.message); }
 
             res.json({ success: true, url: fullUrl, persistent });
         } catch (e) {
@@ -12395,8 +12382,13 @@ ${embedScriptHtml}
                     if (fs.existsSync(fp)) { try { fs.unlinkSync(fp); } catch {} }
                 }
             } catch {}
+            // حذف bytes البانر من القاعدة والسحابة
+            try {
+                if (database.deleteGuildBanner) database.deleteGuildBanner(guildId);
+            } catch {}
             try {
                 const tursoSync = require('../database/tursoSync');
+                tursoSync.queueBannerDelete(guildId);
                 await tursoSync.flush(10000);
             } catch {}
             res.json({ success: true });

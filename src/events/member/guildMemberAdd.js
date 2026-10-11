@@ -253,8 +253,18 @@ module.exports = {
             .setFooter({ text: `العضو رقم #${guild.memberCount} • دعوة بواسطة: ${inviterName}`, iconURL: guild.iconURL() || undefined })
             .setTimestamp();
 
-          if (settings.welcome_banner_image) {
-            welcomeEmbed.setImage(settings.welcome_banner_image);
+          // البانر داخل نفس الإيمبد — نفضل bytes القاعدة كمرفق (attachment://) فلا يعتمد على جلب خارجي
+          try {
+            const _gb3 = db.getGuildBanner ? db.getGuildBanner(guild.id) : null;
+            if (_gb3 && _gb3.buffer && _gb3.buffer.length > 0 && _gb3.buffer.length <= 10 * 1024 * 1024) {
+              const _ext3 = (_gb3.mime === 'image/jpeg') ? 'jpg' : ((_gb3.mime === 'image/gif') ? 'gif' : ((_gb3.mime === 'image/webp') ? 'webp' : 'png'));
+              sendPayload.files = [{ attachment: _gb3.buffer, name: 'welcome_banner.' + _ext3 }];
+              welcomeEmbed.setImage('attachment://welcome_banner.' + _ext3);
+            } else if (settings.welcome_banner_image) {
+              welcomeEmbed.setImage(settings.welcome_banner_image);
+            }
+          } catch {
+            if (settings.welcome_banner_image) { try { welcomeEmbed.setImage(settings.welcome_banner_image); } catch {} }
           }
 
           sendPayload.embeds = [welcomeEmbed];
@@ -265,7 +275,12 @@ module.exports = {
             const _bu = (settings.welcome_banner_image && String(settings.welcome_banner_image).trim()) || '';
             if (_bu && _bu.toLowerCase() !== 'null') {
               let _bf = null;
-              // ملف uploads محلي؟ اقرأ من القرص مباشرة (أضمن من HTTP للذات)
+              // 1) bytes البانر المخزنة في القاعدة (الأضمن — ولا رسالة ديسكورد أبداً)
+              try {
+                const _gb = db.getGuildBanner ? db.getGuildBanner(guild.id) : null;
+                if (_gb && _gb.buffer && _gb.buffer.length > 0 && _gb.buffer.length <= 10 * 1024 * 1024) _bf = _gb.buffer;
+              } catch {}
+              // 2) ملف uploads محلي؟ اقرأ من القرص مباشرة (أضمن من HTTP للذات)
               try {
                 const _m = _bu.match(/\/uploads\/([^?#\/]+)$/);
                 if (_m && !_bu.includes('cdn.discordapp.com')) {
@@ -292,7 +307,13 @@ module.exports = {
 
         if (settings.welcome_image) {
           try {
-            const cardBuffer = await canvasUtil.createWelcomeCard(member, settings.welcome_banner_image);
+            // فضّل bytes القاعدة (لا تعتمد على الملف أو الرابط)
+            let _bannerInput = settings.welcome_banner_image;
+            try {
+              const _gb2 = db.getGuildBanner ? db.getGuildBanner(guild.id) : null;
+              if (_gb2 && _gb2.buffer && _gb2.buffer.length > 0) _bannerInput = _gb2.buffer;
+            } catch {}
+            const cardBuffer = await canvasUtil.createWelcomeCard(member, _bannerInput);
             if (cardBuffer) {
               const attachment = new AttachmentBuilder(cardBuffer, { name: 'welcome.png' });
               sendPayload.files = [attachment];

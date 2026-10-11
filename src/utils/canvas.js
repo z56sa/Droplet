@@ -123,6 +123,11 @@ function drawEmblemBadge(ctx, x, y, size, type, active = true) {
 
 // تحميل صورة البانر: ملفات uploads المحلية تُقرأ من القرص مباشرة (أضمن من HTTP للذات)، والباقي عبر الرابط
 async function loadBannerImage(bannerUrl) {
+  try {
+    if (bannerUrl && Buffer.isBuffer(bannerUrl) && bannerUrl.length > 0) {
+      try { return await loadImage(bannerUrl); } catch { return null; }
+    }
+  } catch {}
   const raw = (typeof bannerUrl === 'string' ? bannerUrl.trim() : '');
   if (!raw || raw.toLowerCase() === 'null') return null;
   try {
