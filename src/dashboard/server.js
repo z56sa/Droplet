@@ -12080,6 +12080,34 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     if (typeof window.updateEmbedPreview === 'function') { try { window.updateEmbedPreview(); } catch (e) {} }
                     __embToast('🗑️ تم مسح جميع محتويات الإيمبد', true);
                 }
+                // ✅ دوال بانر الترحيب عالمياً (احتياط إن تعطل سكربت القسم)
+                if (typeof window.saveWelcomeBannerNow !== 'function') {
+                    window.saveWelcomeBannerNow = function(url) {
+                        var gId = window.location.pathname.split('/')[2];
+                        fetch('/api/guild/' + gId + '/settings', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ welcome_banner_image: url })
+                        }).then(function(r) { return r.json(); }).then(function(d) {
+                            if (window.checkBannerUrl) { try { window.checkBannerUrl(); } catch (e) {} }
+                            if (typeof showSaveStatus === 'function') { try { showSaveStatus(); } catch (e) {} }
+                        }).catch(function() {});
+                    };
+                }
+                if (typeof window.useBannerUrlManual !== 'function') {
+                    window.useBannerUrlManual = function() {
+                        var uEl = document.getElementById('banner_url_manual');
+                        var url = uEl ? (uEl.value || '').trim() : '';
+                        if (!url) { alert('❌ الصق رابط الصورة أولاً'); return; }
+                        if (!/^https?:\/\//i.test(url)) { alert('❌ الرابط يجب أن يبدأ بـ http(s)://'); return; }
+                        var hiddenInput = document.getElementById('input_welcome_banner_image');
+                        if (hiddenInput) hiddenInput.value = url;
+                        var imgElem = document.getElementById('img_welcome_banner_image');
+                        var placeholderElem = document.getElementById('placeholder_welcome_banner_image');
+                        if (imgElem) { imgElem.src = url; imgElem.classList.remove('hidden'); }
+                        if (placeholderElem) { placeholderElem.classList.add('hidden'); }
+                        window.saveWelcomeBannerNow(url);
+                    };
+                }
                 document.addEventListener('click', function(e) {
                     var t = e.target && e.target.closest ? e.target.closest('#btnSendEmbed,#btnSaveEmbedDraft,#btnClearEmbed') : null;
                     if (!t) return;
