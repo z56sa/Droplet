@@ -10444,9 +10444,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div>
                                         <label class="block text-xs font-bold text-gray-300 mb-1">اسم الكاتب أو الهيدر (Author)</label>
                                         <input type="text" id="embAuthor" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: إدارة السيرفر / Droplet Support" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right">
-                                        <label class="block text-xs font-bold text-gray-300 mb-1 mt-2">رابط أيقونة الكاتب (اختياري)</label>
-                                        <input type="url" id="embAuthorIcon" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="https://..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono" dir="ltr">
-                                        <p class="text-[10px] text-gray-500 mt-1">يظهر كعنوان صغير أعلى الإيمبد</p>
                                     </div>
 
                                     <!-- Main Title -->
@@ -10521,43 +10518,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
                                 </div>
 
-                                <!-- Custom Fields Container -->
-                                <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-3xl space-y-3 shadow-lg">
-                                    <div class="flex items-center justify-between pb-2 border-b border-blue-500/20">
-                                        <button type="button" onclick="if(window.addEmbedField)window.addEmbedField()" class="px-3.5 py-1.5 bg-blue-400/20 hover:bg-blue-400/40 border border-blue-500/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer active:scale-95">
-                                            <span>+</span><span>إضافة حقل جديد</span>
-                                        </button>
-                                        <h4 class="text-xs font-black text-white flex items-center gap-1.5">
-                                            <span>حقول إضافية مخصصة (Fields)</span>
-                                            <span>📑</span>
-                                        </h4>
-                                    </div>
-                                    <div id="fieldsContainer" class="space-y-2.5"></div>
-                                </div>
-
-                                <!-- Footer & Timestamp Box -->
-                                <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-3xl space-y-3 shadow-lg">
-                                    <div class="flex items-center justify-between pb-2 border-b border-blue-500/20">
-                                        <div class="flex items-center gap-2">
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" id="embTimestampToggle" checked onchange="if(window.updateEmbedPreview)window.updateEmbedPreview()" class="sr-only peer">
-                                                <div class="w-10 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-blue-500/25 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-blue-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-l from-purple-600 to-blue-500 cursor-pointer"></div>
-                                            </label>
-                                            <span class="text-[11px] text-white font-bold">إظهار الوقت</span>
-                                        </div>
-                                        <h4 class="text-xs font-black text-white flex items-center gap-1.5">
-                                            <span>التذييل والوقت (Footer)</span>
-                                            <span>⏰</span>
-                                        </h4>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs font-bold text-gray-300 mb-1">نص التذييل (Footer Text)</label>
-                                        <input type="text" id="embFooter" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="مثال: Droplet Bot • نظام الدعم التلقائي" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
-                                        <label class="block text-xs font-bold text-gray-300 mb-1 mt-2">رابط أيقونة التذييل (اختياري)</label>
-                                        <input type="url" id="embFooterIcon" oninput="if(window.updateEmbedPreview)window.updateEmbedPreview()" placeholder="https://..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono" dir="ltr">
-                                    </div>
-                                </div>
+                                <!-- Custom Fields & Footer removed -->
 
                             </div>
 
@@ -10608,8 +10569,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                     <!-- Desc -->
                                                     <div id="prevDesc" class="text-xs text-gray-300 whitespace-pre-wrap leading-relaxed break-words">محتوى الإيمبد سيظهر هنا مباشرة...</div>
 
-                                                    <!-- Fields -->
-                                                    <div id="prevFieldsGrid" class="grid grid-cols-2 gap-2 pt-1 hidden"></div>
+                                                    <!-- Fields preview removed -->
                                                 </div>
                                             </div>
 
@@ -10618,12 +10578,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                 <img id="prevMainImg" class="rounded-lg max-h-60 w-full object-cover shadow" src="" alt="">
                                             </div>
 
-                                            <!-- Footer -->
-                                            <div id="prevFooterRow" class="mt-2.5 pt-2 flex items-center justify-end gap-1.5 text-[10px] text-white">
-                                                <span id="prevTimestamp" class="text-white"></span>
-                                                <span id="prevFooterDot" class="hidden font-bold">•</span>
-                                                <span id="prevFooterText"></span>
-                                            </div>
+                                            <!-- Footer preview removed -->
                                         </div>
                                     </div>
                                 </div>
@@ -12866,7 +12821,7 @@ ${embedScriptHtml}
             console.log('[send-embed] session user:', req.session?.user?.id, 'guildId:', req.params.guildId);
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'غير مسجل دخول، يرجى تسجيل الدخول مجدداً' });
             const { guildId } = req.params;
-            const { channelId, color, title, titleUrl, desc, author, authorIcon, image, thumbnail, footer, footerIcon, timestamp, fields } = req.body;
+            const { channelId, color, title, titleUrl, desc, author, image, thumbnail } = req.body;
 
             const channel = client.channels.cache.get(channelId) || await client.channels.fetch(channelId).catch((e) => {
                 console.error('[send-embed] fetch channel error:', e.message);
@@ -12901,15 +12856,6 @@ ${embedScriptHtml}
                 return /^https?:\/\//i.test(s) ? s.slice(0, 1000) : '';
             };
             const safeColor = /^#[0-9A-Fa-f]{6}$/.test(color || '') ? color : '#5865F2';
-            const _zw = String.fromCharCode(8203);
-            const safeFields = (Array.isArray(fields) ? fields : [])
-                .filter(f => f && (f.name || f.value))
-                .slice(0, 25)
-                .map(f => ({
-                    name: String(f.name || _zw).slice(0, 256),
-                    value: String(f.value || _zw).slice(0, 1024),
-                    inline: !!f.inline
-                }));
 
             let embed;
             try {
@@ -12918,14 +12864,11 @@ ${embedScriptHtml}
                 const _tu = httpOnly(titleUrl);
                 if (_tu) embed.setURL(_tu);
                 if (desc) embed.setDescription(String(desc).slice(0, 4096));
-                if (author) embed.setAuthor({ name: String(author).slice(0, 256), iconURL: httpOnly(authorIcon) || undefined });
+                if (author) embed.setAuthor({ name: String(author).slice(0, 256) });
                 const _im = httpOnly(image);
                 if (_im) embed.setImage(_im);
                 const _th = httpOnly(thumbnail);
                 if (_th) embed.setThumbnail(_th);
-                if (footer) embed.setFooter({ text: String(footer).slice(0, 2048), iconURL: httpOnly(footerIcon) || undefined });
-                if (timestamp) embed.setTimestamp();
-                if (safeFields.length > 0) embed.addFields(safeFields);
             } catch (e) {
                 return res.status(400).json({ success: false, error: 'تعذر بناء الإيمبد — تحقق من الحقول: ' + (e.message || 'قيم غير صالحة') });
             }

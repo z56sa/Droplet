@@ -97,12 +97,8 @@ const sendEmbedSchema = z.object({
     titleUrl: z.string().max(1000).optional().or(z.literal('')),
     desc: z.string().max(4096).optional(),
     author: z.string().max(256).optional(),
-    authorIcon: z.string().max(1000).optional().or(z.literal('')),
     image: z.string().max(1000).optional().or(z.literal('')),
     thumbnail: z.string().max(1000).optional().or(z.literal('')),
-    footer: z.string().max(2048).optional(),
-    footerIcon: z.string().max(1000).optional().or(z.literal('')),
-    timestamp: z.boolean().optional(),
     fields: z.array(z.object({
         name: z.string().max(256).optional().default('\u200b'),
         value: z.string().max(1024).optional().default('\u200b'),
