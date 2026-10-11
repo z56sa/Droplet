@@ -9635,7 +9635,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-1">رابط بانر لوحة الحضور (اختياري)</label>
-                                    <input type="text" name="staff_banner_url" id="staff_banner_url" value="${settings.staff_banner_url || ''}" placeholder="https://..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono">
+                                    <input type="text" name="staff_banner_url" id="staff_banner_url" value="${(settings.staff_banner_url && settings.staff_banner_url !== 'null') ? settings.staff_banner_url : ''}" placeholder="https://..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-left font-mono">
                                 </div>
                             </div>
 
@@ -12039,6 +12039,14 @@ ${embedScriptHtml}
             if (settings && settings.bot_language !== undefined) {
                 settings.bot_language = (String(settings.bot_language).toUpperCase() === 'AR') ? 'AR' : 'EN';
             }
+            // ✅ تنظيف النصوص: 'null' النصية والفارغ إلى null
+            if (settings) {
+                for (const k of ['staff_banner_url', 'bot_about', 'bot_avatar', 'bot_banner']) {
+                    if (settings[k] !== undefined && (settings[k] === null || String(settings[k]).trim() === '' || String(settings[k]).trim().toLowerCase() === 'null')) {
+                        settings[k] = null;
+                    }
+                }
+            }
             if (database.updateGuildSettings) {
                 database.updateGuildSettings(guildId, settings);
             }
@@ -12653,7 +12661,7 @@ ${embedScriptHtml}
             const guildObj = client?.guilds?.cache?.get(guildId);
             const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
-            const bannerImg = settings.staff_banner_url && settings.staff_banner_url.trim() !== '' ? settings.staff_banner_url.trim() : null;
+            const bannerImg = (settings.staff_banner_url && settings.staff_banner_url.trim() !== '' && settings.staff_banner_url.trim() !== 'null') ? settings.staff_banner_url.trim() : null;
             const embed = new EmbedBuilder()
                 .setColor('#60a5fa')
                 .setTitle('📋 لوحة تسجيل حضور وانصراف الإدارة | Staff Shift')

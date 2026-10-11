@@ -141,7 +141,7 @@ module.exports = {
       const desc = interaction.options.getString('description') || t(lang, 'admin.set.def_desc');
 
       const settings = db.getGuildSettings(guildId);
-      const bannerImg = (customBanner && customBanner.trim() !== '') ? customBanner.trim() : (settings.staff_banner_url && settings.staff_banner_url.trim() !== '' ? settings.staff_banner_url.trim() : null);
+      const bannerImg = (customBanner && customBanner.trim() !== '' && customBanner.trim() !== 'null') ? customBanner.trim() : ((settings.staff_banner_url && settings.staff_banner_url.trim() !== '' && settings.staff_banner_url.trim() !== 'null') ? settings.staff_banner_url.trim() : null);
 
       const embed = new EmbedBuilder()
         .setColor('#7c3aed')
