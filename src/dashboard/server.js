@@ -11937,6 +11937,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     reader.onload = async function(e) {
                         var ctrl = null;
                         try { ctrl = new AbortController(); setTimeout(function() { try { ctrl.abort(); } catch (_) {} }, 90000); } catch (_) {}
+                        var httpStatus = 0;
                         try {
                             const res = await fetch('/api/guild/${guildId}/upload-image', {
                                 method: 'POST',
@@ -11947,6 +11948,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 }),
                                 signal: ctrl ? ctrl.signal : undefined
                             });
+                            httpStatus = res.status;
                             const data = await res.json();
                             if (data.success && data.url) {
                                 const hiddenInput = document.getElementById('input_' + fieldName);
@@ -11965,12 +11967,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 setTimeout(() => { if (btnText) btnText.innerText = origText; }, 2500);
                                 if (typeof onDone === 'function') onDone(data.url);
                             } else {
-                                alert('❌ فشل رفع الصورة: ' + (data.error || 'خطأ غير معروف'));
-                                if (btnText) btnText.innerText = origText;
+                                var msg = '❌ فشل رفع الصورة [' + httpStatus + ']: ' + (data.error || 'خطأ غير معروف');
+                                alert(msg);
+                                if (btnText) btnText.innerText = msg;
                             }
                         } catch(err) {
-                            alert('❌ حدث خطأ في الاتصال أثناء رفع الصورة');
-                            if (btnText) btnText.innerText = origText;
+                            var msg2 = (err && err.name === 'AbortError') ? '❌ انتهت مهلة الرفع (90ث)' : '❌ خطأ اتصال [' + httpStatus + '] أثناء رفع الصورة';
+                            alert(msg2);
+                            if (btnText) btnText.innerText = msg2;
                         }
                     };
                     downscaleIfNeeded(file).then(function(finalFile) {
