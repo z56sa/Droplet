@@ -2145,7 +2145,7 @@ module.exports = function (app, client) {
                 'staff-activity': 'Staff & Moderator Activity Tracking 👮',
                 'tempvoice': 'Temp Voice Channels 🕒',
                 'boost': 'Server Boost Notifications 💎',
-                'colors': 'Advanced Color Roles System 🎨',
+                'colors': 'نظام رتب الألوان 🎨',
                 'logs': 'Comprehensive Server Logs 📜',
                 'levels': 'Levels & XP System 🏆',
                 'autoroles': 'Auto Roles on Join 🎖️',
