@@ -11900,8 +11900,43 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     const origText = btnText ? btnText.innerText : 'رفع الصورة';
                     if (btnText) btnText.innerText = 'جاري الرفع... ⏳';
 
+                    // ✅ تصغير الصور الكبيرة محلياً قبل الرفع (تسريع + تجاوز حدود الاستضافة)
+                    function downscaleIfNeeded(f) {
+                        return new Promise(function(resolve) {
+                            try {
+                                if (!/^image\/(jpeg|jpg|png|webp)$/.test(f.type) || f.size <= 900 * 1024) return resolve(f);
+                                var url = URL.createObjectURL(f);
+                                var img = new Image();
+                                img.onload = function() {
+                                    try {
+                                        var maxDim = 1280;
+                                        var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+                                        if (!w || !h) { URL.revokeObjectURL(url); return resolve(f); }
+                                        var sc = Math.min(1, maxDim / Math.max(w, h));
+                                        if (sc >= 1) { URL.revokeObjectURL(url); return resolve(f); }
+                                        var cv = document.createElement('canvas');
+                                        cv.width = Math.round(w * sc); cv.height = Math.round(h * sc);
+                                        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+                                        URL.revokeObjectURL(url);
+                                        var mime = (f.type === 'image/png') ? 'image/png' : 'image/jpeg';
+                                        if (cv.toBlob) cv.toBlob(function(b) { resolve(b || f); }, mime, 0.85);
+                                        else resolve(f);
+                                    } catch (e) { try { URL.revokeObjectURL(url); } catch (_) {} resolve(f); }
+                                };
+                                img.onerror = function() { try { URL.revokeObjectURL(url); } catch (_) {} resolve(f); };
+                                img.src = url;
+                            } catch (e) { resolve(f); }
+                        });
+                    }
+
                     const reader = new FileReader();
+                    reader.onerror = function() {
+                        alert('❌ تعذر قراءة الصورة من جهازك. جرب صورة أخرى.');
+                        if (btnText) btnText.innerText = origText;
+                    };
                     reader.onload = async function(e) {
+                        var ctrl = null;
+                        try { ctrl = new AbortController(); setTimeout(function() { try { ctrl.abort(); } catch (_) {} }, 90000); } catch (_) {}
                         try {
                             const res = await fetch('/api/guild/${guildId}/upload-image', {
                                 method: 'POST',
@@ -11909,7 +11944,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 body: JSON.stringify({
                                     imageBase64: e.target.result,
                                     fieldName: fieldName
-                                })
+                                }),
+                                signal: ctrl ? ctrl.signal : undefined
                             });
                             const data = await res.json();
                             if (data.success && data.url) {
@@ -11937,7 +11973,16 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             if (btnText) btnText.innerText = origText;
                         }
                     };
-                    reader.readAsDataURL(file);
+                    downscaleIfNeeded(file).then(function(finalFile) {
+                        try {
+                            const r2 = new FileReader();
+                            r2.onerror = reader.onerror;
+                            r2.onload = reader.onload;
+                            r2.readAsDataURL(finalFile);
+                        } catch (err) {
+                            reader.readAsDataURL(file);
+                        }
+                    });
                 }
 
                 function clearUploadedImageInDOM(fieldName, onDone) {
