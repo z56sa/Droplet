@@ -7624,7 +7624,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             } catch(e) { alert('❌ خطأ في الاتصال'); }
                         }
                         </script>
-                        </div>
                     </div>`;
             } else if (section === 'boost') {
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
