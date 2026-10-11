@@ -4909,7 +4909,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                 <span>لا توجد صورة</span>
                                             </div>
                                         </div>
-                                        <button type="button" onclick="clearUploadedImageInDOM('welcome_banner_image')" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1.5 transition font-bold py-1 px-3 rounded-lg hover:bg-rose-950/30 cursor-pointer">
+                                        <button type="button" onclick="clearUploadedImageInDOM('welcome_banner_image', function(){ saveWelcomeBannerNow(null); if (window.checkBannerUrl) window.checkBannerUrl(); })" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1.5 transition font-bold py-1 px-3 rounded-lg hover:bg-rose-950/30 cursor-pointer">
                                             <span>🗑️</span>
                                             <span>إزالة الصورة</span>
                                         </button>
@@ -4930,7 +4930,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                     <!-- زر الرفع -->
                                     <div class="w-full md:w-auto flex justify-end">
-                                        <input type="file" id="file_welcome_banner_image" accept="image/*" class="hidden" onchange="uploadImageFile(this, 'welcome_banner_image', function(){ if (window.checkBannerUrl) window.checkBannerUrl(); })">
+                                        <input type="file" id="file_welcome_banner_image" accept="image/*" class="hidden" onchange="uploadImageFile(this, 'welcome_banner_image', function(url){ saveWelcomeBannerNow(url); if (window.checkBannerUrl) window.checkBannerUrl(); })">
                                         <input type="hidden" id="input_welcome_banner_image" name="welcome_banner_image" value="${settings.welcome_banner_image || ''}">
                                         <button type="button" onclick="document.getElementById('file_welcome_banner_image').click()" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-blue-700/30 flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
                                             <span>📤</span>
@@ -4941,6 +4941,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <script>
                                 (function() {
+                                    window.saveWelcomeBannerNow = function(url) {
+                                        var gId = window.location.pathname.split('/')[2];
+                                        fetch('/api/guild/' + gId + '/settings', {
+                                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ welcome_banner_image: url })
+                                        }).then(function(r) { return r.json(); }).then(function(d) {
+                                            if (window.checkBannerUrl) window.checkBannerUrl();
+                                        }).catch(function() {});
+                                    };
                                     window.checkBannerUrl = function() {
                                         var el = document.getElementById('bannerUrlStatus');
                                         var inp = document.getElementById('input_welcome_banner_image');
