@@ -12329,10 +12329,30 @@ ${embedScriptHtml}
                 fs.mkdirSync(uploadDir, { recursive: true });
             }
 
+            // ✅ تحقق وتطبيع: فكّ ترميز الصورة server-side وخزّن PNG مضموناً (يكشف الملفات التالفة/غير المدعومة فور الرفع بدل السقوط الصامت)
+            let storeBuf = dataBuffer, storeExt = ext;
+            try {
+              const { loadImage: _li, createCanvas: _cc } = require('@napi-rs/canvas');
+              const _img = await _li(dataBuffer);
+              if (ext === 'gif') {
+                storeBuf = dataBuffer; storeExt = 'gif';
+              } else {
+                const _cv = _cc(_img.width, _img.height);
+                _cv.getContext('2d').drawImage(_img, 0, 0);
+                storeBuf = _cv.toBuffer('image/png');
+                storeExt = 'png';
+              }
+            } catch (e) {
+              return res.status(400).json({ success: false, error: 'تعذر قراءة الصورة — الصيغة غير مدعومة أو الملف تالف. جرّب PNG أو JPG.' });
+            }
+            if (!storeBuf || storeBuf.length === 0 || storeBuf.length > 15 * 1024 * 1024) {
+              return res.status(400).json({ success: false, error: 'حجم الصورة غير صالح بعد المعالجة' });
+            }
+
             const cleanField = (fieldName || 'img').replace(/[^a-zA-Z0-9_-]/g, '_');
-            const fileName = `${cleanField}_${req.params.guildId}_${Date.now()}.${ext}`;
+            const fileName = `${cleanField}_${req.params.guildId}_${Date.now()}.${storeExt}`;
             const filePath = path.join(uploadDir, fileName);
-            fs.writeFileSync(filePath, dataBuffer);
+            fs.writeFileSync(filePath, storeBuf);
 
             const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
             const host = req.get('host');
@@ -12341,10 +12361,10 @@ ${embedScriptHtml}
             // ✅ ثبات دائم بدون أي رسالة في الشات: نخزن bytes الصورة في guild_banners (تُزامَن لـ Turso) ونقدّمها من سيرفرنا
             let persistent = false;
             try {
-              if (database.saveGuildBanner && database.saveGuildBanner(req.params.guildId, dataBuffer, ext)) {
+              if (database.saveGuildBanner && database.saveGuildBanner(req.params.guildId, storeBuf, storeExt)) {
                 const tursoSync = require('../database/tursoSync');
-                const _mime = ext === 'jpg' ? 'image/jpeg' : (ext === 'gif' ? 'image/gif' : (ext === 'webp' ? 'image/webp' : 'image/png'));
-                tursoSync.queueBannerSync(req.params.guildId, _mime, dataBuffer.toString('base64'));
+                const _mime = storeExt === 'jpg' ? 'image/jpeg' : (storeExt === 'gif' ? 'image/gif' : (storeExt === 'webp' ? 'image/webp' : 'image/png'));
+                tursoSync.queueBannerSync(req.params.guildId, _mime, storeBuf.toString('base64'));
                 await tursoSync.flush(10000);
                 persistent = true;
               }
