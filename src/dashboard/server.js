@@ -11923,6 +11923,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 }
                                 if (btnText) btnText.innerText = '✅ تم الرفع';
                                 setTimeout(() => { if (btnText) btnText.innerText = origText; }, 2500);
+                                if (!data.persistent) {
+                                    alert('⚠️ تم الرفع لكن الاستضافة الدائمة فشلت — الصورة مؤقتة وقد تختفي بعد إعادة التشغيل. تحقق من صلاحيات البوت ثم أعد الرفع.');
+                                }
                                 if (typeof onDone === 'function') onDone(data.url);
                             } else {
                                 alert('❌ فشل رفع الصورة: ' + (data.error || 'خطأ غير معروف'));
@@ -12115,6 +12118,7 @@ ${embedScriptHtml}
             let fullUrl = `${protocol}://${host}/uploads/${fileName}`;
 
             // ✅ استضافة دائمة: القرص المحلي مؤقت على الاستضافات المجانية — نرفع نسخة لقناة ديسكورد ونستخدم رابطها الدائم
+            let hosted = false;
             try {
               const _g = client?.guilds?.cache?.get(req.params.guildId);
               if (_g && dataBuffer.length <= 10 * 1024 * 1024) {
@@ -12126,17 +12130,22 @@ ${embedScriptHtml}
                   if (_ch && _ch.isTextBased()) break; else _ch = null;
                 }
                 if (!_ch) {
-                  _ch = _g.channels.cache.find(c => c.isTextBased() && c.permissionsFor?.(_g.members.me)?.has('SendMessages')) || null;
+                  const _me = _g.members.me || await _g.members.fetchMe().catch(() => null);
+                  _ch = _g.channels.cache.find(c => c.isTextBased() && c.permissionsFor?.(_me)?.has('SendMessages')) || null;
                 }
                 if (_ch) {
-                  const sent = await _ch.send({ files: [{ attachment: dataBuffer, name: fileName }] }).catch(() => null);
+                  const sent = await _ch.send({ files: [{ attachment: dataBuffer, name: fileName }] }).catch((e) => { console.error('[upload-image] discord send failed:', e.message); return null; });
                   const cdn = sent?.attachments?.first?.()?.url;
-                  if (cdn) fullUrl = cdn;
-                }
+                  if (cdn) { fullUrl = cdn; hosted = true; }
+                  else console.error('[upload-image] no attachment url returned');
+                } else console.error('[upload-image] no writable channel found in guild', req.params.guildId);
+              } else if (_g) {
+                console.error('[upload-image] file too large for discord hosting:', dataBuffer.length);
               }
-            } catch {}
+            } catch (e) { console.error('[upload-image] hosting error:', e.message); }
+            console.log(`[upload-image] guild=${req.params.guildId} field=${cleanField} size=${dataBuffer.length} hosted=${hosted}`);
 
-            res.json({ success: true, url: fullUrl });
+            res.json({ success: true, url: fullUrl, persistent: hosted });
         } catch (e) {
             console.error('Upload image error:', e);
             res.status(500).json({ success: false, error: e.message });
