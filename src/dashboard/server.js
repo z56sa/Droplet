@@ -4914,6 +4914,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <span id="btn_text_welcome_banner_image">رفع الصورة</span>
                                         </label>
                                         <p id="bannerUrlStatus" class="text-[10px] mt-1 text-right max-w-[220px] break-words">${(function(){ try { const _u = String(settings.welcome_banner_image || '').trim(); if (!_u || _u.toLowerCase() === 'null') return '<span class="text-gray-500">لا توجد صورة محفوظة.</span>'; if (_u.includes('cdn.discordapp.com')) return '<span class="text-emerald-400">✅ رابط دائم (ديسكورد).</span>'; const _m = _u.match(/\/uploads\/([^?#\/]+)$/); if (_m) { try { const _p = require('path'); const _f = require('fs'); if (_f.existsSync(_p.join(__dirname, 'public', 'uploads', _m[1]))) return '<span class="text-emerald-400">✅ الصورة موجودة على الخادم.</span>'; } catch (e) {} return '<span class="text-rose-400">❌ ملف الصورة غير موجود على الخادم — أعد الرفع.</span>'; } return '<span class="text-gray-400">رابط خارجي — يُفحص عند الإرسال.</span>'; } catch (e) { return ''; } })()}
+                                        <button type="button" onclick="sendWelcomeTest()" class="px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-500/30 text-emerald-300 rounded-xl text-xs font-bold transition cursor-pointer w-full md:w-auto">🧪 إرسال ترحيب تجريبي</button>
                                     </div>
                                 </div>
                                 <script>
@@ -4987,6 +4988,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             } else { finishSend(file); }
                                         } catch (e) { finishSend(file); }
                                     };
+                                    window.sendWelcomeTest = function() { var gId = window.location.pathname.split('/')[2]; fetch('/api/guild/' + gId + '/welcome-test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(function(r) { return r.json(); }).then(function(d) { if (d && d.success) alert('✅ تم إرسال الترحيب التجريبي!\nالبانر: ' + (d.bannerApplied ? 'مطبق ✅' : 'غير مطبق (' + (d.bannerReason || '؟') + ')')); else alert('❌ فشل: ' + ((d && d.error) || 'خطأ')); }).catch(function() { alert('❌ خطأ اتصال'); }); };
                                     window.saveWelcomeBannerNow = function(url) {
                                         saveWl('welcome_banner_image', url);
                                     };
@@ -12296,6 +12298,51 @@ ${embedScriptHtml}
             res.json({ success: true, url: fullUrl });
         } catch (e) {
             console.error('Upload image error:', e);
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    // =============================================
+    // Welcome Test API (ترحيب تجريبي فوري مع تقرير البانر)
+    // =============================================
+    app.post('/api/guild/:guildId/welcome-test', express.json(), async (req, res) => {
+        try {
+            if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
+            const { guildId } = req.params;
+            const settings = database.getGuildSettings ? database.getGuildSettings(guildId) : {};
+            const channelId = settings.welcome_channel;
+            if (!channelId) return res.status(400).json({ success: false, error: 'حدد قناة الترحيب أولاً' });
+            const guild = client?.guilds?.cache?.get(guildId) || await client?.guilds?.fetch(guildId).catch(() => null);
+            if (!guild) return res.status(404).json({ success: false, error: 'السيرفر غير متصل' });
+            const channel = guild.channels.cache.get(channelId) || await guild.channels.fetch(channelId).catch(() => null);
+            if (!channel || !channel.isTextBased()) return res.status(404).json({ success: false, error: 'قناة الترحيب غير موجودة' });
+            const member = await guild.members.fetch(req.session.user.id).catch(() => null);
+            if (!member) return res.status(404).json({ success: false, error: 'تعذر جلب عضويتك' });
+
+            const bannerRaw = settings.welcome_banner_image;
+            let bannerApplied = false, bannerReason = 'لا توجد صورة مضبوطة';
+            let files = [];
+            try {
+              const canvasUtil = require('../utils/canvas');
+              if (bannerRaw && String(bannerRaw).trim() !== '' && String(bannerRaw).trim().toLowerCase() !== 'null') {
+                bannerReason = 'رابط الصورة لا يعمل';
+                try {
+                  const testBuf = await canvasUtil.createWelcomeCard(member, bannerRaw);
+                  if (testBuf && testBuf.length > 0) { bannerApplied = true; files = [{ attachment: testBuf, name: 'welcome_test.png' }]; }
+                } catch (e) { bannerReason = 'فشل تحميل الصورة: ' + (e.message || '؟'); }
+              }
+            } catch (e) { bannerReason = 'تعذر بناء البطاقة'; }
+            if (!files.length) {
+              try {
+                const canvasUtil = require('../utils/canvas');
+                const fallback = await canvasUtil.createWelcomeCard(member, null);
+                if (fallback) files = [{ attachment: fallback, name: 'welcome_test.png' }];
+              } catch {}
+            }
+            await channel.send({ content: `🧪 ترحيب تجريبي لـ <@${member.id}>`, files });
+            res.json({ success: true, bannerApplied, bannerReason, bannerHost: (() => { try { return new URL(String(bannerRaw || '')).hostname; } catch { return null; } })() });
+        } catch (e) {
+            console.error('[welcome-test] Error:', e);
             res.status(500).json({ success: false, error: e.message });
         }
     });
