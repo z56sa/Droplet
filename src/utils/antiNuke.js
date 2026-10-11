@@ -26,8 +26,8 @@ const ACTION_TOGGLE_MAP = {
 function isActionTypeEnabled(settings, actionType) {
   const keys = ACTION_TOGGLE_MAP[actionType];
   if (!keys) return true;
-  // يُفعّل النوع إذا كان أي مفتاح مرتبط به مفعلاً (الغائب = مفعل افتراضياً)
-  return keys.some(k => isEnabled(settings[k], true));
+  // يُفعّل النوع إذا كان أي مفتاح مرتبط به مفعلاً صراحة (الغائب = مطفي)
+  return keys.some(k => isEnabled(settings[k], false));
 }
 
 const antiNuke = {
@@ -38,7 +38,7 @@ const antiNuke = {
     const settings = db.getGuildSettings(guild.id) || {};
     const _master = (settings.anti_nuke_enabled !== undefined && settings.anti_nuke_enabled !== null && settings.anti_nuke_enabled !== '')
       ? settings.anti_nuke_enabled : settings.antinuke_enabled;
-    if (!isEnabled(_master, true)) return;
+    if (!isEnabled(_master, false)) return;
     // ✅ المفتاح التفصيلي: إذا عطّل الإدارة هذا النوع، لا تراقبه
     if (!isActionTypeEnabled(settings, actionType)) return;
 

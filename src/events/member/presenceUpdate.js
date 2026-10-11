@@ -16,7 +16,7 @@ module.exports = {
 
       const settings = db.getGuildSettings(guild.id);
       // التحقق من تفعيل ميزة الخروج التلقائي
-      if (!isEnabled(settings.staff_auto_logout, true)) return;
+      if (!isEnabled(settings.staff_auto_logout, false)) return;
 
       const newStatus = newPresence.status; // 'online', 'idle', 'dnd', 'offline'
 

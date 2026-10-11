@@ -12,8 +12,8 @@ module.exports = {
       const iconChanged = oldGuild.icon !== newGuild.icon;
       if (!nameChanged && !iconChanged) return;
 
-      const watchName = nameChanged && isEnabled(settings.anti_server_name_change, true);
-      const watchIcon = iconChanged && isEnabled(settings.anti_server_icon_change, true);
+      const watchName = nameChanged && isEnabled(settings.anti_server_name_change, false);
+      const watchIcon = iconChanged && isEnabled(settings.anti_server_icon_change, false);
       if (!watchName && !watchIcon) return;
 
       // سجل في محرك الحماية (للرصد والعقوبة عند التكرار)

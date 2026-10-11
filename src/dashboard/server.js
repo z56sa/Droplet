@@ -3132,7 +3132,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                         <!-- 1. Master Toggle & Banner -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl flex items-center justify-between shadow-xl">
                             <label class="toggle">
-                                <input type="checkbox" name="automod_enabled" value="1" ${settings.automod_enabled !== 0 ? 'checked' : ''} onchange="saveAutomodSetting('automod_enabled', this.checked)">
+                                <input type="checkbox" name="automod_enabled" value="1" ${Number(settings.automod_enabled) === 1 ? 'checked' : ''} onchange="saveAutomodSetting('automod_enabled', this.checked)">
                                 <span class="slider"></span>
                             </label>
                             <div class="flex items-center gap-3">
@@ -3923,7 +3923,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- 2. Master Toggle: تفعيل نظام الحماية -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl flex items-center justify-between shadow-lg">
                             <label class="toggle">
-                                <input type="checkbox" name="anti_nuke_enabled" value="1" ${settings.anti_nuke_enabled !== 0 ? 'checked' : ''} onchange="saveProtectionSetting('anti_nuke_enabled', this.checked)">
+                                <input type="checkbox" name="anti_nuke_enabled" value="1" ${Number(settings.anti_nuke_enabled) === 1 ? 'checked' : ''} onchange="saveProtectionSetting('anti_nuke_enabled', this.checked)">
                                 <span class="slider"></span>
                             </label>
                             <div class="flex items-center gap-3">
@@ -4655,7 +4655,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <!-- سجلات الأمان -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl flex items-center justify-between shadow-xl">
                                 <label class="toggle">
-                                    <input type="checkbox" name="security_logs_enabled" value="1" ${settings.security_logs_enabled !== 0 ? 'checked' : ''} onchange="saveProtectionSetting('security_logs_enabled', this.checked)">
+                                    <input type="checkbox" name="security_logs_enabled" value="1" ${Number(settings.security_logs_enabled) === 1 ? 'checked' : ''} onchange="saveProtectionSetting('security_logs_enabled', this.checked)">
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-3">
@@ -4672,7 +4672,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <!-- سجلات الإشراف -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl flex items-center justify-between shadow-xl">
                                 <label class="toggle">
-                                    <input type="checkbox" name="mod_logs_enabled" value="1" ${settings.mod_logs_enabled !== 0 ? 'checked' : ''} onchange="saveProtectionSetting('mod_logs_enabled', this.checked)">
+                                    <input type="checkbox" name="mod_logs_enabled" value="1" ${Number(settings.mod_logs_enabled) === 1 ? 'checked' : ''} onchange="saveProtectionSetting('mod_logs_enabled', this.checked)">
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-3">
@@ -4835,7 +4835,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <!-- Card 1: Master Header Card -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl flex items-center justify-between shadow-xl">
                                 <label class="toggle">
-                                    <input type="checkbox" name="welcome_enabled" value="1" ${settings.welcome_enabled !== 0 ? 'checked' : ''}>
+                                    <input type="checkbox" name="welcome_enabled" value="1" ${Number(settings.welcome_enabled) === 1 ? 'checked' : ''}>
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-3">
@@ -4880,7 +4880,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <!-- Card 3: خيارات الترحيب الثلاثة (نص فقط / صورة ترحيب / رسالة Embed) -->
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <button type="button" onclick="setWelcomeType('text')" id="btnWlTypeText" class="p-4 rounded-2xl border ${settings.welcome_embed_enabled === 0 && !settings.welcome_image ? 'border-blue-400 bg-orange-950/20 text-white' : 'border-blue-500/20 bg-[#0b1322] text-white'} text-center transition">
+                                <button type="button" onclick="setWelcomeType('text')" id="btnWlTypeText" class="p-4 rounded-2xl border ${Number(settings.welcome_embed_enabled) !== 1 && !settings.welcome_image ? 'border-blue-400 bg-orange-950/20 text-white' : 'border-blue-500/20 bg-[#0b1322] text-white'} text-center transition">
                                     <h5 class="font-bold text-xs">نص فقط</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">رسالة نصية بسيطة</p>
                                 </button>
@@ -4888,13 +4888,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <h5 class="font-bold text-xs">صورة ترحيب</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">صورة مخصصة مع اسم العضو</p>
                                 </button>
-                                <button type="button" onclick="setWelcomeType('embed')" id="btnWlTypeEmbed" class="p-4 rounded-2xl border ${settings.welcome_embed_enabled !== 0 ? 'border-blue-400 bg-orange-950/20 text-white' : 'border-blue-500/20 bg-[#0b1322] text-white'} text-center transition">
+                                <button type="button" onclick="setWelcomeType('embed')" id="btnWlTypeEmbed" class="p-4 rounded-2xl border ${Number(settings.welcome_embed_enabled) === 1 ? 'border-blue-400 bg-orange-950/20 text-white' : 'border-blue-500/20 bg-[#0b1322] text-white'} text-center transition">
                                     <h5 class="font-bold text-xs">رسالة Embed</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">رسالة منسقة مع ألوان</p>
                                 </button>
                             </div>
 
-                            <input type="hidden" name="welcome_embed_enabled" id="welcome_embed_enabled" value="${settings.welcome_embed_enabled !== 0 ? 1 : 0}">
+                            <input type="hidden" name="welcome_embed_enabled" id="welcome_embed_enabled" value="${Number(settings.welcome_embed_enabled) === 1 ? 1 : 0}">
                             <input type="hidden" name="welcome_image" id="welcome_image" value="${settings.welcome_image ? 1 : 0}">
 
                             <!-- Upload Card: صورة الترحيب بنمط Wicks -->
@@ -5051,17 +5051,17 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <!-- Card 3: خيارات المغادرة (رسالة نصية / رسالة Embed) -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <button type="button" onclick="setLeaveType('text')" id="btnLvTypeText" class="p-4 rounded-2xl border ${settings.leave_embed_enabled === 0 ? 'border-rose-500 bg-rose-950/20 text-white' : 'border-blue-500/20 bg-[#0b1322] text-white'} text-center transition">
+                                <button type="button" onclick="setLeaveType('text')" id="btnLvTypeText" class="p-4 rounded-2xl border ${Number(settings.leave_embed_enabled) !== 1 ? 'border-rose-500 bg-rose-950/20 text-white' : 'border-blue-500/20 bg-[#0b1322] text-white'} text-center transition">
                                     <h5 class="font-bold text-xs">رسالة نصية</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">رسالة بسيطة</p>
                                 </button>
-                                <button type="button" onclick="setLeaveType('embed')" id="btnLvTypeEmbed" class="p-4 rounded-2xl border ${settings.leave_embed_enabled !== 0 ? 'border-rose-500 bg-rose-950/20 text-white' : 'border-blue-500/20 bg-[#0b1322] text-white'} text-center transition">
+                                <button type="button" onclick="setLeaveType('embed')" id="btnLvTypeEmbed" class="p-4 rounded-2xl border ${Number(settings.leave_embed_enabled) === 1 ? 'border-rose-500 bg-rose-950/20 text-white' : 'border-blue-500/20 bg-[#0b1322] text-white'} text-center transition">
                                     <h5 class="font-bold text-xs">رسالة Embed</h5>
                                     <p class="text-[10px] text-gray-500 mt-1">رسالة منسقة مع ألوان</p>
                                 </button>
                             </div>
 
-                            <input type="hidden" name="leave_embed_enabled" id="leave_embed_enabled" value="${settings.leave_embed_enabled !== 0 ? 1 : 0}">
+                            <input type="hidden" name="leave_embed_enabled" id="leave_embed_enabled" value="${Number(settings.leave_embed_enabled) === 1 ? 1 : 0}">
 
                             <!-- Card 4: تخصيص رسالة المغادرة (Live Preview & Colors) -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl space-y-4 shadow-xl">
@@ -5500,7 +5500,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- 1. Master Header Card (Tickets) -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl flex items-center justify-between shadow-xl">
                             <label class="toggle">
-                                <input type="checkbox" name="tickets_enabled" value="1" ${settings.tickets_enabled !== 0 ? 'checked' : ''}>
+                                <input type="checkbox" name="tickets_enabled" value="1" ${Number(settings.tickets_enabled) === 1 ? 'checked' : ''}>
                                 <span class="slider"></span>
                             </label>
                             <div class="flex items-center gap-3">
@@ -5568,7 +5568,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div class="flex items-center justify-between p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl self-end h-[46px]">
                                     <label class="toggle">
-                                        <input type="checkbox" name="ticket_rating_enabled" value="1" ${settings.ticket_rating_enabled !== 0 ? 'checked' : ''}>
+                                        <input type="checkbox" name="ticket_rating_enabled" value="1" ${Number(settings.ticket_rating_enabled) === 1 ? 'checked' : ''}>
                                         <span class="slider"></span>
                                     </label>
                                     <div class="text-right">
@@ -5812,7 +5812,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 `;
             } else if (section === 'autoroles') {
                 // ✅ FIX: حساب حالة النظام والتحذيرات قبل العرض
-                const _arEnabledChecked = (settings.autoroles_enabled === 0 || settings.autoroles_enabled === '0') ? '' : 'checked';
+                const _arEnabledChecked = (Number(settings.autoroles_enabled) === 1) ? 'checked' : '';
                 const _arMemberId = settings.autorole_id || settings.auto_role || '';
                 const _arBotId = settings.autorole_bot_id || '';
                 const _botHighestPos = (botGuild && botGuild.members && botGuild.members.me && botGuild.members.me.roles && botGuild.members.me.roles.highest) ? botGuild.members.me.roles.highest.position : 0;
@@ -5902,7 +5902,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- Top Tab Switcher & Master Toggle (Exact to Images 1, 2, 3) -->
                         <div class="flex items-center justify-between">
                             <label class="toggle">
-                                <input type="checkbox" name="leveling_enabled" value="1" ${settings.leveling_enabled !== 0 ? 'checked' : ''}>
+                                <input type="checkbox" name="leveling_enabled" value="1" ${Number(settings.leveling_enabled) === 1 ? 'checked' : ''}>
                                 <span class="slider"></span>
                             </label>
 
@@ -5946,7 +5946,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <!-- مستويات كتابية -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between">
                                         <label class="toggle">
-                                            <input type="checkbox" name="level_text_xp_enabled" value="1" ${settings.level_text_xp_enabled !== 0 ? 'checked' : ''}>
+                                            <input type="checkbox" name="level_text_xp_enabled" value="1" ${Number(settings.level_text_xp_enabled) === 1 ? 'checked' : ''}>
                                             <span class="slider"></span>
                                         </label>
                                         <div class="flex items-center gap-2 text-xs font-bold text-white">
@@ -5958,7 +5958,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <!-- مستويات صوتية -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between">
                                         <label class="toggle">
-                                            <input type="checkbox" name="level_voice_xp_enabled" value="1" ${settings.level_voice_xp_enabled !== 0 ? 'checked' : ''}>
+                                            <input type="checkbox" name="level_voice_xp_enabled" value="1" ${Number(settings.level_voice_xp_enabled) === 1 ? 'checked' : ''}>
                                             <span class="slider"></span>
                                         </label>
                                         <div class="flex items-center gap-2 text-xs font-bold text-white">
@@ -6015,7 +6015,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between">
                                     <label class="toggle">
-                                        <input type="checkbox" name="level_ignore_deafened" value="1" ${settings.level_ignore_deafened !== 0 ? 'checked' : ''}>
+                                        <input type="checkbox" name="level_ignore_deafened" value="1" ${Number(settings.level_ignore_deafened) === 1 ? 'checked' : ''}>
                                         <span class="slider"></span>
                                     </label>
                                     <div class="text-right">
@@ -6026,7 +6026,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between">
                                     <label class="toggle">
-                                        <input type="checkbox" name="level_ignore_muted" value="1" ${settings.level_ignore_muted !== 0 ? 'checked' : ''}>
+                                        <input type="checkbox" name="level_ignore_muted" value="1" ${Number(settings.level_ignore_muted) === 1 ? 'checked' : ''}>
                                         <span class="slider"></span>
                                     </label>
                                     <div class="text-right">
@@ -6037,7 +6037,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between">
                                     <label class="toggle">
-                                        <input type="checkbox" name="level_ignore_afk" value="1" ${settings.level_ignore_afk !== 0 ? 'checked' : ''}>
+                                        <input type="checkbox" name="level_ignore_afk" value="1" ${Number(settings.level_ignore_afk) === 1 ? 'checked' : ''}>
                                         <span class="slider"></span>
                                     </label>
                                     <div class="text-right">
@@ -6056,7 +6056,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between">
                                     <label class="toggle">
-                                        <input type="checkbox" name="level_up_msg_enabled" value="1" ${settings.level_up_msg_enabled !== 0 ? 'checked' : ''}>
+                                        <input type="checkbox" name="level_up_msg_enabled" value="1" ${Number(settings.level_up_msg_enabled) === 1 ? 'checked' : ''}>
                                         <span class="slider"></span>
                                     </label>
                                     <div class="text-right">
@@ -6580,7 +6580,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <!-- 1. نظام التحذيرات -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl flex items-center justify-between shadow-lg">
                                 <label class="toggle">
-                                    <input type="checkbox" name="mod_warn_enabled" value="1" ${settings.mod_warn_enabled !== 0 ? 'checked' : ''}>
+                                    <input type="checkbox" name="mod_warn_enabled" value="1" ${Number(settings.mod_warn_enabled) === 1 ? 'checked' : ''}>
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-2 text-right">
@@ -6592,7 +6592,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <!-- 2. نظام الكتم -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl flex items-center justify-between shadow-lg">
                                 <label class="toggle">
-                                    <input type="checkbox" name="mod_mute_enabled" value="1" ${settings.mod_mute_enabled !== 0 ? 'checked' : ''}>
+                                    <input type="checkbox" name="mod_mute_enabled" value="1" ${Number(settings.mod_mute_enabled) === 1 ? 'checked' : ''}>
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-2 text-right">
@@ -6604,7 +6604,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <!-- 3. الكلمات المحظورة -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl flex items-center justify-between shadow-lg">
                                 <label class="toggle">
-                                    <input type="checkbox" name="mod_badwords_enabled" value="1" ${settings.mod_badwords_enabled !== 0 ? 'checked' : ''}>
+                                    <input type="checkbox" name="mod_badwords_enabled" value="1" ${Number(settings.mod_badwords_enabled) === 1 ? 'checked' : ''}>
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-2 text-right">
@@ -6616,7 +6616,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <!-- 4. سبام المنشنات -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl flex items-center justify-between shadow-lg">
                                 <label class="toggle">
-                                    <input type="checkbox" name="mod_mention_spam_enabled" value="1" ${settings.mod_mention_spam_enabled !== 0 ? 'checked' : ''}>
+                                    <input type="checkbox" name="mod_mention_spam_enabled" value="1" ${Number(settings.mod_mention_spam_enabled) === 1 ? 'checked' : ''}>
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-2 text-right">
@@ -7142,7 +7142,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     ${renderRoleSelect('suggestions_staff_roles', settings.suggestions_staff_roles || '')}
                                 </div>
                                 <div class="flex items-center justify-between p-3.5 bg-[#070d1d] border border-blue-500/20 rounded-xl mt-6">
-                                    <label class="toggle"><input type="checkbox" name="suggestions_auto_thread" value="1" ${settings.suggestions_auto_thread !== 0 ? 'checked' : ''}><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="suggestions_auto_thread" value="1" ${Number(settings.suggestions_auto_thread) === 1 ? 'checked' : ''}><span class="slider"></span></label>
                                     <div class="text-right">
                                         <h5 class="text-xs font-bold text-white">إنشاء خيط نقاش تلقائي (Thread)</h5>
                                         <p class="text-[10px] text-gray-500">فتح ثريد تحت كل اقتراح لتمكين الأعضاء من النقاش</p>
@@ -7367,7 +7367,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- Master Toggle -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-3xl flex items-center justify-between shadow-xl">
                             <label class="toggle">
-                                <input type="checkbox" name="antiraid_enabled" value="1" ${settings.antiraid_enabled !== 0 ? 'checked' : ''}>
+                                <input type="checkbox" name="antiraid_enabled" value="1" ${Number(settings.antiraid_enabled) === 1 ? 'checked' : ''}>
                                 <span class="slider"></span>
                             </label>
                             <div class="flex items-center gap-3">
@@ -7459,7 +7459,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         </div>
                                     </div>
                                     <div class="flex items-center justify-between p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl">
-                                        <label class="toggle"><input type="checkbox" name="antiraid_dm_notify" value="1" ${settings.antiraid_dm_notify !== 0 ? 'checked' : ''}><span class="slider"></span></label>
+                                        <label class="toggle"><input type="checkbox" name="antiraid_dm_notify" value="1" ${Number(settings.antiraid_dm_notify) === 1 ? 'checked' : ''}><span class="slider"></span></label>
                                         <div class="text-right">
                                             <h5 class="text-xs font-bold text-white">إشعار الأونر عبر DM</h5>
                                             <p class="text-[10px] text-gray-500">إرسال تنبيه خاص لأونر السيرفر عند رصد أي غزو</p>
@@ -7508,7 +7508,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <div class="space-y-6 text-right" dir="rtl">
                         <!-- Header Banner -->
                         <div class="bg-gradient-to-r from-[#0a1430] via-[#0b1322] to-[#0a1430] border border-blue-500/20 p-6 rounded-3xl flex items-center justify-between shadow-2xl">
-                            <label class="toggle"><input type="checkbox" name="temp_voice_enabled" value="1" ${settings.temp_voice_enabled !== 0 ? 'checked' : ''}><span class="slider"></span></label>
+                            <label class="toggle"><input type="checkbox" name="temp_voice_enabled" value="1" ${Number(settings.temp_voice_enabled) === 1 ? 'checked' : ''}><span class="slider"></span></label>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
                                     <h4 class="font-black text-white text-xl flex items-center gap-2 justify-end"><span>الرومات الصوتية المؤقتة (Temp Voice)</span><span>🎙️</span></h4>
@@ -7583,7 +7583,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             } else if (section === 'colors') {
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
                         <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl flex items-center justify-between shadow-xl">
-                            <label class="toggle"><input type="checkbox" name="colors_enabled" value="1" ${settings.colors_enabled !== 0 ? 'checked' : ''}><span class="slider"></span></label>
+                            <label class="toggle"><input type="checkbox" name="colors_enabled" value="1" ${Number(settings.colors_enabled) === 1 ? 'checked' : ''}><span class="slider"></span></label>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
                                     <h4 class="font-black text-white text-base">نظام رتب الألوان المتقدم (Color Roles)</h4>
@@ -7629,7 +7629,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             } else if (section === 'boost') {
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
                         <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl flex items-center justify-between shadow-xl">
-                            <label class="toggle"><input type="checkbox" name="boost_msg_enabled" value="1" ${settings.boost_msg_enabled !== 0 ? 'checked' : ''}><span class="slider"></span></label>
+                            <label class="toggle"><input type="checkbox" name="boost_msg_enabled" value="1" ${Number(settings.boost_msg_enabled) === 1 ? 'checked' : ''}><span class="slider"></span></label>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
                                     <h4 class="font-black text-white text-base">نظام تنبيهات ومعلومات البوست (Server Boost)</h4>
@@ -7751,7 +7751,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <p class="text-sm text-white pr-11">يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.</p>
                                 </div>
                                 <label class="toggle relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="logsMasterToggle" name="logs_enabled" value="1" ${settings.logs_enabled !== 0 ? 'checked' : ''} onchange="window.saveLogsSetting('logs_enabled', this.checked)">
+                                    <input type="checkbox" id="logsMasterToggle" name="logs_enabled" value="1" ${Number(settings.logs_enabled) === 1 ? 'checked' : ''} onchange="window.saveLogsSetting('logs_enabled', this.checked)">
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -7768,7 +7768,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
                                 </div>
                                 <label class="toggle relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="sub-logs-switch" ${settings.logs_enabled !== 0 ? 'checked' : ''} onchange="window.saveLogsSetting('logs_enabled', this.checked); document.getElementById('logsMasterToggle').checked = this.checked;">
+                                    <input type="checkbox" id="sub-logs-switch" ${Number(settings.logs_enabled) === 1 ? 'checked' : ''} onchange="window.saveLogsSetting('logs_enabled', this.checked); document.getElementById('logsMasterToggle').checked = this.checked;">
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -9649,7 +9649,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <p class="text-[11px] text-white mt-0.5">يسجل خروج الإداري تلقائياً عند الخمول (AFK) أو انعدام التفاعل في الشات واستلام التذاكر أو انتهاء الحد الأقصى للمدة</p>
                                     </div>
                                     <label class="toggle flex-shrink-0 mr-4">
-                                        <input type="checkbox" name="staff_auto_logout" value="1" ${settings.staff_auto_logout !== 0 ? 'checked' : ''} onchange="saveProtectionSetting('staff_auto_logout', this.checked)">
+                                        <input type="checkbox" name="staff_auto_logout" value="1" ${Number(settings.staff_auto_logout) === 1 ? 'checked' : ''} onchange="saveProtectionSetting('staff_auto_logout', this.checked)">
                                         <span class="slider"></span>
                                     </label>
                                 </div>
@@ -11438,7 +11438,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <main class="flex-1 p-8 overflow-y-auto ${section === 'embed' ? 'max-w-7xl' : 'max-w-4xl'} mx-auto">
                         <div class="${section === 'logs' ? '' : 'probot-card border border-blue-500/20 rounded-3xl p-8 shadow-2xl mb-8'}">
                             <div class="flex items-center justify-between pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
-                                <label class="toggle"><input type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled'};return _m[section]||(section+'_enabled');})(), this.checked)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return 'checked';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
+                                <label class="toggle"><input type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled'};return _m[section]||(section+'_enabled');})(), this.checked)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
                                 <div class="text-right">
                                     <h2 class="text-2xl font-black text-white">${title}</h2>
                                     <p class="text-white text-xs mt-1">يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.</p>

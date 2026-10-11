@@ -677,7 +677,7 @@ module.exports = {
         await interaction.deferReply({ flags: 64 }).catch(() => { });
         try {
           const _tSettings = db.getGuildSettings ? db.getGuildSettings(interaction.guildId) : {};
-          const _tOn = (_tSettings.tickets_enabled === undefined || _tSettings.tickets_enabled === null || _tSettings.tickets_enabled === '') ? true : (!['0', 'false', 'off', 'no'].includes(String(_tSettings.tickets_enabled).toLowerCase()) && Number(_tSettings.tickets_enabled) !== 0);
+          const _tOn = (_tSettings.tickets_enabled === undefined || _tSettings.tickets_enabled === null || _tSettings.tickets_enabled === '') ? false : (!['0', 'false', 'off', 'no'].includes(String(_tSettings.tickets_enabled).toLowerCase()) && Number(_tSettings.tickets_enabled) !== 0);
           if (!_tOn) return interaction.editReply({ content: '🎫 نظام التذاكر معطل حالياً.' }).catch(() => {});
         } catch {}
 
@@ -1393,7 +1393,7 @@ module.exports = {
         try {
           const settings = db.getGuildSettings(interaction.guild.id);
           const { isEnabled } = require('../../utils/isEnabled');
-          if (!isEnabled(settings.colors_enabled, true)) {
+          if (!isEnabled(settings.colors_enabled, false)) {
             return interaction.editReply({ content: '🎨 نظام الألوان معطل حالياً.' });
           }
           if (settings.colors_required_role && !interaction.member.roles.cache.has(settings.colors_required_role)) {

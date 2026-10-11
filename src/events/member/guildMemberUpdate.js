@@ -28,7 +28,7 @@ module.exports = {
     // التحقق من تفعيل ميزة البوست (يكفي boost_msg_enabled؛ مع fallback لـ boost_enabled القديم)
     const boostMsg = (settings.boost_msg_enabled !== undefined && settings.boost_msg_enabled !== null && settings.boost_msg_enabled !== '')
       ? settings.boost_msg_enabled : settings.boost_enabled;
-    if (!isEnabled(boostMsg, true)) return;
+    if (!isEnabled(boostMsg, false)) return;
 
     // التحقق هل العضو قام بعمل بوست جديد
     const oldBoost = oldMember.premiumSince;

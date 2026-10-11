@@ -494,7 +494,7 @@ module.exports = {
     }
 
     // XP & Leveling
-    if (isEnabled(settings.leveling_enabled, true) && isEnabled(settings.level_text_xp_enabled, true)) {
+    if (isEnabled(settings.leveling_enabled, false) && isEnabled(settings.level_text_xp_enabled, false)) {
       // ✅ استثناءات القنوات/الرتب
       const _exCh = String(settings.level_exempt_channels || '').split(/[,;\s]+/).filter(Boolean);
       const _exRoles = String(settings.level_exempt_roles || '').split(/[,;\s]+/).filter(Boolean);
@@ -537,7 +537,7 @@ module.exports = {
               }
             } catch (e) {}
 
-            if (isEnabled(settings.level_up_msg_enabled, true)) {
+            if (isEnabled(settings.level_up_msg_enabled, false)) {
               const rawMsg = settings.level_message || t(guildId, 'events.levelup.default');
               const mention = `<@${message.author.id}>`;
               const formattedMsg = rawMsg
@@ -695,7 +695,7 @@ module.exports = {
     }
 
     // Suggestions Channel
-    if (!isCommandMessage && isEnabled(settings.suggestions_enabled, true) && settings.suggestions_channel &&
+    if (!isCommandMessage && isEnabled(settings.suggestions_enabled, false) && settings.suggestions_channel &&
         message.channel.id === settings.suggestions_channel) {
       const content = trimmedContent;
       if (content.length > 0) {

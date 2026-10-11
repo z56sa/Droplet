@@ -46,7 +46,7 @@ module.exports = {
     // ==========================================
     // 1. نظام الرومات الصوتية المؤقتة (Temp Voice)
     // ==========================================
-    if (isEnabled(settings.temp_voice_enabled, true) && settings.temp_voice_channel && newState.channelId === settings.temp_voice_channel) {
+    if (isEnabled(settings.temp_voice_enabled, false) && settings.temp_voice_channel && newState.channelId === settings.temp_voice_channel) {
       try {
         const categoryId = settings.temp_voice_category || newState.channel?.parentId;
         const tpl = String(settings.temp_voice_name_template || '🔊 | {user}').slice(0, 90) || '🔊 | {user}';

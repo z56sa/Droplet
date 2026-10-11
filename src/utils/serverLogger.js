@@ -28,10 +28,10 @@ async function sendServerLog(guild, eventId, catKey, embedData = {}, opts = {}) 
 
     try {
         const settings = db.getGuildSettings(guild.id) || {};
-        if (!isEnabled(settings.logs_enabled, true)) return;
-        // ✅ بوابات السجلات التفصيلية (الغائب = مفعل)
-        if (catKey === 'moderation' && !isEnabled(settings.mod_logs_enabled, true)) return;
-        if ((catKey === 'server' || catKey === 'automod') && !isEnabled(settings.security_logs_enabled, true)) return;
+        if (!isEnabled(settings.logs_enabled, false)) return;
+        // ✅ بوابات السجلات التفصيلية (الغائب = مطفي)
+        if (catKey === 'moderation' && !isEnabled(settings.mod_logs_enabled, false)) return;
+        if ((catKey === 'server' || catKey === 'automod') && !isEnabled(settings.security_logs_enabled, false)) return;
 
         let logsConfig = {};
         try {

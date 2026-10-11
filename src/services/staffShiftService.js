@@ -36,7 +36,7 @@ class StaffShiftService {
             for (const shift of activeShifts) {
                 const { guild_id, user_id, start_time } = shift;
                 const settings = db.getGuildSettings(guild_id);
-                if (!isEnabled(settings.staff_auto_logout, true)) continue;
+                if (!isEnabled(settings.staff_auto_logout, false)) continue;
 
                 // ─── Fallback: فحص الحضور مباشرة (بديل عن presenceUpdate) ───
                 // نتصرف فقط عند معرفة الحالة فعلياً — تجاهل الكاش الفارغ لتفادي طرد خاطئ

@@ -24,7 +24,7 @@ module.exports = {
   async execute(interaction) {
     const type = interaction.options.getString('type') || 'xp';
     const settings = db.getGuildSettings(interaction.guild.id);
-    if (type === 'xp' && !isEnabled(settings.leveling_enabled, true)) {
+    if (type === 'xp' && !isEnabled(settings.leveling_enabled, false)) {
       return interaction.reply({ content: t(interaction.guild.id, 'economy.leaderboard.disabled'), ephemeral: true });
     }
     const embed = await this.buildEmbed(interaction.guild, type);
@@ -34,7 +34,7 @@ module.exports = {
   async executePrefix(message, args) {
     const type = args[0]?.toLowerCase() === 'credits' || args[0]?.toLowerCase() === 'credit' || args[0]?.toLowerCase() === 'star' || args[0]?.toLowerCase() === 'coins' ? 'credits' : 'xp';
     const settings = db.getGuildSettings(message.guild.id);
-    if (type === 'xp' && !isEnabled(settings.leveling_enabled, true)) {
+    if (type === 'xp' && !isEnabled(settings.leveling_enabled, false)) {
       return message.reply(t(message.guild.id, 'economy.leaderboard.disabled'));
     }
     const embed = await this.buildEmbed(message.guild, type);

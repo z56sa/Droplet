@@ -16,14 +16,14 @@ async function awardVoiceTick(client) {
       let settings;
       try { settings = db.getGuildSettings(guild.id); } catch { continue; }
       if (!settings) continue;
-      if (!isEnabled(settings.leveling_enabled, true)) continue;
-      if (!isEnabled(settings.level_voice_xp_enabled, true)) continue;
+      if (!isEnabled(settings.leveling_enabled, false)) continue;
+      if (!isEnabled(settings.level_voice_xp_enabled, false)) continue;
 
       const rate = Math.max(1, Math.min(100, parseInt(settings.level_voice_xp_rate) || 3));
       const minMembers = Math.max(1, Math.min(10, parseInt(settings.level_voice_min_members) || 2));
-      const ignoreDeaf = isEnabled(settings.level_ignore_deafened, true);
-      const ignoreMute = isEnabled(settings.level_ignore_muted, true);
-      const ignoreAfk = isEnabled(settings.level_ignore_afk, true);
+      const ignoreDeaf = isEnabled(settings.level_ignore_deafened, false);
+      const ignoreMute = isEnabled(settings.level_ignore_muted, false);
+      const ignoreAfk = isEnabled(settings.level_ignore_afk, false);
       const exemptRoles = parseList(settings.level_exempt_roles);
       const exemptVoice = parseList(settings.level_exempt_voice_channels);
       const mult = Number(settings.level_multiplier) || 1;

@@ -986,6 +986,15 @@ function getGuildSettings(guildId) {
   let row = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
   if (!row) {
     db.prepare('INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)').run(guildId);
+    // ✅ الصفوف الجديدة: كل المفاتيح الرئيسية مطفية افتراضياً (يتجاوز قيم DEFAULT في السكيما)
+    try {
+      db.prepare(`UPDATE guild_settings SET
+        autoroles_enabled = 0, leveling_enabled = 0, welcome_enabled = 0,
+        tickets_enabled = 0, boost_msg_enabled = 0, temp_voice_enabled = 0,
+        colors_enabled = 0, antiraid_enabled = 0, logs_enabled = 0,
+        automod_enabled = 0, anti_nuke_enabled = 0
+        WHERE guild_id = ?`).run(guildId);
+    } catch {}
     row = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
   }
   return row || { guild_id: guildId, prefix: '#' };

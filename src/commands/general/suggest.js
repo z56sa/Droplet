@@ -53,7 +53,7 @@ module.exports = {
     };
 
     const settings = db.getGuildSettings(guild.id);
-    if (!isEnabled(settings.suggestions_enabled, true)) {
+    if (!isEnabled(settings.suggestions_enabled, false)) {
       return safeReply(t(guild.id, 'general.suggest.disabled'));
     }
 

@@ -146,7 +146,7 @@ module.exports = {
 
     // 1.5 نظام الرتب التلقائية (Auto-Role for Members & Bots)
     // ✅ FIX: فحص صريح (0/1) + دعم عدة رتب مفصولة بفاصلة + توافق مع auto_role القديم
-    const _arEnabledRaw = (settings.autoroles_enabled === undefined || settings.autoroles_enabled === null) ? 1 : settings.autoroles_enabled;
+    const _arEnabledRaw = (settings.autoroles_enabled === undefined || settings.autoroles_enabled === null || settings.autoroles_enabled === '') ? 0 : settings.autoroles_enabled;
     const _arEnabled = Number(_arEnabledRaw) !== 0 && String(_arEnabledRaw).toLowerCase() !== 'false';
     if (_arEnabled) {
       const rawIds = member.user.bot
@@ -187,7 +187,7 @@ module.exports = {
       }
       
       // Fallback: If no custom channel set or not found, check system channel
-      if (!welcomeChannel && isEnabled(settings.welcome_enabled, true)) {
+      if (!welcomeChannel && isEnabled(settings.welcome_enabled, false)) {
         welcomeChannel = guild.systemChannel;
       }
 
@@ -221,7 +221,7 @@ module.exports = {
 
         const sendPayload = {};
 
-        if (isEnabled(settings.welcome_embed_enabled, true)) {
+        if (isEnabled(settings.welcome_embed_enabled, false)) {
           const welcomeEmbed = new EmbedBuilder()
             .setColor(settings.welcome_embed_color || config.colors.primary || '#9333ea')
             .setTitle(`🎉 مرحباً بك في ${guild.name}!`)

@@ -15,7 +15,7 @@ module.exports = {
 
   async execute(interaction) {
     const settings = db.getGuildSettings(interaction.guild.id);
-    if (!isEnabled(settings.leveling_enabled, true)) {
+    if (!isEnabled(settings.leveling_enabled, false)) {
       return interaction.reply({ content: t(interaction.guild.id, 'economy.leaderboard.disabled'), ephemeral: true });
     }
     await interaction.deferReply();
@@ -33,7 +33,7 @@ module.exports = {
 
   async executePrefix(message, args) {
     const settings = db.getGuildSettings(message.guild.id);
-    if (!isEnabled(settings.leveling_enabled, true)) {
+    if (!isEnabled(settings.leveling_enabled, false)) {
       return message.reply(t(message.guild.id, 'economy.leaderboard.disabled'));
     }
     const targetUser = message.mentions.users.first() ||
