@@ -4914,10 +4914,28 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <span id="btn_text_welcome_banner_image">رفع الصورة</span>
                                         </button>
                                         <p id="bannerUrlStatus" class="text-[10px] mt-1 text-right max-w-[220px] break-words"></p>
+                                        <div class="flex items-center gap-2 w-full">
+                                            <button type="button" onclick="useBannerUrlManual()" class="px-4 py-2 bg-[#14233c] hover:bg-[#1d3355] border border-blue-500/20 text-white rounded-xl text-xs font-bold transition cursor-pointer shrink-0">استخدام الرابط</button>
+                                            <input type="url" id="banner_url_manual" placeholder="الصق رابط الصورة هنا" dir="ltr" class="flex-1 min-w-0 bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-3 py-2 text-xs text-white outline-none font-mono placeholder-gray-600">
+                                        </div>
                                     </div>
                                 </div>
                                 <script>
                                 (function() {
+                                    window.useBannerUrlManual = function() {
+                                        var uEl = document.getElementById('banner_url_manual');
+                                        var url = uEl ? (uEl.value || '').trim() : '';
+                                        if (!url) { alert('❌ الصق رابط الصورة أولاً'); return; }
+                                        if (!/^https?:\/\//i.test(url)) { alert('❌ الرابط يجب أن يبدأ بـ http(s)://'); return; }
+                                        var hiddenInput = document.getElementById('input_welcome_banner_image');
+                                        if (hiddenInput) hiddenInput.value = url;
+                                        var imgElem = document.getElementById('img_welcome_banner_image');
+                                        var placeholderElem = document.getElementById('placeholder_welcome_banner_image');
+                                        if (imgElem) { imgElem.src = url; imgElem.classList.remove('hidden'); }
+                                        if (placeholderElem) { placeholderElem.classList.add('hidden'); }
+                                        saveWelcomeBannerNow(url);
+                                        if (window.checkBannerUrl) window.checkBannerUrl();
+                                    };
                                     window.saveWelcomeBannerNow = function(url) {
                                         saveWl('welcome_banner_image', url);
                                     };
