@@ -118,10 +118,12 @@ module.exports = function (app, client) {
     // 1.1 Real Bot Info API - used by landing page stats
     // 🏷️ نسخة التشغيل الحية (عام — للتحقق من وصول التحديثات للاستضافة)
     app.get('/api/version', (req, res) => {
-        let commit = 'unknown';
-        try {
-            commit = require('child_process').execSync('git rev-parse --short HEAD', { timeout: 5000 }).toString().trim() || 'unknown';
-        } catch (e) {}
+        let commit = (process.env.RENDER_GIT_COMMIT || '').toString().slice(0, 7) || 'unknown';
+        if (!commit || commit === 'unknown') {
+            try {
+                commit = require('child_process').execSync('git rev-parse --short HEAD', { timeout: 5000 }).toString().trim() || 'unknown';
+            } catch (e) {}
+        }
         res.json({ ok: true, commit, bootTime: global._dropletBootTime || null, now: Date.now() });
     });
     app.get('/api/bot-info', async (req, res) => {
@@ -11624,6 +11626,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <a href="https://discord.gg/zduGPYv7pE" target="_blank" data-i18n="support_server" class="text-xs text-white hover:text-blue-100 transition">الدعم الفني</a>
                     </div>
                     <div class="flex items-center gap-2">
+                        <span id="dropletBuildTag" title="نسخة التشغيل الحية — قارنها مع آخر تحديث معلن" class="text-[10px] font-mono text-gray-600 hover:text-gray-300 transition cursor-default">build …</span>
                         <span class="font-black text-sm text-white tracking-wide">Droplet</span>
                         <img src="${botAvatarUrl}" class="w-8 h-8 rounded-xl object-cover ring-2 ring-blue-400/40 shadow-md shadow-blue-700/30">
                     </div>

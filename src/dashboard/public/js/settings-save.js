@@ -127,6 +127,25 @@
     } catch (e) {}
   };
 
+  /* 🏷️ وسم نسخة التشغيل في الواجهة (يعرف المستخدم ما هي النسخة الحية فعلاً) */
+  function paintBuildTag() {
+    try {
+      var el = document.getElementById('dropletBuildTag');
+      if (!el || el.dataset.done) return;
+      fetch('/api/version').then(function (r) { return r.json(); }).then(function (v) {
+        if (v && v.commit) {
+          el.textContent = 'build ' + v.commit;
+          el.dataset.done = '1';
+        }
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  try {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paintBuildTag);
+    else paintBuildTag();
+    setTimeout(paintBuildTag, 2500);
+  } catch (e) {}
+
   /* مفاتيح التفعيل الفردية — نسخ مستقلة تعمل في كل الصفحات */
   function dropletGuildId() {
     try { return window.location.pathname.split('/')[2] || ''; } catch (e) { return ''; }
