@@ -990,7 +990,94 @@ function getTrackedUserProfiles(userIds = []) {
 }
 
 console.log('[DB] ✅ SQLite database initialized successfully');
-tursoSync.initAndRestore(db).catch(e => console.error('[TURSO] Init error:', e.message));
+
+// ==========================================
+// Default-OFF: كل مفاتيح التفعيل مطفأة افتراضياً — المستخدم يفعّل يدوياً من الداشبورد
+// (ترحيل لمرة واحدة لكل سيرفر + تصفير الصفوف الجديدة)
+// ==========================================
+const MODULE_OFF_FLAGS = [
+  'staff_activity_enabled', 'staff_banner_enabled', 'staff_auto_logout',
+  'boost_enabled', 'boost_dm_enabled', 'boost_embed_enabled', 'boost_msg_enabled',
+  'leave_enabled', 'leave_embed_enabled',
+  'welcome_enabled', 'welcome_dm_enabled', 'welcome_embed_enabled',
+  'verify_enabled', 'verification_enabled',
+  'ticket_enabled', 'tickets_enabled', 'ticket_rating_enabled',
+  'economy_enabled',
+  'automod_enabled', 'anti_spam', 'anti_spam_adv', 'anti_link', 'anti_invites',
+  'anti_caps', 'anti_emoji', 'anti_emoji_spam', 'anti_spoilers', 'anti_zalgo',
+  'anti_text_repeat', 'anti_repeat_messages', 'anti_stickers', 'anti_line_spam',
+  'anti_long_messages', 'anti_mass_mention', 'bad_words_enabled', 'strict_bad_words_enabled',
+  'autoroles_enabled',
+  'colors_enabled',
+  'security_logs_enabled', 'mod_logs_enabled', 'logs_enabled',
+  'leveling_enabled', 'level_text_xp_enabled', 'level_voice_xp_enabled',
+  'level_up_msg_enabled', 'level_dm_msg_enabled', 'level_stack_roles',
+  'level_ignore_deafened', 'level_ignore_muted', 'level_ignore_afk',
+  'temp_voice_enabled',
+  'mod_warn_enabled', 'mod_mute_enabled', 'mod_badwords_enabled',
+  'mod_caps_enabled', 'mod_mention_spam_enabled', 'mod_emoji_spam_enabled',
+  'suggestions_enabled', 'suggestions_dm_notify', 'suggestions_auto_thread',
+  'antiraid_enabled', 'antiraid_dm_notify', 'anti_bot', 'anti_raid_fast',
+  'anti_nuke_enabled', 'anti_bot_add',
+  'anti_channel_create', 'anti_channel_delete', 'anti_channel_move',
+  'anti_channel_permissions', 'anti_channel_update',
+  'anti_dangerous_perms', 'anti_ghost_ping', 'anti_invite_links',
+  'anti_join_danger_roles', 'anti_linked_roles', 'anti_nsfw_content',
+  'anti_onboarding_danger', 'anti_prune',
+  'anti_role_create', 'anti_role_delete', 'anti_role_update',
+  'anti_scam', 'anti_server_icon_change', 'anti_server_name_change',
+  'anti_webhook_create', 'anti_webhook_spam', 'anti_webhook_update',
+  'anti_mass_ban', 'anti_mass_kick',
+  'broadcast_enabled',
+  'auto_clear_punishments'
+];
+
+function getExistingFlagColumns() {
+  try {
+    const cols = db.prepare('PRAGMA table_info(guild_settings)').all().map(c => c.name);
+    const have = new Set(cols);
+    return MODULE_OFF_FLAGS.filter(f => /^[A-Za-z_][A-Za-z0-9_]*$/.test(f) && have.has(f));
+  } catch (e) { return []; }
+}
+
+function zeroModuleFlags(guildId) {
+  const flags = getExistingFlagColumns();
+  if (!flags.length || !guildId) return false;
+  try {
+    db.prepare(`UPDATE guild_settings SET ${flags.map(f => `${f} = 0`).join(', ')} WHERE guild_id = ?`).run(String(guildId));
+    return true;
+  } catch (e) { return false; }
+}
+
+function applyDefaultOffMigration() {
+  try { db.exec('ALTER TABLE guild_settings ADD COLUMN flags_default_off_v1 INTEGER DEFAULT 0;'); } catch (e) {}
+  let pending = [];
+  try {
+    pending = db.prepare('SELECT guild_id FROM guild_settings WHERE COALESCE(flags_default_off_v1, 0) = 0').all().map(r => r.guild_id);
+  } catch (e) { return; }
+  if (!pending.length) return;
+  const flags = getExistingFlagColumns();
+  try {
+    if (flags.length) {
+      db.prepare(`UPDATE guild_settings SET ${flags.map(f => `${f} = 0`).join(', ')}, flags_default_off_v1 = 1 WHERE COALESCE(flags_default_off_v1, 0) = 0`).run();
+    } else {
+      db.prepare('UPDATE guild_settings SET flags_default_off_v1 = 1 WHERE COALESCE(flags_default_off_v1, 0) = 0').run();
+    }
+  } catch (e) { console.error('[DB] default-off migration failed:', e.message); return; }
+  // ادفع الصفوف المعدلة إلى Turso حتى لا تعيد الاستعادة/السحب القيم القديمة
+  try {
+    for (const gid of pending) {
+      const row = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(gid);
+      if (row) tursoSync.queueGuildSettingsSync(gid, row);
+    }
+  } catch (e) {}
+  console.log(`[DB] ✅ Default-OFF migration applied to ${pending.length} guild(s).`);
+}
+
+Promise.resolve()
+  .then(() => tursoSync.initAndRestore(db))
+  .catch(e => console.error('[TURSO] Init error:', e.message))
+  .then(() => { try { applyDefaultOffMigration(); } catch (e) { console.error('[DB] default-off error:', e.message); } });
 
 
 // ==========================================
@@ -1000,15 +1087,8 @@ function getGuildSettings(guildId) {
   let row = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
   if (!row) {
     db.prepare('INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)').run(guildId);
-    // ✅ الصفوف الجديدة: كل المفاتيح الرئيسية مطفية افتراضياً (يتجاوز قيم DEFAULT في السكيما)
-    try {
-      db.prepare(`UPDATE guild_settings SET
-        autoroles_enabled = 0, leveling_enabled = 0, welcome_enabled = 0,
-        tickets_enabled = 0, boost_msg_enabled = 0, temp_voice_enabled = 0,
-        colors_enabled = 0, antiraid_enabled = 0, logs_enabled = 0,
-        automod_enabled = 0, anti_nuke_enabled = 0
-        WHERE guild_id = ?`).run(guildId);
-    } catch {}
+    // ✅ الصفوف الجديدة: كل مفاتيح التفعيل مطفية افتراضياً (يتجاوز قيم DEFAULT في السكيما)
+    try { zeroModuleFlags(guildId); } catch {}
     row = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(guildId);
   }
   return row || { guild_id: guildId, prefix: '#' };
@@ -1016,7 +1096,9 @@ function getGuildSettings(guildId) {
 
 function setGuildSetting(guildId, key, value) {
   // تأكد السجل موجود
-  db.prepare('INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)').run(guildId);
+  const _ins = db.prepare('INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)').run(guildId);
+  // الصفوف الجديدة: كل مفاتيح التفعيل مطفية افتراضياً ثم يُطبق المفتاح المطلوب فقط
+  if (_ins && _ins.changes === 1) { try { zeroModuleFlags(guildId); } catch {} }
 
   // تأكد أن العمود موجود في الجدول، وإذا لم يكن موجوداً يتم إنشاؤه تلقائياً
   try {

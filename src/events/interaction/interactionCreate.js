@@ -815,10 +815,12 @@ module.exports = {
         // Set thumbnail (User Avatar or Server Icon)
         welcomeEmbed.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true, size: 256 }));
 
-        // رسالة الترحيب المخصصة من الداشبورد (ticket_welcome_msg)
+        // رسالة الترحيب المخصصة من الداشبورد (ticket_welcome_msg) — تُتجاهل إن كانت فارغة أو 'null' نصية
         try {
           const _twSet = db.getGuildSettings ? db.getGuildSettings(interaction.guildId) : {};
-          if (_twSet.ticket_welcome_msg) welcomeEmbed.setDescription(String(_twSet.ticket_welcome_msg).slice(0, 4000));
+          const _twRaw = _twSet.ticket_welcome_msg;
+          const _twTxt = (_twRaw === undefined || _twRaw === null) ? '' : String(_twRaw).trim();
+          if (_twTxt && _twTxt.toLowerCase() !== 'null' && _twTxt.toLowerCase() !== 'undefined') welcomeEmbed.setDescription(_twTxt.slice(0, 4000));
         } catch {}
 
         // Check if server or panel has a welcome image

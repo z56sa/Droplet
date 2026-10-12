@@ -2057,6 +2057,16 @@ module.exports = function (app, client) {
                 settings = database.getGuildSettings ? database.getGuildSettings(guildId) : {};
             } catch (err) {}
             if (!settings) settings = {};
+            // 🧹 تنقية: أي نص مخزن حرفياً كـ 'null'/'undefined' يُعامل كفارغ (يمنع ظهور كلمة null في الحقول)
+            try {
+                for (const _nk of Object.keys(settings)) {
+                    const _nv = settings[_nk];
+                    if (typeof _nv === 'string') {
+                        const _nt = _nv.trim().toLowerCase();
+                        if (_nt === 'null' || _nt === 'undefined') settings[_nk] = '';
+                    }
+                }
+            } catch (err) {}
 
             let whitelistUsers = [];
             let antimodUsers = [];
@@ -11677,15 +11687,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </button>
                                 <div id="grp_sub_recent" class="space-y-1">
                                     <a href="/dashboard/${guildId}/welcome" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'welcome' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>الترحيب & المغادرة</span><span class="${section === 'welcome' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">👋</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/autoresponder" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoresponder' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>الرد التلقائي</span><span class="${section === 'autoresponder' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">💬</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/tickets" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tickets' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>نظام التذاكر</span><span class="${section === 'tickets' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">🎫</span></span>
                                     </a>
                                 </div>
@@ -11752,23 +11762,23 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="flex items-center gap-2"><span>الإشراف</span><span class="text-white group-hover:text-blue-400">🔨</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/levels" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'levels' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>المستويات & XP</span><span class="text-white group-hover:text-blue-400">🏆</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/welcome" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'welcome' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>الترحيب & المغادرة</span><span class="text-white group-hover:text-blue-400">👋</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/autoroles" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoroles' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>الرتب التلقائية</span><span class="text-white group-hover:text-blue-400">🎖️</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/giveaways" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'giveaways' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>قيف اواي</span><span class="text-white group-hover:text-blue-400">🎁</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/invites" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'invites' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>Invite Tracker</span><span class="text-white group-hover:text-blue-400">🔗</span></span>
                                     </a>
                                 </div>
@@ -11782,7 +11792,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </button>
                                 <div id="grp_sub_automations" class="space-y-1">
                                     <a href="/dashboard/${guildId}/autoresponder" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoresponder' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>الرد التلقائي</span><span class="text-white group-hover:text-blue-400">💬</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/applications" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'applications' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
@@ -11805,13 +11815,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div id="grp_sub_security" class="space-y-1">
                                     <a href="/dashboard/${guildId}/protection" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'protection' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
                                         <span class="flex items-center gap-1">
-                                            <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                            <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                             <span class="text-amber-400 text-xs">👑</span>
                                         </span>
                                         <span class="flex items-center gap-2"><span>Anti Nuke (الحماية)</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/whitelist" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'whitelist' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>القائمة البيضاء</span><span class="text-white group-hover:text-blue-400">⚪</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/protection-logs" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'protection-logs' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
@@ -11819,15 +11829,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="flex items-center gap-2"><span>سجلات الأمان والإشراف</span><span class="text-white group-hover:text-blue-400">📋</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/automod" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'automod' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>الرقابة التلقائية</span><span class="text-white group-hover:text-blue-400">🤖</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/antiraid" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'antiraid' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>مكافحة الغزو</span><span class="text-white group-hover:text-blue-400">🚨</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/staff-activity" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'staff-activity' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>نشاط الإدارة</span><span class="text-white group-hover:text-blue-400">👮</span></span>
                                     </a>
                                 </div>
@@ -11841,15 +11851,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </button>
                                 <div id="grp_sub_management" class="space-y-1">
                                     <a href="/dashboard/${guildId}/tempvoice" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tempvoice' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>الرومات المؤقتة</span><span class="text-white group-hover:text-blue-400">🕒</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/boost" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'boost' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>البوستات</span><span class="text-white group-hover:text-blue-400">💎</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/colors" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'colors' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                         <span class="flex items-center gap-2"><span>الألوان</span><span class="text-white group-hover:text-blue-400">🎨</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/logs" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'logs' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
@@ -11858,7 +11868,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </a>
                                     <a href="/dashboard/${guildId}/tickets" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tickets' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
                                         <span class="flex items-center gap-1">
-                                            <span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>
+                                            <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
                                             <span class="text-amber-400 text-xs">👑</span>
                                         </span>
                                         <span class="flex items-center gap-2"><span>التذاكر</span><span class="text-white group-hover:text-blue-400">🎫</span></span>
@@ -11938,14 +11948,19 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     }
                 }
 
-                document.getElementById('settingsForm')?.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    const formData = new FormData(this);
+                // 💾 حفظ الإعدادات — مسار واحد مضمون: مفوَّض على مستوى المستند (يعمل حتى لو أُعيد بناء الفورم)
+                // + منع مزدوج للإرسال الأصلي + حماية من الحفظ المتكرر
+                async function submitSettingsForm(form) {
+                    if (!form || form.dataset.saving === '1') return;
+                    form.dataset.saving = '1';
+                    try { if (typeof collectTicketCatsFromDOM === 'function') collectTicketCatsFromDOM(); } catch(e) {}
+                    const formData = new FormData(form);
                     const payload = {};
                     // ✅ FIX: تجاهل حقول المودالات المؤقتة حتى لا تلوث guild_settings بأعمدة خردة
                     const _junk = new Set(['gwChannel','gwReqRole','gwPrize','gwDesc','gwWinners','gwDuration','gwEmoji','gwColorInput','gwImage','gwBtnStyle','gwEntryMode','gwNotifyWinners','arTrigger','arReply','arCase','arDeleteTrigger','arCooldown','arAllowedChan','arExemptChan','arAllowedRole','arExemptRole','appTitleInput','appDescInput','appLogChannel','appAcceptedRole','appReviewerRole','catDefaultChannel','channel_id','custom_prefix','stat_type','bonusUserId','bonusAmount','embedChannel']);
                     for (let [k, v] of formData.entries()) {
                         if (_junk.has(k)) continue;
+                        if (typeof v !== 'string') continue;
                         if (payload[k]) {
                             if (Array.isArray(payload[k])) {
                                 payload[k].push(v);
@@ -11957,14 +11972,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         }
                     }
 
-                    this.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                         if (cb.name) {
                             payload[cb.name] = cb.checked ? 1 : 0;
                         }
                     });
 
+                    const btn = form.querySelector('button[type="submit"]');
+                    const origBtn = btn ? btn.innerHTML : '';
                     try {
-                        const btn = this.querySelector('button[type="submit"]');
                         if (btn) {
                             btn.disabled = true;
                             btn.innerHTML = '<span>⏳</span><span>جاري الحفظ...</span>';
@@ -11982,15 +11998,25 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         } else {
                             alert('❌ خطأ أثناء الحفظ: ' + (data.error || 'حدث خطأ غير متوقع'));
                         }
-
-                        if (btn) {
-                            btn.disabled = false;
-                            btn.innerHTML = '<span>💾</span><span>حفظ التغييرات</span>';
-                        }
                     } catch (err) {
                         alert('حدث خطأ في الاتصال بالخادم');
+                    } finally {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = origBtn || '<span>💾</span><span>حفظ التغييرات</span>';
+                        }
+                        try { delete form.dataset.saving; } catch(e) { form.dataset.saving = '0'; }
                     }
-                });
+                }
+
+                // التقاط مبكر على مستوى المستند: يمنع الإرسال الأصلي (GET) نهائياً ويوجّهه لمسار الحفظ
+                document.addEventListener('submit', function(e) {
+                    if (e.target && e.target.id === 'settingsForm') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        submitSettingsForm(e.target);
+                    }
+                }, true);
 
                 // ✅ FIX: منع أي زر ليس submit من إطلاق الـ form
                 document.addEventListener('DOMContentLoaded', () => {
@@ -12770,8 +12796,8 @@ ${embedScriptHtml}
             }
             // ✅ تنظيف النصوص: 'null' النصية والفارغ إلى null
             if (settings) {
-                for (const k of ['staff_banner_url', 'bot_about', 'bot_avatar', 'bot_banner', 'welcome_banner_image']) {
-                    if (settings[k] !== undefined && (settings[k] === null || String(settings[k]).trim() === '' || String(settings[k]).trim().toLowerCase() === 'null')) {
+                for (const k of ['staff_banner_url', 'bot_about', 'bot_avatar', 'bot_banner', 'welcome_banner_image', 'ticket_panel_title', 'ticket_panel_desc', 'ticket_panel_placeholder', 'ticket_panel_banner', 'ticket_welcome_image', 'ticket_welcome_msg', 'ticket_panel_categories']) {
+                    if (settings[k] !== undefined && (settings[k] === null || String(settings[k]).trim() === '' || String(settings[k]).trim().toLowerCase() === 'null' || String(settings[k]).trim().toLowerCase() === 'undefined')) {
                         settings[k] = null;
                     }
                 }
@@ -13306,14 +13332,20 @@ ${embedScriptHtml}
 
             const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, EmbedBuilder, ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, SeparatorSpacingSize, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags } = require('discord.js');
 
-            // بدون null أبداً
-            const title = (req.body.ticket_panel_title || settings.ticket_panel_title || 'التذكرة').toString().slice(0, 256);
-            const desc = (req.body.ticket_panel_desc || settings.ticket_panel_desc || 'قم باختيار قسم التذكرة المناسب لفتحه').toString().slice(0, 2000);
+            // بدون null أبداً (بما فيها النص المخزن حرفياً كـ 'null')
+            const _cleanTxt = (v) => {
+                if (v === undefined || v === null) return '';
+                const s = String(v).trim();
+                if (!s || s.toLowerCase() === 'null' || s.toLowerCase() === 'undefined') return '';
+                return s;
+            };
+            const title = (_cleanTxt(req.body.ticket_panel_title) || _cleanTxt(settings.ticket_panel_title) || 'التذكرة').slice(0, 256);
+            const desc = (_cleanTxt(req.body.ticket_panel_desc) || _cleanTxt(settings.ticket_panel_desc) || 'قم باختيار قسم التذكرة المناسب لفتحه').slice(0, 2000);
             let bannerUrl = req.body.ticket_panel_banner || settings.ticket_panel_banner || null;
             if (typeof bannerUrl === 'string') bannerUrl = bannerUrl.trim();
             if (!bannerUrl || bannerUrl === 'null' || bannerUrl === 'undefined') bannerUrl = null;
             const ptype = (req.body.ticket_panel_type || settings.ticket_panel_type || 'select').toString();
-            const placeholder = (req.body.ticket_panel_placeholder || settings.ticket_panel_placeholder || 'اختر نوع التذكرة').toString().slice(0, 100);
+            const placeholder = (_cleanTxt(req.body.ticket_panel_placeholder) || _cleanTxt(settings.ticket_panel_placeholder) || 'اختر نوع التذكرة').slice(0, 100);
 
             // الأقسام: من الطلب أو من الإعدادات أو الافتراضية (دعم فني / جوائز / شراء)
             let cats = req.body.ticket_panel_categories;
