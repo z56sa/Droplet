@@ -4903,7 +4903,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="flex flex-col md:flex-row items-center justify-between gap-4">
                                     <div class="w-full md:w-auto flex flex-col items-center gap-2">
                                         <div class="w-full md:w-56 h-28 rounded-xl border border-blue-500/20 bg-[#0b1322] overflow-hidden flex items-center justify-center relative">
-                                            <img id="img_welcome_banner_image" src="${settings.welcome_banner_image || ''}" class="w-full h-full object-cover ${settings.welcome_banner_image ? '' : 'hidden'}">
+                                            <img id="img_welcome_banner_image" ${settings.welcome_banner_image ? `src="${settings.welcome_banner_image}"` : ''} class="w-full h-full object-cover ${settings.welcome_banner_image ? '' : 'hidden'}">
                                             <div id="placeholder_welcome_banner_image" class="text-gray-500 text-xs flex flex-col items-center gap-1 ${settings.welcome_banner_image ? 'hidden' : ''}">
                                                 <span class="text-2xl">🖼️</span>
                                                 <span>لا توجد صورة</span>
@@ -5712,7 +5712,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <!-- المعاينة وزر الحذف -->
                                         <div class="w-full md:w-auto flex flex-col items-center gap-2">
                                             <div id="preview_box_ticket_panel_banner" class="w-full md:w-56 h-28 rounded-xl border border-blue-500/20 bg-[#0b1322] overflow-hidden flex items-center justify-center relative group">
-                                                <img id="img_ticket_panel_banner" src="${settings.ticket_panel_banner || ''}" class="w-full h-full object-cover ${settings.ticket_panel_banner ? '' : 'hidden'}">
+                                                <img id="img_ticket_panel_banner" ${settings.ticket_panel_banner ? `src="${settings.ticket_panel_banner}"` : ''} class="w-full h-full object-cover ${settings.ticket_panel_banner ? '' : 'hidden'}">
                                                 <div id="placeholder_ticket_panel_banner" class="text-gray-500 text-xs flex flex-col items-center gap-1 ${settings.ticket_panel_banner ? 'hidden' : ''}">
                                                     <span class="text-2xl">🖼️</span>
                                                     <span>لا توجد خلفية</span>
@@ -5755,7 +5755,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <!-- المعاينة وزر الحذف -->
                                         <div class="w-full md:w-auto flex flex-col items-center gap-2">
                                             <div id="preview_box_ticket_welcome_image" class="w-full md:w-56 h-14 rounded-xl border border-blue-500/20 bg-[#0b1322] overflow-hidden flex items-center justify-center relative group">
-                                                <img id="img_ticket_welcome_image" src="${settings.ticket_welcome_image || ''}" class="w-full h-full object-cover ${settings.ticket_welcome_image ? '' : 'hidden'}">
+                                                <img id="img_ticket_welcome_image" ${settings.ticket_welcome_image ? `src="${settings.ticket_welcome_image}"` : ''} class="w-full h-full object-cover ${settings.ticket_welcome_image ? '' : 'hidden'}">
                                                 <div id="placeholder_ticket_welcome_image" class="text-gray-500 text-xs flex flex-col items-center gap-1 ${settings.ticket_welcome_image ? 'hidden' : ''}">
                                                     <span class="text-lg">🖼️</span>
                                                     <span>لا يوجد خط</span>
@@ -5892,7 +5892,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         const imgElem = document.getElementById('img_' + fieldName);
                         const placeholderElem = document.getElementById('placeholder_' + fieldName);
                         if (imgElem) {
-                            imgElem.src = '';
+                            try { imgElem.removeAttribute('src'); } catch (e) {}
                             imgElem.classList.add('hidden');
                         }
                         if (placeholderElem) {
@@ -12557,9 +12557,10 @@ ${embedScriptHtml}
             let fullUrl = `${protocol}://${host}/uploads/${fileName}`;
 
             // ✅ ثبات دائم بدون أي رسالة في الشات: نخزن bytes الصورة في guild_banners (تُزامَن لـ Turso) ونقدّمها من سيرفرنا
+            // ⚠️ فقط بانر الترحيب يستخدم هذه الخانة — رفع بانر التذاكر أو غيره لا يلمسها أبداً (كان يسبب تداخل الصور)
             let persistent = false;
             try {
-              if (database.saveGuildBanner && database.saveGuildBanner(req.params.guildId, storeBuf, storeExt)) {
+              if (String(fieldName || '') === 'welcome_banner_image' && database.saveGuildBanner && database.saveGuildBanner(req.params.guildId, storeBuf, storeExt)) {
                 const tursoSync = require('../database/tursoSync');
                 const _mime = storeExt === 'jpg' ? 'image/jpeg' : (storeExt === 'gif' ? 'image/gif' : (storeExt === 'webp' ? 'image/webp' : 'image/png'));
                 tursoSync.queueBannerSync(req.params.guildId, _mime, storeBuf.toString('base64'));
