@@ -11943,15 +11943,22 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                 async function toggleModule(gId, key, isEnabled) {
                     try {
-                        await fetch('/api/guild/' + gId + '/settings', {
+                        const _res = await fetch('/api/guild/' + gId + '/settings', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ [key]: isEnabled ? 1 : 0 })
                         });
-                        showSaveStatus();
-                        try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!isEnabled); } catch (e2) {}
+                        let _ok = _res.ok;
+                        try { const _d = await _res.json(); _ok = _res.ok && _d && _d.success; } catch (e2) {}
+                        if (_ok) {
+                            showSaveStatus();
+                            try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!isEnabled); } catch (e2) {}
+                        } else {
+                            alert('❌ فشل حفظ المفتاح — أعد المحاولة.');
+                        }
                     } catch (e) {
                         console.error('Error updating module toggle:', e);
+                        alert('حدث خطأ في الاتصال بالخادم');
                     }
                 }
 
@@ -12083,25 +12090,37 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 async function saveProtectionSetting(key, value) {
                     if (typeof updateProtectionBadges === 'function') updateProtectionBadges();
                     try {
-                        await fetch('/api/guild/' + _dashGuildId + '/settings', {
+                        const _res = await fetch('/api/guild/' + _dashGuildId + '/settings', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ [key]: value ? 1 : 0 })
                         });
-                        showSaveStatus();
-                        try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!value); } catch (e2) {}
-                    } catch(e) { console.error('saveProtectionSetting error', e); }
+                        let _ok = _res.ok;
+                        try { const _d = await _res.json(); _ok = _res.ok && _d && _d.success; } catch (e3) {}
+                        if (_ok) {
+                            showSaveStatus();
+                            try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!value); } catch (e2) {}
+                        } else {
+                            alert('❌ فشل حفظ الإعداد — أعد المحاولة.');
+                        }
+                    } catch(e) { console.error('saveProtectionSetting error', e); alert('حدث خطأ في الاتصال بالخادم'); }
                 }
                 async function saveAutomodSetting(key, value) {
                     try {
-                        await fetch('/api/guild/' + _dashGuildId + '/settings', {
+                        const _res = await fetch('/api/guild/' + _dashGuildId + '/settings', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ [key]: value ? 1 : 0 })
                         });
-                        showSaveStatus();
-                        try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!value); } catch (e2) {}
-                    } catch(e) { console.error('saveAutomodSetting error', e); }
+                        let _ok = _res.ok;
+                        try { const _d = await _res.json(); _ok = _res.ok && _d && _d.success; } catch (e3) {}
+                        if (_ok) {
+                            showSaveStatus();
+                            try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!value); } catch (e2) {}
+                        } else {
+                            alert('❌ فشل حفظ الإعداد — أعد المحاولة.');
+                        }
+                    } catch(e) { console.error('saveAutomodSetting error', e); alert('حدث خطأ في الاتصال بالخادم'); }
                 }
                 async function uploadImageFile(input, fieldName, onDone) {
                     const file = input.files && input.files[0];
