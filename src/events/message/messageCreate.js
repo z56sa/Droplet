@@ -605,8 +605,17 @@ module.exports = {
     }
     const isCommandMessage = !!resolved;
 
-    // Auto Responder
-    const autoResponders = isCommandMessage ? [] : (db.getAutoResponders(guildId) || []);
+    // Auto Responder (المفتاح الرئيسي: الإطفاء الصريح فقط يوقف — غيابه يعني التشغيل حفاظاً على السلوك الحالي)
+    let _arMasterOff = false;
+    try {
+      const _mv = settings ? settings.autoresponder_enabled : undefined;
+      if (_mv !== undefined && _mv !== null && _mv !== '') {
+        const _ms = String(_mv).trim().toLowerCase();
+        _arMasterOff = (_ms === '0' || _ms === 'false' || _ms === 'off' || _ms === 'no');
+        if (!_arMasterOff && !Number.isNaN(Number(_mv))) _arMasterOff = Number(_mv) === 0;
+      }
+    } catch (e) {}
+    const autoResponders = (isCommandMessage || _arMasterOff) ? [] : (db.getAutoResponders(guildId) || []);
     if (autoResponders.length > 0) {
       const rawContent = trimmedContent;
       const lowerContent = rawContent.toLowerCase();

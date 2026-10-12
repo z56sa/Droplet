@@ -2117,6 +2117,13 @@ module.exports = function (app, client) {
                     autoRespondersList = database.getAutoResponders(guildId) || [];
                 }
             } catch (err) {}
+            // عرض الحالة الفعلية للرد التلقائي: ردود نشطة + مفتاح غير مطفأ صراحة = مفعّل
+            try {
+                const _arV = settings ? settings.autoresponder_enabled : undefined;
+                if ((_arV === undefined || _arV === null || _arV === '') && Array.isArray(autoRespondersList) && autoRespondersList.some(r => r && r.is_active !== 0)) {
+                    settings.autoresponder_enabled = 1;
+                }
+            } catch (err) {}
             try {
                 if (database.getWarnPunishments) {
                     warnPunishmentsList = database.getWarnPunishments(guildId) || [];

@@ -1084,7 +1084,28 @@ Promise.resolve()
   .catch(e => console.error('[TURSO] Init error:', e.message))
   .then(() => { try { applyDefaultOffMigration(); } catch (e) { console.error('[DB] default-off error:', e.message); } })
   .then(() => { try { applyLockRemoval(); } catch (e) { console.error('[DB] lock-removal error:', e.message); } })
-  .then(() => { try { applyNullStringPurge(); } catch (e) { console.error('[DB] nullstr-purge error:', e.message); } });
+  .then(() => { try { applyNullStringPurge(); } catch (e) { console.error('[DB] nullstr-purge error:', e.message); } })
+  .then(() => { try { applyAutoresponderBackfill(); } catch (e) { console.error('[DB] ar-backfill error:', e.message); } });
+
+// تعبئة رجعية: سيرفرات لديها ردود نشطة ولم تلمس المفتاح الرئيسي تُعتبر مفعّلة (للدائرة والمفتاح)
+function applyAutoresponderBackfill() {
+  try { db.exec('ALTER TABLE guild_settings ADD COLUMN autoresponder_enabled INTEGER;'); } catch (e) {}
+  let changed = [];
+  try {
+    changed = db.prepare(`SELECT guild_id FROM guild_settings WHERE autoresponder_enabled IS NULL AND EXISTS (SELECT 1 FROM auto_responders WHERE auto_responders.guild_id = guild_settings.guild_id AND COALESCE(is_active, 1) != 0)`).all().map(r => r.guild_id);
+  } catch (e) { return; }
+  if (!changed.length) return;
+  try {
+    db.prepare(`UPDATE guild_settings SET autoresponder_enabled = 1 WHERE autoresponder_enabled IS NULL AND EXISTS (SELECT 1 FROM auto_responders WHERE auto_responders.guild_id = guild_settings.guild_id AND COALESCE(is_active, 1) != 0)`).run();
+  } catch (e) { return; }
+  try {
+    for (const gid of changed) {
+      const row = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(gid);
+      if (row) tursoSync.queueGuildSettingsSync(gid, row);
+    }
+  } catch (e) {}
+  console.log(`[DB] ✅ Autoresponder backfill applied to ${changed.length} guild(s).`);
+}
 
 // تنقية القيم النصية المخزنة حرفياً كـ 'null'/'undefined' (من إصدارات قديمة) — لمرة واحدة
 const NULLSTR_PURGE_KEYS = [
