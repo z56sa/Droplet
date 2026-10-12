@@ -73,6 +73,8 @@
       try { data = await res.json(); } catch (e) {}
       if (res.ok && data && data.success) {
         if (typeof window.showSaveStatus === 'function') window.showSaveStatus();
+      } else if (res.status === 403) {
+        alert('⛔ الداشبورد مقفل (lock_dashboard).\nلفك القفل: قسم الحماية والأمان ← زر قفل الداشبورد ← أطفئه ثم أعد الحفظ.');
       } else {
         alert('❌ خطأ أثناء الحفظ [' + res.status + ']: ' + ((data && data.error) || 'حدث خطأ غير متوقع'));
       }
@@ -87,6 +89,49 @@
     }
   }
   window.submitSettingsForm = submitSettingsForm;
+
+  /* مفاتيح التفعيل الفردية — نسخ مستقلة تعمل في كل الصفحات */
+  function dropletGuildId() {
+    try { return window.location.pathname.split('/')[2] || ''; } catch (e) { return ''; }
+  }
+  async function postSingleSetting(key, value) {
+    var res = await fetch('/api/guild/' + dropletGuildId() + '/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [key]: value ? 1 : 0 })
+    });
+    var data = null;
+    try { data = await res.json(); } catch (e) {}
+    if (res.ok && data && data.success) {
+      if (typeof window.showSaveStatus === 'function') window.showSaveStatus();
+      return true;
+    }
+    if (res.status === 403) {
+      alert('⛔ الداشبورد مقفل (lock_dashboard).\nلفك القفل: قسم الحماية والأمان ← زر قفل الداشبورد ← أطفئه.');
+    } else {
+      alert('❌ خطأ أثناء الحفظ [' + res.status + ']: ' + ((data && data.error) || 'حدث خطأ غير متوقع'));
+    }
+    return false;
+  }
+  if (typeof window.toggleModule !== 'function') {
+    window.toggleModule = async function (gId, key, isEnabled) {
+      try {
+        await postSingleSetting(key, isEnabled);
+      } catch (e) { console.error('toggleModule error', e); }
+    };
+  }
+  if (typeof window.saveProtectionSetting !== 'function') {
+    window.saveProtectionSetting = async function (key, value) {
+      try { await postSingleSetting(key, value); }
+      catch (e) { console.error('saveProtectionSetting error', e); }
+    };
+  }
+  if (typeof window.saveAutomodSetting !== 'function') {
+    window.saveAutomodSetting = async function (key, value) {
+      try { await postSingleSetting(key, value); }
+      catch (e) { console.error('saveAutomodSetting error', e); }
+    };
+  }
 
   if (!window._saveDelegated) {
     window._saveDelegated = true;
