@@ -143,6 +143,7 @@ client.on('error', (error) => {
 });
 
 // Register the complete existing dashboard routes.
+global._dropletBootTime = Date.now();
 dashboardServer(app, client);
 
 const server = app.listen(PORT, '0.0.0.0', () => {

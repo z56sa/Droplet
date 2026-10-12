@@ -116,6 +116,14 @@ module.exports = function (app, client) {
     });
 
     // 1.1 Real Bot Info API - used by landing page stats
+    // 🏷️ نسخة التشغيل الحية (عام — للتحقق من وصول التحديثات للاستضافة)
+    app.get('/api/version', (req, res) => {
+        let commit = 'unknown';
+        try {
+            commit = require('child_process').execSync('git rev-parse --short HEAD', { timeout: 5000 }).toString().trim() || 'unknown';
+        } catch (e) {}
+        res.json({ ok: true, commit, bootTime: global._dropletBootTime || null, now: Date.now() });
+    });
     app.get('/api/bot-info', async (req, res) => {
         try {
             const botUser = client?.user;
