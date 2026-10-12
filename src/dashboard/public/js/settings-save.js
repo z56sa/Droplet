@@ -57,18 +57,31 @@
 
     var btn = form.querySelector('button[type="button"].js-save-btn') || form.querySelector('button[type="submit"]');
     var origBtn = btn ? btn.innerHTML : '';
+    var _saveTimer = null;
+    var _ctrl = null;
+    try { if (typeof AbortController !== 'undefined') _ctrl = new AbortController(); } catch (e) {}
     try {
       if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<span>⏳</span><span>جاري الحفظ...</span>';
       }
+      // ⏱️ حماية من التعليق: إجهاض الطلب بعد 30 ثانية + إعادة تفعيل الزر مهما حدث
+      _saveTimer = setTimeout(function () {
+        try { if (_ctrl && _ctrl.abort) _ctrl.abort(); } catch (e) {}
+        try {
+          delete form.dataset.saving;
+          if (btn) { btn.disabled = false; btn.innerHTML = origBtn || '<span>💾</span><span>حفظ التغييرات</span>'; }
+        } catch (e) {}
+      }, 30000);
       var parts = window.location.pathname.split('/');
       var targetGuildId = parts[2] || '';
-      var res = await fetch('/api/guild/' + targetGuildId + '/settings', {
+      var _fetchOpts = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      });
+      };
+      if (_ctrl) _fetchOpts.signal = _ctrl.signal;
+      var res = await fetch('/api/guild/' + targetGuildId + '/settings', _fetchOpts);
       var data = null;
       try { data = await res.json(); } catch (e) {}
       if (res.ok && data && data.success) {
@@ -85,8 +98,10 @@
         alert('❌ خطأ أثناء الحفظ [' + res.status + ']: ' + ((data && data.error) || 'حدث خطأ غير متوقع'));
       }
     } catch (err) {
-      alert('حدث خطأ في الاتصال بالخادم');
+      var _aborted = err && (err.name === 'AbortError' || err.name === 'TimeoutError');
+      alert(_aborted ? '⏱️ انتهت مهلة الحفظ (30 ثانية) — تحقق من الاتصال ثم أعد المحاولة.' : 'حدث خطأ في الاتصال بالخادم');
     } finally {
+      try { if (_saveTimer) clearTimeout(_saveTimer); } catch (e) {}
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = origBtn || '<span>💾</span><span>حفظ التغييرات</span>';
@@ -166,4 +181,23 @@
       }
     }, true);
   }
+
+  /* bfcache: الرجوع للصفحة قد يعيد زراً معطلاً وحالة حفظ عالقة دون إعادة تشغيل السكربتات */
+  try {
+    window.addEventListener('pageshow', function () {
+      try {
+        var forms = document.querySelectorAll('#settingsForm');
+        for (var i = 0; i < forms.length; i++) { try { delete forms[i].dataset.saving; } catch (e) {} }
+        var btns = document.querySelectorAll('.js-save-btn');
+        for (var j = 0; j < btns.length; j++) {
+          try {
+            if (btns[j].disabled && btns[j].innerHTML.indexOf('جاري الحفظ') !== -1) {
+              btns[j].disabled = false;
+              btns[j].innerHTML = '<span>💾</span><span>حفظ التغييرات</span>';
+            }
+          } catch (e) {}
+        }
+      } catch (e) {}
+    });
+  } catch (e) {}
 })();
