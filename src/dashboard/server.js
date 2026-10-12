@@ -2202,6 +2202,22 @@ module.exports = function (app, client) {
                 `;
             }
 
+            // ● شارة حالة القسم في القائمة الجانبية: خضراء ✓ عند التفعيل، محايدة • عند الإطفاء
+            function navBadge(key) {
+                let on = false;
+                try {
+                    const v = settings[key];
+                    if (v !== undefined && v !== null && v !== '') {
+                        const s = String(v).trim().toLowerCase();
+                        on = !(s === '0' || s === 'false' || s === 'off' || s === 'no');
+                        if (on && !Number.isNaN(Number(v))) on = Number(v) !== 0;
+                    }
+                } catch (e) {}
+                return on
+                    ? '<span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>'
+                    : '<span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>';
+            }
+
             let formFieldsHtml = '';
             let embedScriptHtml = '';
 
@@ -11632,7 +11648,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <main class="flex-1 p-8 overflow-y-auto ${section === 'embed' ? 'max-w-7xl' : 'max-w-4xl'} mx-auto">
                         <div class="${section === 'logs' ? '' : 'probot-card border border-blue-500/20 rounded-3xl p-8 shadow-2xl mb-8'}">
                             <div class="flex items-center justify-between pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
-                                <label class="toggle"><input type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled'};return _m[section]||(section+'_enabled');})(), this.checked)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
+                                <label class="toggle"><input type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled'};return _m[section]||(section+'_enabled');})(), this.checked)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
                                 <div class="text-right">
                                     <h2 class="text-2xl font-black text-white">${title}</h2>
                                     <p class="text-white text-xs mt-1">يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.</p>
@@ -11645,11 +11661,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     ${formFieldsHtml}
                                 </div>
                             ` : `
-                            <form id="settingsForm" class="space-y-6">
+                            <form id="settingsForm" class="space-y-6" onsubmit="event.preventDefault();try{if(window.submitSettingsForm){submitSettingsForm(this);}else{alert('⚠️ سكربت الحفظ لم يُحمّل — حدّث الصفحة بـ Ctrl+F5');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}return false;">
                                 ${formFieldsHtml}
 
                                 <div class="pt-6 border-t border-blue-500/20 flex items-center justify-between flex-row-reverse${(section === 'embed' || section === 'logs' || section === 'store') ? ' hidden' : ''}">
-                                    <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-black/20 flex items-center gap-2">
+                                    <button type="button" onclick="try{if(window.submitSettingsForm){submitSettingsForm(document.getElementById('settingsForm'));}else{alert('⚠️ سكربت الحفظ لم يُحمّل — حدّث الصفحة بـ Ctrl+F5');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}return false;" class="px-8 py-3 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-black/20 flex items-center gap-2">
                                         <span>💾</span>
                                         <span>حفظ التغييرات</span>
                                     </button>
@@ -11695,15 +11711,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </button>
                                 <div id="grp_sub_recent" class="space-y-1">
                                     <a href="/dashboard/${guildId}/welcome" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'welcome' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('welcome_enabled')}
                                         <span class="flex items-center gap-2"><span>الترحيب & المغادرة</span><span class="${section === 'welcome' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">👋</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/autoresponder" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoresponder' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('autoresponder_enabled')}
                                         <span class="flex items-center gap-2"><span>الرد التلقائي</span><span class="${section === 'autoresponder' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">💬</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/tickets" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tickets' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('tickets_enabled')}
                                         <span class="flex items-center gap-2"><span>نظام التذاكر</span><span class="${section === 'tickets' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">🎫</span></span>
                                     </a>
                                 </div>
@@ -11770,23 +11786,23 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="flex items-center gap-2"><span>الإشراف</span><span class="text-white group-hover:text-blue-400">🔨</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/levels" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'levels' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('leveling_enabled')}
                                         <span class="flex items-center gap-2"><span>المستويات & XP</span><span class="text-white group-hover:text-blue-400">🏆</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/welcome" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'welcome' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('welcome_enabled')}
                                         <span class="flex items-center gap-2"><span>الترحيب & المغادرة</span><span class="text-white group-hover:text-blue-400">👋</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/autoroles" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoroles' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('autoroles_enabled')}
                                         <span class="flex items-center gap-2"><span>الرتب التلقائية</span><span class="text-white group-hover:text-blue-400">🎖️</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/giveaways" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'giveaways' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('giveaways_enabled')}
                                         <span class="flex items-center gap-2"><span>قيف اواي</span><span class="text-white group-hover:text-blue-400">🎁</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/invites" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'invites' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('invites_enabled')}
                                         <span class="flex items-center gap-2"><span>Invite Tracker</span><span class="text-white group-hover:text-blue-400">🔗</span></span>
                                     </a>
                                 </div>
@@ -11800,7 +11816,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </button>
                                 <div id="grp_sub_automations" class="space-y-1">
                                     <a href="/dashboard/${guildId}/autoresponder" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'autoresponder' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('autoresponder_enabled')}
                                         <span class="flex items-center gap-2"><span>الرد التلقائي</span><span class="text-white group-hover:text-blue-400">💬</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/applications" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'applications' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
@@ -11823,13 +11839,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div id="grp_sub_security" class="space-y-1">
                                     <a href="/dashboard/${guildId}/protection" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'protection' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
                                         <span class="flex items-center gap-1">
-                                            <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                            ${navBadge('anti_nuke_enabled')}
                                             <span class="text-amber-400 text-xs">👑</span>
                                         </span>
                                         <span class="flex items-center gap-2"><span>Anti Nuke (الحماية)</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/whitelist" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'whitelist' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('whitelist_enabled')}
                                         <span class="flex items-center gap-2"><span>القائمة البيضاء</span><span class="text-white group-hover:text-blue-400">⚪</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/protection-logs" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'protection-logs' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
@@ -11837,15 +11853,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="flex items-center gap-2"><span>سجلات الأمان والإشراف</span><span class="text-white group-hover:text-blue-400">📋</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/automod" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'automod' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('automod_enabled')}
                                         <span class="flex items-center gap-2"><span>الرقابة التلقائية</span><span class="text-white group-hover:text-blue-400">🤖</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/antiraid" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'antiraid' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('antiraid_enabled')}
                                         <span class="flex items-center gap-2"><span>مكافحة الغزو</span><span class="text-white group-hover:text-blue-400">🚨</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/staff-activity" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'staff-activity' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('staff_activity_enabled')}
                                         <span class="flex items-center gap-2"><span>نشاط الإدارة</span><span class="text-white group-hover:text-blue-400">👮</span></span>
                                     </a>
                                 </div>
@@ -11859,15 +11875,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </button>
                                 <div id="grp_sub_management" class="space-y-1">
                                     <a href="/dashboard/${guildId}/tempvoice" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tempvoice' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('temp_voice_enabled')}
                                         <span class="flex items-center gap-2"><span>الرومات المؤقتة</span><span class="text-white group-hover:text-blue-400">🕒</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/boost" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'boost' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('boost_msg_enabled')}
                                         <span class="flex items-center gap-2"><span>البوستات</span><span class="text-white group-hover:text-blue-400">💎</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/colors" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'colors' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                        ${navBadge('colors_enabled')}
                                         <span class="flex items-center gap-2"><span>الألوان</span><span class="text-white group-hover:text-blue-400">🎨</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/logs" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'logs' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
@@ -11876,7 +11892,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </a>
                                     <a href="/dashboard/${guildId}/tickets" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'tickets' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
                                         <span class="flex items-center gap-1">
-                                            <span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>
+                                            ${navBadge('tickets_enabled')}
                                             <span class="text-amber-400 text-xs">👑</span>
                                         </span>
                                         <span class="flex items-center gap-2"><span>التذاكر</span><span class="text-white group-hover:text-blue-400">🎫</span></span>

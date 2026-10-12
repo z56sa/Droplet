@@ -1029,7 +1029,12 @@ const MODULE_OFF_FLAGS = [
   'anti_webhook_create', 'anti_webhook_spam', 'anti_webhook_update',
   'anti_mass_ban', 'anti_mass_kick',
   'broadcast_enabled',
-  'auto_clear_punishments'
+  'auto_clear_punishments',
+  'autoresponder_enabled', 'giveaways_enabled', 'giveaway_enabled',
+  'invites_enabled', 'invite_tracker_enabled',
+  'applications_enabled', 'whitelist_enabled', 'protection_enabled',
+  'moderation_enabled', 'admin_enabled',
+  'staff_system_enabled', 'custom_shop_enabled'
 ];
 
 function getExistingFlagColumns() {
