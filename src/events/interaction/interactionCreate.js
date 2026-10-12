@@ -881,11 +881,21 @@ module.exports = {
           content: `Ticket created: <#${ticketChannel.id}>`
         });
         } catch (err) {
+          try {
+            console.error('Ticket creation failed:', JSON.stringify({
+              message: err?.message, code: err?.code, status: err?.status,
+              method: err?.method, url: err?.url,
+              raw: err?.rawError ? JSON.stringify(err.rawError).slice(0, 1000) : undefined,
+              stack: err?.stack ? String(err.stack).split('\n').slice(0, 4).join(' | ') : undefined,
+            }));
+          } catch {}
           console.error('Ticket creation failed:', err?.message || err);
           const _code = err?.code;
+          const _status = err?.status;
+          const _tag = [_code !== undefined ? `code ${_code}` : '', _status ? `http ${_status}` : ''].filter(Boolean).join(' • ');
           const msg = (_code === 50013 || _code === 50001)
             ? '❌ فشل إنشاء التذكرة: البوت يفتقد صلاحية **إدارة القنوات (Manage Channels)** — منحه الصلاحية (وتأكد أنها مفعّلة داخل فئة التذاكر) ثم أعد المحاولة.'
-            : '❌ فشل إنشاء قناة التذكرة' + (err?.message ? `: \`${String(err.message).slice(0, 200)}\`` : '') + ' — تحقق من صلاحيات البوت وفئة التذاكر.';
+            : '❌ فشل إنشاء قناة التذكرة' + (_tag ? ` [${_tag}]` : '') + (err?.message ? `: \`${String(err.message).slice(0, 200)}\`` : '') + ' — تحقق من صلاحيات البوت وفئة التذاكر.';
           return interaction.editReply({ content: msg }).catch(() => {});
         }
       }
