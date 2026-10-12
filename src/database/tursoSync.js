@@ -147,6 +147,70 @@ class TursoSync {
       try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN exempt_roles TEXT DEFAULT '';"); } catch(e) {}
       try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN is_active INTEGER DEFAULT 1;"); } catch(e) {}
       try { await this.client.execute("ALTER TABLE auto_responders ADD COLUMN uses_count INTEGER DEFAULT 0;"); } catch(e) {}
+
+      // 1.6b Ticket system tables (panels/tickets/ratings/transcripts — persistence across restarts)
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS tickets (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          guild_id TEXT NOT NULL,
+          channel_id TEXT NOT NULL UNIQUE,
+          user_id TEXT NOT NULL,
+          category TEXT DEFAULT 'General',
+          status TEXT DEFAULT 'open',
+          created_at INTEGER DEFAULT (strftime('%s','now')),
+          closed_at INTEGER,
+          ticket_number INTEGER DEFAULT 1,
+          claimed_by TEXT,
+          claimed_at INTEGER,
+          closed_by TEXT,
+          close_reason TEXT,
+          transcript_url TEXT
+        );
+      `);
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS ticket_panels (
+          panel_id TEXT PRIMARY KEY,
+          guild_id TEXT NOT NULL,
+          channel_id TEXT,
+          message_id TEXT,
+          title TEXT,
+          description TEXT,
+          button_label TEXT,
+          button_emoji TEXT,
+          button_style TEXT,
+          welcome_msg TEXT,
+          support_role TEXT,
+          category_id TEXT,
+          naming_scheme TEXT,
+          logs_channel TEXT,
+          categories_json TEXT,
+          created_at INTEGER DEFAULT (strftime('%s','now'))
+        );
+      `);
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS ticket_ratings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          guild_id TEXT NOT NULL,
+          ticket_channel_id TEXT,
+          user_id TEXT NOT NULL,
+          staff_id TEXT NOT NULL,
+          stars INTEGER NOT NULL,
+          feedback TEXT,
+          created_at INTEGER DEFAULT (strftime('%s','now'))
+        );
+      `);
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS ticket_transcripts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          guild_id TEXT NOT NULL,
+          channel_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          closed_by TEXT,
+          reason TEXT,
+          html_content TEXT,
+          created_at INTEGER DEFAULT (strftime('%s','now'))
+        );
+      `);
       // 1.7 Create staff_activity and staff_ranks tables in Turso
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS staff_activity (
@@ -308,6 +372,18 @@ class TursoSync {
           });
           restoreSettingsTx(guildSettingsResult.rows);
           console.log('[TURSO] ✅ Guild settings (including command aliases) restored from Turso!');
+          // ✅ Restore ticket system + autoresponders (user content must survive restarts)
+          try { await this.restoreTable(localDb, 'auto_responders', 'id'); } catch (e) {}
+          try { await this.restoreTable(localDb, 'ticket_panels', 'panel_id'); } catch (e) {}
+          try { await this.restoreTable(localDb, 'tickets', 'id'); } catch (e) {}
+          try { await this.restoreTable(localDb, 'ticket_ratings', 'id'); } catch (e) {}
+          try { await this.restoreTable(localDb, 'ticket_transcripts', 'id'); } catch (e) {}
+          // ✅ Push back any local-only rows (created before sync existed) so nothing is lost
+          try { await this.backupTable(localDb, 'auto_responders', 'id'); } catch (e) {}
+          try { await this.backupTable(localDb, 'ticket_panels', 'panel_id'); } catch (e) {}
+          try { await this.backupTable(localDb, 'tickets', 'id'); } catch (e) {}
+          try { await this.backupTable(localDb, 'ticket_ratings', 'id'); } catch (e) {}
+          try { await this.backupTable(localDb, 'ticket_transcripts', 'id'); } catch (e) {}
         } else {
           // Turso has no guild settings yet — push local ones to Turso
           console.log('[TURSO] ℹ️ No guild settings in Turso yet. Pushing local guild settings to Turso...');
@@ -560,6 +636,101 @@ class TursoSync {
     ];
 
     this.enqueue({ sql, args });
+  }
+
+  /**
+   * ✅ Generic row sync for any table with a PK (auto_responders, tickets, ticket_panels, ...).
+   * Upserts the full row into Turso; rows are keyed by pkCol.
+   */
+  queueTableRowSync(table, pkCol, row) {
+    if (!this.enabled || !this.client || !table || !pkCol || !row) return;
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(pkCol)) return;
+    try {
+      const cols = Object.keys(row).filter(c => /^[A-Za-z_][A-Za-z0-9_]*$/.test(c) && row[c] !== undefined);
+      if (!cols.includes(pkCol)) return;
+      const args = cols.map(c => {
+        const v = row[c];
+        if (typeof v === 'bigint') return Number(v);
+        return (typeof v === 'object' && v !== null) ? JSON.stringify(v) : v;
+      });
+      const ph = cols.map(() => '?').join(', ');
+      const upd = cols.filter(c => c !== pkCol).map(c => `${c} = excluded.${c}`).join(', ');
+      const sql = upd
+        ? `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${ph}) ON CONFLICT(${pkCol}) DO UPDATE SET ${upd};`
+        : `INSERT OR IGNORE INTO ${table} (${cols.join(', ')}) VALUES (${ph});`;
+      this.enqueue({ sql, args });
+    } catch (e) {}
+  }
+
+  /**
+   * ✅ Generic row delete for any table.
+   */
+  queueTableRowDelete(table, pkCol, id) {
+    if (!this.enabled || !this.client || !table || !pkCol || id === undefined || id === null) return;
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(pkCol)) return;
+    try {
+      this.enqueue({ sql: `DELETE FROM ${table} WHERE ${pkCol} = ?`, args: [id] });
+    } catch (e) {}
+  }
+
+  /**
+   * ✅ Pushes all local rows of a table to Turso (used at boot to preserve
+   * pre-existing rows created before sync existed — union with restore).
+   */
+  async backupTable(localDb, table, pkCol) {
+    if (!this.enabled || !this.client) return 0;
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(pkCol)) return 0;
+    try {
+      const rows = localDb.prepare(`SELECT * FROM ${table}`).all();
+      let n = 0;
+      for (const r of rows) {
+        try {
+          if (!r || typeof r !== 'object' || Array.isArray(r)) continue;
+          if (r[pkCol] === undefined || r[pkCol] === null) continue;
+          this.queueTableRowSync(table, pkCol, r);
+          n++;
+        } catch (e) {}
+      }
+      if (n > 0) console.log(`[TURSO] 📤 Pushed ${n} local rows of ${table} to Turso.`);
+      return n;
+    } catch (e) { return 0; }
+  }
+
+  /**
+   * ✅ Generic restore of a whole table from Turso into local SQLite at boot.
+   */
+  async restoreTable(localDb, table, pkCol) {
+    if (!this.enabled || !this.client) return 0;
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(pkCol)) return 0;
+    try {
+      const res = await this.client.execute(`SELECT * FROM ${table}`);
+      if (!res || !res.rows || res.rows.length === 0) return 0;
+      let n = 0;
+      const tx = localDb.transaction((rows) => {
+        for (const r of rows) {
+          try {
+            if (!r || typeof r !== 'object' || Array.isArray(r)) continue;
+            const cols = Object.keys(r).filter(c => /^[A-Za-z_][A-Za-z0-9_]*$/.test(c));
+            if (!cols.includes(pkCol)) continue;
+            const vals = cols.map(c => {
+              const v = r[c];
+              if (typeof v === 'bigint') return Number(v);
+              return (typeof v === 'object' && v !== null) ? JSON.stringify(v) : v;
+            });
+            const ph = cols.map(() => '?').join(', ');
+            const upd = cols.filter(c => c !== pkCol).map(c => `${c} = excluded.${c}`).join(', ');
+            const sql = upd
+              ? `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${ph}) ON CONFLICT(${pkCol}) DO UPDATE SET ${upd}`
+              : `INSERT OR IGNORE INTO ${table} (${cols.join(', ')}) VALUES (${ph})`;
+            localDb.prepare(sql).run(...vals);
+            n++;
+          } catch (e) {}
+        }
+      });
+      tx(res.rows);
+      if (n > 0) console.log(`[TURSO] ✅ Restored ${n} rows into ${table}.`);
+      return n;
+    } catch (e) { return 0; }
   }
 
   /**

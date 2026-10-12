@@ -1470,6 +1470,13 @@ function clearWarnings(guildId, userId) {
 // ==========================================
 // Tickets (نظام التذاكر المتقدم)
 // ==========================================
+// مزامنة صف واحد إلى Turso (تحمي البيانات من مسح قرص الاستضافة المؤقت)
+function syncRow(table, pkCol, row) {
+  try { if (tursoSync && tursoSync.queueTableRowSync) tursoSync.queueTableRowSync(table, pkCol, row); } catch (e) {}
+}
+function syncRowDelete(table, pkCol, id) {
+  try { if (tursoSync && tursoSync.queueTableRowDelete) tursoSync.queueTableRowDelete(table, pkCol, id); } catch (e) {}
+}
 function createTicket(guildId, channelId, userId, category = 'General') {
   let ticketNumber = 1;
   try {
@@ -1479,17 +1486,23 @@ function createTicket(guildId, channelId, userId, category = 'General') {
   } catch (e) {}
 
   db.prepare('INSERT OR IGNORE INTO tickets (guild_id, channel_id, user_id, category, status, ticket_number) VALUES (?, ?, ?, ?, ?, ?)').run(guildId, channelId, userId, category, 'open', ticketNumber);
-  return db.prepare('SELECT * FROM tickets WHERE channel_id = ?').get(channelId);
+  const _tRow = db.prepare('SELECT * FROM tickets WHERE channel_id = ?').get(channelId);
+  syncRow('tickets', 'id', _tRow);
+  return _tRow;
 }
 
 function closeTicket(channelId, closedBy = null, reason = null) {
   db.prepare("UPDATE tickets SET status = 'closed', closed_at = strftime('%s','now'), closed_by = ?, close_reason = ? WHERE channel_id = ?")
     .run(closedBy, reason, channelId);
-  return db.prepare('SELECT * FROM tickets WHERE channel_id = ?').get(channelId);
+  const _tRow = db.prepare('SELECT * FROM tickets WHERE channel_id = ?').get(channelId);
+  syncRow('tickets', 'id', _tRow);
+  return _tRow;
 }
 
 function deleteTicket(channelId) {
-  return db.prepare('DELETE FROM tickets WHERE channel_id = ?').run(channelId);
+  const _r = db.prepare('DELETE FROM tickets WHERE channel_id = ?').run(channelId);
+  syncRowDelete('tickets', 'channel_id', channelId);
+  return _r;
 }
 
 function getTicketByChannel(channelId) {
@@ -1506,22 +1519,28 @@ function getGuildTickets(guildId, limit = 50) {
 
 function claimTicket(channelId, staffId) {
   db.prepare("UPDATE tickets SET claimed_by = ?, claimed_at = strftime('%s','now') WHERE channel_id = ?").run(staffId, channelId);
-  return db.prepare('SELECT * FROM tickets WHERE channel_id = ?').get(channelId);
+  const _tRow = db.prepare('SELECT * FROM tickets WHERE channel_id = ?').get(channelId);
+  syncRow('tickets', 'id', _tRow);
+  return _tRow;
 }
 
 function unclaimTicket(channelId) {
   db.prepare("UPDATE tickets SET claimed_by = NULL, claimed_at = NULL WHERE channel_id = ?").run(channelId);
-  return db.prepare('SELECT * FROM tickets WHERE channel_id = ?').get(channelId);
+  const _tRow = db.prepare('SELECT * FROM tickets WHERE channel_id = ?').get(channelId);
+  syncRow('tickets', 'id', _tRow);
+  return _tRow;
 }
 
 function transferTicket(channelId, targetStaffOrRoleId) {
   db.prepare("UPDATE tickets SET claimed_by = ? WHERE channel_id = ?").run(targetStaffOrRoleId, channelId);
-  return db.prepare('SELECT * FROM tickets WHERE channel_id = ?').get(channelId);
+  const _tRow = db.prepare('SELECT * FROM tickets WHERE channel_id = ?').get(channelId);
+  syncRow('tickets', 'id', _tRow);
+  return _tRow;
 }
 
 // 🎫 Ticket Panels (لوحات التذاكر)
 function saveTicketPanel(p) {
-  return db.prepare(`
+  const _r = db.prepare(`
     INSERT OR REPLACE INTO ticket_panels 
     (panel_id, guild_id, channel_id, message_id, title, description, button_label, button_emoji, button_style, welcome_msg, support_role, category_id, naming_scheme, logs_channel, categories_json)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -1532,6 +1551,11 @@ function saveTicketPanel(p) {
     p.support_role || null, p.category_id || null, p.naming_scheme || 'ticket-{username}', 
     p.logs_channel || null, p.categories_json ? (typeof p.categories_json === 'string' ? p.categories_json : JSON.stringify(p.categories_json)) : null
   );
+  try {
+    const _row = db.prepare('SELECT * FROM ticket_panels WHERE panel_id = ?').get(p.panel_id);
+    syncRow('ticket_panels', 'panel_id', _row);
+  } catch (e) {}
+  return _r;
 }
 
 function getTicketPanel(panelId) {
@@ -1543,7 +1567,9 @@ function getGuildTicketPanels(guildId) {
 }
 
 function deleteTicketPanel(panelId) {
-  return db.prepare('DELETE FROM ticket_panels WHERE panel_id = ?').run(panelId);
+  const _r = db.prepare('DELETE FROM ticket_panels WHERE panel_id = ?').run(panelId);
+  syncRowDelete('ticket_panels', 'panel_id', panelId);
+  return _r;
 }
 
 // ⭐ Ticket Ratings (تقييمات الموظفين)
@@ -1562,6 +1588,10 @@ function addTicketRating(guildId, ticketChannelId, userId, staffId, stars, feedb
     }
   } catch (e) {}
 
+  try {
+    const _row = db.prepare('SELECT * FROM ticket_ratings WHERE id = ?').get(res.lastInsertRowid);
+    syncRow('ticket_ratings', 'id', _row);
+  } catch (e) {}
   return res.lastInsertRowid;
 }
 
@@ -1579,10 +1609,15 @@ function getStaffAverageRating(guildId, staffId) {
 
 // 📜 Ticket Transcripts
 function saveTranscript(guildId, channelId, userId, closedBy = null, reason = null, htmlContent = '') {
-  return db.prepare(`
+  const _r = db.prepare(`
     INSERT INTO ticket_transcripts (guild_id, channel_id, user_id, closed_by, reason, html_content)
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(guildId, channelId, userId, closedBy, reason, htmlContent);
+  try {
+    const _row = db.prepare('SELECT * FROM ticket_transcripts WHERE id = ?').get(_r.lastInsertRowid);
+    syncRow('ticket_transcripts', 'id', _row);
+  } catch (e) {}
+  return _r;
 }
 
 function getTranscript(channelId) {
@@ -1840,9 +1875,14 @@ function addAutoResponder(guildId, data) {
   if (typeof data === 'string') {
     const triggerWord = data;
     const replyText = arguments[2] || '';
-    return db.prepare('INSERT INTO auto_responders (guild_id, trigger_word, reply_text) VALUES (?, ?, ?)').run(guildId, triggerWord.trim(), replyText);
+    const _r = db.prepare('INSERT INTO auto_responders (guild_id, trigger_word, reply_text) VALUES (?, ?, ?)').run(guildId, triggerWord.trim(), replyText);
+    try {
+      const _row = db.prepare('SELECT * FROM auto_responders WHERE id = ?').get(_r.lastInsertRowid);
+      syncRow('auto_responders', 'id', _row);
+    } catch (e) {}
+    return _r;
   }
-  return db.prepare(`
+  const _r = db.prepare(`
     INSERT INTO auto_responders (
       guild_id, trigger_word, reply_text, match_mode, reply_type, 
       case_sensitive, delete_trigger, cooldown_seconds, 
@@ -1863,6 +1903,11 @@ function addAutoResponder(guildId, data) {
     data.exempt_roles || data.exemptRoles || '',
     data.is_active !== undefined ? (data.is_active ? 1 : 0) : 1
   );
+  try {
+    const _row = db.prepare('SELECT * FROM auto_responders WHERE id = ?').get(_r.lastInsertRowid);
+    syncRow('auto_responders', 'id', _row);
+  } catch (e) {}
+  return _r;
 }
 
 function getAutoResponders(guildId) {
@@ -1872,8 +1917,12 @@ function getAutoResponders(guildId) {
 function deleteAutoResponder(guildId, idOrTrigger) {
   if (typeof idOrTrigger === 'number' || !isNaN(idOrTrigger)) {
     db.prepare('DELETE FROM auto_responders WHERE guild_id = ? AND id = ?').run(guildId, Number(idOrTrigger));
+    syncRowDelete('auto_responders', 'id', Number(idOrTrigger));
   } else {
+    let _ids = [];
+    try { _ids = db.prepare('SELECT id FROM auto_responders WHERE guild_id = ? AND trigger_word = ?').all(guildId, String(idOrTrigger).trim()).map(r => r.id); } catch (e) {}
     db.prepare('DELETE FROM auto_responders WHERE guild_id = ? AND trigger_word = ?').run(guildId, String(idOrTrigger).trim());
+    try { for (const _id of _ids) syncRowDelete('auto_responders', 'id', _id); } catch (e) {}
   }
 }
 

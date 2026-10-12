@@ -773,12 +773,8 @@ module.exports = {
           }
         } catch { try { categoryId = null; } catch {} }
 
-        // Auto-increment ticket counter
-        let ticketNum = 1;
-        try {
-          ticketNum = (settings.ticket_counter || 0) + 1;
-          db.setGuildSetting(interaction.guild.id, 'ticket_counter', ticketNum);
-        } catch (e) {}
+        // رقم التذكرة للاسم — createTicket يتولى العدّ الرسمي وحده (منع القفز المزدوج)
+        const ticketNum = (settings.ticket_counter || 0) + 1;
 
         const channelName = `ticket-${ticketNum}`;
 
