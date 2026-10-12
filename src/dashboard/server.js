@@ -2221,7 +2221,7 @@ module.exports = function (app, client) {
                     }
                 } catch (e) {}
                 return on
-                    ? '<span data-navbadge="' + key + '" class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>'
+                    ? '<span data-navbadge="' + key + '" class="w-5 h-5 rounded-full bg-emerald-500 border-2 border-white/70 text-[#052e16] flex items-center justify-center text-[10px] font-black shadow-md shadow-emerald-500/40">✓</span>'
                     : '<span data-navbadge="' + key + '" class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>';
             }
 
