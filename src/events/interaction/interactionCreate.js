@@ -1510,23 +1510,34 @@ module.exports = {
         const ticketId = parts[3] || '0';
         const staffId = parts[4] || '0';
         const guildId = parts[5] || interaction.guildId;
+        const _tLang = guildId || interaction.guildId;
+        try {
+          const modal = new ModalBuilder()
+            .setCustomId(`modal_review_${rating}_${ticketId}_${staffId}_${guildId || '0'}`.slice(0, 100))
+            .setTitle(String(t(_tLang, 'events.ticket.rate_title', { rating })).slice(0, 45));
 
-        const modal = new ModalBuilder()
-          .setCustomId(`modal_review_${rating}_${ticketId}_${staffId}_${guildId}`)
-          .setTitle(t(interaction.guildId, 'events.ticket.rate_title', { rating }));
+          const commentInput = new TextInputBuilder()
+            .setCustomId('review_comment')
+            .setLabel(String(t(_tLang, 'events.ticket.rate_label')).slice(0, 45))
+            .setStyle(TextInputStyle.Paragraph)
+            .setPlaceholder(String(t(_tLang, 'events.ticket.rate_ph')).slice(0, 100))
+            .setRequired(false)
+            .setMaxLength(500);
 
-        const commentInput = new TextInputBuilder()
-          .setCustomId('review_comment')
-          .setLabel(t(interaction.guildId, 'events.ticket.rate_label'))
-          .setStyle(TextInputStyle.Paragraph)
-          .setPlaceholder(t(interaction.guildId, 'events.ticket.rate_ph'))
-          .setRequired(false)
-          .setMaxLength(500);
+          const row = new ActionRowBuilder().addComponents(commentInput);
+          modal.addComponents(row);
 
-        const row = new ActionRowBuilder().addComponents(commentInput);
-        modal.addComponents(row);
-
-        return interaction.showModal(modal);
+          return await interaction.showModal(modal);
+        } catch (e) {
+          // fallback: حفظ التقييم مباشرة بدون نافذة التعليق
+          try {
+            await interaction.deferReply({ flags: 64 }).catch(() => {});
+            if (db.addTicketRating) {
+              try { db.addTicketRating(guildId, ticketId, interaction.user.id, (staffId && staffId !== '0') ? staffId : 'staff', rating, t(_tLang, 'events.ticket.rate_no_comment')); } catch {}
+            }
+            return interaction.editReply({ content: t(_tLang, 'events.ticket.feedback_done') }).catch(() => {});
+          } catch { return; }
+        }
       }
 
       // 9. إرسال نموذج التقييم (Ticket Rating Modal Submit)
@@ -1537,7 +1548,7 @@ module.exports = {
         const ticketId = parts[3];
         const staffId = parts[4] !== '0' ? parts[4] : null;
         const guildId = parts[5] || interaction.guildId;
-        const comment = interaction.fields.getTextInputValue('review_comment') || t(interaction.guildId, 'events.ticket.rate_no_comment');
+        const comment = interaction.fields.getTextInputValue('review_comment') || t(guildId || interaction.guildId, 'events.ticket.rate_no_comment');
 
         if (db.addTicketRating) {
           db.addTicketRating(guildId, ticketId, interaction.user.id, staffId || 'staff', rating, comment);
@@ -1552,12 +1563,12 @@ module.exports = {
             const starsEmoji = '⭐'.repeat(rating) + '☆'.repeat(5 - rating);
             const feedbackEmbed = new EmbedBuilder()
               .setColor(rating >= 4 ? (config.colors.success || '#10b981') : (rating === 3 ? (config.colors.warning || '#f59e0b') : (config.colors.danger || '#ef4444')))
-              .setTitle(t(interaction.guildId, 'events.ticket.feedback_title'))
+              .setTitle(t(guildId || interaction.guildId, 'events.ticket.feedback_title'))
               .addFields(
-                { name: t(interaction.guildId, 'events.ticket.feedback_member'), value: `<@${interaction.user.id}> (\`${interaction.user.tag}\`)`, inline: true },
-                { name: t(interaction.guildId, 'events.ticket.feedback_staff'), value: staffId ? `<@${staffId}>` : t(interaction.guildId, 'events.ticket.feedback_team'), inline: true },
-                { name: t(interaction.guildId, 'events.ticket.feedback_level'), value: `\`${starsEmoji}\` (${rating}/5)`, inline: true },
-                { name: t(interaction.guildId, 'events.ticket.feedback_comment'), value: `\`\`\`${comment}\`\`\`` }
+                { name: t(guildId || interaction.guildId, 'events.ticket.feedback_member'), value: `<@${interaction.user.id}> (\`${interaction.user.tag}\`)`, inline: true },
+                { name: t(guildId || interaction.guildId, 'events.ticket.feedback_staff'), value: staffId ? `<@${staffId}>` : t(guildId || interaction.guildId, 'events.ticket.feedback_team'), inline: true },
+                { name: t(guildId || interaction.guildId, 'events.ticket.feedback_level'), value: `\`${starsEmoji}\` (${rating}/5)`, inline: true },
+                { name: t(guildId || interaction.guildId, 'events.ticket.feedback_comment'), value: `\`\`\`${comment}\`\`\`` }
               )
               .setFooter({ text: targetGuild.name, iconURL: targetGuild.iconURL({ dynamic: true }) || undefined })
               .setTimestamp();
@@ -1566,7 +1577,7 @@ module.exports = {
           }
         }
 
-        return interaction.editReply({ content: t(interaction.guildId, 'events.ticket.feedback_done') });
+        return interaction.editReply({ content: t(guildId || interaction.guildId, 'events.ticket.feedback_done') });
       }
 
       // ==========================================

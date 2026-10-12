@@ -109,7 +109,7 @@ module.exports = {
     'events.ticket.unclaim_no_perm': '❌ Only the claimer or a server admin can unclaim this ticket.',
     'events.ticket.unclaimed': '↩️ {user} unclaimed the ticket, and it is now available for the support team.',
     'events.ticket.rate_title': '⭐ Your rating: {rating} out of 5 stars',
-    'events.ticket.rate_label': 'Your note or opinion about the support (optional):',
+    'events.ticket.rate_label': 'Your note about the support (optional):',
     'events.ticket.rate_ph': 'Write any note or message for the management and support team...',
     'events.ticket.rate_no_comment': 'No additional comment',
     'events.ticket.rate_5': '⭐ 5 Excellent',
