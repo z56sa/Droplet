@@ -1082,7 +1082,30 @@ function applyDefaultOffMigration() {
 Promise.resolve()
   .then(() => tursoSync.initAndRestore(db))
   .catch(e => console.error('[TURSO] Init error:', e.message))
-  .then(() => { try { applyDefaultOffMigration(); } catch (e) { console.error('[DB] default-off error:', e.message); } });
+  .then(() => { try { applyDefaultOffMigration(); } catch (e) { console.error('[DB] default-off error:', e.message); } })
+  .then(() => { try { applyLockRemoval(); } catch (e) { console.error('[DB] lock-removal error:', e.message); } });
+
+// إزالة قفل لوحة التحكم نهائياً: تصفير القيمة لكل السيرفرات (لمرة واحدة) ودفعها إلى Turso
+function applyLockRemoval() {
+  try { db.exec('ALTER TABLE guild_settings ADD COLUMN flags_lock_removed_v1 INTEGER DEFAULT 0;'); } catch (e) {}
+  let pending = [];
+  try {
+    pending = db.prepare('SELECT guild_id FROM guild_settings WHERE COALESCE(flags_lock_removed_v1, 0) = 0').all().map(r => r.guild_id);
+  } catch (e) { return; }
+  if (!pending.length) return;
+  try {
+    db.prepare('UPDATE guild_settings SET lock_dashboard = 0, flags_lock_removed_v1 = 1 WHERE COALESCE(flags_lock_removed_v1, 0) = 0').run();
+  } catch (e) {
+    try { db.prepare('UPDATE guild_settings SET flags_lock_removed_v1 = 1 WHERE COALESCE(flags_lock_removed_v1, 0) = 0').run(); } catch (e2) { return; }
+  }
+  try {
+    for (const gid of pending) {
+      const row = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(gid);
+      if (row) tursoSync.queueGuildSettingsSync(gid, row);
+    }
+  } catch (e) {}
+  console.log(`[DB] ✅ Dashboard lock removed for ${pending.length} guild(s).`);
+}
 
 
 // ==========================================

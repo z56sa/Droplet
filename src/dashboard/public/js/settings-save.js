@@ -74,7 +74,7 @@
       if (res.ok && data && data.success) {
         if (typeof window.showSaveStatus === 'function') window.showSaveStatus();
       } else if (res.status === 403) {
-        alert('⛔ الداشبورد مقفل (lock_dashboard).\nلفك القفل: قسم الحماية والأمان ← زر قفل الداشبورد ← أطفئه ثم أعد الحفظ.');
+        alert('⛔ مرفوض من السيرفر [403]: ' + ((data && data.error) || 'صلاحيات غير كافية'));
       } else {
         alert('❌ خطأ أثناء الحفظ [' + res.status + ']: ' + ((data && data.error) || 'حدث خطأ غير متوقع'));
       }
@@ -107,7 +107,7 @@
       return true;
     }
     if (res.status === 403) {
-      alert('⛔ الداشبورد مقفل (lock_dashboard).\nلفك القفل: قسم الحماية والأمان ← زر قفل الداشبورد ← أطفئه.');
+      alert('⛔ مرفوض من السيرفر [403].');
     } else {
       alert('❌ خطأ أثناء الحفظ [' + res.status + ']: ' + ((data && data.error) || 'حدث خطأ غير متوقع'));
     }

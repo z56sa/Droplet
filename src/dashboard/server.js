@@ -3940,14 +3940,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
 
                         <!-- 1. Banner Alert: البوت لا يملك صلاحيات حرجة الآن -->
-                        <div class="bg-[#1c1016] border border-rose-900/50 p-4 rounded-2xl flex items-center justify-between shadow-lg">
-                            <div class="flex items-center gap-3">
-                                <label class="toggle">
-                                    <input type="checkbox" name="lock_dashboard" value="1" ${settings.lock_dashboard ? 'checked' : ''} onchange="saveProtectionSetting('lock_dashboard', this.checked)">
-                                    <span class="slider"></span>
-                                </label>
-                                <span class="text-xs font-bold text-rose-300">قفل لوحة التحكم</span>
-                            </div>
+                        <div class="bg-[#1c1016] border border-rose-900/50 p-4 rounded-2xl flex items-center justify-end shadow-lg">
                             <div class="flex items-center gap-2 text-rose-400 font-bold text-xs">
                                 <span>البوت لا يملك صلاحيات حرجة الآن</span>
                                 <span class="text-base">⚠️</span>
@@ -4505,14 +4498,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
 
                         <!-- 1. Banner Alert: البوت لا يملك صلاحيات حرجة الآن -->
-                        <div class="bg-[#1c1016] border border-rose-900/50 p-4 rounded-2xl flex items-center justify-between shadow-lg">
-                            <div class="flex items-center gap-3">
-                                <label class="toggle">
-                                    <input type="checkbox" name="lock_dashboard" value="1" ${settings.lock_dashboard ? 'checked' : ''} onchange="saveProtectionSetting('lock_dashboard', this.checked)">
-                                    <span class="slider"></span>
-                                </label>
-                                <span class="text-xs font-bold text-rose-300">قفل لوحة التحكم</span>
-                            </div>
+                        <div class="bg-[#1c1016] border border-rose-900/50 p-4 rounded-2xl flex items-center justify-end shadow-lg">
                             <div class="flex items-center gap-2 text-rose-400 font-bold text-xs">
                                 <span>البوت لا يملك صلاحيات حرجة الآن</span>
                                 <span class="text-base">⚠️</span>
@@ -4670,14 +4656,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
 
                         <!-- 1. Banner Alert: البوت لا يملك صلاحيات حرجة الآن -->
-                        <div class="bg-[#1c1016] border border-rose-900/50 p-4 rounded-2xl flex items-center justify-between shadow-lg">
-                            <div class="flex items-center gap-3">
-                                <label class="toggle">
-                                    <input type="checkbox" name="lock_dashboard" value="1" ${settings.lock_dashboard ? 'checked' : ''} onchange="saveProtectionSetting('lock_dashboard', this.checked)">
-                                    <span class="slider"></span>
-                                </label>
-                                <span class="text-xs font-bold text-rose-300">قفل لوحة التحكم</span>
-                            </div>
+                        <div class="bg-[#1c1016] border border-rose-900/50 p-4 rounded-2xl flex items-center justify-end shadow-lg">
                             <div class="flex items-center gap-2 text-rose-400 font-bold text-xs">
                                 <span>البوت لا يملك صلاحيات حرجة الآن</span>
                                 <span class="text-base">⚠️</span>
@@ -12804,13 +12783,7 @@ ${embedScriptHtml}
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
             const settings = req.body;
-            // ✅ قفل الداشبورد: يمنع أي حفظ ما لم يتضمن الطلب مفتاح القفل نفسه (للسماح بإلغاء القفل)
-            try {
-              const current = database.getGuildSettings ? database.getGuildSettings(guildId) : {};
-              if (Number(current.lock_dashboard) === 1 && settings.lock_dashboard === undefined) {
-                return res.status(403).json({ success: false, error: 'الداشبورد مقفل (lock_dashboard). عطّل القفل أولاً.' });
-              }
-            } catch {}
+            // (أُزيل قفل الداشبورد نهائياً — لا يوجد ما يمنع الحفظ)
             // ✅ FIX: مزامنة الرتب التلقائية مع العمود القديم auto_role للتوافق الخلفي
             if (settings && settings.autorole_id !== undefined && settings.auto_role === undefined) {
                 settings.auto_role = settings.autorole_id;
