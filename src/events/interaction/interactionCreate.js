@@ -684,6 +684,7 @@ module.exports = {
         let panelId = null;
         let selectedCategoryType = 'General';
         let categoryLabel = 'Ticket';
+        try {
 
         if (interaction.isButton() && interaction.customId.startsWith('ticket_open_')) {
           panelId = interaction.customId.replace('ticket_open_', '');
@@ -723,8 +724,28 @@ module.exports = {
           });
         }
 
-        const supportRoleId = catConfig?.role || panel?.support_role || settings.support_role || settings.ticket_role;
-        const categoryId = catConfig?.category || panel?.category_id || settings.ticket_category;
+        let supportRoleId = catConfig?.role || panel?.support_role || settings.support_role || settings.ticket_role;
+        let categoryId = catConfig?.category || panel?.category_id || settings.ticket_category;
+
+        // تحقق مبكر: صلاحية إدارة القنوات + تجاهل رتبة/فئة محذوفة (رسالة واضحة بدل التعليق)
+        try {
+          const _me = interaction.guild.members.me || await interaction.guild.members.fetchMe().catch(() => null);
+          if (!_me || !_me.permissions.has(PermissionFlagsBits.ManageChannels)) {
+            return interaction.editReply({ content: '❌ البوت يفتقد صلاحية **إدارة القنوات (Manage Channels)** — فعّلها من إعدادات السيرفر ثم أعد المحاولة.' }).catch(() => {});
+          }
+        } catch {}
+        try {
+          if (supportRoleId && !interaction.guild.roles.cache.has(String(supportRoleId))) {
+            const _fr = await interaction.guild.roles.fetch(String(supportRoleId)).catch(() => null);
+            if (!_fr) supportRoleId = null;
+          }
+        } catch {}
+        try {
+          if (categoryId) {
+            const _c = interaction.guild.channels.cache.get(String(categoryId)) || await interaction.guild.channels.fetch(String(categoryId)).catch(() => null);
+            if (!_c || _c.type !== ChannelType.GuildCategory) categoryId = null;
+          }
+        } catch { try { categoryId = null; } catch {} }
 
         // Auto-increment ticket counter
         let ticketNum = 1;
@@ -859,6 +880,14 @@ module.exports = {
         return interaction.editReply({
           content: `Ticket created: <#${ticketChannel.id}>`
         });
+        } catch (err) {
+          console.error('Ticket creation failed:', err?.message || err);
+          const _code = err?.code;
+          const msg = (_code === 50013 || _code === 50001)
+            ? '❌ فشل إنشاء التذكرة: البوت يفتقد صلاحية **إدارة القنوات (Manage Channels)** — منحه الصلاحية (وتأكد أنها مفعّلة داخل فئة التذاكر) ثم أعد المحاولة.'
+            : '❌ فشل إنشاء قناة التذكرة' + (err?.message ? `: \`${String(err.message).slice(0, 200)}\`` : '') + ' — تحقق من صلاحيات البوت وفئة التذاكر.';
+          return interaction.editReply({ content: msg }).catch(() => {});
+        }
       }
 
       // ==========================================
