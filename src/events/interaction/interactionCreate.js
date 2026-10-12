@@ -6,6 +6,9 @@ const embedUtil = require('../../utils/embed');
 const logger = require('../../utils/logger');
 const config = require('../../config.json');
 
+// قفل لحظي ضد الضغط المزدوج: يمنع إنشاء تذكرتين بنفس اللحظة لنفس العضو
+const _ticketCreating = new Set();
+
 module.exports = {
   name: 'interactionCreate',
   async execute(interaction, client) {
@@ -712,17 +715,40 @@ module.exports = {
         }
 
         const cleanCategory = selectedCategoryType.replace(/[^a-zA-Z0-9\u0621-\u064A]/g, '-').slice(0, 15);
-        const existingTicket = interaction.guild.channels.cache.find(
-          c => c.name === `ticket-${interaction.user.username.toLowerCase()}` ||
-            c.name === `ticket-${cleanCategory}-${interaction.user.username.toLowerCase()}` ||
-            c.name.startsWith(`ticket-`) && c.name.endsWith(interaction.user.id.slice(-4))
-        );
+        // منع التكرار: تذكرة مفتوحة واحدة لكل عضو (فحص القاعدة أولاً — الأسماء مرقّمة ولا تطابق النمط القديم)
+        if (_ticketCreating.has(interaction.user.id)) {
+          return interaction.editReply({
+            content: '⏳ تذكرتك قيد الإنشاء الآن — انتظر لحظات.'
+          }).catch(() => {});
+        }
+        let existingTicket = null;
+        try {
+          const _open = db.getUserActiveTickets ? db.getUserActiveTickets(interaction.guild.id, interaction.user.id) : [];
+          if (_open && _open.length) {
+            for (const _tk of _open) {
+              try {
+                const _ch = interaction.guild.channels.cache.get(_tk.channel_id) || await interaction.guild.channels.fetch(_tk.channel_id).catch(() => null);
+                if (_ch) { existingTicket = _ch; break; }
+                // صف يتيم (القناة محذوفة يدوياً) — أغلقه لتنظيف السجل
+                try { if (db.closeTicket) db.closeTicket(_tk.channel_id, null, 'channel-deleted'); } catch {}
+              } catch {}
+            }
+          }
+        } catch {}
+        if (!existingTicket) {
+          existingTicket = interaction.guild.channels.cache.find(
+            c => c.name === `ticket-${interaction.user.username.toLowerCase()}` ||
+              c.name === `ticket-${cleanCategory}-${interaction.user.username.toLowerCase()}` ||
+              c.name.startsWith(`ticket-`) && c.name.endsWith(interaction.user.id.slice(-4))
+          ) || null;
+        }
 
         if (existingTicket) {
           return interaction.editReply({
             content: t(interaction.guildId, 'events.ticket.exists', { channel: existingTicket.id })
-          });
+          }).catch(() => {});
         }
+        _ticketCreating.add(interaction.user.id);
 
         let supportRoleId = catConfig?.role || panel?.support_role || settings.support_role || settings.ticket_role;
         let categoryId = catConfig?.category || panel?.category_id || settings.ticket_category;
@@ -911,6 +937,8 @@ module.exports = {
             ? '❌ فشل إنشاء التذكرة: البوت يفتقد صلاحية **إدارة القنوات (Manage Channels)** — منحه الصلاحية (وتأكد أنها مفعّلة داخل فئة التذاكر) ثم أعد المحاولة.'
             : '❌ فشل إنشاء قناة التذكرة' + (_tag ? ` [${_tag}]` : '') + (err?.message ? `: \`${String(err.message).slice(0, 200)}\`` : '') + ' — تحقق من صلاحيات البوت وفئة التذاكر.';
           return interaction.editReply({ content: msg }).catch(() => {});
+        } finally {
+          try { _ticketCreating.delete(interaction.user.id); } catch {}
         }
       }
 
