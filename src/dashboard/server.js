@@ -11623,6 +11623,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     input:checked + .slider:before { transform: translateX(20px); }
                 /* Droplet blended headings */ h1[class*="text-white"]:not([style]), h2[class*="text-white"]:not([style]) { background:linear-gradient(90deg,#c084fc,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent !important; }</style>
                 <script src="/i18n.js"></script><script src="/i18n-dash.js"></script><script src="/i18n-dash2.js"></script>
+                <script src="/js/settings-save.js?v=${global._dropletBootTime || '1'}"></script>
             </head>
             <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#060c1d] text-white">
                 <header class="h-16 bg-[#081026]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
@@ -11661,11 +11662,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     ${formFieldsHtml}
                                 </div>
                             ` : `
-                            <form id="settingsForm" class="space-y-6" onsubmit="event.preventDefault();try{if(window.submitSettingsForm){submitSettingsForm(this);}else{alert('⚠️ سكربت الحفظ لم يُحمّل — حدّث الصفحة بـ Ctrl+F5');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}return false;">
+                            <form id="settingsForm" class="space-y-6" onsubmit="event.preventDefault();try{if(window.submitSettingsForm){submitSettingsForm(this);}else{alert('⚠️ سكربت الحفظ لم يُحمّل ['+'save:'+typeof window.submitSettingsForm+'|mod:'+typeof window.toggleModule+'|cats:'+typeof window.collectTicketCatsFromDOM+'] — حدّث الصفحة بـ Ctrl+F5');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}return false;">
                                 ${formFieldsHtml}
 
                                 <div class="pt-6 border-t border-blue-500/20 flex items-center justify-between flex-row-reverse${(section === 'embed' || section === 'logs' || section === 'store') ? ' hidden' : ''}">
-                                    <button type="button" onclick="try{if(window.submitSettingsForm){submitSettingsForm(document.getElementById('settingsForm'));}else{alert('⚠️ سكربت الحفظ لم يُحمّل — حدّث الصفحة بـ Ctrl+F5');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}return false;" class="px-8 py-3 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-black/20 flex items-center gap-2">
+                                    <button type="button" onclick="try{if(window.submitSettingsForm){submitSettingsForm(document.getElementById('settingsForm'));}else{alert('⚠️ سكربت الحفظ لم يُحمّل ['+'save:'+typeof window.submitSettingsForm+'|mod:'+typeof window.toggleModule+'|cats:'+typeof window.collectTicketCatsFromDOM+'] — حدّث الصفحة بـ Ctrl+F5');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}return false;" class="js-save-btn px-8 py-3 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-black/20 flex items-center gap-2">
                                         <span>💾</span>
                                         <span>حفظ التغييرات</span>
                                     </button>
