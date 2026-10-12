@@ -166,7 +166,7 @@ module.exports = {
           `─── ─── ─── ─── ─── ─── ─── ───\n\n` +
           `### **${cleanDesc}**`
         );
-      if (bannerUrl) {
+      if (bannerUrl && /^https?:\/\//i.test(bannerUrl)) {
         try { embed.setImage(bannerUrl); } catch(err) {}
       }
       sentMessage = await channel.send({ embeds: [embed], components: [actionRow] });

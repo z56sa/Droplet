@@ -1083,7 +1083,42 @@ Promise.resolve()
   .then(() => tursoSync.initAndRestore(db))
   .catch(e => console.error('[TURSO] Init error:', e.message))
   .then(() => { try { applyDefaultOffMigration(); } catch (e) { console.error('[DB] default-off error:', e.message); } })
-  .then(() => { try { applyLockRemoval(); } catch (e) { console.error('[DB] lock-removal error:', e.message); } });
+  .then(() => { try { applyLockRemoval(); } catch (e) { console.error('[DB] lock-removal error:', e.message); } })
+  .then(() => { try { applyNullStringPurge(); } catch (e) { console.error('[DB] nullstr-purge error:', e.message); } });
+
+// تنقية القيم النصية المخزنة حرفياً كـ 'null'/'undefined' (من إصدارات قديمة) — لمرة واحدة
+const NULLSTR_PURGE_KEYS = [
+  'ticket_welcome_image', 'ticket_panel_banner', 'ticket_panel_title',
+  'ticket_panel_desc', 'ticket_panel_placeholder', 'ticket_welcome_msg',
+  'welcome_banner_image', 'welcome_message', 'leave_message',
+  'welcome_dm_message', 'boost_message', 'level_voice_msg'
+];
+function applyNullStringPurge() {
+  try { db.exec('ALTER TABLE guild_settings ADD COLUMN flags_nullstr_purged_v1 INTEGER DEFAULT 0;'); } catch (e) {}
+  let pending = [];
+  try {
+    pending = db.prepare('SELECT guild_id FROM guild_settings WHERE COALESCE(flags_nullstr_purged_v1, 0) = 0').all().map(r => r.guild_id);
+  } catch (e) { return; }
+  if (!pending.length) return;
+  let cols = [];
+  try {
+    const have = new Set(db.prepare('PRAGMA table_info(guild_settings)').all().map(c => c.name));
+    cols = NULLSTR_PURGE_KEYS.filter(k => have.has(k));
+  } catch (e) { return; }
+  try {
+    for (const k of cols) {
+      db.prepare(`UPDATE guild_settings SET ${k} = NULL WHERE TRIM(LOWER(${k})) IN ('null', 'undefined')`).run();
+    }
+    db.prepare('UPDATE guild_settings SET flags_nullstr_purged_v1 = 1 WHERE COALESCE(flags_nullstr_purged_v1, 0) = 0').run();
+  } catch (e) { console.error('[DB] nullstr-purge failed:', e.message); return; }
+  try {
+    for (const gid of pending) {
+      const row = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(gid);
+      if (row) tursoSync.queueGuildSettingsSync(gid, row);
+    }
+  } catch (e) {}
+  console.log(`[DB] ✅ Null-string purge applied to ${pending.length} guild(s).`);
+}
 
 // إزالة قفل لوحة التحكم نهائياً: تصفير القيمة لكل السيرفرات (لمرة واحدة) ودفعها إلى Turso
 function applyLockRemoval() {

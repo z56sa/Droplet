@@ -801,7 +801,20 @@ module.exports = {
           name: channelName,
           type: ChannelType.GuildText,
           parent: categoryId || null,
-          permissionOverwrites
+          permissionOverwrites: (() => {
+            // إسقاط أي تجاوز لمعرف غير معروف (يمنع InvalidType) — مع الحفاظ دائماً على السيرفر/العضو/البوت
+            try {
+              const _keep = new Set([String(interaction.guild.id), String(interaction.user.id), String(client.user.id)]);
+              const _safe = permissionOverwrites.filter(o => {
+                try {
+                  const id = String(o && o.id);
+                  if (_keep.has(id)) return true;
+                  return interaction.guild.roles.cache.has(id) || interaction.guild.members.cache.has(id);
+                } catch { return false; }
+              });
+              return _safe.length ? _safe : permissionOverwrites.filter(o => { try { return _keep.has(String(o && o.id)); } catch { return false; } });
+            } catch { return permissionOverwrites; }
+          })()
         });
 
         db.createTicket(interaction.guild.id, ticketChannel.id, interaction.user.id, selectedCategoryType);
@@ -844,10 +857,11 @@ module.exports = {
           if (_twTxt && _twTxt.toLowerCase() !== 'null' && _twTxt.toLowerCase() !== 'undefined') welcomeEmbed.setDescription(_twTxt.slice(0, 4000));
         } catch {}
 
-        // Check if server or panel has a welcome image
-        const welcomeImg = panel?.welcome_image || settings.ticket_welcome_image;
-        if (welcomeImg) {
-          welcomeEmbed.setImage(welcomeImg);
+        // Check if server or panel has a welcome image (URL صالح فقط — قيم 'null'/التالفة تُتجاهل بدل رمي استثناء)
+        const _rawWelcomeImg = panel?.welcome_image || settings.ticket_welcome_image;
+        const _wImg = (_rawWelcomeImg === undefined || _rawWelcomeImg === null) ? '' : String(_rawWelcomeImg).trim();
+        if (_wImg && /^https?:\/\//i.test(_wImg)) {
+          try { welcomeEmbed.setImage(_wImg); } catch {}
         }
 
         const ticketButtonsRow = new ActionRowBuilder().addComponents(

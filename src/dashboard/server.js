@@ -13343,6 +13343,7 @@ ${embedScriptHtml}
             let bannerUrl = req.body.ticket_panel_banner || settings.ticket_panel_banner || null;
             if (typeof bannerUrl === 'string') bannerUrl = bannerUrl.trim();
             if (!bannerUrl || bannerUrl === 'null' || bannerUrl === 'undefined') bannerUrl = null;
+            if (bannerUrl && !/^https?:\/\//i.test(bannerUrl)) bannerUrl = null;
             const ptype = (req.body.ticket_panel_type || settings.ticket_panel_type || 'select').toString();
             const placeholder = (_cleanTxt(req.body.ticket_panel_placeholder) || _cleanTxt(settings.ticket_panel_placeholder) || 'اختر نوع التذكرة').slice(0, 100);
 
