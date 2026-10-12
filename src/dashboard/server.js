@@ -11628,7 +11628,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <main class="flex-1 p-8 overflow-y-auto ${section === 'embed' ? 'max-w-7xl' : 'max-w-4xl'} mx-auto">
                         <div class="${section === 'logs' ? '' : 'probot-card border border-blue-500/20 rounded-3xl p-8 shadow-2xl mb-8'}">
                             <div class="flex items-center justify-between pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
-                                <label class="toggle"><input type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled'};return _m[section]||(section+'_enabled');})(), this.checked)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
+                                <label class="toggle"><input type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})(), this.checked)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
                                 <div class="text-right">
                                     <h2 class="text-2xl font-black text-white">${title}</h2>
                                     <p class="text-white text-xs mt-1">يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.</p>
@@ -12810,9 +12810,23 @@ ${embedScriptHtml}
                 const tursoSync = require('../database/tursoSync');
                 await tursoSync.flush(10000);
             } catch (e) {}
+            // ✅ تحقق فعلي: أعد قراءة الصف وقارن كل مفتاح مطلوب — أي فشل صامت يصبح خطأ صريحاً
+            let _mismatches = [];
+            try {
+                const _vr = database.getGuildSettings ? database.getGuildSettings(guildId) : null;
+                if (_vr && settings && typeof settings === 'object') {
+                    for (const [k, v] of Object.entries(settings)) {
+                        if (v === undefined || Array.isArray(v)) continue;
+                        const _want = (v === null) ? '' : String(v);
+                        const _gv = _vr[k];
+                        const _got = (_gv === undefined || _gv === null) ? '' : String(_gv);
+                        if (_got !== _want) _mismatches.push(k);
+                    }
+                }
+            } catch (e) {}
             try {
                 const cc = settings && settings.command_configs ? String(settings.command_configs).length : 0;
-                console.log(`[SETTINGS SAVE] guild=${guildId} keys=${Object.keys(settings || {}).join(',')} command_configs_len=${cc}`);
+                console.log(`[SETTINGS SAVE] guild=${guildId} keys=${Object.keys(settings || {}).join(',')} command_configs_len=${cc} mismatches=${_mismatches.join('|') || 'none'}`);
             } catch (e) {}
             // تطبيق اسم البوت في السيرفر في ديسكورد فوراً
             if (settings.bot_nickname !== undefined && client?.guilds?.cache) {
@@ -12832,7 +12846,10 @@ ${embedScriptHtml}
                     }
                 } catch {}
             }
-            res.json({ success: true });
+            if (_mismatches.length) {
+                return res.json({ success: false, verified: true, mismatches: _mismatches.slice(0, 8), error: '❌ فشل حفظ بعض الحقول (' + _mismatches.length + '): ' + _mismatches.slice(0, 5).join('، ') + ' — أعد المحاولة أو انسخ هذه الرسالة للدعم.' });
+            }
+            res.json({ success: true, verified: true });
         } catch (e) {
             res.status(500).json({ success: false, error: e.message });
         }
