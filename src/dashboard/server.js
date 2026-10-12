@@ -3175,7 +3175,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                         <!-- 1. Master Toggle & Banner -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl flex items-center justify-between shadow-xl">
                             <label class="toggle">
-                                <input type="checkbox" name="automod_enabled" value="1" ${Number(settings.automod_enabled) === 1 ? 'checked' : ''} onchange="saveAutomodSetting('automod_enabled', this.checked)">
+                                <input type="checkbox" name="automod_enabled" value="1" ${Number(settings.automod_enabled) === 1 ? 'checked' : ''} onchange="saveAutomodSetting('automod_enabled', this.checked, this)">
                                 <span class="slider"></span>
                             </label>
                             <div class="flex items-center gap-3">
@@ -3202,7 +3202,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- Banned Words Filtering -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="bad_words_enabled" value="1" ${settings.bad_words_enabled ? 'checked' : ''} onchange="saveAutomodSetting('bad_words_enabled', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="bad_words_enabled" value="1" ${settings.bad_words_enabled ? 'checked' : ''} onchange="saveAutomodSetting('bad_words_enabled', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="document.getElementById('sec_strict_words').scrollIntoView({behavior:'smooth'})" class="text-white hover:text-gray-300 p-1 text-xs">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-left">
@@ -3220,7 +3220,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- Server Invites Blocking -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_invites" value="1" ${settings.anti_invites ? 'checked' : ''} onchange="saveAutomodSetting('anti_invites', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_invites" value="1" ${settings.anti_invites ? 'checked' : ''} onchange="saveAutomodSetting('anti_invites', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_invites', 'Server Invites Blocking')" class="text-white hover:text-gray-300 p-1 text-xs" title="Settings">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-left">
@@ -3243,7 +3243,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- Anti Spam -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_spam" value="1" ${settings.anti_spam ? 'checked' : ''} onchange="saveAutomodSetting('anti_spam', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_spam" value="1" ${settings.anti_spam ? 'checked' : ''} onchange="saveAutomodSetting('anti_spam', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_spam', 'Anti Spam')" class="text-white hover:text-gray-300 p-1 text-xs" title="Settings">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-left">
@@ -3261,7 +3261,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- Link Blocking -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_link" value="1" ${settings.anti_link ? 'checked' : ''} onchange="saveAutomodSetting('anti_link', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_link" value="1" ${settings.anti_link ? 'checked' : ''} onchange="saveAutomodSetting('anti_link', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_link', 'Link Blocking')" class="text-white hover:text-gray-300 p-1 text-xs" title="Settings">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-left">
@@ -3279,7 +3279,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- Mention Spam Blocking -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_mass_mention" value="1" ${settings.anti_mass_mention ? 'checked' : ''} onchange="saveAutomodSetting('anti_mass_mention', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_mass_mention" value="1" ${settings.anti_mass_mention ? 'checked' : ''} onchange="saveAutomodSetting('anti_mass_mention', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_mass_mention', 'Mention Spam Blocking')" class="text-white hover:text-gray-300 p-1 text-xs" title="Settings">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-left">
@@ -3297,7 +3297,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- حظر الحروف الكبيرة -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_caps" value="1" ${settings.anti_caps ? 'checked' : ''} onchange="saveAutomodSetting('anti_caps', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_caps" value="1" ${settings.anti_caps ? 'checked' : ''} onchange="saveAutomodSetting('anti_caps', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_caps', 'حظر الحروف الكبيرة')" class="text-white hover:text-gray-300 p-1 text-xs" title="إعدادات">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-right">
@@ -3315,7 +3315,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- إزعاج Spoilers -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_spoilers" value="1" ${settings.anti_spoilers ? 'checked' : ''} onchange="saveAutomodSetting('anti_spoilers', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_spoilers" value="1" ${settings.anti_spoilers ? 'checked' : ''} onchange="saveAutomodSetting('anti_spoilers', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_spoilers', 'إزعاج Spoilers')" class="text-white hover:text-gray-300 p-1 text-xs" title="إعدادات">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-right">
@@ -3333,7 +3333,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- نص Zalgo -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_zalgo" value="1" ${settings.anti_zalgo ? 'checked' : ''} onchange="saveAutomodSetting('anti_zalgo', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_zalgo" value="1" ${settings.anti_zalgo ? 'checked' : ''} onchange="saveAutomodSetting('anti_zalgo', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_zalgo', 'نص Zalgo')" class="text-white hover:text-gray-300 p-1 text-xs" title="إعدادات">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-right">
@@ -3362,7 +3362,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- مكافحة السبام المتقدم -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_spam_adv" value="1" ${settings.anti_spam_adv ? 'checked' : ''} onchange="saveAutomodSetting('anti_spam_adv', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_spam_adv" value="1" ${settings.anti_spam_adv ? 'checked' : ''} onchange="saveAutomodSetting('anti_spam_adv', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_spam_adv', 'مكافحة السبام المتقدم')" class="text-white hover:text-gray-300 p-1 text-xs" title="إعدادات">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-right">
@@ -3380,7 +3380,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- Emoji Spam -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_emoji" value="1" ${settings.anti_emoji ? 'checked' : ''} onchange="saveAutomodSetting('anti_emoji', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_emoji" value="1" ${settings.anti_emoji ? 'checked' : ''} onchange="saveAutomodSetting('anti_emoji', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_emoji', 'Emoji Spam')" class="text-white hover:text-gray-300 p-1 text-xs" title="Settings">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-left">
@@ -3398,7 +3398,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- Text Repeat -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_text_repeat" value="1" ${settings.anti_text_repeat ? 'checked' : ''} onchange="saveAutomodSetting('anti_text_repeat', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_text_repeat" value="1" ${settings.anti_text_repeat ? 'checked' : ''} onchange="saveAutomodSetting('anti_text_repeat', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_text_repeat', 'Text Repeat')" class="text-white hover:text-gray-300 p-1 text-xs" title="Settings">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-left">
@@ -3416,7 +3416,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- Duplicate Messages -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_repeat_messages" value="1" ${settings.anti_repeat_messages ? 'checked' : ''} onchange="saveAutomodSetting('anti_repeat_messages', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_repeat_messages" value="1" ${settings.anti_repeat_messages ? 'checked' : ''} onchange="saveAutomodSetting('anti_repeat_messages', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_repeat_messages', 'Duplicate Messages')" class="text-white hover:text-gray-300 p-1 text-xs" title="Settings">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-left">
@@ -3434,7 +3434,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- Sticker Spam -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_stickers" value="1" ${settings.anti_stickers ? 'checked' : ''} onchange="saveAutomodSetting('anti_stickers', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_stickers" value="1" ${settings.anti_stickers ? 'checked' : ''} onchange="saveAutomodSetting('anti_stickers', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_stickers', 'Sticker Spam')" class="text-white hover:text-gray-300 p-1 text-xs" title="Settings">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-left">
@@ -3452,7 +3452,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- Line Spam -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_line_spam" value="1" ${settings.anti_line_spam ? 'checked' : ''} onchange="saveAutomodSetting('anti_line_spam', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_line_spam" value="1" ${settings.anti_line_spam ? 'checked' : ''} onchange="saveAutomodSetting('anti_line_spam', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_line_spam', 'Line Spam')" class="text-white hover:text-gray-300 p-1 text-xs" title="Settings">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-left">
@@ -3470,7 +3470,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                             <!-- الرسائل الطويلة -->
                             <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
                                 <div class="flex items-center gap-2">
-                                    <label class="toggle"><input type="checkbox" name="anti_long_messages" value="1" ${settings.anti_long_messages ? 'checked' : ''} onchange="saveAutomodSetting('anti_long_messages', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_long_messages" value="1" ${settings.anti_long_messages ? 'checked' : ''} onchange="saveAutomodSetting('anti_long_messages', this.checked, this)"><span class="slider"></span></label>
                                     <button type="button" onclick="configureAutomodRule('anti_long_messages', 'الرسائل الطويلة')" class="text-white hover:text-gray-300 p-1 text-xs" title="إعدادات">⚙️</button>
                                 </div>
                                 <div class="flex items-center gap-3 text-right">
@@ -3531,7 +3531,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                         <div id="sec_strict_words" class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl space-y-5 shadow-xl">
                             <div class="flex items-center justify-between border-b border-blue-500/20 pb-3">
                                 <label class="toggle">
-                                    <input type="checkbox" name="strict_bad_words_enabled" value="1" ${settings.strict_bad_words_enabled ? 'checked' : ''} onchange="saveAutomodSetting('strict_bad_words_enabled', this.checked)">
+                                    <input type="checkbox" name="strict_bad_words_enabled" value="1" ${settings.strict_bad_words_enabled ? 'checked' : ''} onchange="saveAutomodSetting('strict_bad_words_enabled', this.checked, this)">
                                     <span class="slider"></span>
                                 </label>
                                 <div class="text-right">
@@ -3959,7 +3959,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- 2. Master Toggle: تفعيل نظام الحماية -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl flex items-center justify-between shadow-lg">
                             <label class="toggle">
-                                <input type="checkbox" name="anti_nuke_enabled" value="1" ${Number(settings.anti_nuke_enabled) === 1 ? 'checked' : ''} onchange="saveProtectionSetting('anti_nuke_enabled', this.checked)">
+                                <input type="checkbox" name="anti_nuke_enabled" value="1" ${Number(settings.anti_nuke_enabled) === 1 ? 'checked' : ''} onchange="saveProtectionSetting('anti_nuke_enabled', this.checked, this)">
                                 <span class="slider"></span>
                             </label>
                             <div class="flex items-center gap-3">
@@ -4015,7 +4015,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <!-- مكافحة حذف القنوات -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                        <label class="toggle"><input type="checkbox" name="anti_channel_delete" value="1" ${settings.anti_channel_delete ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_delete', this.checked)"><span class="slider"></span></label>
+                                        <label class="toggle"><input type="checkbox" name="anti_channel_delete" value="1" ${settings.anti_channel_delete ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_delete', this.checked, this)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white">مكافحة حذف القنوات</h5>
@@ -4027,7 +4027,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                     <!-- مكافحة إنشاء القنوات -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                        <label class="toggle"><input type="checkbox" name="anti_channel_create" value="1" ${settings.anti_channel_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_create', this.checked)"><span class="slider"></span></label>
+                                        <label class="toggle"><input type="checkbox" name="anti_channel_create" value="1" ${settings.anti_channel_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_create', this.checked, this)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white">مكافحة إنشاء القنوات</h5>
@@ -4039,7 +4039,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                     <!-- مكافحة تعديل القنوات -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                        <label class="toggle"><input type="checkbox" name="anti_channel_update" value="1" ${settings.anti_channel_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_update', this.checked)"><span class="slider"></span></label>
+                                        <label class="toggle"><input type="checkbox" name="anti_channel_update" value="1" ${settings.anti_channel_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_update', this.checked, this)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white">مكافحة تعديل القنوات</h5>
@@ -4051,7 +4051,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                     <!-- حماية صلاحيات القنوات -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                        <label class="toggle"><input type="checkbox" name="anti_channel_permissions" value="1" ${settings.anti_channel_permissions ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_permissions', this.checked)"><span class="slider"></span></label>
+                                        <label class="toggle"><input type="checkbox" name="anti_channel_permissions" value="1" ${settings.anti_channel_permissions ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_permissions', this.checked, this)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white">حماية صلاحيات القنوات</h5>
@@ -4072,7 +4072,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <!-- مكافحة حذف الرتب -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                        <label class="toggle"><input type="checkbox" name="anti_role_delete" value="1" ${settings.anti_role_delete ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_delete', this.checked)"><span class="slider"></span></label>
+                                        <label class="toggle"><input type="checkbox" name="anti_role_delete" value="1" ${settings.anti_role_delete ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_delete', this.checked, this)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white">مكافحة حذف الرتب</h5>
@@ -4084,7 +4084,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                     <!-- مكافحة إنشاء الرتب -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                        <label class="toggle"><input type="checkbox" name="anti_role_create" value="1" ${settings.anti_role_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_create', this.checked)"><span class="slider"></span></label>
+                                        <label class="toggle"><input type="checkbox" name="anti_role_create" value="1" ${settings.anti_role_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_create', this.checked, this)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white">مكافحة إنشاء الرتب</h5>
@@ -4096,7 +4096,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                     <!-- مكافحة تعديل الرتب -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                        <label class="toggle"><input type="checkbox" name="anti_role_update" value="1" ${settings.anti_role_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_update', this.checked)"><span class="slider"></span></label>
+                                        <label class="toggle"><input type="checkbox" name="anti_role_update" value="1" ${settings.anti_role_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_role_update', this.checked, this)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white">مكافحة تعديل الرتب</h5>
@@ -4117,7 +4117,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <!-- مكافحة إنشاء الويب هوك -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                        <label class="toggle"><input type="checkbox" name="anti_webhook_create" value="1" ${settings.anti_webhook_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_webhook_create', this.checked)"><span class="slider"></span></label>
+                                        <label class="toggle"><input type="checkbox" name="anti_webhook_create" value="1" ${settings.anti_webhook_create ? 'checked' : ''} onchange="saveProtectionSetting('anti_webhook_create', this.checked, this)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white">مكافحة إنشاء الويب هوك</h5>
@@ -4129,7 +4129,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                     <!-- مكافحة تعديل الويب هوك -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                        <label class="toggle"><input type="checkbox" name="anti_webhook_update" value="1" ${settings.anti_webhook_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_webhook_update', this.checked)"><span class="slider"></span></label>
+                                        <label class="toggle"><input type="checkbox" name="anti_webhook_update" value="1" ${settings.anti_webhook_update ? 'checked' : ''} onchange="saveProtectionSetting('anti_webhook_update', this.checked, this)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white">مكافحة تعديل الويب هوك</h5>
@@ -4150,7 +4150,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <!-- مكافحة الحظر -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                        <label class="toggle"><input type="checkbox" name="anti_mass_ban" value="1" ${settings.anti_mass_ban ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_ban', this.checked)"><span class="slider"></span></label>
+                                        <label class="toggle"><input type="checkbox" name="anti_mass_ban" value="1" ${settings.anti_mass_ban ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_ban', this.checked, this)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white">مكافحة الحظر</h5>
@@ -4162,7 +4162,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                     <!-- مكافحة الطرد -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                        <label class="toggle"><input type="checkbox" name="anti_mass_kick" value="1" ${settings.anti_mass_kick ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_kick', this.checked)"><span class="slider"></span></label>
+                                        <label class="toggle"><input type="checkbox" name="anti_mass_kick" value="1" ${settings.anti_mass_kick ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_kick', this.checked, this)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white">مكافحة الطرد</h5>
@@ -4183,7 +4183,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="grid grid-cols-1 gap-3">
                                     <!-- مكافحة المنشنات -->
                                     <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                        <label class="toggle"><input type="checkbox" name="anti_mass_mention" value="1" ${settings.anti_mass_mention ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_mention', this.checked)"><span class="slider"></span></label>
+                                        <label class="toggle"><input type="checkbox" name="anti_mass_mention" value="1" ${settings.anti_mass_mention ? 'checked' : ''} onchange="saveProtectionSetting('anti_mass_mention', this.checked, this)"><span class="slider"></span></label>
                                         <div class="flex items-center gap-2 text-right">
                                             <div>
                                                 <h5 class="text-xs font-bold text-white">مكافحة المنشنات</h5>
@@ -4213,7 +4213,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <!-- رتب Onboarding الخطيرة -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_onboarding_danger" value="1" ${settings.anti_onboarding_danger ? 'checked' : ''} onchange="saveProtectionSetting('anti_onboarding_danger', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_onboarding_danger" value="1" ${settings.anti_onboarding_danger ? 'checked' : ''} onchange="saveProtectionSetting('anti_onboarding_danger', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">رتب Onboarding الخطيرة</h5>
@@ -4225,7 +4225,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- رتب خطيرة عند الانضمام (حماية الانفايت) -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_join_danger_roles" value="1" ${settings.anti_join_danger_roles ? 'checked' : ''} onchange="saveProtectionSetting('anti_join_danger_roles', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_join_danger_roles" value="1" ${settings.anti_join_danger_roles ? 'checked' : ''} onchange="saveProtectionSetting('anti_join_danger_roles', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">رتب خطيرة عند الانضمام (حماية الانفايت)</h5>
@@ -4237,7 +4237,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- مكافحة الريد -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_raid_fast" value="1" ${settings.anti_raid_fast ? 'checked' : ''} onchange="saveProtectionSetting('anti_raid_fast', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_raid_fast" value="1" ${settings.anti_raid_fast ? 'checked' : ''} onchange="saveProtectionSetting('anti_raid_fast', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">مكافحة الريد</h5>
@@ -4249,7 +4249,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- مكافحة الصلاحيات الخطيرة -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_dangerous_perms" value="1" ${settings.anti_dangerous_perms ? 'checked' : ''} onchange="saveProtectionSetting('anti_dangerous_perms', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_dangerous_perms" value="1" ${settings.anti_dangerous_perms ? 'checked' : ''} onchange="saveProtectionSetting('anti_dangerous_perms', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">مكافحة الصلاحيات الخطيرة</h5>
@@ -4261,7 +4261,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- مكافحة الرتب الخطيرة القابلة للربط -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_linked_roles" value="1" ${settings.anti_linked_roles ? 'checked' : ''} onchange="saveProtectionSetting('anti_linked_roles', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_linked_roles" value="1" ${settings.anti_linked_roles ? 'checked' : ''} onchange="saveProtectionSetting('anti_linked_roles', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">مكافحة الرتب الخطيرة القابلة للربط</h5>
@@ -4273,7 +4273,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- مكافحة إضافة البوتات -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_bot_add" value="1" ${settings.anti_bot_add ? 'checked' : ''} onchange="saveProtectionSetting('anti_bot_add', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_bot_add" value="1" ${settings.anti_bot_add ? 'checked' : ''} onchange="saveProtectionSetting('anti_bot_add', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">مكافحة إضافة البوتات</h5>
@@ -4285,7 +4285,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- مكافحة التطهير -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_prune" value="1" ${settings.anti_prune ? 'checked' : ''} onchange="saveProtectionSetting('anti_prune', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_prune" value="1" ${settings.anti_prune ? 'checked' : ''} onchange="saveProtectionSetting('anti_prune', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">مكافحة التطهير</h5>
@@ -4297,7 +4297,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- مكافحة تغيير اسم السيرفر -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_server_name_change" value="1" ${settings.anti_server_name_change ? 'checked' : ''} onchange="saveProtectionSetting('anti_server_name_change', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_server_name_change" value="1" ${settings.anti_server_name_change ? 'checked' : ''} onchange="saveProtectionSetting('anti_server_name_change', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">مكافحة تغيير اسم السيرفر</h5>
@@ -4309,7 +4309,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- مكافحة تغيير أيقونة السيرفر -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_server_icon_change" value="1" ${settings.anti_server_icon_change ? 'checked' : ''} onchange="saveProtectionSetting('anti_server_icon_change', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_server_icon_change" value="1" ${settings.anti_server_icon_change ? 'checked' : ''} onchange="saveProtectionSetting('anti_server_icon_change', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">مكافحة تغيير أيقونة السيرفر</h5>
@@ -4337,7 +4337,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <!-- مكافحة الاحتيال -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_scam" value="1" ${settings.anti_scam ? 'checked' : ''} onchange="saveProtectionSetting('anti_scam', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_scam" value="1" ${settings.anti_scam ? 'checked' : ''} onchange="saveProtectionSetting('anti_scam', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">مكافحة الاحتيال</h5>
@@ -4349,7 +4349,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- مكافحة روابط الدعوة -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_invite_links" value="1" ${settings.anti_invite_links ? 'checked' : ''} onchange="saveProtectionSetting('anti_invite_links', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_invite_links" value="1" ${settings.anti_invite_links ? 'checked' : ''} onchange="saveProtectionSetting('anti_invite_links', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">مكافحة روابط الدعوة</h5>
@@ -4361,7 +4361,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- مكافحة المحتوى الغير لائق -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_nsfw_content" value="1" ${settings.anti_nsfw_content ? 'checked' : ''} onchange="saveProtectionSetting('anti_nsfw_content', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_nsfw_content" value="1" ${settings.anti_nsfw_content ? 'checked' : ''} onchange="saveProtectionSetting('anti_nsfw_content', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">مكافحة المحتوى الغير لائق</h5>
@@ -4373,7 +4373,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- مكافحة الغوست بينغ -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_ghost_ping" value="1" ${settings.anti_ghost_ping ? 'checked' : ''} onchange="saveProtectionSetting('anti_ghost_ping', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_ghost_ping" value="1" ${settings.anti_ghost_ping ? 'checked' : ''} onchange="saveProtectionSetting('anti_ghost_ping', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">مكافحة الغوست بينغ</h5>
@@ -4385,7 +4385,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- كشف نقل القنوات -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-500/20 transition">
-                                    <label class="toggle"><input type="checkbox" name="anti_channel_move" value="1" ${settings.anti_channel_move ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_move', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_channel_move" value="1" ${settings.anti_channel_move ? 'checked' : ''} onchange="saveProtectionSetting('anti_channel_move', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">كشف نقل القنوات</h5>
@@ -4397,7 +4397,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <!-- مكافحة سبام الويب هوك -->
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between hover:border-blue-400/60 transition shadow-inner">
-                                    <label class="toggle"><input type="checkbox" name="anti_webhook_spam" value="1" ${settings.anti_webhook_spam ? 'checked' : ''} onchange="saveProtectionSetting('anti_webhook_spam', this.checked)"><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" name="anti_webhook_spam" value="1" ${settings.anti_webhook_spam ? 'checked' : ''} onchange="saveProtectionSetting('anti_webhook_spam', this.checked, this)"><span class="slider"></span></label>
                                     <div class="flex items-center gap-2 text-right">
                                         <div>
                                             <h5 class="text-xs font-bold text-white">مكافحة سبام الويب هوك</h5>
@@ -4677,7 +4677,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <!-- سجلات الأمان -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl flex items-center justify-between shadow-xl">
                                 <label class="toggle">
-                                    <input type="checkbox" name="security_logs_enabled" value="1" ${Number(settings.security_logs_enabled) === 1 ? 'checked' : ''} onchange="saveProtectionSetting('security_logs_enabled', this.checked)">
+                                    <input type="checkbox" name="security_logs_enabled" value="1" ${Number(settings.security_logs_enabled) === 1 ? 'checked' : ''} onchange="saveProtectionSetting('security_logs_enabled', this.checked, this)">
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-3">
@@ -4694,7 +4694,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <!-- سجلات الإشراف -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl flex items-center justify-between shadow-xl">
                                 <label class="toggle">
-                                    <input type="checkbox" name="mod_logs_enabled" value="1" ${Number(settings.mod_logs_enabled) === 1 ? 'checked' : ''} onchange="saveProtectionSetting('mod_logs_enabled', this.checked)">
+                                    <input type="checkbox" name="mod_logs_enabled" value="1" ${Number(settings.mod_logs_enabled) === 1 ? 'checked' : ''} onchange="saveProtectionSetting('mod_logs_enabled', this.checked, this)">
                                     <span class="slider"></span>
                                 </label>
                                 <div class="flex items-center gap-3">
@@ -6071,7 +6071,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- Master Header Card -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl flex items-center justify-between shadow-xl">
                             <label class="toggle">
-                                <input type="checkbox" name="autoroles_enabled" value="1" ${_arEnabledChecked} onchange="saveAutoroleField('autoroles_enabled', this.checked ? 1 : 0)">
+                                <input type="checkbox" name="autoroles_enabled" value="1" ${_arEnabledChecked} onchange="saveAutoroleField('autoroles_enabled', this.checked ? 1 : 0, this)">
                                 <span class="slider"></span>
                             </label>
                             <div class="flex items-center gap-3">
@@ -6121,15 +6121,29 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 (function() {
     var guildId = '${guildId}';
     function showOk() { if (typeof showSaveStatus === 'function') showSaveStatus(); }
-    window.saveAutoroleField = function(key, value) {
+    window.saveAutoroleField = function(key, value, el) {
+        try { if (typeof window.refreshNavBadge === 'function' && typeof value !== 'string') window.refreshNavBadge(key, !!value); } catch (e) {}
         fetch('/api/guild/' + guildId + '/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify((function(){ var o = {}; o[key] = value; return o; })())
         }).then(function(r){ return r.json(); }).then(function(d){
             if (d && d.success) showOk();
-            else alert('❌ فشل الحفظ: ' + ((d && d.error) || 'خطأ غير معروف'));
-        }).catch(function(e){ console.error('autorole save error', e); });
+            else {
+                try {
+                    if (el && typeof el.checked === 'boolean') el.checked = !value;
+                    if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+                } catch (e) {}
+                alert('❌ فشل الحفظ: ' + ((d && d.error) || 'خطأ غير معروف'));
+            }
+        }).catch(function(e){
+            console.error('autorole save error', e);
+            try {
+                if (el && typeof el.checked === 'boolean') el.checked = !value;
+                if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+            } catch (e2) {}
+            alert('حدث خطأ في الاتصال بالخادم');
+        });
     };
     var selMember = document.getElementById('autorole_id');
     if (selMember) selMember.addEventListener('change', function(){ window.saveAutoroleField('autorole_id', this.value || ''); });
@@ -9891,7 +9905,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <p class="text-[11px] text-white mt-0.5">يسجل خروج الإداري تلقائياً عند الخمول (AFK) أو انعدام التفاعل في الشات واستلام التذاكر أو انتهاء الحد الأقصى للمدة</p>
                                     </div>
                                     <label class="toggle flex-shrink-0 mr-4">
-                                        <input type="checkbox" name="staff_auto_logout" value="1" ${Number(settings.staff_auto_logout) === 1 ? 'checked' : ''} onchange="saveProtectionSetting('staff_auto_logout', this.checked)">
+                                        <input type="checkbox" name="staff_auto_logout" value="1" ${Number(settings.staff_auto_logout) === 1 ? 'checked' : ''} onchange="saveProtectionSetting('staff_auto_logout', this.checked, this)">
                                         <span class="slider"></span>
                                     </label>
                                 </div>
@@ -11638,7 +11652,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <main class="flex-1 p-8 overflow-y-auto ${section === 'embed' ? 'max-w-7xl' : 'max-w-4xl'} mx-auto">
                         <div class="${section === 'logs' ? '' : 'probot-card border border-blue-500/20 rounded-3xl p-8 shadow-2xl mb-8'}">
                             <div class="flex items-center justify-between pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
-                                <label class="toggle"><input type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})(), this.checked)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
+                                <label class="toggle"><input type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})(), this.checked, this)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
                                 <div class="text-right">
                                     <h2 class="text-2xl font-black text-white">${title}</h2>
                                     <p class="text-white text-xs mt-1">يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.</p>
@@ -11941,7 +11955,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     if (arrow) arrow.classList.toggle('rotate-180');
                 }
 
-                async function toggleModule(gId, key, isEnabled) {
+                async function toggleModule(gId, key, isEnabled, el) {
+                    try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!isEnabled); } catch (e0) {}
                     try {
                         const _res = await fetch('/api/guild/' + gId + '/settings', {
                             method: 'POST',
@@ -11952,12 +11967,19 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         try { const _d = await _res.json(); _ok = _res.ok && _d && _d.success; } catch (e2) {}
                         if (_ok) {
                             showSaveStatus();
-                            try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!isEnabled); } catch (e2) {}
                         } else {
-                            alert('❌ فشل حفظ المفتاح — أعد المحاولة.');
+                            try {
+                                if (el && typeof el.checked === 'boolean') el.checked = !isEnabled;
+                                if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !isEnabled);
+                            } catch (e3) {}
+                            alert('❌ فشل حفظ المفتاح — أُعيدت الحالة السابقة. أعد المحاولة.');
                         }
                     } catch (e) {
                         console.error('Error updating module toggle:', e);
+                        try {
+                            if (el && typeof el.checked === 'boolean') el.checked = !isEnabled;
+                            if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !isEnabled);
+                        } catch (e3) {}
                         alert('حدث خطأ في الاتصال بالخادم');
                     }
                 }
@@ -12087,7 +12109,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 // وظائف رفع وحذف الصور الموحدة بنمط Wicks لجميع الأقسام
                 // ✅ دوال الحفظ العالمية (تعمل في جميع الأقسام)
                 const _dashGuildId = window.location.pathname.split('/')[2];
-                async function saveProtectionSetting(key, value) {
+                async function saveProtectionSetting(key, value, el) {
                     if (typeof updateProtectionBadges === 'function') updateProtectionBadges();
                     try {
                         const _res = await fetch('/api/guild/' + _dashGuildId + '/settings', {
@@ -12101,11 +12123,22 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             showSaveStatus();
                             try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!value); } catch (e2) {}
                         } else {
-                            alert('❌ فشل حفظ الإعداد — أعد المحاولة.');
+                            try {
+                                if (el && typeof el.checked === 'boolean') el.checked = !value;
+                                if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+                            } catch (e3) {}
+                            alert('❌ فشل حفظ الإعداد — أُعيدت الحالة السابقة. أعد المحاولة.');
                         }
-                    } catch(e) { console.error('saveProtectionSetting error', e); alert('حدث خطأ في الاتصال بالخادم'); }
+                    } catch(e) {
+                        console.error('saveProtectionSetting error', e);
+                        try {
+                            if (el && typeof el.checked === 'boolean') el.checked = !value;
+                            if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+                        } catch (e3) {}
+                        alert('حدث خطأ في الاتصال بالخادم');
+                    }
                 }
-                async function saveAutomodSetting(key, value) {
+                async function saveAutomodSetting(key, value, el) {
                     try {
                         const _res = await fetch('/api/guild/' + _dashGuildId + '/settings', {
                             method: 'POST',
@@ -12118,9 +12151,20 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             showSaveStatus();
                             try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!value); } catch (e2) {}
                         } else {
-                            alert('❌ فشل حفظ الإعداد — أعد المحاولة.');
+                            try {
+                                if (el && typeof el.checked === 'boolean') el.checked = !value;
+                                if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+                            } catch (e3) {}
+                            alert('❌ فشل حفظ الإعداد — أُعيدت الحالة السابقة. أعد المحاولة.');
                         }
-                    } catch(e) { console.error('saveAutomodSetting error', e); alert('حدث خطأ في الاتصال بالخادم'); }
+                    } catch(e) {
+                        console.error('saveAutomodSetting error', e);
+                        try {
+                            if (el && typeof el.checked === 'boolean') el.checked = !value;
+                            if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+                        } catch (e3) {}
+                        alert('حدث خطأ في الاتصال بالخادم');
+                    }
                 }
                 async function uploadImageFile(input, fieldName, onDone) {
                     const file = input.files && input.files[0];

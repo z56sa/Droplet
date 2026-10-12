@@ -171,22 +171,40 @@
     return false;
   }
   if (typeof window.toggleModule !== 'function') {
-    window.toggleModule = async function (gId, key, isEnabled) {
-      try {
-        await postSingleSetting(key, isEnabled);
-      } catch (e) { console.error('toggleModule error', e); }
+    window.toggleModule = async function (gId, key, isEnabled, el) {
+      try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!isEnabled); } catch (e) {}
+      var ok = false;
+      try { ok = await postSingleSetting(key, isEnabled, true); } catch (e) { ok = false; }
+      if (!ok) {
+        try {
+          if (el && typeof el.checked === 'boolean') el.checked = !isEnabled;
+          if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !isEnabled);
+        } catch (e) {}
+      }
     };
   }
   if (typeof window.saveProtectionSetting !== 'function') {
-    window.saveProtectionSetting = async function (key, value) {
-      try { await postSingleSetting(key, value); }
-      catch (e) { console.error('saveProtectionSetting error', e); }
+    window.saveProtectionSetting = async function (key, value, el) {
+      var ok = false;
+      try { ok = await postSingleSetting(key, value, true); } catch (e) { ok = false; }
+      if (!ok) {
+        try {
+          if (el && typeof el.checked === 'boolean') el.checked = !value;
+          if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+        } catch (e) {}
+      }
     };
   }
   if (typeof window.saveAutomodSetting !== 'function') {
-    window.saveAutomodSetting = async function (key, value) {
-      try { await postSingleSetting(key, value); }
-      catch (e) { console.error('saveAutomodSetting error', e); }
+    window.saveAutomodSetting = async function (key, value, el) {
+      var ok = false;
+      try { ok = await postSingleSetting(key, value, true); } catch (e) { ok = false; }
+      if (!ok) {
+        try {
+          if (el && typeof el.checked === 'boolean') el.checked = !value;
+          if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+        } catch (e) {}
+      }
     };
   }
 
