@@ -2214,8 +2214,8 @@ module.exports = function (app, client) {
                     }
                 } catch (e) {}
                 return on
-                    ? '<span class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>'
-                    : '<span class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>';
+                    ? '<span data-navbadge="' + key + '" class="w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black">✓</span>'
+                    : '<span data-navbadge="' + key + '" class="w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600">•</span>';
             }
 
             let formFieldsHtml = '';
@@ -11939,6 +11939,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             body: JSON.stringify({ [key]: isEnabled ? 1 : 0 })
                         });
                         showSaveStatus();
+                        try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!isEnabled); } catch (e2) {}
                     } catch (e) {
                         console.error('Error updating module toggle:', e);
                     }
@@ -11982,7 +11983,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         }
                     });
 
-                    const btn = form.querySelector('button[type="submit"]');
+                    const btn = form.querySelector('button[type="button"].js-save-btn') || form.querySelector('button[type="submit"]');
                     const origBtn = btn ? btn.innerHTML : '';
                     try {
                         if (btn) {
@@ -11999,6 +12000,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         const data = await res.json();
                         if (data.success) {
                             showSaveStatus();
+                            try {
+                                if (typeof window.refreshNavBadge === 'function') {
+                                    form.querySelectorAll('input[type="checkbox"][name]').forEach(function(cb) { window.refreshNavBadge(cb.name, cb.checked); });
+                                }
+                            } catch (e2) {}
                         } else {
                             alert('❌ خطأ أثناء الحفظ: ' + (data.error || 'حدث خطأ غير متوقع'));
                         }
@@ -12073,6 +12079,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             body: JSON.stringify({ [key]: value ? 1 : 0 })
                         });
                         showSaveStatus();
+                        try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!value); } catch (e2) {}
                     } catch(e) { console.error('saveProtectionSetting error', e); }
                 }
                 async function saveAutomodSetting(key, value) {
@@ -12083,6 +12090,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             body: JSON.stringify({ [key]: value ? 1 : 0 })
                         });
                         showSaveStatus();
+                        try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!value); } catch (e2) {}
                     } catch(e) { console.error('saveAutomodSetting error', e); }
                 }
                 async function uploadImageFile(input, fieldName, onDone) {

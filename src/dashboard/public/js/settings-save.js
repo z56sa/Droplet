@@ -73,6 +73,12 @@
       try { data = await res.json(); } catch (e) {}
       if (res.ok && data && data.success) {
         if (typeof window.showSaveStatus === 'function') window.showSaveStatus();
+        try {
+          if (typeof window.refreshNavBadge === 'function') {
+            var _cbs2 = form.querySelectorAll('input[type="checkbox"][name]');
+            for (var _j = 0; _j < _cbs2.length; _j++) window.refreshNavBadge(_cbs2[_j].name, _cbs2[_j].checked);
+          }
+        } catch (e) {}
       } else if (res.status === 403) {
         alert('⛔ مرفوض من السيرفر [403]: ' + ((data && data.error) || 'صلاحيات غير كافية'));
       } else {
@@ -90,6 +96,22 @@
   }
   window.submitSettingsForm = submitSettingsForm;
 
+  /* دوائر حالة الأقسام: تحديث لحظي عند التفعيل/الإطفاء دون انتظار إعادة التحميل */
+  window.refreshNavBadge = function (key, on) {
+    try {
+      var els = document.querySelectorAll('span[data-navbadge="' + key + '"]');
+      for (var i = 0; i < els.length; i++) {
+        if (on) {
+          els[i].className = 'w-4 h-4 rounded-full border border-emerald-500/60 bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[9px] font-black';
+          els[i].textContent = '✓';
+        } else {
+          els[i].className = 'w-4 h-4 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[9px] font-black text-gray-600';
+          els[i].textContent = '•';
+        }
+      }
+    } catch (e) {}
+  };
+
   /* مفاتيح التفعيل الفردية — نسخ مستقلة تعمل في كل الصفحات */
   function dropletGuildId() {
     try { return window.location.pathname.split('/')[2] || ''; } catch (e) { return ''; }
@@ -104,6 +126,7 @@
     try { data = await res.json(); } catch (e) {}
     if (res.ok && data && data.success) {
       if (typeof window.showSaveStatus === 'function') window.showSaveStatus();
+      try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!value); } catch (e) {}
       return true;
     }
     if (res.status === 403) {
