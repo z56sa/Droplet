@@ -43,7 +43,7 @@ const CATEGORIES = {
   economy: {
     emoji: '💰',
     color: '#eab308',
-    commands: ['daily', 'rovex', 'tax', 'profile', 'rank', 'top']
+    commands: ['daily', 'balance', 'tax', 'profile', 'rank', 'top']
   },
   autoline: {
     emoji: '📏',

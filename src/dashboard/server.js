@@ -5630,7 +5630,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-300 mb-2">عنوان لوحة التذاكر (Panel Title) — مثل ROVEX</label>
+                                    <label class="block text-xs font-bold text-gray-300 mb-2">عنوان لوحة التذاكر (Panel Title)</label>
                                     <input type="text" id="input_ticket_panel_title" name="ticket_panel_title" value="${settings.ticket_panel_title || 'التذكرة'}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
                                 </div>
                                 <div>
@@ -5650,7 +5650,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">نوع اللوحة (اختر من الداشبورد)</label>
                                     <select name="ticket_panel_type" id="input_ticket_panel_type" onchange="toggleTicketPanelType()" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none">
-                                        <option value="select" ${(settings.ticket_panel_type || 'select') === 'select' ? 'selected' : ''}>📑 قائمة اختيارات (مثل ROVEX — دعم فني / جوائز / شراء)</option>
+                                        <option value="select" ${(settings.ticket_panel_type || 'select') === 'select' ? 'selected' : ''}>📑 قائمة اختيارات (دعم فني / جوائز / شراء)</option>
                                         <option value="button" ${settings.ticket_panel_type === 'button' ? 'selected' : ''}>🔘 زر واحد (فتح تذكرة مباشر)</option>
                                     </select>
                                 </div>
@@ -5665,7 +5665,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="flex items-center justify-between">
                                     <button type="button" onclick="addTicketCatRow()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[11px] font-black transition cursor-pointer">＋ إضافة قسم</button>
                                     <div class="text-right">
-                                        <h5 class="text-xs font-black text-white">🎫 أقسام التذاكر (اختيارات القائمة — ROVEX Style)</h5>
+                                        <h5 class="text-xs font-black text-white">🎫 أقسام التذاكر (اختيارات القائمة)</h5>
                                         <p class="text-[10px] text-gray-400 mt-0.5">مثال: الدعم الفني 🛠️ / الجوائز 🎁 / شراء 🛒 — فعّل ما تريد وعدّل الاسم والوصف والإيموجي والرتبة</p>
                                     </div>
                                 </div>
@@ -13304,9 +13304,9 @@ ${embedScriptHtml}
             const channel = client?.channels?.cache?.get(channelId) || await client?.channels?.fetch(channelId).catch(() => null);
             if (!channel || !channel.isTextBased()) return res.status(400).json({ success: false, error: 'القناة غير موجودة أو ليست نصية' });
 
-            const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
+            const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, EmbedBuilder, ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, SeparatorSpacingSize, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags } = require('discord.js');
 
-            // ROVEX style defaults — بدون null أبداً
+            // بدون null أبداً
             const title = (req.body.ticket_panel_title || settings.ticket_panel_title || 'التذكرة').toString().slice(0, 256);
             const desc = (req.body.ticket_panel_desc || settings.ticket_panel_desc || 'قم باختيار قسم التذكرة المناسب لفتحه').toString().slice(0, 2000);
             let bannerUrl = req.body.ticket_panel_banner || settings.ticket_panel_banner || null;
@@ -13332,29 +13332,19 @@ ${embedScriptHtml}
             cats = cats.filter(c => c && Number(c.enabled) !== 0 && c.label).slice(0, 10);
             if (!cats.length) return res.status(400).json({ success: false, error: 'فعّل قسماً واحداً على الأقل من الداشبورد' });
 
-            // ROVEX embed: بانر كبير + عنوان + خط فاصل + وصف
-            const embed = new EmbedBuilder()
-                .setColor('#2b2d31')
-                .setDescription(
-                    `# **${title}**\n\n` +
-                    `─── ─── ─── ─── ─── ─── ─── ───\n\n` +
-                    `${desc}`
-                );
-
-            if (bannerUrl) { try { embed.setImage(bannerUrl); } catch(e) {} }
-
+            // لوحة احترافية: بانر بالأعلى + عنوان + فاصل + وصف (نفس ترتيب الصورة المرجعية)
             const panelId = `dashboard_${guildId}`;
-            let components = [];
+            let actionRow;
+            let useV2 = !!(ContainerBuilder && TextDisplayBuilder && MessageFlags);
 
             if (ptype === 'button') {
-                const row = new ActionRowBuilder().addComponents(
+                actionRow = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
                         .setCustomId(`ticket_open_${panelId}`)
                         .setLabel('فتح تذكرة | Open Ticket')
                         .setEmoji('🎫')
                         .setStyle(ButtonStyle.Primary)
                 );
-                components.push(row);
             } else {
                 const options = cats.map((c, i) => {
                     const opt = {
@@ -13370,10 +13360,44 @@ ${embedScriptHtml}
                     .setCustomId(`ticket_select_${panelId}`)
                     .setPlaceholder(placeholder || 'اختر نوع التذكرة')
                     .addOptions(options);
-                components.push(new ActionRowBuilder().addComponents(select));
+                actionRow = new ActionRowBuilder().addComponents(select);
             }
 
-            const sent = await channel.send({ embeds: [embed], components });
+            let sent;
+            if (useV2) {
+                try {
+                    const container = new ContainerBuilder().setAccentColor(0x2b2d31);
+                    if (bannerUrl && /^https?:\/\//i.test(bannerUrl)) {
+                        try {
+                            container.addMediaGalleryComponents(
+                                new MediaGalleryBuilder().addItems(
+                                    new MediaGalleryItemBuilder().setURL(bannerUrl)
+                                )
+                            );
+                        } catch(e) {}
+                    }
+                    container.addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent(`# ${title}`)
+                    );
+                    try {
+                        container.addSeparatorComponents(
+                            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+                        );
+                    } catch(e) {}
+                    container.addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent(desc)
+                    );
+                    container.addActionRowComponents(actionRow);
+                    sent = await channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
+                } catch(e) { useV2 = false; }
+            }
+            if (!sent) {
+                const embed = new EmbedBuilder()
+                    .setColor('#2b2d31')
+                    .setDescription(`# **${title}**\n\n─── ─── ─── ─── ─── ─── ─── ───\n\n${desc}`);
+                if (bannerUrl) { try { embed.setImage(bannerUrl); } catch(e) {} }
+                sent = await channel.send({ embeds: [embed], components: [actionRow] });
+            }
 
             // حفظ اللوحة ليعمل فتح التذاكر حسب القسم + الرتبة المخصصة لكل قسم
             try {

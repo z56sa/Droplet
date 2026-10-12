@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ChannelType } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ChannelType, ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, SeparatorSpacingSize, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags } = require('discord.js');
 const db = require('../../database');
 const config = require('../../config.json');
 const { getGuildLang, t } = require('../../utils/lang');
@@ -105,19 +105,8 @@ module.exports = {
 
     const panelId = `panel_${interaction.guild.id}_${Date.now()}`;
 
-    const embed = new EmbedBuilder()
-      .setColor('#2b2d31')
-      .setDescription(
-        `# **${title}**\n\n` +
-        `─── ─── ─── ─── ─── ─── ─── ───\n\n` +
-        `### **${description.replace(/\\n/g, '\n')}**`
-      );
-
-    if (bannerUrl) {
-      embed.setImage(bannerUrl);
-    }
-
-    let components = [];
+    const cleanDesc = description.replace(/\\n/g, '\n');
+    let actionRow;
 
     if (panelType === 'dropdown') {
       const options = [
@@ -127,26 +116,61 @@ module.exports = {
         { label: cat4Name, value: `cat_4`, description: cat4Desc.slice(0, 99), emoji: cat4Emoji }
       ];
 
-      const selectMenu = new ActionRowBuilder().addComponents(
+      actionRow = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
           .setCustomId(`ticket_select_${panelId}`)
           .setPlaceholder(t(lang, 'tickets.ticketsetup.select_placeholder'))
           .addOptions(options)
       );
-      components.push(selectMenu);
     } else {
       const buttonStyleEnum = ButtonStyle[buttonColor] || ButtonStyle.Primary;
-      const button = new ActionRowBuilder().addComponents(
+      actionRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId(`ticket_open_${panelId}`)
           .setLabel(buttonLabel)
           .setEmoji(buttonEmoji)
           .setStyle(buttonStyleEnum)
       );
-      components.push(button);
     }
 
-    const sentMessage = await channel.send({ embeds: [embed], components });
+    let sentMessage;
+    try {
+      const container = new ContainerBuilder().setAccentColor(0x2b2d31);
+      if (bannerUrl && /^https?:\/\//i.test(bannerUrl)) {
+        try {
+          container.addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems(
+              new MediaGalleryItemBuilder().setURL(bannerUrl)
+            )
+          );
+        } catch(e) {}
+      }
+      container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`# ${title}`)
+      );
+      try {
+        container.addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+        );
+      } catch(e) {}
+      container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(cleanDesc)
+      );
+      container.addActionRowComponents(actionRow);
+      sentMessage = await channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
+    } catch(e) {
+      const embed = new EmbedBuilder()
+        .setColor('#2b2d31')
+        .setDescription(
+          `# **${title}**\n\n` +
+          `─── ─── ─── ─── ─── ─── ─── ───\n\n` +
+          `### **${cleanDesc}**`
+        );
+      if (bannerUrl) {
+        try { embed.setImage(bannerUrl); } catch(err) {}
+      }
+      sentMessage = await channel.send({ embeds: [embed], components: [actionRow] });
+    }
 
     db.saveTicketPanel({
       panel_id: panelId,
