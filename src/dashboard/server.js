@@ -5630,13 +5630,48 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-300 mb-2">عنوان لوحة التذاكر (Panel Title)</label>
-                                    <input type="text" id="input_ticket_panel_title" name="ticket_panel_title" value="${settings.ticket_panel_title || 'Open a ticket 🎫'}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
+                                    <label class="block text-xs font-bold text-gray-300 mb-2">عنوان لوحة التذاكر (Panel Title) — مثل ROVEX</label>
+                                    <input type="text" id="input_ticket_panel_title" name="ticket_panel_title" value="${settings.ticket_panel_title || 'التذكرة'}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">قناة سجلات التذاكر (Transcripts Channel)</label>
                                     ${renderChannelSelect('ticket_log_channel', settings.ticket_log_channel || settings.log_channel || '')}
                                 </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-300 mb-2">وصف اللوحة (يظهر تحت العنوان مثل: قم باختيار قسم التذكرة المناسب لفتحه)</label>
+                                    <textarea name="ticket_panel_desc" id="input_ticket_panel_desc" rows="2" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl p-4 text-xs text-white outline-none leading-relaxed text-right">${settings.ticket_panel_desc || 'قم باختيار قسم التذكرة المناسب لفتحه'}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-300 mb-2">نوع اللوحة (اختر من الداشبورد)</label>
+                                    <select name="ticket_panel_type" id="input_ticket_panel_type" onchange="toggleTicketPanelType()" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none">
+                                        <option value="select" ${(settings.ticket_panel_type || 'select') === 'select' ? 'selected' : ''}>📑 قائمة اختيارات (مثل ROVEX — دعم فني / جوائز / شراء)</option>
+                                        <option value="button" ${settings.ticket_panel_type === 'button' ? 'selected' : ''}>🔘 زر واحد (فتح تذكرة مباشر)</option>
+                                    </select>
+                                </div>
+                                <div id="ticket_placeholder_wrap">
+                                    <label class="block text-xs font-bold text-gray-300 mb-2">نص القائمة المنسدلة (Placeholder — مثل: اختر نوع التذكرة)</label>
+                                    <input type="text" id="input_ticket_panel_placeholder" name="ticket_panel_placeholder" value="${settings.ticket_panel_placeholder || 'اختر نوع التذكرة'}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
+                                </div>
+                            </div>
+
+                            <!-- 🎫 أقسام التذاكر (تتحكم بها بالكامل من الداشبورد) -->
+                            <div id="ticket_cats_wrap" class="bg-[#070d1d] border border-blue-500/20 rounded-2xl p-5 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <button type="button" onclick="addTicketCatRow()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[11px] font-black transition cursor-pointer">＋ إضافة قسم</button>
+                                    <div class="text-right">
+                                        <h5 class="text-xs font-black text-white">🎫 أقسام التذاكر (اختيارات القائمة — ROVEX Style)</h5>
+                                        <p class="text-[10px] text-gray-400 mt-0.5">مثال: الدعم الفني 🛠️ / الجوائز 🎁 / شراء 🛒 — فعّل ما تريد وعدّل الاسم والوصف والإيموجي والرتبة</p>
+                                    </div>
+                                </div>
+                                <div id="ticket_cats_list" class="space-y-2"></div>
+                                <input type="hidden" id="input_ticket_panel_categories" name="ticket_panel_categories" value='${(settings.ticket_panel_categories || '').replace(/'/g, "&#39;")}'>
+                                <p class="text-[10px] text-gray-500 text-right">💡 تُحفظ الأقسام تلقائياً عند الضغط على (حفظ التغييرات) — وتُرسل مع اللوحة عند الضغط على (إرسال اللوحة للشات الآن).</p>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -5855,14 +5890,117 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         if (fileInput) fileInput.value = '';
                     }
 
+                    function toggleTicketPanelType() {
+                        const t = document.getElementById('input_ticket_panel_type')?.value || 'select';
+                        const cats = document.getElementById('ticket_cats_wrap');
+                        const ph = document.getElementById('ticket_placeholder_wrap');
+                        if (cats) cats.style.display = (t === 'select') ? '' : 'none';
+                        if (ph) ph.style.display = (t === 'select') ? '' : 'none';
+                    }
+
+                    function defaultTicketCats() {
+                        return [
+                            { label: 'الدعم الفني', desc: 'لطلب مساعدة', emoji: '🛠️', enabled: 1, role: '', category: '' },
+                            { label: 'الجوائز', desc: 'لأستلام جائزة', emoji: '🎁', enabled: 1, role: '', category: '' },
+                            { label: 'شراء', desc: 'لشراء بريميوم او شي اخر', emoji: '🛒', enabled: 1, role: '', category: '' }
+                        ];
+                    }
+
+                    function getTicketCats() {
+                        try {
+                            const raw = document.getElementById('input_ticket_panel_categories')?.value || '';
+                            if (!raw) return defaultTicketCats();
+                            const decoded = raw.replace(/&#39;/g, "'");
+                            const arr = JSON.parse(decoded);
+                            if (Array.isArray(arr) && arr.length) return arr;
+                            return defaultTicketCats();
+                        } catch(e) { return defaultTicketCats(); }
+                    }
+
+                    function saveTicketCatsToHidden(list) {
+                        const h = document.getElementById('input_ticket_panel_categories');
+                        if (h) h.value = JSON.stringify(list);
+                    }
+
+                    function renderTicketCats() {
+                        const listEl = document.getElementById('ticket_cats_list');
+                        if (!listEl) return;
+                        const cats = getTicketCats();
+                        saveTicketCatsToHidden(cats);
+                        listEl.innerHTML = '';
+                        cats.forEach((c, idx) => {
+                            const div = document.createElement('div');
+                            div.className = 'bg-[#0b1322] border border-blue-500/20 rounded-xl p-3 flex flex-col md:flex-row items-stretch md:items-center gap-2';
+                            div.innerHTML =
+                                '<label class="flex items-center gap-1.5 text-[11px] text-white font-bold whitespace-nowrap px-2">' +
+                                    '<input type="checkbox" data-idx="' + idx + '" data-f="enabled" ' + (Number(c.enabled) !== 0 ? 'checked' : '') + ' class="ticket-cat-field w-4 h-4 accent-emerald-500"> مفعّل' +
+                                '</label>' +
+                                '<input type="text" data-idx="' + idx + '" data-f="emoji" value="' + (String(c.emoji || '').replace(/"/g, '&quot;')) + '" placeholder="🛠️" class="w-full md:w-16 bg-[#070d1d] border border-blue-500/20 rounded-xl px-2 py-2 text-xs text-white outline-none text-center">' +
+                                '<input type="text" data-idx="' + idx + '" data-f="label" value="' + (String(c.label || '').replace(/"/g, '&quot;')) + '" placeholder="اسم القسم: الدعم الفني" class="flex-1 bg-[#070d1d] border border-blue-500/20 rounded-xl px-3 py-2 text-xs text-white outline-none text-right">' +
+                                '<input type="text" data-idx="' + idx + '" data-f="desc" value="' + (String(c.desc || '').replace(/"/g, '&quot;')) + '" placeholder="الوصف: لطلب مساعدة" class="flex-1 bg-[#070d1d] border border-blue-500/20 rounded-xl px-3 py-2 text-xs text-white outline-none text-right">' +
+                                '<input type="text" data-idx="' + idx + '" data-f="role" value="' + (String(c.role || '').replace(/"/g, '&quot;')) + '" placeholder="ID رتبة القسم (اختياري)" class="w-full md:w-40 bg-[#070d1d] border border-blue-500/20 rounded-xl px-2 py-2 text-[11px] text-white outline-none text-center font-mono" dir="ltr">' +
+                                '<button type="button" onclick="removeTicketCatRow(' + idx + ')" class="px-2 py-2 text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 rounded-xl text-xs font-black transition cursor-pointer">🗑️</button>';
+                            listEl.appendChild(div);
+                        });
+                        listEl.querySelectorAll('.ticket-cat-field, input[data-f]').forEach(inp => {
+                            inp.addEventListener('change', collectTicketCatsFromDOM);
+                            inp.addEventListener('input', collectTicketCatsFromDOM);
+                        });
+                    }
+
+                    function collectTicketCatsFromDOM() {
+                        const listEl = document.getElementById('ticket_cats_list');
+                        if (!listEl) return [];
+                        const cats = getTicketCats();
+                        listEl.querySelectorAll('input[data-idx]').forEach(inp => {
+                            const i = parseInt(inp.getAttribute('data-idx'), 10);
+                            const f = inp.getAttribute('data-f');
+                            if (cats[i]) {
+                                if (f === 'enabled') cats[i][f] = inp.checked ? 1 : 0;
+                                else cats[i][f] = inp.value;
+                            }
+                        });
+                        saveTicketCatsToHidden(cats);
+                        return cats;
+                    }
+
+                    function addTicketCatRow() {
+                        const cats = collectTicketCatsFromDOM();
+                        if (cats.length >= 10) return alert('الحد الأقصى 10 أقسام');
+                        cats.push({ label: 'قسم جديد', desc: 'وصف القسم', emoji: '🎫', enabled: 1, role: '', category: '' });
+                        saveTicketCatsToHidden(cats);
+                        renderTicketCats();
+                    }
+
+                    function removeTicketCatRow(idx) {
+                        const cats = collectTicketCatsFromDOM();
+                        cats.splice(idx, 1);
+                        saveTicketCatsToHidden(cats);
+                        renderTicketCats();
+                    }
+
+                    try { renderTicketCats(); toggleTicketPanelType(); } catch(e) {}
+                    try {
+                        const _sf = document.getElementById('settingsForm');
+                        if (_sf && !_sf.dataset.ticketHook) {
+                            _sf.dataset.ticketHook = '1';
+                            _sf.addEventListener('submit', function() { try { collectTicketCatsFromDOM(); } catch(e) {} });
+                        }
+                    } catch(e) {}
+
                     async function sendTicketPanelDirect() {
                         const panelCh = document.getElementById('ticket_panel_channel')?.value;
                         if (!panelCh) {
                             return alert('يرجى اختيار "روم إرسال لوحة التذاكر (Panel Channel)" أولاً ثم حفظ التغييرات.');
                         }
 
-                        const title = document.getElementById('input_ticket_panel_title')?.value || 'Open a ticket 🎫';
+                        const title = document.getElementById('input_ticket_panel_title')?.value || 'التذكرة';
+                        const desc = document.getElementById('input_ticket_panel_desc')?.value || 'قم باختيار قسم التذكرة المناسب لفتحه';
                         const banner = document.getElementById('input_ticket_panel_banner')?.value || '';
+                        const ptype = document.getElementById('input_ticket_panel_type')?.value || 'select';
+                        const placeholder = document.getElementById('input_ticket_panel_placeholder')?.value || 'اختر نوع التذكرة';
+                        let cats = [];
+                        try { cats = collectTicketCatsFromDOM(); } catch(e) { cats = getTicketCats(); }
 
                         if (!confirm('هل تريد إرسال لوحة التذاكر الآن مباشرة إلى الروم المختار؟')) return;
 
@@ -5873,7 +6011,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 body: JSON.stringify({
                                     channelId: panelCh,
                                     ticket_panel_title: title,
-                                    ticket_panel_banner: banner
+                                    ticket_panel_desc: desc,
+                                    ticket_panel_banner: banner,
+                                    ticket_panel_type: ptype,
+                                    ticket_panel_placeholder: placeholder,
+                                    ticket_panel_categories: cats
                                 })
                             });
                             const data = await res.json();
@@ -13162,35 +13304,113 @@ ${embedScriptHtml}
             const channel = client?.channels?.cache?.get(channelId) || await client?.channels?.fetch(channelId).catch(() => null);
             if (!channel || !channel.isTextBased()) return res.status(400).json({ success: false, error: 'القناة غير موجودة أو ليست نصية' });
 
-            const guildObj = client?.guilds?.cache?.get(guildId);
-            const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+            const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 
-            const title = req.body.ticket_panel_title || settings.ticket_panel_title || '🎫 تذاكر الدعم الفني';
-            const bannerUrl = req.body.ticket_panel_banner || settings.ticket_panel_banner || null;
-            const desc = req.body.ticket_panel_desc || settings.ticket_panel_desc || 'لطلب المساعدة أو الاستفسار أو تقديم الشكاوى، اضغط على الزر أدناه لفتح تذكرة خاصة مع فريق الدعم.';
+            // ROVEX style defaults — بدون null أبداً
+            const title = (req.body.ticket_panel_title || settings.ticket_panel_title || 'التذكرة').toString().slice(0, 256);
+            const desc = (req.body.ticket_panel_desc || settings.ticket_panel_desc || 'قم باختيار قسم التذكرة المناسب لفتحه').toString().slice(0, 2000);
+            let bannerUrl = req.body.ticket_panel_banner || settings.ticket_panel_banner || null;
+            if (typeof bannerUrl === 'string') bannerUrl = bannerUrl.trim();
+            if (!bannerUrl || bannerUrl === 'null' || bannerUrl === 'undefined') bannerUrl = null;
+            const ptype = (req.body.ticket_panel_type || settings.ticket_panel_type || 'select').toString();
+            const placeholder = (req.body.ticket_panel_placeholder || settings.ticket_panel_placeholder || 'اختر نوع التذكرة').toString().slice(0, 100);
 
+            // الأقسام: من الطلب أو من الإعدادات أو الافتراضية (دعم فني / جوائز / شراء)
+            let cats = req.body.ticket_panel_categories;
+            if (typeof cats === 'string') { try { cats = JSON.parse(cats); } catch(e) { cats = null; } }
+            if (!Array.isArray(cats) || !cats.length) {
+                const savedRaw = settings.ticket_panel_categories;
+                try { const parsed = typeof savedRaw === 'string' ? JSON.parse(savedRaw) : savedRaw; if (Array.isArray(parsed) && parsed.length) cats = parsed; } catch(e) {}
+            }
+            if (!Array.isArray(cats) || !cats.length) {
+                cats = [
+                    { label: 'الدعم الفني', desc: 'لطلب مساعدة', emoji: '🛠️', enabled: 1, role: '', category: '' },
+                    { label: 'الجوائز', desc: 'لأستلام جائزة', emoji: '🎁', enabled: 1, role: '', category: '' },
+                    { label: 'شراء', desc: 'لشراء بريميوم او شي اخر', emoji: '🛒', enabled: 1, role: '', category: '' }
+                ];
+            }
+            cats = cats.filter(c => c && Number(c.enabled) !== 0 && c.label).slice(0, 10);
+            if (!cats.length) return res.status(400).json({ success: false, error: 'فعّل قسماً واحداً على الأقل من الداشبورد' });
+
+            // ROVEX embed: بانر كبير + عنوان + خط فاصل + وصف
             const embed = new EmbedBuilder()
-                .setColor('#60a5fa')
-                .setTitle(title)
-                .setDescription(desc)
-                .setFooter({ text: guildObj?.name || 'Droplet Tickets', iconURL: guildObj?.iconURL({ dynamic: true }) || undefined })
-                .setTimestamp();
+                .setColor('#2b2d31')
+                .setDescription(
+                    `# **${title}**\n\n` +
+                    `─── ─── ─── ─── ─── ─── ─── ───\n\n` +
+                    `${desc}`
+                );
 
-            if (bannerUrl) {
-                try {
-                    embed.setImage(bannerUrl);
-                } catch(e) {}
+            if (bannerUrl) { try { embed.setImage(bannerUrl); } catch(e) {} }
+
+            const panelId = `dashboard_${guildId}`;
+            let components = [];
+
+            if (ptype === 'button') {
+                const row = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`ticket_open_${panelId}`)
+                        .setLabel('فتح تذكرة | Open Ticket')
+                        .setEmoji('🎫')
+                        .setStyle(ButtonStyle.Primary)
+                );
+                components.push(row);
+            } else {
+                const options = cats.map((c, i) => {
+                    const opt = {
+                        label: String(c.label).slice(0, 100),
+                        value: `cat_${i}`,
+                        description: String(c.desc || c.label).slice(0, 100)
+                    };
+                    const em = String(c.emoji || '').trim();
+                    if (em) opt.emoji = em.slice(0, 20);
+                    return opt;
+                });
+                const select = new StringSelectMenuBuilder()
+                    .setCustomId(`ticket_select_${panelId}`)
+                    .setPlaceholder(placeholder || 'اختر نوع التذكرة')
+                    .addOptions(options);
+                components.push(new ActionRowBuilder().addComponents(select));
             }
 
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId('open_ticket')
-                    .setLabel('فتح تذكرة | Open Ticket')
-                    .setEmoji('🎫')
-                    .setStyle(ButtonStyle.Primary)
-            );
+            const sent = await channel.send({ embeds: [embed], components });
 
-            await channel.send({ embeds: [embed], components: [row] });
+            // حفظ اللوحة ليعمل فتح التذاكر حسب القسم + الرتبة المخصصة لكل قسم
+            try {
+                const categories_json = {};
+                cats.forEach((c, i) => {
+                    categories_json[`cat_${i}`] = {
+                        label: String(c.label).slice(0, 100),
+                        role: String(c.role || '').trim() || null,
+                        category: String(c.category || '').trim() || null
+                    };
+                });
+                if (database.saveTicketPanel) {
+                    database.saveTicketPanel({
+                        panel_id: panelId,
+                        guild_id: guildId,
+                        channel_id: channelId,
+                        message_id: sent.id,
+                        title, description: desc,
+                        button_label: 'فتح تذكرة', button_emoji: '🎫', button_style: 'Primary',
+                        welcome_msg: settings.ticket_welcome_msg || '',
+                        support_role: settings.ticket_role || settings.support_role || null,
+                        category_id: settings.tickets_category || null,
+                        naming_scheme: 'ticket-{username}',
+                        logs_channel: settings.ticket_log_channel || null,
+                        categories_json
+                    });
+                }
+                // حفظ الإعدادات للداشبورد أيضاً
+                try {
+                    database.setGuildSetting(guildId, 'ticket_panel_title', title);
+                    database.setGuildSetting(guildId, 'ticket_panel_desc', desc);
+                    database.setGuildSetting(guildId, 'ticket_panel_type', ptype === 'button' ? 'button' : 'select');
+                    database.setGuildSetting(guildId, 'ticket_panel_placeholder', placeholder);
+                    database.setGuildSetting(guildId, 'ticket_panel_categories', JSON.stringify(cats));
+                    if (bannerUrl) database.setGuildSetting(guildId, 'ticket_panel_banner', bannerUrl);
+                } catch(e) {}
+            } catch(e) { console.error('save dashboard ticket panel failed:', e.message); }
 
             res.json({ success: true });
         } catch(e) {

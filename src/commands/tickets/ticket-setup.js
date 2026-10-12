@@ -124,7 +124,7 @@ module.exports = {
         { label: cat1Name, value: `cat_1`, description: cat1Desc.slice(0, 99), emoji: cat1Emoji },
         { label: cat2Name, value: `cat_2`, description: cat2Desc.slice(0, 99), emoji: cat2Emoji },
         { label: cat3Name, value: `cat_3`, description: cat3Desc.slice(0, 99), emoji: cat3Emoji },
-        { label: cat4Name, value: `cat_4`, description: cat4Desc.slice(0, 99), emoji: '👑' }
+        { label: cat4Name, value: `cat_4`, description: cat4Desc.slice(0, 99), emoji: cat4Emoji }
       ];
 
       const selectMenu = new ActionRowBuilder().addComponents(

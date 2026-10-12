@@ -558,6 +558,9 @@ try { db.exec("ALTER TABLE guild_settings ADD COLUMN ticket_rating_channel TEXT;
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN ticket_panel_banner TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN ticket_welcome_image TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN ticket_counter INTEGER DEFAULT 0;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN ticket_panel_type TEXT DEFAULT 'select';"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN ticket_panel_placeholder TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN ticket_panel_categories TEXT;"); } catch(e) {}
 
 try { db.exec("ALTER TABLE tickets ADD COLUMN ticket_number INTEGER DEFAULT 1;"); } catch(e) {}
 try { db.exec("ALTER TABLE tickets ADD COLUMN claimed_by TEXT;"); } catch(e) {}
