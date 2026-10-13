@@ -11455,40 +11455,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <p class="text-xs text-white mt-1">متابعة نقاط الإداريين، رتب الترقية التلقائية، ومهام العمل الإداري.</p>
                         </div>
 
-                        <!-- 0. Staff Settings & Promotion Alerts -->
-                        <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl">
-                            <h4 class="text-sm font-black text-white mb-4 flex items-center justify-between">
-                                <span class="flex items-center gap-2">⚙️ إعدادات الترقيات والإشعارات التلقائية</span>
-                            </h4>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label class="block text-[11px] text-gray-300 font-bold mb-1.5">📢 روم إعلانات الترقية التلقائية</label>
-                                    <select id="staff_promotion_channel" class="w-full bg-[#101c33] border border-blue-500/20 rounded-xl p-2.5 text-xs text-white">
-                                        <option value="">...افتراضي (روم سجلات الستاف / السجلات)</option>
-                                        ${guildTextChannels.map(c => `<option value="${c.id}" ${settings.staff_promotion_channel === c.id ? 'selected' : ''}>#${c.name}</option>`).join('')}
-                                    </select>
-                                    <p class="text-[10px] text-gray-500 mt-1">القناة التي يُنشر فيها مباركة وترقية الإداري تلقائياً</p>
-                                </div>
-                                <div class="flex flex-col justify-between bg-[#070d1d] border border-blue-500/20 p-3.5 rounded-xl">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-white">📩 إشعار الإداري في الخاص (DM)</span>
-                                        <label class="toggle"><input type="checkbox" id="staff_dm_on_promotion" ${settings.staff_dm_on_promotion !== 0 ? 'checked' : ''}><span class="slider"></span></label>
-                                    </div>
-                                    <p class="text-[10px] text-gray-400 mt-2">إرسال تهنئة فورية في رسائل العضو الخاصة عند بلوغه رتبة جديدة</p>
-                                </div>
-                                <div class="flex flex-col justify-between bg-[#070d1d] border border-blue-500/20 p-3.5 rounded-xl">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold text-white">⏱️ تسجيل الخروج التلقائي للشفت</span>
-                                        <label class="toggle"><input type="checkbox" id="staff_auto_logout" ${settings.staff_auto_logout !== 0 ? 'checked' : ''}><span class="slider"></span></label>
-                                    </div>
-                                    <p class="text-[10px] text-gray-400 mt-2">إنهاء الشفت تلقائياً عند تجاوز الحد الأقصى أو الخمول</p>
-                                </div>
-                            </div>
-                            <button type="button" onclick="handleSaveStaffConfig('${guildId}')" class="mt-4 px-5 py-2.5 bg-gradient-to-l from-purple-600 to-blue-500 hover:opacity-95 text-white rounded-xl text-xs font-bold transition shadow-md">
-                                💾 حفظ إعدادات الترقيات
-                            </button>
-                        </div>
-
                         <!-- 1. Auto Promotion Ranks Form & List -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl">
                             <h4 class="text-sm font-black text-white mb-4 flex items-center gap-2">
@@ -11570,27 +11536,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         </div>
                     </div>
                     <script>
-                        async function handleSaveStaffConfig(guildId) {
-                            const promotionChannel = document.getElementById('staff_promotion_channel')?.value || '';
-                            const dmOnPromotion = document.getElementById('staff_dm_on_promotion')?.checked ? 1 : 0;
-                            const autoLogout = document.getElementById('staff_auto_logout')?.checked ? 1 : 0;
-                            try {
-                                const res = await fetch('/api/guild/' + guildId + '/settings', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        staff_promotion_channel: promotionChannel,
-                                        staff_dm_on_promotion: dmOnPromotion,
-                                        staff_auto_logout: autoLogout
-                                    })
-                                });
-                                const d = await res.json();
-                                if (d && d.success) {
-                                    if (typeof showSaveStatus === 'function') showSaveStatus();
-                                    else alert('✅ تم حفظ إعدادات الستاف والترقيات بنجاح!');
-                                } else alert('❌ فشل الحفظ: ' + ((d && d.error) || 'خطأ غير معروف'));
-                            } catch(e) { alert('خطأ في الاتصال بالخادم'); }
-                        }
                         async function handleAddStaffRank(guildId) {
                             const roleId = document.getElementById('new_rank_role').value;
                             const points = parseInt(document.getElementById('new_rank_points').value, 10);
