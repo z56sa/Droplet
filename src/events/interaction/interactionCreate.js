@@ -1466,7 +1466,7 @@ module.exports = {
         }
       }
 
-      // 7.5 اختيار لون العضو (Color Picker Buttons: color_pick_<roleId>)
+      // 7.5 اختيار لون العضو (Color Picker Buttons: color_pick_<roleId> أو color_pick_reset)
       if (interaction.isButton() && interaction.customId.startsWith('color_pick_')) {
         await interaction.deferReply({ flags: 64 }).catch(() => { });
         try {
@@ -1476,15 +1476,35 @@ module.exports = {
             return interaction.editReply({ content: '🎨 نظام الألوان معطل حالياً.' });
           }
           if (settings.colors_required_role && !interaction.member.roles.cache.has(settings.colors_required_role)) {
-            return interaction.editReply({ content: '⛔ تحتاج الرتبة المطلوبة لاستخدام لوحة الألوان.' });
+            return interaction.editReply({ content: `⛔ تحتاج إلى رتبة <@&${settings.colors_required_role}> لتتمكن من اختيار الألوان.` });
           }
           const roleId = interaction.customId.replace('color_pick_', '');
           const pool = String(settings.color_role_ids || '').split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+
+          // إزالة اللون والرجوع للوضع الافتراضي
+          if (roleId === 'reset' || roleId === 'none') {
+            let removedCount = 0;
+            for (const rid of pool) {
+              if (interaction.member.roles.cache.has(rid)) {
+                await interaction.member.roles.remove(rid).catch(() => {});
+                removedCount++;
+              }
+            }
+            return interaction.editReply({ content: removedCount > 0 ? '✨ تم إزالة لونك بنجاح والرجوع للون الافتراضي.' : 'ℹ️ ليس لديك أي رتبة لون حالياً لإزالتها.' });
+          }
+
           if (!pool.includes(roleId)) {
-            return interaction.editReply({ content: '⚠️ هذه الرتبة لم تعد ضمن قائمة الألوان.' });
+            return interaction.editReply({ content: '⚠️ هذه الرتبة لم تعد ضمن قائمة الألوان المعتمدة.' });
           }
           const role = interaction.guild.roles.cache.get(roleId) || await interaction.guild.roles.fetch(roleId).catch(() => null);
-          if (!role) return interaction.editReply({ content: '⚠️ الرتبة غير موجودة.' });
+          if (!role) return interaction.editReply({ content: '⚠️ الرتبة لم تعد موجودة في السيرفر.' });
+
+          // التحقق من صلاحيات البوت وترتيب الرتب
+          const botHighest = interaction.guild.members.me?.roles.highest?.position || 0;
+          if (role.position >= botHighest) {
+            return interaction.editReply({ content: '⚠️ رتبة البوت أدنى من هذه الرتبة — يجب رفع رتبة البوت فوق رتب الألوان في إعدادات السيرفر.' });
+          }
+
           for (const rid of pool) {
             if (rid !== roleId && interaction.member.roles.cache.has(rid)) {
               await interaction.member.roles.remove(rid).catch(() => {});
@@ -1493,9 +1513,10 @@ module.exports = {
           if (!interaction.member.roles.cache.has(roleId)) {
             await interaction.member.roles.add(role).catch(() => {});
           }
-          return interaction.editReply({ content: `✅ تم تعيين لونك: **${role.name}**` });
-        } catch {
-          return interaction.editReply({ content: '❌ حدث خطأ أثناء تعيين اللون.' });
+          return interaction.editReply({ content: `🎨 تم تعيين لونك بنجاح إلى: <@&${role.id}> (${role.name})` });
+        } catch(err) {
+          console.error('[Color Picker Error]', err);
+          return interaction.editReply({ content: '❌ حدث خطأ أثناء تعيين اللون: ' + err.message });
         }
       }
 

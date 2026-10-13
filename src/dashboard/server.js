@@ -8052,17 +8052,21 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
                                     <h4 class="font-black text-white text-base">نظام رتب الألوان المتقدم (Color Roles)</h4>
-                                    <p class="text-white text-xs mt-0.5">لوحة وقوائم تفاعلية لتمكين الأعضاء من اختيار ألوانهم المفضلة</p>
+                                    <p class="text-white text-xs mt-0.5">لوحة وقوائم تفاعلية لتمكين الأعضاء من اختيار ألوانهم المفضلة في السيرفر</p>
                                 </div>
                                 <div class="w-10 h-10 rounded-xl bg-pink-600/20 text-pink-400 flex items-center justify-center text-lg border border-pink-500/30">🎨</div>
                             </div>
                         </div>
 
+                        <!-- إعدادات القناة والرتبة المطلوبة -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl space-y-4 shadow-xl">
-                            <h4 class="text-xs font-black text-white border-b border-blue-500/20 pb-3">إعدادات نشر لوحة الألوان</h4>
+                            <h4 class="text-xs font-black text-white border-b border-blue-500/20 pb-3 flex items-center justify-end gap-2">
+                                <span>إعدادات لوحة الألوان وقناة النشر</span>
+                                <span>⚙️</span>
+                            </h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-xs font-bold text-gray-300 mb-2">قناة لوحة الألوان</label>
+                                    <label class="block text-xs font-bold text-gray-300 mb-2">قناة نشر لوحة الألوان</label>
                                     ${renderChannelSelect('color_picker_channel', settings.color_picker_channel || '')}
                                 </div>
                                 <div>
@@ -8070,24 +8074,130 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     ${renderRoleSelect('colors_required_role', settings.colors_required_role || '')}
                                 </div>
                             </div>
-                            <div class="pt-2">
-                                <label class="block text-xs font-bold text-gray-300 mb-2">رتب الألوان المتاحة (Role IDs مفصولة بفواصل)</label>
-                                <textarea name="color_role_ids" rows="3" placeholder="أيدي_رتبة_1, أيدي_رتبة_2, أيدي_رتبة_3..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl p-3 text-xs text-white outline-none font-mono text-right leading-relaxed">${settings.color_role_ids || ''}</textarea>
+                        </div>
+
+                        <!-- إدارة رتب الألوان المعتمدة -->
+                        <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl space-y-4 shadow-xl">
+                            <div class="flex items-center justify-between border-b border-blue-500/20 pb-3">
+                                <span class="text-xs text-pink-400 font-bold font-mono" id="colorsCountBadge">0 رتبة مضافة</span>
+                                <h4 class="text-xs font-black text-white flex items-center gap-2">
+                                    <span>قائمة رتب الألوان المتاحة للأعضاء</span>
+                                    <span>🌈</span>
+                                </h4>
                             </div>
-                            <div class="pt-2">
-                                <button type="button" onclick="publishColorPicker('${guildId}')" class="w-full px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white rounded-xl text-xs font-black transition shadow-lg">🎨 نشر لوحة الألوان في القناة المحددة</button>
-                                <p class="text-[10px] text-gray-500 text-right mt-2">احفظ التغييرات أولاً ثم انشر اللوحة — سيتم إنشاء أزرار لكل رتبة لون.</p>
+
+                            <!-- إضافة رتبة ألوان جديدة -->
+                            <div class="bg-[#070d1d] p-4 rounded-xl border border-blue-500/20 space-y-3">
+                                <label class="block text-xs font-bold text-gray-300">اختر رتبة لإضافتها إلى قائمة الألوان:</label>
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <select id="colorRoleSelector" class="flex-1 bg-[#0b1322] border border-blue-500/20 focus:border-pink-500 rounded-xl px-4 py-2.5 text-xs text-white outline-none cursor-pointer">
+                                        <option value="">...اختر الرتبة من السيرفر</option>
+                                        ${guildRoles.map(r => `<option value="${r.id}" data-color="${r.hexColor || '#99aab5'}" data-name="${(r.name || '').replace(/"/g, '&quot;')}">@ ${r.name}</option>`).join('')}
+                                    </select>
+                                    <button type="button" onclick="addColorRoleFromSelect()" class="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg">
+                                        <span>➕ إضافة للوحة</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- حقل القيمة المخفي الذي يحفظ في قاعدة البيانات -->
+                            <input type="hidden" id="color_role_ids" name="color_role_ids" value="${(settings.color_role_ids || '').replace(/"/g, '&quot;')}">
+
+                            <!-- شبكة عرض الرتب المضافة -->
+                            <div id="colorRolesContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
+                                <!-- سيتم تعبئتها بواسطة جافاسكربت -->
+                            </div>
+
+                            <p class="text-[10px] text-gray-400 text-right mt-1 leading-relaxed">
+                                💡 نصيحة: تأكد من أن رتبة البوت أعلى من جميع رتب الألوان المحددة في إعدادات السيرفر ليتمكن من إعطائها للأعضاء.
+                            </p>
+
+                            <div class="pt-4 border-t border-blue-500/20 flex flex-col sm:flex-row items-center gap-3">
+                                <button type="button" onclick="publishColorPicker('${guildId}')" class="w-full sm:flex-1 px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white rounded-xl text-xs font-black transition shadow-lg flex items-center justify-center gap-2 cursor-pointer">
+                                    <span>🎨</span>
+                                    <span>نشر لوحة الألوان في القناة المحددة</span>
+                                </button>
                             </div>
                         </div>
+
                         <script>
+                        const _guildRolesMap = ${JSON.stringify(guildRoles.reduce((acc, r) => { acc[r.id] = { name: r.name, color: r.hexColor || '#99aab5' }; return acc; }, {}))};
+
+                        function getColorRoleIds() {
+                            const val = document.getElementById('color_role_ids')?.value || '';
+                            return val.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+                        }
+
+                        function setColorRoleIds(arr) {
+                            const unique = Array.from(new Set(arr));
+                            const hidden = document.getElementById('color_role_ids');
+                            if (hidden) hidden.value = unique.join(', ');
+                            renderColorRoleCards();
+                            if (typeof window.markDashboardChanged === 'function') window.markDashboardChanged();
+                        }
+
+                        function addColorRoleFromSelect() {
+                            const sel = document.getElementById('colorRoleSelector');
+                            if (!sel || !sel.value) return alert('الرجاء اختيار رتبة أولاً');
+                            const current = getColorRoleIds();
+                            if (current.includes(sel.value)) return alert('هذه الرتبة مضافة بالفعل');
+                            if (current.length >= 24) return alert('الحد الأقصى لرتب الألوان في لوحة واحدة هو 24 رتبة');
+                            current.push(sel.value);
+                            setColorRoleIds(current);
+                            sel.value = '';
+                        }
+
+                        function removeColorRole(roleId) {
+                            const current = getColorRoleIds().filter(id => id !== roleId);
+                            setColorRoleIds(current);
+                        }
+
+                        function renderColorRoleCards() {
+                            const container = document.getElementById('colorRolesContainer');
+                            const badge = document.getElementById('colorsCountBadge');
+                            if (!container) return;
+                            const ids = getColorRoleIds();
+                            if (badge) badge.innerText = ids.length + ' رتبة مضافة';
+
+                            if (ids.length === 0) {
+                                container.innerHTML = '<div class="col-span-full py-8 text-center text-gray-500 text-xs font-bold bg-[#070d1d] border border-dashed border-blue-500/20 rounded-2xl">لم يتم إضافة أي رتب ألوان بعد — اختر رتبة من القائمة أعلاه واضغط على إضافة.</div>';
+                                return;
+                            }
+
+                            container.innerHTML = ids.map((id, index) => {
+                                const roleInfo = _guildRolesMap[id] || { name: 'رتبة غير معروفة (' + id + ')', color: '#888888' };
+                                const hexColor = roleInfo.color !== '#000000' ? roleInfo.color : '#94a3b8';
+                                return \`
+                                    <div class="bg-[#070d1d] border border-blue-500/20 hover:border-pink-500/40 p-3 rounded-xl flex items-center justify-between gap-2 transition group shadow-md">
+                                        <button type="button" onclick="removeColorRole('\${id}')" title="حذف الرتبة من اللوحة" class="text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 w-7 h-7 rounded-lg flex items-center justify-center text-xs transition cursor-pointer">
+                                            ✕
+                                        </button>
+                                        <div class="flex items-center gap-2.5 overflow-hidden text-right flex-1 justify-end">
+                                            <div class="overflow-hidden">
+                                                <div class="text-xs font-bold text-white truncate" dir="auto">@\${roleInfo.name}</div>
+                                                <div class="text-[10px] text-gray-500 font-mono">\${hexColor}</div>
+                                            </div>
+                                            <div class="w-5 h-5 rounded-full border border-white/20 shadow flex-shrink-0" style="background-color: \${hexColor};"></div>
+                                        </div>
+                                    </div>
+                                \`;
+                            }).join('');
+                        }
+
                         async function publishColorPicker(guildId) {
                             try {
                                 const res = await fetch('/api/guild/' + guildId + '/colors/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
                                 const data = await res.json();
-                                if (data && data.success) { alert('✅ تم نشر لوحة الألوان بنجاح!'); if (typeof showSaveStatus === 'function') showSaveStatus(); }
-                                else alert('❌ فشل النشر: ' + ((data && data.error) || 'تأكد من حفظ الإعدادات وصلاحيات البوت'));
-                            } catch(e) { alert('❌ خطأ في الاتصال'); }
+                                if (data && data.success) {
+                                    alert('✅ تم نشر لوحة الألوان بنجاح في القناة المحددة!');
+                                    if (typeof showSaveStatus === 'function') showSaveStatus();
+                                } else {
+                                    alert('❌ فشل النشر: ' + ((data && data.error) || 'تأكد من اختيار القناة وحفظ الإعدادات وصلاحيات البوت'));
+                                }
+                            } catch(e) { alert('❌ خطأ في الاتصال بالخادم'); }
                         }
+
+                        try { renderColorRoleCards(); } catch(e) {}
                         </script>
                     </div>`;
             } else if (section === 'boost') {
@@ -13804,20 +13914,38 @@ ${embedScriptHtml}
             if (!validRoles.length) return res.status(400).json({ success: false, error: 'لا توجد رتب صالحة من القائمة' });
 
             const embed = new EmbedBuilder()
-              .setColor('#f472b6')
-              .setTitle('🎨 لوحة اختيار اللون')
-              .setDescription('اختر لونك المفضل بالضغط على الزر — سيُستبدل لونك الحالي تلقائياً.')
-              .setFooter({ text: guildObj?.name || 'Color Picker', iconURL: guildObj?.iconURL({ dynamic: true }) || undefined })
+              .setColor('#ec4899')
+              .setTitle('🎨 لوحة اختيار وتغيير لون الاسم | Color Roles')
+              .setDescription('اختر لونك المفضل من الأزرار التفاعلية أدناه ليتم تطبيقه على اسمك فوراً! 🌟\n> 💡 *يمكنك تغيير لونك في أي وقت، وسيتم إزالة اللون السابق تلقائياً.*')
+              .setFooter({ text: `${guildObj?.name || 'Color Roles'} • نظام رتب الألوان المتقدم`, iconURL: guildObj?.iconURL({ dynamic: true }) || undefined })
               .setTimestamp();
 
             const rows = [];
             for (let i = 0; i < validRoles.length; i += 5) {
               const row = new ActionRowBuilder();
               for (const r of validRoles.slice(i, i + 5)) {
-                row.addComponents(new ButtonBuilder().setCustomId('color_pick_' + r.id).setLabel(r.name.slice(0, 80)).setStyle(ButtonStyle.Secondary));
+                row.addComponents(
+                  new ButtonBuilder()
+                    .setCustomId('color_pick_' + r.id)
+                    .setLabel(r.name.slice(0, 80))
+                    .setStyle(ButtonStyle.Secondary)
+                    .setEmoji('🎨')
+                );
               }
               rows.push(row);
             }
+
+            // إضافة زر إعادة ضبط وإزالة اللون في صف منفصل
+            if (rows.length < 5) {
+              const resetRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                  .setCustomId('color_pick_reset')
+                  .setLabel('❌ إزالة اللون (اللون الافتراضي)')
+                  .setStyle(ButtonStyle.Danger)
+              );
+              rows.push(resetRow);
+            }
+
             await channel.send({ embeds: [embed], components: rows });
             res.json({ success: true, count: validRoles.length });
         } catch(e) {
