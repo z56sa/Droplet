@@ -141,7 +141,7 @@
     setTimeout(paintBuildTag, 2500);
   } catch (e) {}
 
-  /* إعادة حساب كل الدوائر من حالة الحقول الحالية (الرئيسي + مجموعات الأقسام) */
+  /* إعادة حساب كل الدوائر من حالة الحقول الحالية (الرئيسي يتحكم: إطفاؤه يطفي الدائرة) */
   window.recomputeAllBadges = function () {
     try {
       var groups = window.DOT_GROUPS || {};
@@ -152,28 +152,60 @@
       for (var i = 0; i < dots.length; i++) {
         var k = dots[i].getAttribute('data-navbadge');
         var members = groups[k] || [];
-        var all = [k].concat(members);
-        var on = false;
-        for (var j = 0; j < all.length; j++) {
-          var m = all[j];
-          var checked = null;
-          if (masterKey === m && master) checked = masterOn;
-          else {
-            var cb = document.querySelector('#settingsForm input[type="checkbox"][name="' + m + '"]');
-            if (cb) checked = !!cb.checked;
-          }
-          if (checked === true) { on = true; break; }
+        // حالة المفتاح الرئيسي لهذه الدائرة (من الهيدر أو من حقل داخل الفورم)
+        var mState = null;
+        if (masterKey === k && master) {
+          mState = masterOn;
+        } else {
+          var mcb = document.querySelector('#settingsForm input[type="checkbox"][name="' + k + '"]');
+          if (mcb) mState = !!mcb.checked;
         }
+        // الرئيسي مطفأ = الدائرة طافية فوراً
+        if (mState === false) {
+          if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(k, false);
+          continue;
+        }
+        // الرئيسي مشتعل = الدائرة خضراء
+        if (mState === true) {
+          if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(k, true);
+          continue;
+        }
+        // لا يوجد تحكم رئيسي لهذه الدائرة في الصفحة الحالية:
+        // حدّث فقط إذا وجدنا حقول فرعية تخصها، وإلا حافظ على الحالة الحالية
+        var found = false;
+        var on = false;
+        for (var j = 0; j < members.length; j++) {
+          var cb = document.querySelector('#settingsForm input[type="checkbox"][name="' + members[j] + '"]');
+          if (cb) {
+            found = true;
+            if (!!cb.checked) { on = true; break; }
+          }
+        }
+        if (!found) continue;
         if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(k, on);
       }
     } catch (e) {}
   };
+
+  /* تحديث لحظي لأي مفتاح (رئيسي أو داخلي) دون انتظار الرد — يغطي كل دوال الحفظ بما فيها النسخ المضمنة في الصفحة */
+  if (!window._badgeChangeDelegated) {
+    window._badgeChangeDelegated = true;
+    document.addEventListener('change', function (e) {
+      try {
+        var t = e && e.target;
+        if (!t || t.type !== 'checkbox') return;
+        if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges();
+      } catch (err) {}
+    }, true);
+  }
 
   /* مفاتيح التفعيل الفردية — نسخ مستقلة تعمل في كل الصفحات */
   function dropletGuildId() {
     try { return window.location.pathname.split('/')[2] || ''; } catch (e) { return ''; }
   }
   async function postSingleSetting(key, value) {
+    // تحديث لحظي قبل الرد حتى تتفاعل الدائرة فوراً
+    try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e) {}
     var res = await fetch('/api/guild/' + dropletGuildId() + '/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -183,7 +215,7 @@
     try { data = await res.json(); } catch (e) {}
     if (res.ok && data && data.success) {
       if (typeof window.showSaveStatus === 'function') window.showSaveStatus();
-      try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!value); } catch (e) {}
+      try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e) {}
       return true;
     }
     if (res.status === 403) {
@@ -195,37 +227,39 @@
   }
   if (typeof window.toggleModule !== 'function') {
     window.toggleModule = async function (gId, key, isEnabled, el) {
-      try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!isEnabled); } catch (e) {}
+      try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e) {}
       var ok = false;
       try { ok = await postSingleSetting(key, isEnabled, true); } catch (e) { ok = false; }
       if (!ok) {
         try {
           if (el && typeof el.checked === 'boolean') el.checked = !isEnabled;
-          if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !isEnabled);
+          if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges();
         } catch (e) {}
       }
     };
   }
   if (typeof window.saveProtectionSetting !== 'function') {
     window.saveProtectionSetting = async function (key, value, el) {
+      try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e) {}
       var ok = false;
       try { ok = await postSingleSetting(key, value, true); } catch (e) { ok = false; }
       if (!ok) {
         try {
           if (el && typeof el.checked === 'boolean') el.checked = !value;
-          if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+          if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges();
         } catch (e) {}
       }
     };
   }
   if (typeof window.saveAutomodSetting !== 'function') {
     window.saveAutomodSetting = async function (key, value, el) {
+      try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e) {}
       var ok = false;
       try { ok = await postSingleSetting(key, value, true); } catch (e) { ok = false; }
       if (!ok) {
         try {
           if (el && typeof el.checked === 'boolean') el.checked = !value;
-          if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+          if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges();
         } catch (e) {}
       }
     };

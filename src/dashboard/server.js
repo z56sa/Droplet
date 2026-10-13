@@ -2226,19 +2226,32 @@ module.exports = function (app, client) {
                 staff_activity_enabled: ['staff_banner_enabled'],
                 suggestions_enabled: ['suggestions_dm_notify', 'suggestions_auto_thread']
             };
-            // ● شارة حالة القسم في القائمة الجانبية: خضراء ✓ عند التفعيل، محايدة • عند الإطفاء
+            // ● شارة حالة القسم في القائمة الجانبية: المفتاح الرئيسي يتحكم — إطفاؤه يطفي الدائرة حتى لو مفاتيح فرعية مشتعلة
+            function _badgeIsOff(v) {
+                if (v === undefined || v === null || v === '') return false;
+                const s = String(v).trim().toLowerCase();
+                if (s === '0' || s === 'false' || s === 'off' || s === 'no' || s === 'disabled') return true;
+                if (!Number.isNaN(Number(v)) && Number(v) === 0) return true;
+                return false;
+            }
+            function _badgeIsOn(v) {
+                if (v === undefined || v === null || v === '') return false;
+                if (_badgeIsOff(v)) return false;
+                return true;
+            }
             function navBadge(key) {
                 let on = false;
                 try {
-                    const keys = (DOT_GROUPS && DOT_GROUPS[key]) ? [key].concat(DOT_GROUPS[key]) : [key];
-                    for (const k of keys) {
-                        const v = settings[k];
-                        if (v === undefined || v === null || v === '') continue;
-                        const s = String(v).trim().toLowerCase();
-                        if (s === '0' || s === 'false' || s === 'off' || s === 'no') continue;
-                        if (!Number.isNaN(Number(v)) && Number(v) === 0) continue;
+                    // المفتاح الرئيسي مطفأ صراحة = الدائرة طافية مهما كانت الفروع
+                    if (_badgeIsOff(settings[key])) {
+                        on = false;
+                    } else if (_badgeIsOn(settings[key])) {
                         on = true;
-                        break;
+                    } else {
+                        const members = (DOT_GROUPS && DOT_GROUPS[key]) ? DOT_GROUPS[key] : [];
+                        for (const k of members) {
+                            if (_badgeIsOn(settings[k])) { on = true; break; }
+                        }
                     }
                 } catch (e) {}
                 return on
@@ -3643,6 +3656,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
 
                     <script>
                     async function saveAutomodSetting(key, value) {
+                        try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e2) {}
                         try {
                             const res = await fetch('/api/guild/${guildId}/settings', {
                                 method: 'POST',
@@ -3655,6 +3669,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                 status.classList.remove('hidden');
                                 setTimeout(() => status.classList.add('hidden'), 3000);
                             }
+                            try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e2) {}
                         } catch(e) {
                             console.error('Failed to save automod setting', e);
                         }
@@ -4505,6 +4520,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                     async function saveProtectionSetting(key, value) {
                         updateProtectionBadges();
+                        try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e2) {}
                         try {
                             const res = await fetch('/api/guild/${guildId}/settings', {
                                 method: 'POST',
@@ -4517,6 +4533,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 status.classList.remove('hidden');
                                 setTimeout(() => status.classList.add('hidden'), 3000);
                             }
+                            try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e2) {}
                         } catch(e) {
                             console.error('Failed to save protection setting', e);
                         }
@@ -12117,6 +12134,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 }, 100);
 
                 window.toggleModule = async function(guildId, key, enabled) {
+                    try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e2) {}
                     try {
                         const res = await fetch('/api/guild/' + guildId + '/settings', {
                             method: 'POST',
@@ -12126,6 +12144,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         const data = await res.json();
                         if (data && data.success) {
                             if (typeof showSaveStatus === 'function') showSaveStatus();
+                            try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e2) {}
                         }
                     } catch (err) {
                         console.error('toggleModule error:', err);
@@ -12136,6 +12155,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 const _dashGuildId = window.location.pathname.split('/')[2];
                 async function saveProtectionSetting(key, value, el) {
                     if (typeof updateProtectionBadges === 'function') updateProtectionBadges();
+                    try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e2) {}
                     try {
                         const _res = await fetch('/api/guild/' + _dashGuildId + '/settings', {
                             method: 'POST',
@@ -12146,11 +12166,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         try { const _d = await _res.json(); _ok = _res.ok && _d && _d.success; } catch (e3) {}
                         if (_ok) {
                             showSaveStatus();
-                            try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!value); } catch (e2) {}
+                            try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e2) {}
                         } else {
                             try {
                                 if (el && typeof el.checked === 'boolean') el.checked = !value;
-                                if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+                                if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges();
                             } catch (e3) {}
                             alert('❌ فشل حفظ الإعداد — أُعيدت الحالة السابقة. أعد المحاولة.');
                         }
@@ -12158,12 +12178,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         console.error('saveProtectionSetting error', e);
                         try {
                             if (el && typeof el.checked === 'boolean') el.checked = !value;
-                            if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+                            if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges();
                         } catch (e3) {}
                         alert('حدث خطأ في الاتصال بالخادم');
                     }
                 }
                 async function saveAutomodSetting(key, value, el) {
+                    try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e2) {}
                     try {
                         const _res = await fetch('/api/guild/' + _dashGuildId + '/settings', {
                             method: 'POST',
@@ -12174,11 +12195,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         try { const _d = await _res.json(); _ok = _res.ok && _d && _d.success; } catch (e3) {}
                         if (_ok) {
                             showSaveStatus();
-                            try { if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !!value); } catch (e2) {}
+                            try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e2) {}
                         } else {
                             try {
                                 if (el && typeof el.checked === 'boolean') el.checked = !value;
-                                if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+                                if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges();
                             } catch (e3) {}
                             alert('❌ فشل حفظ الإعداد — أُعيدت الحالة السابقة. أعد المحاولة.');
                         }
@@ -12186,7 +12207,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         console.error('saveAutomodSetting error', e);
                         try {
                             if (el && typeof el.checked === 'boolean') el.checked = !value;
-                            if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(key, !value);
+                            if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges();
                         } catch (e3) {}
                         alert('حدث خطأ في الاتصال بالخادم');
                     }
