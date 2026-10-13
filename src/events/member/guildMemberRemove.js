@@ -18,9 +18,15 @@ module.exports = {
 
     // 1.5 تحديث متتبع الدعوات وتسجيل المغادرة (Invite Tracker)
     let inviterId = null;
+    let inviterStats = null;
+    let inviterUser = null;
     try {
       const inviteTracker = require('../../utils/inviteTracker');
-      inviterId = inviteTracker.handleMemberLeave(member);
+      inviterId = await inviteTracker.handleMemberLeave(member);
+      if (inviterId) {
+        inviterStats = db.getInvites(guild.id, inviterId);
+        inviterUser = await member.client.users.fetch(inviterId).catch(() => null);
+      }
     } catch (e) {}
 
     // 2. نظام رسائل المغادرة (Leave / Goodbye Message)
@@ -28,6 +34,10 @@ module.exports = {
       try {
         const leaveChannel = guild.channels.cache.get(settings.leave_channel) || await guild.channels.fetch(settings.leave_channel).catch(() => null);
         if (leaveChannel && leaveChannel.isTextBased()) {
+          const inviterMention = inviterId ? `<@${inviterId}>` : 'غير معروف';
+          const inviterName = inviterUser ? inviterUser.username : 'غير معروف';
+          const inviterCount = inviterStats ? inviterStats.total : 0;
+
           let msg = settings.leave_message || 'وداعاً يا [userName]، نتمنى رؤيتك مجدداً 👋 (أصبح عدد الأعضاء [memberCount])';
           msg = msg
             .replace(/\[user\]/gi, `${member.user.tag}`)
@@ -37,7 +47,13 @@ module.exports = {
             .replace(/\[server\]/gi, guild.name)
             .replace(/\{server\}/gi, guild.name)
             .replace(/\[memberCount\]/gi, guild.memberCount.toString())
-            .replace(/\{memberCount\}/gi, guild.memberCount.toString());
+            .replace(/\{memberCount\}/gi, guild.memberCount.toString())
+            .replace(/\[inviter\]/gi, inviterMention)
+            .replace(/\{inviter\}/gi, inviterMention)
+            .replace(/\[inviterName\]/gi, inviterName)
+            .replace(/\{inviterName\}/gi, inviterName)
+            .replace(/\[invitesCount\]/gi, inviterCount.toString())
+            .replace(/\{invitesCount\}/gi, inviterCount.toString());
 
           const leaveEmbed = new EmbedBuilder()
             .setColor(settings.leave_embed_color || '#ef4444')

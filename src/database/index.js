@@ -394,6 +394,15 @@ db.exec(`
     PRIMARY KEY (guild_id, member_id)
   );
 
+  -- 🎁 Invite Role Rewards (نظام مكافآت رتب الدعوات)
+  CREATE TABLE IF NOT EXISTS invite_rewards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id TEXT NOT NULL,
+    role_id TEXT NOT NULL,
+    required_invites INTEGER NOT NULL,
+    UNIQUE(guild_id, required_invites)
+  );
+
   -- 📢 Broadcasts System (نظام الإعلانات والمذيع الآلي المتقدم)
   CREATE TABLE IF NOT EXISTS broadcasts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -716,6 +725,10 @@ try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_nickname TEXT DEFAULT '
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_about TEXT DEFAULT '';"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_avatar TEXT DEFAULT '';"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_banner TEXT DEFAULT '';"); } catch(e) {}
+// إعدادات تتبع الدعوات المتقدم (Advanced Invite Tracker Settings)
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN invites_log_channel TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN invites_fake_days INTEGER DEFAULT 3;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN invites_reward_stack INTEGER DEFAULT 1;"); } catch(e) {}
 // إعدادات البوت العامة وتصفير السجلات (General Settings & Punishment Auto-Clear)
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_language TEXT DEFAULT 'EN';"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN auto_clear_punishments INTEGER DEFAULT 0;"); } catch(e) {}
@@ -1663,27 +1676,54 @@ function getInvites(guildId, userId) {
 }
 
 function addInviteRecord(guildId, inviterId, memberId, code = null, isFake = 0) {
-  // حفظ سجل العضو المدعو
+  let existing = null;
+  try {
+    existing = db.prepare('SELECT * FROM invite_members WHERE guild_id = ? AND member_id = ?').get(guildId, memberId);
+  } catch (e) {}
+
+  const isSelf = Boolean(inviterId && inviterId === memberId);
+  const isRejoin = Boolean(existing && existing.is_left);
+
+  if (isSelf) {
+    isFake = 1;
+  }
+
+  // حفظ سجل العضو المدعو مع وقت الانضمام
   db.prepare(`
-    INSERT OR REPLACE INTO invite_members (guild_id, member_id, inviter_id, code, is_fake, is_left)
-    VALUES (?, ?, ?, ?, ?, 0)
+    INSERT OR REPLACE INTO invite_members (guild_id, member_id, inviter_id, code, is_fake, is_left, joined_at)
+    VALUES (?, ?, ?, ?, ?, 0, strftime('%s','now'))
   `).run(guildId, memberId, inviterId, code, isFake ? 1 : 0);
 
-  if (inviterId) {
+  if (inviterId && !isSelf) {
     getInvites(guildId, inviterId);
-    if (isFake) {
-      db.prepare('UPDATE invites SET fake = fake + 1 WHERE guild_id = ? AND user_id = ?').run(guildId, inviterId);
+    if (isRejoin) {
+      // إذا كان إعادة دخول لعضو دعا نفس الشخص سابقاً: استرجاع نقطة المغادرة
+      if (existing?.inviter_id === inviterId) {
+        db.prepare('UPDATE invites SET leaves = MAX(0, leaves - 1) WHERE guild_id = ? AND user_id = ?').run(guildId, inviterId);
+      } else {
+        if (isFake) {
+          db.prepare('UPDATE invites SET fake = fake + 1 WHERE guild_id = ? AND user_id = ?').run(guildId, inviterId);
+        } else {
+          db.prepare('UPDATE invites SET regular = regular + 1 WHERE guild_id = ? AND user_id = ?').run(guildId, inviterId);
+        }
+      }
     } else {
-      db.prepare('UPDATE invites SET regular = regular + 1 WHERE guild_id = ? AND user_id = ?').run(guildId, inviterId);
+      if (isFake) {
+        db.prepare('UPDATE invites SET fake = fake + 1 WHERE guild_id = ? AND user_id = ?').run(guildId, inviterId);
+      } else {
+        db.prepare('UPDATE invites SET regular = regular + 1 WHERE guild_id = ? AND user_id = ?').run(guildId, inviterId);
+      }
     }
   }
+
+  return { isSelf, isRejoin, isFake: Boolean(isFake) };
 }
 
 function removeInviteMember(guildId, memberId) {
   const memberRecord = db.prepare('SELECT * FROM invite_members WHERE guild_id = ? AND member_id = ?').get(guildId, memberId);
   if (memberRecord && !memberRecord.is_left) {
     db.prepare('UPDATE invite_members SET is_left = 1 WHERE guild_id = ? AND member_id = ?').run(guildId, memberId);
-    if (memberRecord.inviter_id) {
+    if (memberRecord.inviter_id && memberRecord.inviter_id !== memberId && !memberRecord.is_fake) {
       getInvites(guildId, memberRecord.inviter_id);
       db.prepare('UPDATE invites SET leaves = leaves + 1 WHERE guild_id = ? AND user_id = ?').run(guildId, memberRecord.inviter_id);
     }
@@ -1720,6 +1760,36 @@ function resetInvites(guildId, userId = null) {
   } else {
     db.prepare('DELETE FROM invites WHERE guild_id = ?').run(guildId);
     db.prepare('DELETE FROM invite_members WHERE guild_id = ?').run(guildId);
+  }
+}
+
+// 🎁 Invite Role Rewards Helpers
+function getInviteRewards(guildId) {
+  try {
+    return db.prepare('SELECT * FROM invite_rewards WHERE guild_id = ? ORDER BY required_invites ASC').all(guildId);
+  } catch (e) {
+    return [];
+  }
+}
+
+function addInviteReward(guildId, roleId, requiredInvites) {
+  try {
+    return db.prepare(`
+      INSERT OR REPLACE INTO invite_rewards (guild_id, role_id, required_invites)
+      VALUES (?, ?, ?)
+    `).run(guildId, roleId, requiredInvites);
+  } catch (err) {
+    console.error('Error adding invite reward:', err);
+    throw err;
+  }
+}
+
+function deleteInviteReward(guildId, idOrRole) {
+  try {
+    return db.prepare('DELETE FROM invite_rewards WHERE guild_id = ? AND (id = ? OR role_id = ?)').run(guildId, idOrRole, idOrRole);
+  } catch (err) {
+    console.error('Error deleting invite reward:', err);
+    throw err;
   }
 }
 
@@ -2616,6 +2686,9 @@ module.exports = {
   getInvitesLeaderboard,
   getMemberInviter,
   resetInvites,
+  getInviteRewards,
+  addInviteReward,
+  deleteInviteReward,
   // 🎁 Giveaways
   createGiveaway,
   getGiveaway,

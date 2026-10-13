@@ -1,24 +1,24 @@
 // ========================================================
 // FILE: src/utils/inviteTracker.js
-// متتبع الدعوات المتقدم (Advanced Invite Tracker Cache & Resolver)
+// متتبع الدعوات المتقدم (Advanced Invite Tracker Cache, Resolver & Rewards)
 // ========================================================
+const { PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const db = require('../database');
 const logger = require('./logger');
-const { PermissionFlagsBits } = require('discord.js');
 
 class InviteTracker {
   constructor() {
-    // guildId -> Map(code, { uses, maxUses, inviterId, inviterUser })
-    this.guildInvites = new Map();
+    // guildId -> { invites: Map(code, { uses, maxUses, inviterId, inviterUser }), vanityUses: number, vanityCode: string }
+    this.guildData = new Map();
   }
 
   async init(client) {
-    logger.info('تهيئة كاش متتبع الدعوات (Invite Tracker)...');
+    logger.info('تهيئة كاش متتبع الدعوات المتقدم (Advanced Invite Tracker)...');
     try {
-      for (const [guildId, guild] of client.guilds.cache) {
+      for (const [, guild] of client.guilds.cache) {
         await this.cacheGuild(guild);
       }
-      logger.success(`تم كاش دعوات ${this.guildInvites.size} سيرفر بنجاح.`);
+      logger.success(`تم كاش دعوات ${this.guildData.size} سيرفر بنجاح.`);
     } catch (e) {
       logger.error('خطأ أثناء تهيئة كاش الدعوات: ' + e.message);
     }
@@ -35,41 +35,77 @@ class InviteTracker {
     if (!guild || !this.hasPermission(guild)) return;
     try {
       const invites = await guild.invites.fetch().catch(() => null);
-      if (!invites) return;
       const codeMap = new Map();
-      for (const [code, inv] of invites) {
-        codeMap.set(code, {
-          uses: inv.uses || 0,
-          maxUses: inv.maxUses || 0,
-          inviterId: inv.inviter?.id || null,
-          inviterUser: inv.inviter || null
-        });
+      if (invites) {
+        for (const [code, inv] of invites) {
+          codeMap.set(code, {
+            uses: inv.uses || 0,
+            maxUses: inv.maxUses || 0,
+            inviterId: inv.inviter?.id || null,
+            inviterUser: inv.inviter || null
+          });
+        }
       }
-      this.guildInvites.set(guild.id, codeMap);
+
+      let vanityUses = 0;
+      let vanityCode = null;
+      if (guild.vanityURLCode) {
+        vanityCode = guild.vanityURLCode;
+        const vanity = await guild.fetchVanityData().catch(() => null);
+        vanityUses = vanity?.uses || 0;
+      }
+
+      this.guildData.set(guild.id, {
+        invites: codeMap,
+        vanityUses,
+        vanityCode
+      });
     } catch (err) {}
   }
 
+  /**
+   * فحص من دعا العضو بدقة ورصد الريد/الوهمي/إعادة الدخول/الـ Vanity
+   */
   async findInviter(member) {
     const guild = member.guild;
+    const settings = db.getGuildSettings(guild.id) || {};
+    const fakeDaysThreshold = settings.invites_fake_days || 3;
+
+    // 0. فحص إن كان الرابط إضافة بوت (OAuth2)
+    if (member.user.bot) {
+      return {
+        inviter: null,
+        code: 'OAuth2 Bot Add',
+        isBot: true,
+        isFake: false,
+        isSelf: false,
+        isRejoin: false,
+        isVanity: false,
+        accountAgeDays: (Date.now() - member.user.createdTimestamp) / (1000 * 60 * 60 * 24)
+      };
+    }
+
     if (!this.hasPermission(guild)) {
-      return { inviter: null, code: null, isFake: false };
+      return { inviter: null, code: null, isFake: false, isSelf: false, isRejoin: false, isVanity: false };
     }
 
     try {
-      const cachedMap = this.guildInvites.get(guild.id) || new Map();
+      const cached = this.guildData.get(guild.id) || { invites: new Map(), vanityUses: 0, vanityCode: null };
+      const cachedMap = cached.invites;
       const currentInvites = await guild.invites.fetch().catch(() => null);
 
       let usedInvite = null;
       let usedInviterUser = null;
       let usedCode = null;
+      let isVanity = false;
 
       if (currentInvites) {
         const currentCodeMap = new Map();
 
-        // 1. فحص الروابط التي زاد عدد استخداماتها
+        // 1. فحص روابط الدعوة التي زاد استخدامها
         for (const [code, inv] of currentInvites) {
           const cachedData = cachedMap.get(code);
-          const prevUses = cachedData ? (typeof cachedData === 'object' ? cachedData.uses : cachedData) : 0;
+          const prevUses = cachedData ? cachedData.uses : 0;
           if (inv.uses > prevUses) {
             usedInvite = inv;
             usedInviterUser = inv.inviter || null;
@@ -83,7 +119,7 @@ class InviteTracker {
           });
         }
 
-        // 2. فحص الروابط ذات الاستخدام الواحد (تُحذف فوراً من ديسكورد عند استخدامها)
+        // 2. فحص روابط الاستخدام الواحد (التي يحذفها ديسكورد فور استخدامها)
         if (!usedInvite) {
           for (const [code, cachedData] of cachedMap.entries()) {
             if (!currentCodeMap.has(code)) {
@@ -98,62 +134,229 @@ class InviteTracker {
           }
         }
 
-        // تحديث الكاش بالبيانات الجديدة
-        this.guildInvites.set(guild.id, currentCodeMap);
-      }
-
-      // فحص عمر الحساب لتحديد إن كان وهمياً (Fake: أقل من 3 أيام)
-      const accountAgeDays = (Date.now() - member.user.createdTimestamp) / (1000 * 60 * 60 * 24);
-      const isFake = accountAgeDays < 3;
-
-      if (usedInviterUser && usedCode) {
-        // حفظ السجل في قاعدة البيانات
-        db.addInviteRecord(guild.id, usedInviterUser.id, member.id, usedCode, isFake ? 1 : 0);
-      } else {
-        // فحص الـ Vanity URL أو Direct
-        if (guild.vanityURLCode) {
-          usedCode = guild.vanityURLCode;
+        // 3. فحص رابط السيرفر المخصص (Vanity URL)
+        let currentVanityUses = cached.vanityUses;
+        if (!usedInvite && !usedCode && guild.vanityURLCode) {
+          const vanity = await guild.fetchVanityData().catch(() => null);
+          if (vanity && vanity.uses > cached.vanityUses) {
+            usedCode = guild.vanityURLCode;
+            isVanity = true;
+            currentVanityUses = vanity.uses;
+          }
         }
-        db.addInviteRecord(guild.id, null, member.id, usedCode, isFake ? 1 : 0);
+
+        // تحديث الكاش
+        this.guildData.set(guild.id, {
+          invites: currentCodeMap,
+          vanityUses: currentVanityUses,
+          vanityCode: guild.vanityURLCode || null
+        });
       }
+
+      // فحص عمر الحساب لتحديد إن كان وهمياً (Fake)
+      const accountAgeDays = (Date.now() - member.user.createdTimestamp) / (1000 * 60 * 60 * 24);
+      const isFake = accountAgeDays < fakeDaysThreshold;
+
+      // فحص دعوة النفس (Self Invite)
+      const isSelf = Boolean(usedInviterUser && usedInviterUser.id === member.id);
+
+      // حفظ السجل في قاعدة البيانات مع معالجة إعادة الدخول (Rejoin)
+      const recordResult = db.addInviteRecord(
+        guild.id,
+        usedInviterUser ? usedInviterUser.id : null,
+        member.id,
+        usedCode,
+        isFake ? 1 : 0
+      );
+
+      const isRejoin = Boolean(recordResult?.isRejoin);
+
+      // إعطاء رتب المكافآت التلقائية للداعي إن توفرت
+      if (usedInviterUser && !isSelf && !isFake) {
+        this.syncMemberRewards(guild, usedInviterUser.id).catch(() => {});
+      }
+
+      // إرسال سجل الدعوة إلى روم السجلات إن كان مفعلاً
+      const inviterStats = usedInviterUser ? db.getInvites(guild.id, usedInviterUser.id) : null;
+      this.sendInviteLog(guild, {
+        member,
+        inviter: usedInviterUser,
+        code: usedCode,
+        isFake,
+        isSelf,
+        isRejoin,
+        isVanity,
+        accountAgeDays,
+        stats: inviterStats
+      }).catch(() => {});
 
       return {
         inviter: usedInviterUser,
         code: usedCode,
         isFake,
+        isSelf,
+        isRejoin,
+        isVanity,
         accountAgeDays
       };
     } catch (e) {
       logger.error(`خطأ في فحص دعوة العضو ${member.id}: ${e.message}`);
-      return { inviter: null, code: null, isFake: false };
+      return { inviter: null, code: null, isFake: false, isSelf: false, isRejoin: false, isVanity: false };
     }
   }
 
-  handleMemberLeave(member) {
+  /**
+   * معالجة مغادرة العضو وتحديث إحصائيات الداعي
+   */
+  async handleMemberLeave(member) {
     try {
-      return db.removeInviteMember(member.guild.id, member.id);
+      const inviterId = db.removeInviteMember(member.guild.id, member.id);
+      if (inviterId) {
+        const stats = db.getInvites(member.guild.id, inviterId);
+        // إرسال لوق المغادرة
+        this.sendLeaveLog(member.guild, { member, inviterId, stats }).catch(() => {});
+        return inviterId;
+      }
+      return null;
     } catch (e) {
       return null;
     }
   }
 
+  /**
+   * فحص وتوزيع مكافآت الرتب التلقائية بناءً على عدد الدعوات
+   */
+  async syncMemberRewards(guild, userId) {
+    if (!guild || !userId) return;
+    try {
+      const rewards = db.getInviteRewards(guild.id) || [];
+      if (rewards.length === 0) return;
+
+      const stats = db.getInvites(guild.id, userId);
+      const totalInvites = stats.total || 0;
+
+      const member = guild.members.cache.get(userId) || await guild.members.fetch(userId).catch(() => null);
+      if (!member || !guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) return;
+
+      const botHighest = guild.members.me.roles.highest.position;
+
+      for (const reward of rewards) {
+        const role = guild.roles.cache.get(reward.role_id) || await guild.roles.fetch(reward.role_id).catch(() => null);
+        if (!role || role.position >= botHighest) continue;
+
+        if (totalInvites >= reward.required_invites) {
+          if (!member.roles.cache.has(role.id)) {
+            await member.roles.add(role, `[Invite Rewards] وصول إلى ${reward.required_invites} دعوة بنجاح`).catch(() => {});
+          }
+        }
+      }
+    } catch (err) {
+      logger.error(`خطأ في مزامنة مكافآت الدعوات لـ ${userId}:`, err);
+    }
+  }
+
+  /**
+   * إرسال تقرير إحصائي مفصل في روم سجلات الدعوات
+   */
+  async sendInviteLog(guild, { member, inviter, code, isFake, isSelf, isRejoin, isVanity, accountAgeDays, stats }) {
+    const settings = db.getGuildSettings(guild.id) || {};
+    const logChannelId = settings.invites_log_channel || settings.log_channel;
+    if (!logChannelId) return;
+
+    const logCh = guild.channels.cache.get(logChannelId) || await guild.channels.fetch(logChannelId).catch(() => null);
+    if (!logCh || !logCh.isTextBased()) return;
+
+    let statusText = '🟢 عضو جديد (حقيقي)';
+    let color = '#10B981';
+
+    if (isSelf) {
+      statusText = '⚠️ دعوة شخصية (Self Invite)';
+      color = '#F59E0B';
+    } else if (isFake) {
+      statusText = `🔞 حساب وهمي (عمره ${Math.floor(accountAgeDays)} يوم فقط)`;
+      color = '#EF4444';
+    } else if (isRejoin) {
+      statusText = '🔄 إعادة انضمام (Rejoin)';
+      color = '#3B82F6';
+    } else if (isVanity) {
+      statusText = '🌐 رابط السيرفر المخصص (Vanity URL)';
+      color = '#8B5CF6';
+    }
+
+    const embed = new EmbedBuilder()
+      .setColor(color)
+      .setTitle('📥 متتبع الدعوات | انضمام عضو جديد')
+      .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }))
+      .addFields(
+        { name: '👤 العضو المنضم', value: `<@${member.id}> (\`${member.user.tag}\`)`, inline: true },
+        { name: '🔗 الداعي', value: inviter ? `<@${inviter.id}> (\`${inviter.tag}\`)` : (code ? `رابط (\`${code}\`)` : 'غير معروف'), inline: true },
+        { name: '📋 حالة الدعوة', value: statusText, inline: true }
+      );
+
+    if (stats) {
+      embed.addFields({
+        name: '📊 إحصائيات الداعي الحالية',
+        value: `**المجموع:** \`${stats.total}\` | عادية: \`${stats.regular}\` | غادروا: \`${stats.leaves}\` | وهمية: \`${stats.fake}\` | إضافية: \`${stats.bonus}\``,
+        inline: false
+      });
+    }
+
+    embed.setFooter({ text: `معرف العضو: ${member.id} • Droplet Invite Tracker` }).setTimestamp();
+
+    await logCh.send({ embeds: [embed] }).catch(() => {});
+  }
+
+  /**
+   * إرسال تقرير عند مغادرة عضو مدعو
+   */
+  async sendLeaveLog(guild, { member, inviterId, stats }) {
+    const settings = db.getGuildSettings(guild.id) || {};
+    const logChannelId = settings.invites_log_channel || settings.log_channel;
+    if (!logChannelId) return;
+
+    const logCh = guild.channels.cache.get(logChannelId) || await guild.channels.fetch(logChannelId).catch(() => null);
+    if (!logCh || !logCh.isTextBased()) return;
+
+    const embed = new EmbedBuilder()
+      .setColor('#EF4444')
+      .setTitle('📤 متتبع الدعوات | مغادرة عضو')
+      .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }))
+      .addFields(
+        { name: '👤 العضو المغادر', value: `<@${member.id}> (\`${member.user.tag}\`)`, inline: true },
+        { name: '🔗 كان مدعواً بواسطة', value: inviterId ? `<@${inviterId}>` : 'غير معروف', inline: true }
+      );
+
+    if (stats) {
+      embed.addFields({
+        name: '📊 إحصائيات الداعي بعد الخصم',
+        value: `**المجموع:** \`${stats.total}\` | عادية: \`${stats.regular}\` | غادروا: \`${stats.leaves}\` | وهمية: \`${stats.fake}\` | إضافية: \`${stats.bonus}\``,
+        inline: false
+      });
+    }
+
+    embed.setFooter({ text: `معرف العضو: ${member.id} • Droplet Invite Tracker` }).setTimestamp();
+
+    await logCh.send({ embeds: [embed] }).catch(() => {});
+  }
+
   onInviteCreate(invite) {
     if (!invite?.guild) return;
-    const map = this.guildInvites.get(invite.guild.id) || new Map();
-    map.set(invite.code, {
-      uses: invite.uses || 0,
-      maxUses: invite.maxUses || 0,
-      inviterId: invite.inviter?.id || null,
-      inviterUser: invite.inviter || null
-    });
-    this.guildInvites.set(invite.guild.id, map);
+    const data = this.guildData.get(invite.guild.id);
+    if (data?.invites) {
+      data.invites.set(invite.code, {
+        uses: invite.uses || 0,
+        maxUses: invite.maxUses || 0,
+        inviterId: invite.inviter?.id || null,
+        inviterUser: invite.inviter || null
+      });
+    }
   }
 
   onInviteDelete(invite) {
     if (!invite?.guild) return;
-    const map = this.guildInvites.get(invite.guild.id);
-    if (map) {
-      map.delete(invite.code);
+    const data = this.guildData.get(invite.guild.id);
+    if (data?.invites) {
+      data.invites.delete(invite.code);
     }
   }
 }
