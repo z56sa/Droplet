@@ -194,10 +194,10 @@ module.exports = {
     const _arEnabledRaw = (settings.autoroles_enabled === undefined || settings.autoroles_enabled === null || settings.autoroles_enabled === '') ? 0 : settings.autoroles_enabled;
     const _arEnabled = Number(_arEnabledRaw) !== 0 && String(_arEnabledRaw).toLowerCase() !== 'false';
     if (_arEnabled) {
-      const rawIds = member.user.bot
+      const baseRaw = member.user.bot
         ? (settings.autorole_bot_id || '')
-        : (settings.autorole_id || settings.auto_role || '');
-      const targetRoleIds = String(rawIds || '').split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+        : [settings.autorole_id || settings.auto_role || '', settings.autorole_extra_ids || ''].filter(Boolean).join(',');
+      const targetRoleIds = String(baseRaw || '').split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
 
       for (const targetRoleId of targetRoleIds) {
         try {

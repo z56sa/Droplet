@@ -208,17 +208,28 @@ class StaffShiftService {
                                 if (roleToAdd) {
                                     await member.roles.add(roleToAdd).catch(() => {});
                                     const settings = db.getGuildSettings(guild.id);
-                                    const logChannelId = settings.staff_log_channel || settings.log_channel;
-                                    const logChannel = logChannelId ? guild.channels.cache.get(logChannelId) : null;
-                                    if (logChannel && logChannel.isTextBased()) {
-                                        const promoEmbed = new EmbedBuilder()
-                                            .setColor('#10b981')
-                                            .setTitle('🎖️ ترقية تلقائية لإداري!')
-                                            .setDescription(`تهانينا للإداري <@${member.id}>! حصل على ترقية تلقائية إلى رتبة <@&${r.role_id}> بعد بلوغ نقاطه **${staffMember.points}** نقطة 🚀`)
-                                            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-                                            .setFooter({ text: 'Droplet Staff Auto-Promotion System' })
-                                            .setTimestamp();
-                                        await logChannel.send({ embeds: [promoEmbed] }).catch(() => {});
+                                    const promoChannelId = settings.staff_promotion_channel || settings.staff_log_channel || settings.log_channel;
+                                    const promoChannel = promoChannelId ? guild.channels.cache.get(promoChannelId) : null;
+                                    const promoEmbed = new EmbedBuilder()
+                                        .setColor('#10b981')
+                                        .setTitle('🎖️ ترقية تلقائية لإداري!')
+                                        .setDescription(`تهانينا للإداري <@${member.id}>! حصل على ترقية تلقائية إلى رتبة <@&${r.role_id}> (${r.rank_name || roleToAdd.name}) بعد بلوغ نقاطه **${staffMember.points}** نقطة 🚀`)
+                                        .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+                                        .setFooter({ text: 'Droplet Staff Auto-Promotion System' })
+                                        .setTimestamp();
+                                    if (promoChannel && promoChannel.isTextBased()) {
+                                        await promoChannel.send({ embeds: [promoEmbed] }).catch(() => {});
+                                    }
+                                    if (settings.staff_dm_on_promotion !== 0) {
+                                        await member.send({
+                                            embeds: [
+                                                new EmbedBuilder()
+                                                    .setColor('#10b981')
+                                                    .setTitle(`🎖️ ترقية جديدة في سيرفر ${guild.name}!`)
+                                                    .setDescription(`مبارك! لقد تمت ترقيتك تلقائياً إلى رتبة **${r.rank_name || roleToAdd.name}** نظير تفاعلك وجهدك الإداري المتميز ببلوغ **${staffMember.points}** نقطة.\n\nاستمر في العطاء والتألق! 🌟`)
+                                                    .setTimestamp()
+                                            ]
+                                        }).catch(() => {});
                                     }
                                 }
                             }

@@ -731,6 +731,12 @@ try { db.exec("ALTER TABLE guild_settings ADD COLUMN invites_fake_days INTEGER D
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN invites_reward_stack INTEGER DEFAULT 1;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN invites_remove_on_leave INTEGER DEFAULT 1;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN invites_dm_notify INTEGER DEFAULT 1;"); } catch(e) {}
+// إعدادات الستاف الإضافية (Staff Advanced Settings)
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN staff_promotion_channel TEXT;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN staff_roles TEXT DEFAULT '[]';"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN staff_dm_on_promotion INTEGER DEFAULT 1;"); } catch(e) {}
+// إعدادات الرتب التلقائية المتعددة (Multi Autoroles)
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN autorole_extra_ids TEXT DEFAULT '[]';"); } catch(e) {}
 // إعدادات البوت العامة وتصفير السجلات (General Settings & Punishment Auto-Clear)
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_language TEXT DEFAULT 'EN';"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN auto_clear_punishments INTEGER DEFAULT 0;"); } catch(e) {}

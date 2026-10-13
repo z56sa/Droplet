@@ -237,6 +237,8 @@ module.exports = function (app, client) {
 
             const items = [];
             if (shopSettings.customRole?.enabled !== false) items.push(`👑 **رتبة مخصصة (Custom Role)**\n┗ السعر: **${(shopSettings.customRole?.price || 500).toLocaleString()}** Gold 🪙 • المدة: **${shopSettings.customRole?.duration || 30}** يوم`);
+            if (shopSettings.voiceRoom?.enabled !== false) items.push(`🔊 **استئجار روم صوتي خاص (Voice Room)**\n┗ السعر: **${(shopSettings.voiceRoom?.price || 800).toLocaleString()}** Gold 🪙 • المدة: **${shopSettings.voiceRoom?.duration || 7}** أيام`);
+            if (shopSettings.textRoom?.enabled !== false) items.push(`💬 **استئجار روم كتابي خاص (Text Room)**\n┗ السعر: **${(shopSettings.textRoom?.price || 600).toLocaleString()}** Gold 🪙 • المدة: **${shopSettings.textRoom?.duration || 7}** أيام`);
             if (shopSettings.badge?.enabled) items.push(`🎖️ **شارة / لقب مخصص (Badge)**\n┗ السعر: **${(shopSettings.badge?.price || 200).toLocaleString()}** Gold 🪙 • المدة: ${shopSettings.badge?.duration > 0 ? `**${shopSettings.badge.duration}** يوم` : '**دائم**'}`);
 
             embed.addFields({ name: '🛍️ الباقات والعناصر المتاحة للشراء فوراً', value: items.length ? items.join('\n\n') : 'لا توجد عناصر متاحة حالياً', inline: false });
@@ -6285,29 +6287,41 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <!-- Card: رتب الأعضاء الجدد & رتبة البوتات الجديدة -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl space-y-6 shadow-xl">
                             <!-- رتب الأعضاء الجدد -->
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-end gap-1 text-xs font-bold text-gray-300">
-                                    <span>رتب الأعضاء الجدد</span>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-lg font-bold">👤 للأعضاء</span>
+                                    <span class="text-xs font-bold text-gray-200">الرتبة التلقائية الأساسية للأعضاء</span>
                                 </div>
                                 ${renderRoleSelect('autorole_id', _arMemberId)}
-                                <p class="text-[10px] text-gray-500 text-right">الرتبة التي تُعطى للأعضاء الجدد عند الانضمام</p>
+                                <p class="text-[10px] text-gray-400 text-right">الرتبة الأساسية التي تُعطى للعضو فور دخوله</p>
                                 ${_memberWarn}
-                                <p class="text-[10px] text-gray-600 text-right font-mono" id="autoroleMemberStatus">${_memberRole ? ('الحالية: @' + _memberRole.name) : (_arMemberId ? 'الحالية: ' + _arMemberId : 'لم يتم اختيار رتبة بعد')}</p>
+                                <p class="text-[10px] text-gray-500 text-right font-mono" id="autoroleMemberStatus">${_memberRole ? ('الحالية: @' + _memberRole.name) : (_arMemberId ? 'الحالية: ' + _arMemberId : 'لم يتم اختيار رتبة بعد')}</p>
+                            </div>
+
+                            <!-- رتبة إضافية ثانوية للأعضاء -->
+                            <div class="space-y-3 pt-4 border-t border-blue-500/10">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-lg font-bold">✨ رتبة إضافية</span>
+                                    <span class="text-xs font-bold text-gray-200">رتبة ثانوية إضافية للأعضاء (اختياري)</span>
+                                </div>
+                                ${renderRoleSelect('autorole_extra_ids', settings.autorole_extra_ids || '')}
+                                <p class="text-[10px] text-gray-400 text-right">رتبة ثانوية تُمنح بالتزامن مع الرتبة الأساسية عند الانضمام</p>
                             </div>
 
                             <!-- رتبة البوتات الجديدة -->
-                            <div class="space-y-2 pt-4 border-t border-blue-500/20">
-                                <div class="flex items-center justify-end gap-1 text-xs font-bold text-gray-300">
-                                    <span>رتبة البوتات الجديدة</span>
+                            <div class="space-y-3 pt-4 border-t border-blue-500/20">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-lg font-bold">🤖 للبوتات</span>
+                                    <span class="text-xs font-bold text-gray-200">رتبة البوتات الجديدة</span>
                                 </div>
                                 ${renderRoleSelect('autorole_bot_id', _arBotId)}
-                                <p class="text-[10px] text-gray-500 text-right">الرتبة التي تُعطى للبوتات عند إضافتها للسيرفر</p>
+                                <p class="text-[10px] text-gray-400 text-right">الرتبة التي تُعطى للبوتات عند إضافتها للسيرفر</p>
                                 ${_botWarn}
-                                <p class="text-[10px] text-gray-600 text-right font-mono" id="autoroleBotStatus">${_botRole ? ('الحالية: @' + _botRole.name) : (_arBotId ? 'الحالية: ' + _arBotId : 'لم يتم اختيار رتبة بعد')}</p>
+                                <p class="text-[10px] text-gray-500 text-right font-mono" id="autoroleBotStatus">${_botRole ? ('الحالية: @' + _botRole.name) : (_arBotId ? 'الحالية: ' + _arBotId : 'لم يتم اختيار رتبة بعد')}</p>
                             </div>
                         </div>
 
-                        <p class="text-[10px] text-gray-600 text-right">💡 التغيير يُحفظ تلقائياً عند التبديل أو اختيار رتبة — وزر «حفظ التغييرات» بالأسفل يحفظ أيضاً. تأكد أن رتبة البوت أعلى من الرتب المختارة.</p>
+                        <p class="text-[10px] text-gray-500 text-right">💡 التغيير يُحفظ تلقائياً عند التبديل أو اختيار رتبة — وزر «حفظ التغييرات» بالأعلى يحفظ أيضاً. تأكد أن رتبة البوت أعلى من الرتب المختارة في السيرفر.</p>
 
                     </div>
 
@@ -6341,6 +6355,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
     };
     var selMember = document.getElementById('autorole_id');
     if (selMember) selMember.addEventListener('change', function(){ window.saveAutoroleField('autorole_id', this.value || ''); });
+    var selExtra = document.getElementById('autorole_extra_ids');
+    if (selExtra) selExtra.addEventListener('change', function(){ window.saveAutoroleField('autorole_extra_ids', this.value || ''); });
     var selBot = document.getElementById('autorole_bot_id');
     if (selBot) selBot.addEventListener('change', function(){ window.saveAutoroleField('autorole_bot_id', this.value || ''); });
 })();
@@ -11441,6 +11457,40 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <p class="text-xs text-white mt-1">متابعة نقاط الإداريين، رتب الترقية التلقائية، ومهام العمل الإداري.</p>
                         </div>
 
+                        <!-- 0. Staff Settings & Promotion Alerts -->
+                        <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl">
+                            <h4 class="text-sm font-black text-white mb-4 flex items-center justify-between">
+                                <span class="flex items-center gap-2">⚙️ إعدادات الترقيات والإشعارات التلقائية</span>
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-[11px] text-gray-300 font-bold mb-1.5">📢 روم إعلانات الترقية التلقائية</label>
+                                    <select id="staff_promotion_channel" class="w-full bg-[#101c33] border border-blue-500/20 rounded-xl p-2.5 text-xs text-white">
+                                        <option value="">...افتراضي (روم سجلات الستاف / السجلات)</option>
+                                        ${guildTextChannels.map(c => `<option value="${c.id}" ${settings.staff_promotion_channel === c.id ? 'selected' : ''}>#${c.name}</option>`).join('')}
+                                    </select>
+                                    <p class="text-[10px] text-gray-500 mt-1">القناة التي يُنشر فيها مباركة وترقية الإداري تلقائياً</p>
+                                </div>
+                                <div class="flex flex-col justify-between bg-[#070d1d] border border-blue-500/20 p-3.5 rounded-xl">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold text-white">📩 إشعار الإداري في الخاص (DM)</span>
+                                        <label class="toggle"><input type="checkbox" id="staff_dm_on_promotion" ${settings.staff_dm_on_promotion !== 0 ? 'checked' : ''}><span class="slider"></span></label>
+                                    </div>
+                                    <p class="text-[10px] text-gray-400 mt-2">إرسال تهنئة فورية في رسائل العضو الخاصة عند بلوغه رتبة جديدة</p>
+                                </div>
+                                <div class="flex flex-col justify-between bg-[#070d1d] border border-blue-500/20 p-3.5 rounded-xl">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold text-white">⏱️ تسجيل الخروج التلقائي للشفت</span>
+                                        <label class="toggle"><input type="checkbox" id="staff_auto_logout" ${settings.staff_auto_logout !== 0 ? 'checked' : ''}><span class="slider"></span></label>
+                                    </div>
+                                    <p class="text-[10px] text-gray-400 mt-2">إنهاء الشفت تلقائياً عند تجاوز الحد الأقصى أو الخمول</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="handleSaveStaffConfig('${guildId}')" class="mt-4 px-5 py-2.5 bg-gradient-to-l from-purple-600 to-blue-500 hover:opacity-95 text-white rounded-xl text-xs font-bold transition shadow-md">
+                                💾 حفظ إعدادات الترقيات
+                            </button>
+                        </div>
+
                         <!-- 1. Auto Promotion Ranks Form & List -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl">
                             <h4 class="text-sm font-black text-white mb-4 flex items-center gap-2">
@@ -11522,6 +11572,27 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         </div>
                     </div>
                     <script>
+                        async function handleSaveStaffConfig(guildId) {
+                            const promotionChannel = document.getElementById('staff_promotion_channel')?.value || '';
+                            const dmOnPromotion = document.getElementById('staff_dm_on_promotion')?.checked ? 1 : 0;
+                            const autoLogout = document.getElementById('staff_auto_logout')?.checked ? 1 : 0;
+                            try {
+                                const res = await fetch('/api/guild/' + guildId + '/settings', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        staff_promotion_channel: promotionChannel,
+                                        staff_dm_on_promotion: dmOnPromotion,
+                                        staff_auto_logout: autoLogout
+                                    })
+                                });
+                                const d = await res.json();
+                                if (d && d.success) {
+                                    if (typeof showSaveStatus === 'function') showSaveStatus();
+                                    else alert('✅ تم حفظ إعدادات الستاف والترقيات بنجاح!');
+                                } else alert('❌ فشل الحفظ: ' + ((d && d.error) || 'خطأ غير معروف'));
+                            } catch(e) { alert('خطأ في الاتصال بالخادم'); }
+                        }
                         async function handleAddStaffRank(guildId) {
                             const roleId = document.getElementById('new_rank_role').value;
                             const points = parseInt(document.getElementById('new_rank_points').value, 10);
@@ -11595,16 +11666,16 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                             <!-- Custom Role Card -->
-                            <div class="bg-[#0b1322] border border-blue-500/20 rounded-2xl overflow-hidden">
+                            <div class="bg-[#0b1322] border border-blue-500/20 rounded-2xl overflow-hidden shadow-lg">
                                 <div class="bg-gradient-to-r from-blue-700/40 to-indigo-900/30 px-5 py-4 flex items-center justify-between">
                                     <div class="flex items-center gap-3">
                                         <span class="text-2xl">👑</span>
                                         <div>
                                             <h4 class="text-sm font-black text-white">رتبة مخصصة</h4>
-                                            <p class="text-[11px] text-white">Custom Role</p>
+                                            <p class="text-[11px] text-blue-200">Custom Role</p>
                                         </div>
                                     </div>
-                                    <label class="toggle"><input type="checkbox" id="shop_role_enabled" ${shopSettings.customRole?.enabled ? 'checked' : ''}><span class="slider"></span></label>
+                                    <label class="toggle"><input type="checkbox" id="shop_role_enabled" ${shopSettings.customRole?.enabled !== false ? 'checked' : ''}><span class="slider"></span></label>
                                 </div>
                                 <div class="p-5 space-y-3">
                                     <div class="flex items-center justify-between">
@@ -11615,19 +11686,68 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <label class="text-xs text-white">المدة (أيام)</label>
                                         <input type="number" id="shop_role_days" value="${shopSettings.customRole?.duration || 30}" min="1" class="w-28 bg-[#070d1d] border border-blue-500/20 rounded-lg px-3 py-1.5 text-xs text-white font-mono text-left">
                                     </div>
-                                    <p class="text-[11px] text-gray-500">يختار العضو الاسم واللون وتُنشأ الرتبة تلقائياً</p>
+                                    <p class="text-[11px] text-gray-400">يختار العضو الاسم واللون وتُنشأ الرتبة تلقائياً وتُعطى له</p>
                                 </div>
                             </div>
 
+                            <!-- Voice Room Card -->
+                            <div class="bg-[#0b1322] border border-emerald-500/20 rounded-2xl overflow-hidden shadow-lg">
+                                <div class="bg-gradient-to-r from-emerald-900/40 to-teal-900/30 px-5 py-4 flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-2xl">🔊</span>
+                                        <div>
+                                            <h4 class="text-sm font-black text-white">استئجار روم صوتي خاص</h4>
+                                            <p class="text-[11px] text-emerald-200">Private Voice Channel</p>
+                                        </div>
+                                    </div>
+                                    <label class="toggle"><input type="checkbox" id="shop_voiceroom_enabled" ${shopSettings.voiceRoom?.enabled !== false ? 'checked' : ''}><span class="slider"></span></label>
+                                </div>
+                                <div class="p-5 space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-xs text-white">السعر (Gold 🪙)</label>
+                                        <input type="number" id="shop_voiceroom_price" value="${shopSettings.voiceRoom?.price || 800}" min="1" class="w-28 bg-[#070d1d] border border-emerald-500/20 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left">
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-xs text-white">المدة (أيام)</label>
+                                        <input type="number" id="shop_voiceroom_days" value="${shopSettings.voiceRoom?.duration || 7}" min="1" class="w-28 bg-[#070d1d] border border-emerald-500/20 rounded-lg px-3 py-1.5 text-xs text-white font-mono text-left">
+                                    </div>
+                                    <p class="text-[11px] text-gray-400">روم صوتي خاص للمشتري بصلاحيات إدارة كاملة</p>
+                                </div>
+                            </div>
+
+                            <!-- Text Room Card -->
+                            <div class="bg-[#0b1322] border border-sky-500/20 rounded-2xl overflow-hidden shadow-lg">
+                                <div class="bg-gradient-to-r from-sky-900/40 to-blue-900/30 px-5 py-4 flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-2xl">💬</span>
+                                        <div>
+                                            <h4 class="text-sm font-black text-white">استئجار روم كتابي خاص</h4>
+                                            <p class="text-[11px] text-sky-200">Private Text Channel</p>
+                                        </div>
+                                    </div>
+                                    <label class="toggle"><input type="checkbox" id="shop_textroom_enabled" ${shopSettings.textRoom?.enabled !== false ? 'checked' : ''}><span class="slider"></span></label>
+                                </div>
+                                <div class="p-5 space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-xs text-white">السعر (Gold 🪙)</label>
+                                        <input type="number" id="shop_textroom_price" value="${shopSettings.textRoom?.price || 600}" min="1" class="w-28 bg-[#070d1d] border border-sky-500/20 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left">
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-xs text-white">المدة (أيام)</label>
+                                        <input type="number" id="shop_textroom_days" value="${shopSettings.textRoom?.duration || 7}" min="1" class="w-28 bg-[#070d1d] border border-sky-500/20 rounded-lg px-3 py-1.5 text-xs text-white font-mono text-left">
+                                    </div>
+                                    <p class="text-[11px] text-gray-400">روم كتابي سري ومحمي بصلاحيات للمالك فقط</p>
+                                </div>
+                            </div>
 
                             <!-- Badge/Cosmetic Card -->
-                            <div class="bg-[#0b1322] border border-purple-500/20 rounded-2xl overflow-hidden">
+                            <div class="bg-[#0b1322] border border-purple-500/20 rounded-2xl overflow-hidden shadow-lg">
                                 <div class="bg-gradient-to-r from-purple-900/30 to-indigo-900/20 px-5 py-4 flex items-center justify-between">
                                     <div class="flex items-center gap-3">
                                         <span class="text-2xl">🎖️</span>
                                         <div>
                                             <h4 class="text-sm font-black text-white">شارة / لقب مخصص</h4>
-                                            <p class="text-[11px] text-gray-400">Profile Badge / Title</p>
+                                            <p class="text-[11px] text-purple-200">Profile Badge / Title</p>
                                         </div>
                                     </div>
                                     <label class="toggle"><input type="checkbox" id="shop_badge_enabled" ${shopSettings.badge?.enabled ? 'checked' : ''}><span class="slider"></span></label>
@@ -11635,11 +11755,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="p-5 space-y-3">
                                     <div class="flex items-center justify-between">
                                         <label class="text-xs text-white">السعر (Gold 🪙)</label>
-                                        <input type="number" id="shop_badge_price" value="${shopSettings.badge?.price || 200}" min="1" class="w-28 bg-[#070d1d] border border-blue-500/20 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left">
+                                        <input type="number" id="shop_badge_price" value="${shopSettings.badge?.price || 200}" min="1" class="w-28 bg-[#070d1d] border border-purple-500/20 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left">
                                     </div>
                                     <div class="flex items-center justify-between">
                                         <label class="text-xs text-white">المدة (0 = دائم)</label>
-                                        <input type="number" id="shop_badge_days" value="${shopSettings.badge?.duration || 0}" min="0" class="w-28 bg-[#070d1d] border border-blue-500/20 rounded-lg px-3 py-1.5 text-xs text-white font-mono text-left">
+                                        <input type="number" id="shop_badge_days" value="${shopSettings.badge?.duration || 0}" min="0" class="w-28 bg-[#070d1d] border border-purple-500/20 rounded-lg px-3 py-1.5 text-xs text-white font-mono text-left">
                                     </div>
                                     <p class="text-[11px] text-gray-400">تظهر في بطاقة الهوية والبروفايل داخل الديسكورد</p>
                                 </div>
@@ -11678,42 +11798,47 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </button>
                         </div>
 
-                        <!-- Active Items -->
+                        <!-- Active Items (Custom Roles & Rented Channels) -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Active Custom Roles -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl">
-                                <h4 class="text-sm font-black text-white mb-3">👑 الرتب الخاصة النشطة (${customRoles.length})</h4>
+                                <h4 class="text-sm font-black text-white mb-3 flex items-center justify-between">
+                                    <span>👑 الرتب الخاصة النشطة (${customRoles.length})</span>
+                                </h4>
                                 ${customRoles.length === 0 ? '<p class="text-xs text-gray-500">لا توجد رتب نشطة حالياً.</p>' : `
-                                    <div class="space-y-2">
+                                    <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
                                         ${customRoles.map(cr => `
                                             <div class="flex items-center justify-between p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl text-xs">
                                                 <div>
                                                     <span class="font-bold text-white block">${cr.role_name}</span>
-                                                    <span class="text-[10px] text-white">&lt;@${cr.user_id}&gt;</span>
+                                                    <span class="text-[10px] text-blue-300 font-mono">&lt;@${cr.user_id}&gt;</span>
                                                 </div>
                                                 <div class="text-left">
                                                     <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold" style="background:${cr.role_color||'#60a5fa'};color:#ffffff;">${cr.role_color||'HEX'}</span>
-                                                    <span class="text-[10px] text-gray-500 block mt-1">⏳ ${new Date(cr.expires_at * 1000).toLocaleDateString(dashDateLocale(req, 'ar-SA'))}</span>
+                                                    <span class="text-[10px] text-gray-400 block mt-1">⏳ ${new Date(cr.expires_at * 1000).toLocaleDateString(dashDateLocale(req, 'ar-SA'))}</span>
                                                 </div>
                                             </div>
                                         `).join('')}
                                     </div>
                                 `}
                             </div>
-                        <!-- Active Items -->
-                        <div class="grid grid-cols-1 gap-4">
+
+                            <!-- Active Rented Channels -->
                             <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl">
-                                <h4 class="text-sm font-black text-white mb-3">👑 الرتب الخاصة النشطة (${customRoles.length})</h4>
-                                ${customRoles.length === 0 ? '<p class="text-xs text-gray-500">لا توجد رتب نشطة حالياً.</p>' : `
-                                    <div class="space-y-2">
-                                        ${customRoles.map(cr => `
+                                <h4 class="text-sm font-black text-white mb-3 flex items-center justify-between">
+                                    <span>🎙️ الرومات المستأجرة النشطة (${rentedChannels.length})</span>
+                                </h4>
+                                ${rentedChannels.length === 0 ? '<p class="text-xs text-gray-500">لا توجد قنوات مستأجرة حالياً.</p>' : `
+                                    <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                        ${rentedChannels.map(ch => `
                                             <div class="flex items-center justify-between p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl text-xs">
                                                 <div>
-                                                    <span class="font-bold text-white block">${cr.role_name}</span>
-                                                    <span class="text-[10px] text-white">&lt;@${cr.user_id}&gt;</span>
+                                                    <span class="font-bold text-white block">${ch.channel_type === 'voice' ? '🔊' : '💬'} ${ch.channel_name || 'غرفة خاصة'}</span>
+                                                    <span class="text-[10px] text-blue-300 font-mono">&lt;@${ch.user_id}&gt;</span>
                                                 </div>
                                                 <div class="text-left">
-                                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold" style="background:${cr.role_color||'#60a5fa'};color:#ffffff;">${cr.role_color||'HEX'}</span>
-                                                    <span class="text-[10px] text-gray-400 block mt-1">⏳ ${new Date(cr.expires_at * 1000).toLocaleDateString(dashDateLocale(req, 'ar-SA'))}</span>
+                                                    <span class="px-2 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded text-[10px] font-bold">${ch.channel_type === 'voice' ? 'صوتي' : 'كتابي'}</span>
+                                                    <span class="text-[10px] text-gray-400 block mt-1">⏳ ${new Date(ch.expires_at * 1000).toLocaleDateString(dashDateLocale(req, 'ar-SA'))}</span>
                                                 </div>
                                             </div>
                                         `).join('')}
@@ -11747,6 +11872,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 guildId,
                                 shopItems: {
                                     customRole: { enabled: document.getElementById('shop_role_enabled')?.checked || false, price: +(document.getElementById('shop_role_price')?.value || 500), duration: +(document.getElementById('shop_role_days')?.value || 30) },
+                                    voiceRoom:  { enabled: document.getElementById('shop_voiceroom_enabled')?.checked || false, price: +(document.getElementById('shop_voiceroom_price')?.value || 800), duration: +(document.getElementById('shop_voiceroom_days')?.value || 7) },
+                                    textRoom:   { enabled: document.getElementById('shop_textroom_enabled')?.checked || false, price: +(document.getElementById('shop_textroom_price')?.value || 600), duration: +(document.getElementById('shop_textroom_days')?.value || 7) },
                                     badge:      { enabled: document.getElementById('shop_badge_enabled')?.checked || false, price: +(document.getElementById('shop_badge_price')?.value || 200), duration: +(document.getElementById('shop_badge_days')?.value || 0) }
                                 }
                             };
