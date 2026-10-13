@@ -2211,15 +2211,34 @@ module.exports = function (app, client) {
                 `;
             }
 
+            // ● مجموعات مفاتيح الأقسام: الدائرة خضراء إذا كان الرئيسي أو أي مفتاح ميزة في القسم مفعّلاً
+            const DOT_GROUPS = {
+                moderation_enabled: ['mod_warn_enabled', 'mod_mute_enabled', 'mod_badwords_enabled', 'mod_caps_enabled', 'mod_mention_spam_enabled', 'mod_emoji_spam_enabled'],
+                automod_enabled: ['anti_spam', 'anti_spam_adv', 'anti_link', 'anti_invites', 'anti_caps', 'anti_emoji', 'anti_emoji_spam', 'anti_spoilers', 'anti_zalgo', 'anti_text_repeat', 'anti_repeat_messages', 'anti_stickers', 'anti_line_spam', 'anti_long_messages', 'anti_mass_mention', 'bad_words_enabled', 'strict_bad_words_enabled'],
+                anti_nuke_enabled: ['anti_bot_add', 'anti_channel_create', 'anti_channel_delete', 'anti_channel_move', 'anti_channel_permissions', 'anti_channel_update', 'anti_dangerous_perms', 'anti_ghost_ping', 'anti_invite_links', 'anti_join_danger_roles', 'anti_linked_roles', 'anti_nsfw_content', 'anti_onboarding_danger', 'anti_prune', 'anti_role_create', 'anti_role_delete', 'anti_role_update', 'anti_scam', 'anti_server_icon_change', 'anti_server_name_change', 'anti_webhook_create', 'anti_webhook_spam', 'anti_webhook_update', 'anti_mass_ban', 'anti_mass_kick', 'anti_raid_fast'],
+                tickets_enabled: ['ticket_rating_enabled'],
+                leveling_enabled: ['level_text_xp_enabled', 'level_voice_xp_enabled', 'level_up_msg_enabled', 'level_dm_msg_enabled'],
+                welcome_enabled: ['leave_enabled', 'welcome_dm_enabled', 'welcome_embed_enabled', 'leave_embed_enabled'],
+                boost_msg_enabled: ['boost_enabled', 'boost_dm_enabled', 'boost_embed_enabled'],
+                logs_enabled: ['mod_logs_enabled', 'security_logs_enabled'],
+                security_logs_enabled: ['mod_logs_enabled'],
+                antiraid_enabled: ['antiraid_dm_notify'],
+                staff_activity_enabled: ['staff_banner_enabled'],
+                suggestions_enabled: ['suggestions_dm_notify', 'suggestions_auto_thread']
+            };
             // ● شارة حالة القسم في القائمة الجانبية: خضراء ✓ عند التفعيل، محايدة • عند الإطفاء
             function navBadge(key) {
                 let on = false;
                 try {
-                    const v = settings[key];
-                    if (v !== undefined && v !== null && v !== '') {
+                    const keys = (DOT_GROUPS && DOT_GROUPS[key]) ? [key].concat(DOT_GROUPS[key]) : [key];
+                    for (const k of keys) {
+                        const v = settings[k];
+                        if (v === undefined || v === null || v === '') continue;
                         const s = String(v).trim().toLowerCase();
-                        on = !(s === '0' || s === 'false' || s === 'off' || s === 'no');
-                        if (on && !Number.isNaN(Number(v))) on = Number(v) !== 0;
+                        if (s === '0' || s === 'false' || s === 'off' || s === 'no') continue;
+                        if (!Number.isNaN(Number(v)) && Number(v) === 0) continue;
+                        on = true;
+                        break;
                     }
                 } catch (e) {}
                 return on
@@ -11630,6 +11649,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 /* Droplet blended headings */ h1[class*="text-white"]:not([style]), h2[class*="text-white"]:not([style]) { background:linear-gradient(90deg,#c084fc,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent !important; }</style>
                 <script src="/i18n.js"></script><script src="/i18n-dash.js"></script><script src="/i18n-dash2.js"></script>
                 <script src="/js/settings-save.js?v=${global._dropletBootTime || '1'}"></script>
+                <script>window.DOT_GROUPS = ${JSON.stringify(DOT_GROUPS)};</script>
             </head>
             <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#060c1d] text-white">
                 <header class="h-16 bg-[#081026]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
@@ -11656,7 +11676,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <main class="flex-1 p-8 overflow-y-auto ${section === 'embed' ? 'max-w-7xl' : 'max-w-4xl'} mx-auto">
                         <div class="${section === 'logs' ? '' : 'probot-card border border-blue-500/20 rounded-3xl p-8 shadow-2xl mb-8'}">
                             <div class="flex items-center justify-between pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
-                                <label class="toggle"><input type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})(), this.checked, this)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
+                                <label class="toggle"><input id="masterToggle" data-modkey="${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})()}" type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})(), this.checked, this)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
                                 <div class="text-right">
                                     <h2 class="text-2xl font-black text-white">${title}</h2>
                                     <p class="text-white text-xs mt-1">يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.</p>
@@ -12044,7 +12064,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         if (data.success) {
                             showSaveStatus();
                             try {
-                                if (typeof window.refreshNavBadge === 'function') {
+                                if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges();
+                                else if (typeof window.refreshNavBadge === 'function') {
                                     form.querySelectorAll('input[type="checkbox"][name]').forEach(function(cb) { window.refreshNavBadge(cb.name, cb.checked); });
                                 }
                             } catch (e2) {}

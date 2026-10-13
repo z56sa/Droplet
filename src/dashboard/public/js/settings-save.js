@@ -86,12 +86,7 @@
       try { data = await res.json(); } catch (e) {}
       if (res.ok && data && data.success) {
         if (typeof window.showSaveStatus === 'function') window.showSaveStatus();
-        try {
-          if (typeof window.refreshNavBadge === 'function') {
-            var _cbs2 = form.querySelectorAll('input[type="checkbox"][name]');
-            for (var _j = 0; _j < _cbs2.length; _j++) window.refreshNavBadge(_cbs2[_j].name, _cbs2[_j].checked);
-          }
-        } catch (e) {}
+        try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch (e) {}
       } else if (res.status === 403) {
         alert('⛔ مرفوض من السيرفر [403]: ' + ((data && data.error) || 'صلاحيات غير كافية'));
       } else {
@@ -145,6 +140,34 @@
     else paintBuildTag();
     setTimeout(paintBuildTag, 2500);
   } catch (e) {}
+
+  /* إعادة حساب كل الدوائر من حالة الحقول الحالية (الرئيسي + مجموعات الأقسام) */
+  window.recomputeAllBadges = function () {
+    try {
+      var groups = window.DOT_GROUPS || {};
+      var master = document.getElementById('masterToggle');
+      var masterKey = master ? master.getAttribute('data-modkey') : null;
+      var masterOn = master ? !!master.checked : false;
+      var dots = document.querySelectorAll('span[data-navbadge]');
+      for (var i = 0; i < dots.length; i++) {
+        var k = dots[i].getAttribute('data-navbadge');
+        var members = groups[k] || [];
+        var all = [k].concat(members);
+        var on = false;
+        for (var j = 0; j < all.length; j++) {
+          var m = all[j];
+          var checked = null;
+          if (masterKey === m && master) checked = masterOn;
+          else {
+            var cb = document.querySelector('#settingsForm input[type="checkbox"][name="' + m + '"]');
+            if (cb) checked = !!cb.checked;
+          }
+          if (checked === true) { on = true; break; }
+        }
+        if (typeof window.refreshNavBadge === 'function') window.refreshNavBadge(k, on);
+      }
+    } catch (e) {}
+  };
 
   /* مفاتيح التفعيل الفردية — نسخ مستقلة تعمل في كل الصفحات */
   function dropletGuildId() {
