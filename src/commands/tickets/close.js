@@ -1,4 +1,3 @@
-const { SlashCommandBuilder } = require('discord.js');
 const db = require('../../database');
 const { getGuildLang, t } = require('../../utils/lang');
 
@@ -6,10 +5,6 @@ module.exports = {
   name: 'close',
   description: 'اغلاق التذكرة',
   aliases: ['اغلاق'],
-  data: new SlashCommandBuilder()
-    .setName('close')
-    .setDescription('Close the current ticket')
-,
 
   async execute(interaction) {
     const lang = getGuildLang(interaction.guild.id);

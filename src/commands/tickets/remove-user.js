@@ -1,4 +1,3 @@
-const { SlashCommandBuilder } = require('discord.js');
 const db = require('../../database');
 const { getGuildLang, t } = require('../../utils/lang');
 
@@ -6,11 +5,6 @@ module.exports = {
   name: 'remove-user',
   description: 'إزالة عضو من التذكرة الحالية',
   aliases: ['ازالة-عضو'],
-  data: new SlashCommandBuilder()
-    .setName('remove-user')
-    .setDescription('Remove a member from the ticket')
-
-    .addUserOption(opt => opt.setName('user').setDescription('The member').setRequired(true)),
 
   async execute(interaction) {
     const lang = getGuildLang(interaction.guild.id);

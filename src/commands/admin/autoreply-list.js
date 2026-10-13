@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const db = require('../../database');
 const { getGuildLang, t } = require('../../utils/lang');
 
@@ -6,11 +6,6 @@ module.exports = {
   name: 'autoreply-list',
   description: 'لرؤية جميع الردود التلقائية',
   aliases: ['قائمة-الردود'],
-  data: new SlashCommandBuilder()
-    .setName('autoreply-list')
-    .setDescription('View all auto-replies')
-
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
   async execute(interaction) {
     const lang = getGuildLang(interaction.guild.id);
