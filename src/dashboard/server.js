@@ -2243,7 +2243,9 @@ module.exports = function (app, client) {
                 let on = false;
                 try {
                     // المفتاح الرئيسي مطفأ صراحة = الدائرة طافية مهما كانت الفروع
-                    if (_badgeIsOff(settings[key])) {
+                    if (key === 'general_enabled') {
+                        on = !_badgeIsOff(settings.general_enabled);
+                    } else if (_badgeIsOff(settings[key])) {
                         on = false;
                     } else if (_badgeIsOn(settings[key])) {
                         on = true;
@@ -3026,12 +3028,25 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         var btn = document.getElementById('topSaveBtn');
         var originalHtml = btn ? btn.innerHTML : '';
         if (btn) { btn.innerHTML = '<span>⏳</span><span>جاري الحفظ...</span>'; btn.disabled = true; }
+        
+        var master = document.getElementById('masterToggle');
+        var gId = '${guildId}' || window.location.pathname.split('/')[2];
+        if (master && gId) {
+            var modKey = master.getAttribute('data-modkey') || 'general_enabled';
+            fetch('/api/guild/' + gId + '/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [modKey]: master.checked ? 1 : 0 })
+            }).catch(function() {});
+        }
+
         saveStates(function(ok) {
             if (btn) {
                 btn.disabled = false;
                 if (ok) {
                     btn.innerHTML = '<span>✓</span><span>تم الحفظ بنجاح</span>';
                     btn.classList.add('bg-emerald-600');
+                    try { if (typeof window.recomputeAllBadges === 'function') window.recomputeAllBadges(); } catch(e) {}
                     setTimeout(function() {
                         btn.innerHTML = originalHtml;
                         btn.classList.remove('bg-emerald-600');
@@ -11836,7 +11851,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="${section === 'logs' ? '' : 'probot-card border border-blue-500/20 rounded-3xl p-8 shadow-2xl mb-8'}">
                             <div class="flex items-center justify-between pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
                                 <div class="flex items-center gap-3">
-                                    <label class="toggle"><input id="masterToggle" data-modkey="${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})()}" type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})(), this.checked, this)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
+                                    <label class="toggle"><input id="masterToggle" data-modkey="${(function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})()}" type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})(), this.checked, this)" ${(function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_k==='general_enabled'){return (String(_v)==='0'||String(_v)==='false')?'':'checked';}if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
                                     <button type="button" id="topSaveBtn" onclick="try{if(window.saveCommandsExplicit){window.saveCommandsExplicit();}else if(window.submitSettingsForm){submitSettingsForm(document.getElementById('settingsForm'));}else{alert('⚠️ سكربت الحفظ غير متاح');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}" class="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-900/30 flex items-center gap-2 cursor-pointer">
                                         <span>💾</span>
                                         <span>حفظ التغييرات</span>
