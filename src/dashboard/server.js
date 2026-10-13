@@ -2981,9 +2981,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     var ok = false;
                     try { ok = !!JSON.parse(xhr.responseText).success; } catch(e) { ok = false; }
                     if (ok) showSaved();
+                    else alert('❌ فشل حفظ حالة الأوامر — أعد المحاولة.');
                     if (cb) cb(ok);
                 };
-                xhr.onerror = function() { if (cb) cb(false); };
+                xhr.onerror = function() { alert('❌ تعذر الاتصال — لم تُحفظ حالة الأوامر.'); if (cb) cb(false); };
                 xhr.send(JSON.stringify({ disabled_commands: JSON.stringify(disArr), command_configs: JSON.stringify(commandConfigs) }));
             } catch(e) { if (cb) cb(false); }
         }, 300);
@@ -6042,7 +6043,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             });
                             const data = await res.json();
                             if (data.success) {
-                                alert('✅ تم إرسال لوحة التذاكر بنجاح إلى القناة!');
+                                alert('✅ تم إرسال لوحة التذاكر بنجاح إلى القناة!' + (data.warn ? '\n\n⚠️ تنبيه: ' + data.warn : ''));
                             } else {
                                 alert('❌ فشل الإرسال: ' + (data.error || 'تأكد من صلاحيات البوت في القناة'));
                             }
@@ -8673,9 +8674,12 @@ window.saveLogsSetting = function(key, val) {
         try {
             if (JSON.parse(xhr.responseText).success) {
                 showToast(val ? '✓ تم تفعيل السجلات بنجاح' : '✕ تم تعطيل السجلات', val ? 'success' : 'danger');
+            } else {
+                showToast('✕ فشل حفظ إعداد السجلات — أعد المحاولة', 'danger');
             }
-        } catch(e) {}
+        } catch(e) { showToast('✕ فشل حفظ إعداد السجلات — أعد المحاولة', 'danger'); }
     };
+    xhr.onerror = function() { showToast('✕ تعذر الاتصال — لم يُحفظ إعداد السجلات', 'danger'); };
     xhr.send(JSON.stringify(body));
 };
 
@@ -13530,6 +13534,7 @@ ${embedScriptHtml}
             }
 
             // حفظ اللوحة ليعمل فتح التذاكر حسب القسم + الرتبة المخصصة لكل قسم
+            let _panelWarn = null;
             try {
                 const categories_json = {};
                 cats.forEach((c, i) => {
@@ -13563,10 +13568,10 @@ ${embedScriptHtml}
                     database.setGuildSetting(guildId, 'ticket_panel_placeholder', placeholder);
                     database.setGuildSetting(guildId, 'ticket_panel_categories', JSON.stringify(cats));
                     if (bannerUrl) database.setGuildSetting(guildId, 'ticket_panel_banner', bannerUrl);
-                } catch(e) {}
-            } catch(e) { console.error('save dashboard ticket panel failed:', e.message); }
+                } catch(e) { _panelWarn = 'حُفظت اللوحة في الشات لكن فشل حفظ نسخة الإعدادات: ' + e.message; }
+            } catch(e) { console.error('save dashboard ticket panel failed:', e.message); _panelWarn = 'أُرسلت اللوحة لكن فشل حفظ أقسامها (ستفتح التذاكر كعامة): ' + e.message; }
 
-            res.json({ success: true });
+            res.json({ success: true, warn: _panelWarn });
         } catch(e) {
             console.error('Error sending ticket panel:', e);
             res.status(500).json({ success: false, error: e.message });
