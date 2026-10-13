@@ -3022,6 +3022,28 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         }, 300);
     }
 
+    window.saveCommandsExplicit = function() {
+        var btn = document.getElementById('topSaveBtn');
+        var originalHtml = btn ? btn.innerHTML : '';
+        if (btn) { btn.innerHTML = '<span>⏳</span><span>جاري الحفظ...</span>'; btn.disabled = true; }
+        saveStates(function(ok) {
+            if (btn) {
+                btn.disabled = false;
+                if (ok) {
+                    btn.innerHTML = '<span>✓</span><span>تم الحفظ بنجاح</span>';
+                    btn.classList.add('bg-emerald-600');
+                    setTimeout(function() {
+                        btn.innerHTML = originalHtml;
+                        btn.classList.remove('bg-emerald-600');
+                    }, 2000);
+                } else {
+                    btn.innerHTML = '<span>❌</span><span>فشل الحفظ</span>';
+                    setTimeout(function() { btn.innerHTML = originalHtml; }, 2000);
+                }
+            }
+        });
+    };
+
     window.switchCmdCategory = function(catKey) {
         currentCat = catKey;
         var bKeys = Object.keys(catBtnMap);
@@ -11813,7 +11835,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <main class="flex-1 p-8 overflow-y-auto ${section === 'embed' ? 'max-w-7xl' : 'max-w-4xl'} mx-auto">
                         <div class="${section === 'logs' ? '' : 'probot-card border border-blue-500/20 rounded-3xl p-8 shadow-2xl mb-8'}">
                             <div class="flex items-center justify-between pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
-                                <label class="toggle"><input id="masterToggle" data-modkey="${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})()}" type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})(), this.checked, this)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
+                                <div class="flex items-center gap-3">
+                                    <label class="toggle"><input id="masterToggle" data-modkey="${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})()}" type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})(), this.checked, this)" ${(function(){var _m={levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
+                                    <button type="button" id="topSaveBtn" onclick="try{if(window.saveCommandsExplicit){window.saveCommandsExplicit();}else if(window.submitSettingsForm){submitSettingsForm(document.getElementById('settingsForm'));}else{alert('⚠️ سكربت الحفظ غير متاح');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}" class="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-900/30 flex items-center gap-2 cursor-pointer">
+                                        <span>💾</span>
+                                        <span>حفظ التغييرات</span>
+                                    </button>
+                                </div>
                                 <div class="text-right">
                                     <h2 class="text-2xl font-black text-white">${title}</h2>
                                     <p class="text-white text-xs mt-1">يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.</p>
