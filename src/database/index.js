@@ -729,6 +729,8 @@ try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_banner TEXT DEFAULT '';
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN invites_log_channel TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN invites_fake_days INTEGER DEFAULT 3;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN invites_reward_stack INTEGER DEFAULT 1;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN invites_remove_on_leave INTEGER DEFAULT 1;"); } catch(e) {}
+try { db.exec("ALTER TABLE guild_settings ADD COLUMN invites_dm_notify INTEGER DEFAULT 1;"); } catch(e) {}
 // إعدادات البوت العامة وتصفير السجلات (General Settings & Punishment Auto-Clear)
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_language TEXT DEFAULT 'EN';"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN auto_clear_punishments INTEGER DEFAULT 0;"); } catch(e) {}
@@ -1774,10 +1776,18 @@ function getInviteRewards(guildId) {
 
 function addInviteReward(guildId, roleId, requiredInvites) {
   try {
-    return db.prepare(`
+    const res = db.prepare(`
       INSERT OR REPLACE INTO invite_rewards (guild_id, role_id, required_invites)
       VALUES (?, ?, ?)
     `).run(guildId, roleId, requiredInvites);
+    if (tursoSync && tursoSync.enabled) {
+      tursoSync.enqueue({
+        sql: `INSERT INTO invite_rewards (guild_id, role_id, required_invites) VALUES (?, ?, ?)
+              ON CONFLICT(guild_id, role_id) DO UPDATE SET required_invites = excluded.required_invites;`,
+        args: [String(guildId), String(roleId), Number(requiredInvites)]
+      });
+    }
+    return res;
   } catch (err) {
     console.error('Error adding invite reward:', err);
     throw err;
@@ -1786,7 +1796,14 @@ function addInviteReward(guildId, roleId, requiredInvites) {
 
 function deleteInviteReward(guildId, idOrRole) {
   try {
-    return db.prepare('DELETE FROM invite_rewards WHERE guild_id = ? AND (id = ? OR role_id = ?)').run(guildId, idOrRole, idOrRole);
+    const res = db.prepare('DELETE FROM invite_rewards WHERE guild_id = ? AND (id = ? OR role_id = ?)').run(guildId, idOrRole, idOrRole);
+    if (tursoSync && tursoSync.enabled) {
+      tursoSync.enqueue({
+        sql: 'DELETE FROM invite_rewards WHERE guild_id = ? AND (id = ? OR role_id = ?);',
+        args: [String(guildId), idOrRole, idOrRole]
+      });
+    }
+    return res;
   } catch (err) {
     console.error('Error deleting invite reward:', err);
     throw err;

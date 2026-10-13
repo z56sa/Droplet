@@ -6,19 +6,7 @@ module.exports = {
   name: 'suggestion-mode',
   description: 'تحديد نمط الاقتراحات',
   aliases: ['نمط-الاقتراحات'],
-  data: new SlashCommandBuilder()
-    .setName('suggestion-mode')
-    .setDescription('Set the suggestions style')
-    .addStringOption(opt =>
-      opt.setName('mode')
-        .setDescription('The style')
-        .setRequired(true)
-        .addChoices(
-          { name: 'Embed with voting', value: 'embed' },
-          { name: 'Plain', value: 'normal' }
-        )
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+  
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {

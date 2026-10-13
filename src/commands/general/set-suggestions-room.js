@@ -6,11 +6,7 @@ module.exports = {
   name: 'set-suggestions-room',
   description: 'تحديد روم يتم فيه تحويل الرسائل لاقتراحات',
   aliases: ['تحديد-روم-الاقتراحات'],
-  data: new SlashCommandBuilder()
-    .setName('set-suggestions-room')
-    .setDescription('Set the suggestions room')
-    .addChannelOption(opt => opt.setName('channel').setDescription('The channel').setRequired(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+  
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {

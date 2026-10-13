@@ -6,13 +6,7 @@ module.exports = {
   name: 'anti-delete-roles',
   description: 'تسطيب نظام الحماية من حذف الرتب',
   aliases: ['انتي-حذف-رتب'],
-  data: new SlashCommandBuilder()
-    .setName('anti-delete-roles')
-    .setDescription('Set up role-delete protection')
-
-    .addBooleanOption(opt => opt.setName('enabled').setDescription('Enable or disable').setRequired(true))
-    .addIntegerOption(opt => opt.setName('limit').setDescription('Maximum per minute').setRequired(false))
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+  category: 'admin',
 
   async execute(interaction) {
     const lang = getGuildLang(interaction.guild.id);

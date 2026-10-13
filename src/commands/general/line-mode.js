@@ -6,19 +6,7 @@ module.exports = {
   name: 'line-mode',
   description: 'تحديد نمط الخط',
   aliases: ['نمط-الخط'],
-  data: new SlashCommandBuilder()
-    .setName('line-mode')
-    .setDescription('Set the line style')
-    .addStringOption(opt =>
-      opt.setName('mode')
-        .setDescription('The style')
-        .setRequired(true)
-        .addChoices(
-          { name: 'Plain message', value: 'line' },
-          { name: 'Embed', value: 'embed' }
-        )
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+  
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {

@@ -6,11 +6,7 @@ module.exports = {
   name: 'remove-nadeko-room',
   description: 'ازالة روم يتم تفعيل الخاصية فيها',
   aliases: ['ازالة-روم-ناديكو'],
-  data: new SlashCommandBuilder()
-    .setName('remove-nadeko-room')
-    .setDescription('Remove a room where the feature is enabled')
-    .addChannelOption(opt => opt.setName('channel').setDescription('The channel').setRequired(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+  
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {

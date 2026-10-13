@@ -245,6 +245,16 @@ class TursoSync {
         );
       `);
 
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS invite_rewards (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          guild_id TEXT NOT NULL,
+          role_id TEXT NOT NULL,
+          required_invites INTEGER NOT NULL,
+          UNIQUE(guild_id, role_id)
+        );
+      `);
+
       console.log('[TURSO] ✅ Turso remote tables verified.');
 
 
@@ -511,6 +521,33 @@ class TursoSync {
         console.error('[TURSO] ⚠️ Error restoring staff ranks:', rankErr.message);
       }
 
+      // 7. Restore invite_rewards from Turso
+      try {
+        const rewardsRes = await this.client.execute('SELECT * FROM invite_rewards');
+        if (rewardsRes?.rows?.length > 0) {
+          const insReward = localDb.prepare(`
+            INSERT INTO invite_rewards (guild_id, role_id, required_invites)
+            VALUES (@guild_id, @role_id, @required_invites)
+            ON CONFLICT(guild_id, role_id) DO UPDATE SET
+              required_invites = excluded.required_invites;
+          `);
+          const rewTx = localDb.transaction((rows) => {
+            for (const r of rows) {
+              insReward.run({
+                guild_id: String(r.guild_id),
+                role_id: String(r.role_id),
+                required_invites: Number(r.required_invites || 0)
+              });
+            }
+          });
+          rewTx(rewardsRes.rows);
+          console.log('[TURSO] ✅ Invite rewards successfully restored from Turso!');
+        } else {
+          this.backupAllLocalInviteRewards(localDb);
+        }
+      } catch (rewErr) {
+        console.error('[TURSO] ⚠️ Error restoring invite rewards:', rewErr.message);
+      }
 
       // ✅ بعد انتهاء كل الاستعادة — مسح cache الداشبورد حتى يظهر الـ leaderboard بالبيانات الصحيحة
       if (typeof global._dropletDashboardClearCaches === 'function') {
@@ -929,6 +966,30 @@ class TursoSync {
       console.log(`[TURSO] 📤 Pushed ${rows.length} staff ranks to Turso.`);
     } catch (e) {
       console.error('[TURSO] ⚠️ Failed to backup staff ranks:', e.message);
+    }
+  }
+
+  /**
+   * Pushes all local invite_rewards rows to Turso
+   */
+  async backupAllLocalInviteRewards(localDb) {
+    if (!this.enabled || !this.client) return;
+    try {
+      const rows = localDb.prepare('SELECT * FROM invite_rewards').all();
+      for (const row of rows) {
+        if (row && row.guild_id && row.role_id) {
+          const sql = `
+            INSERT INTO invite_rewards (guild_id, role_id, required_invites)
+            VALUES (?, ?, ?)
+            ON CONFLICT(guild_id, role_id) DO UPDATE SET
+              required_invites = excluded.required_invites;
+          `;
+          this.enqueue({ sql, args: [String(row.guild_id), String(row.role_id), Number(row.required_invites || 0)] });
+        }
+      }
+      console.log(`[TURSO] 📤 Pushed ${rows.length} invite rewards to Turso.`);
+    } catch (e) {
+      console.error('[TURSO] ⚠️ Failed to backup invite rewards:', e.message);
     }
   }
 

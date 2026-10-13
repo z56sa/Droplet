@@ -62,6 +62,11 @@ module.exports = {
         .addIntegerOption(opt => opt.setName('amount').setDescription('Invite count (use negative to deduct)').setRequired(true))
     )
     .addSubcommand(sub =>
+      sub.setName('set-log')
+        .setDescription('Set or disable the invite log channel (Admins only)')
+        .addChannelOption(opt => opt.setName('channel').setDescription('Channel to send logs to (leave empty to disable)').setRequired(false))
+    )
+    .addSubcommand(sub =>
       sub.setName('reset')
         .setDescription('Reset invite stats for a member or the whole server (Admins only)')
         .addUserOption(opt => opt.setName('user').setDescription('Member to reset (leave empty for the whole server)').setRequired(false))
@@ -188,6 +193,24 @@ module.exports = {
         ]
       });
 
+    } else if (sub === 'set-log') {
+      if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+        return interaction.reply({ content: t(gid, 'general.invites.add_no_perm'), flags: 64 });
+      }
+
+      const channel = interaction.options.getChannel('channel');
+      if (channel) {
+        db.updateGuildSettings(gid, { invites_log_channel: channel.id });
+        return interaction.reply({
+          content: `✅ تم تعيين روم سجلات الدعوات بنجاح إلى: <#${channel.id}>`
+        });
+      } else {
+        db.updateGuildSettings(gid, { invites_log_channel: null });
+        return interaction.reply({
+          content: '🗑️ تم إيقاف روم سجلات الدعوات المخصص (سيتم استخدام روم السجلات العام إذا كان متوفراً).'
+        });
+      }
+
     } else if (sub === 'reset') {
       if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
         return interaction.reply({ content: t(gid, 'general.invites.reset_no_perm'), flags: 64 });
@@ -258,6 +281,18 @@ module.exports = {
       const targetUser = message.mentions.users.first() || message.author;
       await inviteTracker.syncMemberRewards(message.guild, targetUser.id);
       return message.reply(`✅ تمت مزامنة رتب الدعوات لـ <@${targetUser.id}>.`);
+    }
+
+    if (cmd === 'set-log' || cmd === 'setlog') {
+      if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) return message.reply('❌ ليس لديك صلاحية إدارة السيرفر.');
+      const channel = message.mentions.channels.first() || (args[1] ? message.guild.channels.cache.get(args[1]) : null);
+      if (channel) {
+        db.updateGuildSettings(gid, { invites_log_channel: channel.id });
+        return message.reply(`✅ تم تعيين روم سجلات الدعوات إلى: <#${channel.id}>`);
+      } else {
+        db.updateGuildSettings(gid, { invites_log_channel: null });
+        return message.reply('🗑️ تم إيقاف روم سجلات الدعوات المخصص.');
+      }
     }
 
     if (cmd === 'add') {

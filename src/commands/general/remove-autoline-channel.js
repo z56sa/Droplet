@@ -6,11 +6,7 @@ module.exports = {
   name: 'remove-autoline-channel',
   description: 'ازالة روم خط تلقائي',
   aliases: ['ازالة-خط'],
-  data: new SlashCommandBuilder()
-    .setName('remove-autoline-channel')
-    .setDescription('Remove an autoline channel')
-    .addChannelOption(opt => opt.setName('channel').setDescription('The channel').setRequired(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+  
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {

@@ -6,11 +6,7 @@ module.exports = {
   name: 'add-nadeko-room',
   description: 'اضافة روم يتم تفعيل الخاصية فيها',
   aliases: ['اضافة-روم-ناديكو'],
-  data: new SlashCommandBuilder()
-    .setName('add-nadeko-room')
-    .setDescription('Add a room where the feature is enabled')
-    .addChannelOption(opt => opt.setName('channel').setDescription('The channel').setRequired(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+  
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {

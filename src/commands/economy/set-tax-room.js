@@ -6,11 +6,7 @@ module.exports = {
   name: 'set-tax-room',
   description: 'تحديد روم يحسب فيه الضريبة تلقائيا',
   aliases: ['تحديد-روم-الضريبة'],
-  data: new SlashCommandBuilder()
-    .setName('set-tax-room')
-    .setDescription('تحديد روم حساب الضريبة')
-    .addChannelOption(opt => opt.setName('channel').setDescription('الروم').setRequired(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+  
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {

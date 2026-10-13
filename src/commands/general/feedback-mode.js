@@ -6,19 +6,7 @@ module.exports = {
   name: 'feedback-mode',
   description: 'تحديد نمط الآراء',
   aliases: ['نمط-الاراء'],
-  data: new SlashCommandBuilder()
-    .setName('feedback-mode')
-    .setDescription('Set the feedback style')
-    .addStringOption(opt =>
-      opt.setName('mode')
-        .setDescription('The style')
-        .setRequired(true)
-        .addChoices(
-          { name: 'Embed', value: 'embed' },
-          { name: 'Plain', value: 'normal' }
-        )
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+  
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {

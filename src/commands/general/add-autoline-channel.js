@@ -6,11 +6,7 @@ module.exports = {
   name: 'add-autoline-channel',
   description: 'اضافة روم خط تلقائي',
   aliases: ['اضافة-خط'],
-  data: new SlashCommandBuilder()
-    .setName('add-autoline-channel')
-    .setDescription('Add an autoline channel')
-    .addChannelOption(opt => opt.setName('channel').setDescription('The channel').setRequired(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+  
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {

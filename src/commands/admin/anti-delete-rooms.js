@@ -6,13 +6,7 @@ module.exports = {
   name: 'anti-delete-rooms',
   description: 'تسطيب نظام الحماية من حذف الرومات',
   aliases: ['انتي-حذف-رومات'],
-  data: new SlashCommandBuilder()
-    .setName('anti-delete-rooms')
-    .setDescription('Set up channel-delete protection')
-
-    .addBooleanOption(opt => opt.setName('enabled').setDescription('Enable or disable').setRequired(true))
-    .addIntegerOption(opt => opt.setName('limit').setDescription('Maximum per minute').setRequired(false))
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+  category: 'admin',
 
   async execute(interaction) {
     const lang = getGuildLang(interaction.guild.id);

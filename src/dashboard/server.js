@@ -3837,6 +3837,24 @@ const leaderboard = database.getInvitesLeaderboard ? database.getInvitesLeaderbo
                     `;
                 }).join('') : `<tr><td colspan="7" class="text-center py-8 text-gray-500 text-xs">لا توجد بيانات دعوات مسجلة حتى الآن</td></tr>`;
 
+                const inviteRewards = database.getInviteRewards ? database.getInviteRewards(guildId) : [];
+                const rewardsRowsHtml = inviteRewards.length > 0 ? inviteRewards.map(rw => {
+                    const rObj = botGuild?.roles?.cache?.get(rw.role_id);
+                    const rName = rObj ? rObj.name : `Role (${rw.role_id})`;
+                    return `
+                        <tr class="border-b border-blue-500/20 text-right">
+                            <td class="py-3 px-4 font-black text-amber-400 font-mono">${rw.required_invites} دعوة</td>
+                            <td class="py-3 px-4 font-bold text-white text-xs">@${rName}</td>
+                            <td class="py-3 px-4 font-mono text-[10px] text-gray-500">${rw.role_id}</td>
+                            <td class="py-3 px-4 text-center">
+                                <button type="button" onclick="deleteInviteRewardDirect('${rw.role_id}')" class="px-3 py-1 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/40 text-rose-300 rounded-lg text-xs font-bold transition">
+                                    🗑️ حذف
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('') : `<tr><td colspan="4" class="text-center py-6 text-gray-500 text-xs">لم يتم تعيين أي رتب مكافآت بعد</td></tr>`;
+
                 formFieldsHtml = `
                     <div class="space-y-6 text-right">
                         <!-- Top Header -->
@@ -3848,7 +3866,7 @@ const leaderboard = database.getInvitesLeaderboard ? database.getInvitesLeaderbo
                             </div>
                             <div>
                                 <h3 class="font-black text-white text-xl">متتبع الدعوات المتقدم (Invite Tracker) 🔗</h3>
-                                <p class="text-white text-xs mt-1">تتبع دقيق لمن قام بدعوة الأعضاء وحساب الدعوات الحقيقية والمغادرين والوهمية والبونص</p>
+                                <p class="text-white text-xs mt-1">تتبع دقيق لمن قام بدعوة الأعضاء وحساب الدعوات الحقيقية والمغادرين والوهمية والرتب التلقائية</p>
                             </div>
                         </div>
 
@@ -3871,9 +3889,74 @@ const leaderboard = database.getInvitesLeaderboard ? database.getInvitesLeaderbo
                             </div>
                         </div>
 
+                        <!-- Settings Card -->
+                        <div class="bg-[#14233c] border border-blue-500/20 p-6 rounded-2xl space-y-4">
+                            <h4 class="font-bold text-white text-sm">⚙️ إعدادات وخيارات المتتبع</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-300 mb-2">قناة سجلات الدعوات (Invite Logs Channel)</label>
+                                    ${renderChannelSelect('invites_log_channel', settings.invites_log_channel || '')}
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-300 mb-2">الحد الأدنى لعمر الحساب باليوم (كشف الحسابات الوهمية Fake)</label>
+                                    <input type="number" id="invites_fake_days" value="${settings.invites_fake_days || 3}" min="0" max="90" onchange="saveInviteSetting('invites_fake_days', this.value)" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono text-right">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                                <div class="bg-[#0b1322] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between">
+                                    <label class="toggle"><input type="checkbox" id="invites_remove_on_leave" ${Number(settings.invites_remove_on_leave ?? 1) === 1 ? 'checked' : ''} onchange="saveInviteSetting('invites_remove_on_leave', this.checked ? 1 : 0)"><span class="slider"></span></label>
+                                    <div class="text-right">
+                                        <h5 class="text-xs font-bold text-white">سحب الرتب عند مغادرة الأعضاء</h5>
+                                        <p class="text-[10px] text-gray-400">سحب رتبة المكافأة تلقائياً إذا نقص عدد دعوات العضو عن المطلوب</p>
+                                    </div>
+                                </div>
+                                <div class="bg-[#0b1322] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between">
+                                    <label class="toggle"><input type="checkbox" id="invites_dm_notify" ${Number(settings.invites_dm_notify ?? 1) === 1 ? 'checked' : ''} onchange="saveInviteSetting('invites_dm_notify', this.checked ? 1 : 0)"><span class="slider"></span></label>
+                                    <div class="text-right">
+                                        <h5 class="text-xs font-bold text-white">إشعار الداعي في الخاص (DM Alerts)</h5>
+                                        <p class="text-[10px] text-gray-400">إرسال رسالة خاصة للداعي فور انضمام عضو عبر رابطه</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Role Rewards Manager -->
+                        <div class="bg-[#14233c] border border-blue-500/20 p-6 rounded-2xl space-y-4">
+                            <h4 class="font-bold text-white text-sm">🎁 رتب مكافآت الدعوات التلقائية (Role Rewards)</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-[#0b1322] p-4 rounded-xl border border-blue-500/20">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-300 mb-2">الرتبة الممنوحة</label>
+                                    ${renderRoleSelect('rewardRoleId', '')}
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-300 mb-2">عدد الدعوات المطلوب</label>
+                                    <input type="number" id="rewardInvitesCount" min="1" placeholder="مثال: 5" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono text-right">
+                                </div>
+                                <div>
+                                    <button type="button" onclick="submitAddInviteReward()" class="w-full py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg">
+                                        إضافة مكافأة جديدة ➕
+                                    </button>
+                                </div>
+                            </div>
+
+                            <table class="w-full text-xs mt-2">
+                                <thead>
+                                    <tr class="border-b border-blue-500/20 text-white font-bold text-right">
+                                        <th class="py-2.5 px-4">الدعوات المطلوبة</th>
+                                        <th class="py-2.5 px-4">الرتبة</th>
+                                        <th class="py-2.5 px-4">أيدي الرتبة</th>
+                                        <th class="py-2.5 px-4 text-center">إجراء</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rewardsRowsHtml}
+                                </tbody>
+                            </table>
+                        </div>
+
                         <!-- Add Bonus Invites Box -->
                         <div class="bg-[#14233c] border border-blue-500/20 p-6 rounded-2xl space-y-4">
-                            <h4 class="font-bold text-white text-sm">🎁 إضافة أو خصم دعوات إضافية (Bonus Invites)</h4>
+                            <h4 class="font-bold text-white text-sm">➕ إضافة أو خصم دعوات إضافية (Bonus Invites)</h4>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">أيدي أو منشن العضو (User ID)</label>
@@ -3914,6 +3997,43 @@ const leaderboard = database.getInvitesLeaderboard ? database.getInvitesLeaderbo
                     </div>
 
                     <script>
+                    var _gid = '${guildId}';
+                    function saveInviteSetting(key, val) {
+                        var body = {}; body[key] = val;
+                        fetch('/api/guild/' + _gid + '/settings', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body)
+                        }).then(function(r) { return r.json(); }).then(function(d) {
+                            if (d && d.success && typeof showSaveStatus === 'function') showSaveStatus();
+                        });
+                    }
+
+                    document.addEventListener('DOMContentLoaded', function() {
+                        var lc = document.getElementById('invites_log_channel');
+                        if (lc) lc.addEventListener('change', function() { saveInviteSetting('invites_log_channel', this.value); });
+                    });
+
+                    async function submitAddInviteReward() {
+                        var roleId = document.getElementById('rewardRoleId')?.value;
+                        var invites = parseInt(document.getElementById('rewardInvitesCount')?.value, 10);
+                        if (!roleId || isNaN(invites) || invites < 1) return alert('يرجى اختيار الرتبة وتحديد عدد دعوات صالح!');
+                        var res = await fetch('/api/guild/' + _gid + '/invites/rewards', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ roleId: roleId, invites: invites })
+                        });
+                        var d = await res.json();
+                        if (d.success) { location.reload(); }
+                        else alert('خطأ: ' + (d.error || 'فشلت الإضافة'));
+                    }
+
+                    async function deleteInviteRewardDirect(roleId) {
+                        if (!confirm('هل أنت متأكد من حذف هذه المكافأة؟')) return;
+                        var res = await fetch('/api/guild/' + _gid + '/invites/rewards/' + roleId, { method: 'DELETE' });
+                        var d = await res.json();
+                        if (d.success) { location.reload(); }
+                        else alert('خطأ: ' + (d.error || 'فشل الحذف'));
+                    }
+
                     async function submitBonusInvites() {
                         let rawUser = document.getElementById('bonusUserId').value.trim();
                         const userId = rawUser.replace(/[^0-9]/g, '');
@@ -14079,6 +14199,34 @@ ${embedScriptHtml}
             const { guildId } = req.params;
             if (database.resetInvites) {
                 database.resetInvites(guildId);
+            }
+            res.json({ success: true });
+        } catch(e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    app.post('/api/guild/:guildId/invites/rewards', express.json(), async (req, res) => {
+        try {
+            if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
+            const { guildId } = req.params;
+            const { roleId, invites } = req.body;
+            if (!roleId || !invites) return res.status(400).json({ success: false, error: 'Missing parameters' });
+            if (database.addInviteReward) {
+                database.addInviteReward(guildId, String(roleId), Number(invites));
+            }
+            res.json({ success: true });
+        } catch(e) {
+            res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
+    app.delete('/api/guild/:guildId/invites/rewards/:roleId', async (req, res) => {
+        try {
+            if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
+            const { guildId, roleId } = req.params;
+            if (database.deleteInviteReward) {
+                database.deleteInviteReward(guildId, roleId);
             }
             res.json({ success: true });
         } catch(e) {

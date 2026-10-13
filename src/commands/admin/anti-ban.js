@@ -7,13 +7,7 @@ module.exports = {
   name: 'anti-ban',
   description: 'تسطيب نظام الحماية من الباند',
   aliases: ['انتي-باند'],
-  data: new SlashCommandBuilder()
-    .setName('anti-ban')
-    .setDescription('Set up ban protection')
-
-    .addBooleanOption(opt => opt.setName('enabled').setDescription('Enable or disable').setRequired(true))
-    .addIntegerOption(opt => opt.setName('limit').setDescription('Maximum limit').setRequired(false))
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+  category: 'admin',
 
   async execute(interaction) {
     const lang = getGuildLang(interaction.guild.id);

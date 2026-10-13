@@ -174,6 +174,7 @@ class InviteTracker {
       // إعطاء رتب المكافآت التلقائية للداعي إن توفرت
       if (usedInviterUser && !isSelf && !isFake) {
         this.syncMemberRewards(guild, usedInviterUser.id).catch(() => {});
+        this.sendInviterJoinDM(guild, usedInviterUser, member, recordResult?.isRejoin).catch(() => {});
       }
 
       // إرسال سجل الدعوة إلى روم السجلات إن كان مفعلاً
@@ -206,13 +207,45 @@ class InviteTracker {
   }
 
   /**
-   * معالجة مغادرة العضو وتحديث إحصائيات الداعي
+   * إرسال إشعار في الخاص للداعي عند استخدام دعوته
+   */
+  async sendInviterJoinDM(guild, inviterUser, joinedMember, isRejoin = false) {
+    try {
+      const settings = db.getGuildSettings(guild.id) || {};
+      const dmNotify = settings.invites_dm_notify === undefined || settings.invites_dm_notify === null ? 1 : Number(settings.invites_dm_notify);
+      if (!dmNotify) return;
+
+      const stats = db.getInvites(guild.id, inviterUser.id);
+      const dmEmbed = new EmbedBuilder()
+        .setColor('#10B981')
+        .setTitle('🎉 عضو جديد انضم عبر رابط دعوتك!')
+        .setDescription(`مرحباً **${inviterUser.username}**، انضم العضو <@${joinedMember.id}> (\`${joinedMember.user.tag}\`) إلى سيرفر **${guild.name}** باستخدام رابط دعوتك!`)
+        .addFields(
+          { name: '📊 مجموع دعواتك الآن', value: `\`${stats.total}\` دعوة صالحة`, inline: true },
+          { name: '👥 السيرفر', value: `${guild.name}`, inline: true }
+        )
+        .setThumbnail(guild.iconURL({ dynamic: true }) || undefined)
+        .setFooter({ text: 'Droplet Invite Notifications' })
+        .setTimestamp();
+
+      if (isRejoin) {
+        dmEmbed.addFields({ name: 'ℹ️ ملاحظة', value: 'هذا العضو كان في السيرفر سابقاً وتم تسجيل إعادة انضمامه.', inline: false });
+      }
+
+      await inviterUser.send({ embeds: [dmEmbed] }).catch(() => {});
+    } catch (e) {}
+  }
+
+  /**
+   * معالجة مغادرة العضو وتحديث إحصائيات الداعي وسحب الرتب إن لزم
    */
   async handleMemberLeave(member) {
     try {
       const inviterId = db.removeInviteMember(member.guild.id, member.id);
       if (inviterId) {
         const stats = db.getInvites(member.guild.id, inviterId);
+        // سحب رتب المكافآت إن تم تفعيل خيار السحب ونقص العدد
+        this.syncMemberRewards(member.guild, inviterId).catch(() => {});
         // إرسال لوق المغادرة
         this.sendLeaveLog(member.guild, { member, inviterId, stats }).catch(() => {});
         return inviterId;
@@ -224,11 +257,14 @@ class InviteTracker {
   }
 
   /**
-   * فحص وتوزيع مكافآت الرتب التلقائية بناءً على عدد الدعوات
+   * فحص وتوزيع مكافآت الرتب التلقائية بناءً على عدد الدعوات (وسحبها إذا نقصت)
    */
   async syncMemberRewards(guild, userId) {
     if (!guild || !userId) return;
     try {
+      const settings = db.getGuildSettings(guild.id) || {};
+      const removeOnLeave = settings.invites_remove_on_leave === undefined || settings.invites_remove_on_leave === null ? 1 : Number(settings.invites_remove_on_leave);
+
       const rewards = db.getInviteRewards(guild.id) || [];
       if (rewards.length === 0) return;
 
@@ -248,6 +284,9 @@ class InviteTracker {
           if (!member.roles.cache.has(role.id)) {
             await member.roles.add(role, `[Invite Rewards] وصول إلى ${reward.required_invites} دعوة بنجاح`).catch(() => {});
           }
+        } else if (removeOnLeave && member.roles.cache.has(role.id)) {
+          // سحب الرتبة إذا نقصت الدعوات تحت المطلوب وتفعيل خيار السحب
+          await member.roles.remove(role, `[Invite Rewards] نقص الدعوات (${totalInvites}/${reward.required_invites})`).catch(() => {});
         }
       }
     } catch (err) {

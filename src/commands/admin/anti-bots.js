@@ -6,12 +6,7 @@ module.exports = {
   name: 'anti-bots',
   description: 'تسطيب نظام الحماية من البوتات',
   aliases: ['انتي-بوت'],
-  data: new SlashCommandBuilder()
-    .setName('anti-bots')
-    .setDescription('Set up bot protection')
-
-    .addBooleanOption(opt => opt.setName('enabled').setDescription('Enable or disable').setRequired(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+  category: 'admin',
 
   async execute(interaction) {
     const lang = getGuildLang(interaction.guild.id);

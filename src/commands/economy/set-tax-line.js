@@ -6,11 +6,7 @@ module.exports = {
   name: 'set-tax-line',
   description: 'تحديد خط لروم الضريبة',
   aliases: ['خط-الضريبة'],
-  data: new SlashCommandBuilder()
-    .setName('set-tax-line')
-    .setDescription('تحديد خط لروم الضريبة')
-    .addStringOption(opt => opt.setName('line').setDescription('رابط الخط').setRequired(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+  
 
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
