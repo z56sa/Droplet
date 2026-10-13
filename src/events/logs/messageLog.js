@@ -20,7 +20,8 @@ module.exports = [
           if (hasM && !admin) return;
         }
       } catch {}
-      const hasImage = message.attachments?.some(a => a.contentType?.startsWith('image'));
+      const imageAtt = message.attachments?.find(a => a.contentType?.startsWith('image') || /\.(png|jpe?g|webp|gif)$/i.test(a.url));
+      const hasImage = !!imageAtt;
       const eventId = 'msg_delete';
       await sendServerLog(message.guild, eventId, 'messages', {
         title: hasImage ? '🖼️ حذف صورة' : '🗑️ حذف رسالة',
@@ -28,8 +29,9 @@ module.exports = [
         fields: [
           { name: '👤 الكاتب', value: message.author ? `<@${message.author.id}> (${message.author.tag})` : 'غير معروف', inline: true },
           { name: '📌 القناة', value: `<#${message.channelId}>`, inline: true },
-          { name: '📝 المحتوى', value: message.content?.slice(0, 1000) || '*[لا يوجد محتوى]*', inline: false }
+          { name: '📝 المحتوى', value: message.content?.slice(0, 1000) || (hasImage ? '*[صورة مرفقة]*' : '*[لا يوجد محتوى]*'), inline: false }
         ],
+        image: imageAtt ? imageAtt.proxyURL || imageAtt.url : null,
         thumbnail: message.author?.displayAvatarURL({ dynamic: true })
       });
     }

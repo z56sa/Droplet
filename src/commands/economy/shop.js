@@ -34,22 +34,6 @@ module.exports = {
         .addStringOption(opt => opt.setName('color').setDescription('Role color as HEX (e.g. #9333ea)').setRequired(true))
     )
     .addSubcommand(sub =>
-      sub.setName('rent-room')
-        .setDescription('🎙️ Rent a private voice/text room (1 week)')
-
-        .addStringOption(opt =>
-          opt.setName('type')
-            .setDescription('Room type')
-
-            .setRequired(true)
-            .addChoices(
-              { name: '🔊 Private voice room (3,500 Gold)', value: 'voice' },
-              { name: '💬 Private text room (2,500 Gold)', value: 'text' }
-            )
-        )
-        .addStringOption(opt => opt.setName('name').setDescription('Room name').setRequired(true))
-    )
-    .addSubcommand(sub =>
       sub.setName('buy-cosmetic')
         .setDescription('🎨 Buy profile cosmetics')
 
@@ -82,11 +66,6 @@ module.exports = {
           {
             name: t(guildId, 'economy.shop.view_roles_title'),
             value: t(guildId, 'economy.shop.view_roles_value', { price: SHOP_PRICES.custom_role_days_30.toLocaleString() }),
-            inline: false
-          },
-          {
-            name: t(guildId, 'economy.shop.view_rent_title'),
-            value: t(guildId, 'economy.shop.view_rent_value', { voice: SHOP_PRICES.rent_voice_room_days_7.toLocaleString(), text: SHOP_PRICES.rent_text_room_days_7.toLocaleString() }),
             inline: false
           },
           {
@@ -154,71 +133,7 @@ module.exports = {
       }
     }
 
-    // ─── 3. Rent Channel ───
-    if (sub === 'rent-room') {
-      const type = interaction.options.getString('type');
-      const name = interaction.options.getString('name').trim();
-      const cost = type === 'voice' ? SHOP_PRICES.rent_voice_room_days_7 : SHOP_PRICES.rent_text_room_days_7;
-
-      if (userCoins < cost) {
-        return interaction.reply({ content: t(guildId, 'economy.shop.room_insufficient', { cost: cost.toLocaleString(), coins: userCoins.toLocaleString() }), flags: 64 });
-      }
-
-      await interaction.deferReply();
-
-      const existing = db.getUserRentedChannel ? db.getUserRentedChannel(guildId, userId) : null;
-      if (existing) {
-        return interaction.editReply({ content: t(guildId, 'economy.shop.room_existing', { channel: existing.channel_id, expiry: `<t:${existing.expires_at}:R>` }) });
-      }
-
-      try {
-        const channelType = type === 'voice' ? ChannelType.GuildVoice : ChannelType.GuildText;
-        const createdChannel = await interaction.guild.channels.create({
-          name: `${type === 'voice' ? '🔊' : '💬'}┃${name}`,
-          type: channelType,
-          permissionOverwrites: [
-            {
-              id: interaction.guild.id,
-              deny: [PermissionFlagsBits.ViewChannel]
-            },
-            {
-              id: userId,
-              allow: [
-                PermissionFlagsBits.ViewChannel,
-                PermissionFlagsBits.Connect,
-                PermissionFlagsBits.Speak,
-                PermissionFlagsBits.SendMessages,
-                PermissionFlagsBits.ManageChannels
-              ]
-            }
-          ],
-          reason: t(guildId, 'economy.shop.room_reason', { tag: interaction.user.tag })
-        });
-
-        // خصم الذهب وتسجيل الروم لمدة 7 أيام
-        db.removeCoins(userId, guildId, cost);
-        const expiresAt = Math.floor(Date.now() / 1000) + (7 * 24 * 3600);
-        db.addRentedChannel(guildId, userId, createdChannel.id, type, name, expiresAt);
-
-        const embed = new EmbedBuilder()
-          .setColor('#10b981')
-          .setTitle(t(guildId, 'economy.shop.room_created_title'))
-          .setDescription(t(guildId, 'economy.shop.room_created_desc', { channel: createdChannel.id }))
-          .addFields(
-            { name: t(guildId, 'economy.shop.room_type_field'), value: type === 'voice' ? t(guildId, 'economy.shop.room_type_voice') : t(guildId, 'economy.shop.room_type_text'), inline: true },
-            { name: t(guildId, 'economy.shop.room_cost_field'), value: `\`${cost.toLocaleString()}\` ذهب`, inline: true },
-            { name: t(guildId, 'economy.shop.room_expires_field'), value: `<t:${expiresAt}:R>`, inline: true }
-          )
-          .setFooter({ text: t(guildId, 'economy.shop.room_footer') })
-          .setTimestamp();
-
-        return interaction.editReply({ embeds: [embed] });
-      } catch (err) {
-        return interaction.editReply({ content: t(guildId, 'economy.shop.room_fail', { err: err.message }) });
-      }
-    }
-
-    // ─── 4. Buy Cosmetic ───
+    // ─── 3. Buy Cosmetic ───
     if (sub === 'buy-cosmetic') {
       const itemKey = interaction.options.getString('item');
       let cost = 0;

@@ -120,15 +120,21 @@ async function sendServerLog(guild, eventId, catKey, embedData = {}, opts = {}) 
         if (embedData.fields && Array.isArray(embedData.fields)) {
             embed.addFields(embedData.fields);
         }
+        if (embedData.image) embed.setImage(embedData.image);
         if (embedData.author) embed.setAuthor(embedData.author);
         if (embedData.thumbnail) embed.setThumbnail(embedData.thumbnail);
         if (embedData.footer) {
             embed.setFooter(typeof embedData.footer === 'string' ? { text: embedData.footer } : embedData.footer);
         } else {
-            embed.setFooter({ text: 'Droplet Logs • سجلات السيرفر' });
+            embed.setFooter({ text: `${guild.name} • سجلات السيرفر الفورية`, iconURL: guild.iconURL({ dynamic: true }) });
         }
 
-        await targetChannel.send({ embeds: [embed] }).catch((err) => {
+        const sendOptions = { embeds: [embed] };
+        if (embedData.files && Array.isArray(embedData.files) && embedData.files.length > 0) {
+            sendOptions.files = embedData.files;
+        }
+
+        await targetChannel.send(sendOptions).catch((err) => {
             console.error(`[SERVER LOGS] ❌ Failed to send log [${eventId}] to channel #${targetChannel.name} (${targetChannel.id}):`, err.message);
         });
     } catch(err) {
