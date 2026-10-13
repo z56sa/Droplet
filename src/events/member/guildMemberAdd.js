@@ -1,8 +1,9 @@
-const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
+const { AttachmentBuilder, EmbedBuilder, AuditLogEvent } = require('discord.js');
 const db = require('../../database');
 const canvasUtil = require('../../utils/canvas');
 const config = require('../../config.json');
 const { isEnabled } = require('../../utils/isEnabled');
+const antiNuke = require('../../utils/antiNuke');
 
 // مخزن مؤقت لكشف الريد (Raid Detection Map)
 const raidMap = new Map(); // guildId => [timestamps]
@@ -14,27 +15,61 @@ module.exports = {
     const settings = db.getGuildSettings(guild.id);
 
     // 0. فحوصات الأمان (Security Checks)
-    // --- 0.1 Anti-Bot: طرد البوتات التلقائية ---
+    // --- 0.1 Anti-Bot: حماية شاملة من البوتات غير المصرح بها ---
     const _antiBotOn = isEnabled(settings.anti_bot, isEnabled(settings.anti_bot_add, false));
-    if (_antiBotOn && member.user.bot) {
+    if (member.user.bot) {
+      let isAllowed = false;
+      let botAdder = null;
       try {
-        await member.kick('Anti-Bot Protection: بوتات غير مصرح بها ممنوعة');
-        if (settings.log_channel) {
-          const logCh = guild.channels.cache.get(settings.log_channel);
-          if (logCh) {
-            logCh.send({
-              embeds: [new EmbedBuilder()
-                .setColor('#FF0000')
-                .setTitle('🤖 Anti-Bot | تم طرد بوت غير مصرح')
-                .setDescription(`تم طرد البوت **${member.user.tag}** (${member.id}) تلقائياً بسبب تفعيل حماية Anti-Bot.`)
-                .setTimestamp()
-              ]
-            }).catch(() => {});
-          }
+        const auditLogs = await guild.fetchAuditLogs({ limit: 1, type: AuditLogEvent.BotAdd }).catch(() => null);
+        const entry = auditLogs?.entries.first();
+        if (entry && (Date.now() - entry.createdTimestamp < 20000) && entry.target?.id === member.id) {
+          botAdder = entry.executor;
         }
-        return;
-      } catch (err) {
-        console.error('فشل طرد البوت (Anti-Bot):', err);
+      } catch {}
+
+      if (botAdder) {
+        if (
+          botAdder.id === guild.ownerId ||
+          botAdder.id === guild.client.user.id ||
+          (db.isUserWhitelisted && db.isUserWhitelisted(guild.id, botAdder.id, 'whitelist')) ||
+          (settings.antinuke_whitelist_role && guild.members.cache.get(botAdder.id)?.roles.cache.has(settings.antinuke_whitelist_role))
+        ) {
+          isAllowed = true;
+        }
+      }
+
+      if (_antiBotOn && !isAllowed) {
+        try {
+          await member.kick('Anti-Bot Protection: بوت غير مصرح به');
+          if (db.logSecurityEvent) {
+            db.logSecurityEvent(guild.id, 'security', 'anti_bot_kick', botAdder ? botAdder.id : null, member.id, 'Unauthorized bot addition', member.user.tag);
+          }
+          if (botAdder && antiNuke?.checkAction) {
+            await antiNuke.checkAction(guild, 'botAdd', AuditLogEvent.BotAdd).catch(() => {});
+          }
+          const logChannelId = settings.antinuke_alert_channel || settings.log_channel;
+          if (logChannelId) {
+            const logCh = guild.channels.cache.get(logChannelId);
+            if (logCh) {
+              logCh.send({
+                embeds: [new EmbedBuilder()
+                  .setColor('#FF0000')
+                  .setTitle('🤖 Anti-Bot | تم طرد بوت غير مصرح به')
+                  .setDescription(`تم طرد البوت **${member.user.tag}** (\`${member.id}\`) تلقائياً بسبب تفعيل حماية البوتات.`)
+                  .addFields(
+                    { name: '🤖 البوت', value: `${member.user.tag} (${member.id})`, inline: true },
+                    { name: '👤 الشخص الفاعل', value: botAdder ? `<@${botAdder.id}> (\`${botAdder.tag}\`)` : 'غير معروف (مباشر)', inline: true }
+                  )
+                  .setTimestamp()
+                ]
+              }).catch(() => {});
+            }
+          }
+          return;
+        } catch (err) {
+          console.error('فشل طرد البوت (Anti-Bot):', err);
+        }
       }
     }
 
@@ -65,6 +100,11 @@ module.exports = {
             + `يرجى الانضمام مجدداً بعد مرور **${Math.ceil(settings.anti_alt_days - accountAgeDays)} يوم** من الآن.`;
           await member.send(dmMsg).catch(() => {});
           await member.kick(`Anti-Alt Protection: حساب عمره ${Math.floor(accountAgeDays)} يوم أقل من ${settings.anti_alt_days} يوم`);
+
+          if (db.logSecurityEvent) {
+            db.logSecurityEvent(guild.id, 'security', 'anti_alt_kick', null, member.id, 'Alt Account Blocked', `Age: ${Math.floor(accountAgeDays)}d < Limit: ${settings.anti_alt_days}d`);
+          }
+
           if (settings.log_channel) {
             const logCh = guild.channels.cache.get(settings.log_channel);
             if (logCh) {
@@ -106,7 +146,12 @@ module.exports = {
         try {
           if (_action === 'ban') await member.ban({ reason: 'Anti-Raid Protection: تم اكتشاف هجوم ريد' }).catch(() => {});
           else await member.kick('Anti-Raid Protection: تم اكتشاف هجوم ريد');
-          const _raidLogId = settings.antiraid_log_channel || settings.log_channel;
+
+          if (db.logSecurityEvent) {
+            db.logSecurityEvent(guild.id, 'security', 'anti_raid_action', null, member.id, 'Raid Attack Intercepted', `${recentJoins.length} joins in 10s`);
+          }
+
+          const _raidLogId = settings.antiraid_log_channel || settings.antinuke_alert_channel || settings.log_channel;
           if (_raidLogId) {
             const logCh = guild.channels.cache.get(_raidLogId);
             if (logCh) {
@@ -114,10 +159,10 @@ module.exports = {
                 embeds: [new EmbedBuilder()
                   .setColor('#FF0000')
                   .setTitle('🚨 تحذير RAID | هجوم مكتشف!')
-                  .setDescription(`⚠️ **تم اكتشاف هجوم Raid!**\nانضم **${recentJoins.length} عضو** في أقل من 10 ثواني!\nتم طرد العضو الأخير: **${member.user.tag}** تلقائياً.`)
+                  .setDescription(`⚠️ **تم اكتشاف هجوم Raid!**\nانضم **${recentJoins.length} عضو** في أقل من 10 ثواني!\nتم التصدي للعضو: **${member.user.tag}** بنجاح.`)
                   .addFields(
                     { name: '📊 معدل الانضمام', value: `${recentJoins.length} عضو / 10 ثواني`, inline: true },
-                    { name: '🛡️ الإجراء', value: _action === 'ban' ? 'حظر تلقائي' : 'طرد تلقائي للأعضاء الجدد', inline: true }
+                    { name: '🛡️ الإجراء المطبق', value: _action === 'ban' ? 'حظر تلقائي (Ban)' : 'طرد تلقائي (Kick)', inline: true }
                   )
                   .setTimestamp()
                 ]

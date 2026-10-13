@@ -7,7 +7,10 @@ const { isEnabled } = require('./isEnabled');
 // تخزين محاولات الإجراءات الإدارية لكل مشرف: guildId -> { modId -> { channels: [], roles: [], bans: [], kicks: [] } }
 const actionTracking = new Map();
 
-// ✅ ربط المفاتيح التفصيلية للداشبورد بأنواع الإجراءات (الافتراضي: مفعل للحفاظ على السلوك الحالي)
+// ذاكرة مؤقتة للسجلات التي تمت معالجتها لمنع التكرار (Deduplication)
+const processedAuditLogIds = new Set();
+
+// ✅ ربط المفاتيح التفصيلية للداشبورد بأنواع الإجراءات
 const ACTION_TOGGLE_MAP = {
   channelDelete: ['anti_channel_delete'],
   channelCreate: ['anti_channel_create'],
@@ -21,13 +24,25 @@ const ACTION_TOGGLE_MAP = {
   guildUpdate: ['anti_server_name_change', 'anti_server_icon_change'],
   banAdd: ['anti_mass_ban'],
   memberKick: ['anti_mass_kick'],
+  botAdd: ['anti_bot_add', 'anti_bot'],
 };
 
 function isActionTypeEnabled(settings, actionType) {
   const keys = ACTION_TOGGLE_MAP[actionType];
   if (!keys) return true;
-  // يُفعّل النوع إذا كان أي مفتاح مرتبط به مفعلاً صراحة (الغائب = مطفي)
-  return keys.some(k => isEnabled(settings[k], false));
+
+  // إذا تم تفعيل أي مفتاح تفصيلي صراحة
+  const hasExplicitTrue = keys.some(k => settings[k] !== undefined && settings[k] !== null && settings[k] !== '' && isEnabled(settings[k], false));
+  if (hasExplicitTrue) return true;
+
+  // إذا تم تعطيل جميع المفاتيح التفصيلية صراحة
+  const hasExplicitFalse = keys.every(k => settings[k] !== undefined && settings[k] !== null && settings[k] !== '' && !isEnabled(settings[k], true));
+  if (hasExplicitFalse && keys.some(k => settings[k] !== undefined && settings[k] !== null && settings[k] !== '')) {
+    return false;
+  }
+
+  // في حال لم يُحدد إعداد فرعي، نعتمد على المفتاح العام (Master Anti-Nuke)
+  return true;
 }
 
 const antiNuke = {
@@ -35,11 +50,13 @@ const antiNuke = {
    * فحص وتنفيذ إجراء الحماية عند تجاوز الحد المسموح
    */
   async checkAction(guild, actionType, logType) {
+    if (!guild) return;
     const settings = db.getGuildSettings(guild.id) || {};
     const _master = (settings.anti_nuke_enabled !== undefined && settings.anti_nuke_enabled !== null && settings.anti_nuke_enabled !== '')
       ? settings.anti_nuke_enabled : settings.antinuke_enabled;
     if (!isEnabled(_master, false)) return;
-    // ✅ المفتاح التفصيلي: إذا عطّل الإدارة هذا النوع، لا تراقبه
+
+    // ✅ المفتاح التفصيلي
     if (!isActionTypeEnabled(settings, actionType)) return;
 
     try {
@@ -51,6 +68,14 @@ const antiNuke = {
       if (!fetchedLogs) return;
       const logEntry = fetchedLogs.entries.first();
       if (!logEntry) return;
+
+      // فحص حداثة السجل لمنع المعالجة الخاطئة للسجلات القديمة (أقل من 15 ثانية)
+      if (Date.now() - logEntry.createdTimestamp > 15000) return;
+
+      // منع التكرار لمعالجة نفس السجل
+      if (processedAuditLogIds.has(logEntry.id)) return;
+      processedAuditLogIds.add(logEntry.id);
+      setTimeout(() => processedAuditLogIds.delete(logEntry.id), 60000);
 
       const executor = logEntry.executor;
       if (!executor || executor.id === guild.client.user.id || executor.id === guild.ownerId) return;
@@ -87,7 +112,8 @@ const antiNuke = {
           webhookUpdate: [],
           guildUpdate: [],
           banAdd: [],
-          memberKick: []
+          memberKick: [],
+          botAdd: []
         });
       }
       const userRecord = guildActions.get(executor.id);
@@ -129,6 +155,9 @@ const antiNuke = {
       } else if (actionType === 'memberKick') {
         limit = settings.antinuke_kick_limit || 3;
         actionLabel = 'طرد متكرر للأعضاء (Mass Kick)';
+      } else if (actionType === 'botAdd') {
+        limit = settings.antinuke_bot_limit || 1;
+        actionLabel = 'إضافة بوتات غير مصرح بها (Unauthorized Bot Add)';
       }
 
       if (userRecord[actionType].length >= limit) {
@@ -138,7 +167,7 @@ const antiNuke = {
         const punishment = settings.antinuke_punishment || 'strip_roles';
         let punishmentLabel = 'سحب كافة الصلاحيات والرتب الإدارية';
 
-        // 1. سحب الرتب الخطيرة دائماً
+        // 1. تحديد وسحب الرتب الخطيرة دفعة واحدة
         const dangerousRoles = member.roles.cache.filter(r =>
           r.permissions.has(PermissionFlagsBits.Administrator) ||
           r.permissions.has(PermissionFlagsBits.ManageGuild) ||
@@ -148,11 +177,12 @@ const antiNuke = {
           r.permissions.has(PermissionFlagsBits.KickMembers)
         );
 
-        for (const [_, role] of dangerousRoles) {
-          await member.roles.remove(role).catch(() => {});
+        const dangerousRoleIds = Array.from(dangerousRoles.keys());
+        if (dangerousRoleIds.length > 0) {
+          await member.roles.remove(dangerousRoleIds, `[Anti-Nuke] سحب رتب بسبب ${actionLabel}`).catch(() => {});
         }
 
-        // 2. تطبيق العقوبة الإضافية المختارة
+        // 2. تطبيق العقوبة المختارة فوراً
         if (punishment === 'ban') {
           await member.ban({ reason: `[Anti-Nuke] تجاوز الحد الأقصى لـ ${actionLabel}` }).catch(() => {});
           punishmentLabel = 'حظر نهائي من السيرفر (Ban) + سحب الرتب';
@@ -162,6 +192,14 @@ const antiNuke = {
         } else if (punishment === 'timeout') {
           await member.timeout(24 * 60 * 60 * 1000, `[Anti-Nuke] تجاوز الحد الأقصى لـ ${actionLabel}`).catch(() => {});
           punishmentLabel = 'عزل وتسكيت لمدة 24 ساعة (Timeout) + سحب الرتب';
+        } else if (punishment === 'jail') {
+          if (settings.jail_role) {
+            await member.roles.add(settings.jail_role, `[Anti-Nuke] سجن بسبب ${actionLabel}`).catch(() => {});
+            punishmentLabel = 'عزل في السجن (Jail) + سحب الرتب';
+          } else {
+            await member.timeout(24 * 60 * 60 * 1000, `[Anti-Nuke] تجاوز الحد الأقصى لـ ${actionLabel}`).catch(() => {});
+            punishmentLabel = 'عزل وتسكيت (Timeout) + سحب الرتب';
+          }
         }
 
         logger.warn(`[ANTI-NUKE] تم تطبيق عقوبة (${punishmentLabel}) على المشرف ${executor.tag} في سيرفر ${guild.name} بسبب ${actionLabel}!`);
