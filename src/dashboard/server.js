@@ -12013,8 +12013,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             </div>
                                         </div>
                                         <!-- Simulated Select Menu -->
-                                        <div class="bg-[#111214] border border-white/10 rounded p-2 text-xs text-gray-300 flex items-center justify-between cursor-default">
-                                            <span class="text-gray-400">🛍️ اختر منتجاً مخصصاً لشرائه بالذهب...</span>
+                                        <div id="previewSelectMenu" class="bg-[#111214] border border-white/10 rounded p-2 text-xs text-gray-300 flex items-center justify-between cursor-default">
+                                            <span class="text-gray-400" id="previewSelectText">🛍️ اختر منتجاً مخصصاً لشرائه بالذهب...</span>
                                             <span class="text-gray-400 text-xs">▼</span>
                                         </div>
                                     </div>
@@ -12187,6 +12187,18 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     container.innerHTML = '<span class="text-gray-400 italic">لا توجد عناصر متاحة للشراء حالياً.</span>';
                                 } else {
                                     container.innerHTML = items.join('<hr class="border-white/5 my-1.5">');
+                                }
+
+                                const selMenu = document.getElementById('previewSelectMenu');
+                                const selText = document.getElementById('previewSelectText');
+                                if (selMenu && selText) {
+                                    const validProds = customProducts.filter(p => p && p.name);
+                                    if (validProds.length > 0) {
+                                        selMenu.classList.remove('hidden');
+                                        selText.innerText = '🛍️ اختر من ' + validProds.length + ' منتج متاح لشراءه بالذهب...';
+                                    } else {
+                                        selMenu.classList.add('hidden');
+                                    }
                                 }
                             }
 
@@ -12626,7 +12638,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 <div class="flex-1 flex overflow-hidden">
                     
                     <!-- Main Content Form Area -->
-                    <main class="flex-1 p-8 overflow-y-auto ${section === 'embed' ? 'max-w-7xl' : 'max-w-4xl'} mx-auto">
+                    <main class="flex-1 p-8 overflow-y-auto ${(section === 'embed' || section === 'custom_shop') ? 'max-w-7xl' : 'max-w-4xl'} mx-auto">
                         <div class="${section === 'logs' ? '' : 'probot-card border border-blue-500/20 rounded-3xl p-8 shadow-2xl mb-8'}">
                             <div class="flex items-center justify-between pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
                                 <div class="flex items-center gap-3">
