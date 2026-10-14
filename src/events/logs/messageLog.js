@@ -40,20 +40,28 @@ module.exports = [
       // البحث في سجل التدقيق لمعرفة ما إذا كان هناك مشرف قام بالحذف أو التعرف على الكاتب
       let deletedBy = null;
       try {
-        const auditLogs = await guild.fetchAuditLogs({ limit: 3, type: AuditLogEvent.MessageDelete }).catch(() => null);
-        if (auditLogs) {
-          const entry = auditLogs.entries.find(e => 
-            e.extra?.channel?.id === message.channelId &&
-            (!e.target || e.target.id === authorId) &&
-            (Date.now() - e.createdTimestamp < 10000)
-          );
+        // انتظار قصير (800ms) حتى يسجل ديسكورد عملية الحذف في الـ Audit Log
+        await new Promise(r => setTimeout(r, 800));
+
+        const auditLogs = await guild.fetchAuditLogs({ limit: 6, type: AuditLogEvent.MessageDelete }).catch(() => null);
+        if (auditLogs && auditLogs.entries.size > 0) {
+          const now = Date.now();
+          const entry = auditLogs.entries.find(e => {
+            const matchesChannel = !e.extra?.channel || e.extra.channel.id === message.channelId;
+            const matchesTarget = !authorId || !e.target || e.target.id === authorId;
+            const isRecent = (now - e.createdTimestamp) < 15000;
+            return matchesChannel && matchesTarget && isRecent;
+          });
+
           if (entry) {
+            // إذا كان المنفذ ليس هو نفس كاتب الرسالة
             if (entry.executor && entry.executor.id !== authorId) {
               deletedBy = entry.executor;
             }
-            if (!authorId && entry.target) {
+            // إذا لم يكن الكاتب معروفاً، وسجل التدقيق يحتوي على target (وهو صاحب الرسالة المحذوفة)
+            if (!authorId && entry.target && !entry.target.bot) {
               authorId = entry.target.id;
-              authorTag = entry.target.tag;
+              authorTag = entry.target.tag || `${entry.target.username}`;
               authorUsername = entry.target.username;
               if (typeof entry.target.displayAvatarURL === 'function') {
                 authorAvatar = entry.target.displayAvatarURL({ dynamic: true });
@@ -61,7 +69,9 @@ module.exports = [
             }
           }
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('[MSGLOG-AUDIT-ERR]:', err);
+      }
 
       // تجاهل الغوست-بينج هنا — معالج messageDelete يرسل تنبيهه الخاص
       try {
