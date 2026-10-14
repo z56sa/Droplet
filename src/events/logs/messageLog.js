@@ -40,6 +40,12 @@ module.exports = [
       let imageAtt = rawAtts.find(a => a.contentType?.startsWith('image') || /\.(png|jpe?g|webp|gif)$/i.test(a.url || ''));
       const hasImage = !!imageAtt;
 
+      // ── حفظ صورة المرفق قبل انتهاء صلاحيتها (قبل انتظار Audit Log) ──
+      // روابط Discord CDN تنتهي صلاحيتها بعد الحذف — لذا نحفظ رابط الصورة مسبقاً
+      const liveImageAtt = message.attachments?.size > 0
+        ? [...message.attachments.values()].find(a => a.contentType?.startsWith('image') || /\.(png|jpe?g|webp|gif)$/i.test(a.url || ''))
+        : null;
+
       // ── البحث في سجل التدقيق لمعرفة من حذف الرسالة ──
       let deletedBy = null;
       let selfDeleted = false;
@@ -126,18 +132,31 @@ module.exports = [
         fields.push({ name: '🗑️ حُذفت بواسطة', value: '*غير معروف*', inline: true });
       }
 
+      // ── معالجة الصورة المرفقة ──
+      // نستخدم الرابط الفعلي فقط إذا كانت الصورة مأخوذة مباشرة من Discord (وليس من كاش قديم)
+      // لأن روابط Discord تنتهي بعد الحذف
+      const freshImageUrl = liveImageAtt ? (liveImageAtt.proxyURL || liveImageAtt.url) : null;
+
+      // المحتوى: نص أو إشارة لصورة
+      const hasAnyImage = !!liveImageAtt || !!imageAtt;
       fields.push({
         name: '📝 المحتوى',
-        value: content ? (content.length > 1000 ? content.slice(0, 1000) + '...' : content) : (hasImage ? '*[صورة مرفقة]*' : '*[لا يوجد محتوى مسجل]*'),
+        value: content ? (content.length > 1000 ? content.slice(0, 1000) + '...' : content) : (hasAnyImage ? '*[صورة مرفقة]*' : '*[لا يوجد محتوى مسجل]*'),
         inline: false
       });
 
+      if (liveImageAtt) {
+        // إشارة اسم الملف في المحتوى كمعلومة إضافية
+        fields.push({ name: '📎 اسم الملف', value: `\`${liveImageAtt.name || 'image'}\``, inline: true });
+      }
+
       const eventId = 'msg_delete';
       await sendServerLog(guild, eventId, 'messages', {
-        title: hasImage ? '🖼️ حذف صورة' : '🗑️ حذف رسالة',
+        title: hasAnyImage ? '🖼️ حذف صورة' : '🗑️ حذف رسالة',
         desc: `تم حذف رسالة في <#${message.channelId}>`,
         fields,
-        image: imageAtt ? (imageAtt.proxyURL || imageAtt.url) : null,
+        // نضع الصورة فقط إذا كانت من Discord مباشرة (رابط حي غير منتهي الصلاحية)
+        image: freshImageUrl || null,
         thumbnail: authorAvatar
       });
     }
