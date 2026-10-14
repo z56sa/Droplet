@@ -177,8 +177,7 @@ module.exports = {
     'general.help.cmd.embed': 'Say something in an embed',
     'general.help.cmd.say': 'Say something',
     'general.help.cmd.send': 'Send a message to someone',
-    'general.help.cmd.ai': 'Chat with the AI (Droplet)',
-    'general.help.cmd.ask': 'Ask Droplet AI anything!',
+    'general.help.cmd.set-language': 'Change the bot language for this server (Arabic / English)',
     'general.help.cmd.ping': 'Test the bot\'s speed',
     'general.help.cmd.help': 'The bot command list',
 
@@ -521,8 +520,7 @@ module.exports = {
     'general.help.cmd.embed': 'قول كلام في ايمبد',
     'general.help.cmd.say': 'قول كلام',
     'general.help.cmd.send': 'لارسال رسالة لشخص ما',
-    'general.help.cmd.ai': 'التحدث مع الذكاء الاصطناعي (Droplet)',
-    'general.help.cmd.ask': 'اسأل ذكاء Droplet الاصطناعي أي سؤال!',
+    'general.help.cmd.set-language': 'تغيير لغة البوت في السيرفر (العربية / English)',
     'general.help.cmd.ping': 'لتجربة سرعة البوت',
     'general.help.cmd.help': 'قائمة اوامر البوت',
 

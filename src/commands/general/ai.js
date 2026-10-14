@@ -345,12 +345,15 @@ const HELP_TEXT = [
 
 module.exports = {
     name: 'ai',
-    description: 'Droplet AI — مهندس برمجيات ذكي متخصص على مستوى عالمي',
+    description: 'Droplet AI — مساعد برمجي سري وخاص للمالك',
     aliases: ['bot-ai', 'gpt', 'code', 'debug', 'audit'],
     category: 'general',
+    ownerOnly: true,
+    hidden: true, // مخفي عن الأعضاء العاديين
     data: new SlashCommandBuilder()
         .setName('ai')
-        .setDescription('Droplet AI — Staff Engineer Level: Code, Debug, Security, Docs, DB, Algorithms & More')
+        .setDescription('Droplet AI — Private Owner Assistant (Hidden)')
+        .setDefaultMemberPermissions(0) // 0 = مخفي ولا يمكن لأي عضو أو أدمن عادي رؤيته إلا صاحب البوت
         .addStringOption(option =>
             option.setName('prompt')
                 .setDescription('السؤال، الكود، أو التعليمة التي تريد إرسالها')

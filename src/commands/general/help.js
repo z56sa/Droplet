@@ -63,7 +63,7 @@ const CATEGORIES = {
       'setup-rating', 'setcommandrole', 'setup-logs', 'logs-info', 'alias',
       'set-shortcut', 'autoreply-add', 'autoreply-list', 'autoreply-remove',
       'avatar', 'banner', 'user', 'server', 'inrole', 'roles', 'embed',
-      'say', 'send', 'ai', 'ask', 'ping', 'help'
+      'say', 'send', 'set-language', 'ping', 'help'
     ]
   }
 };

@@ -121,6 +121,19 @@ module.exports = {
               { name: '🏆 Competing', value: 'Competing' }
             )
         )
+    // 5. /set language
+    .addSubcommand(sub =>
+      sub.setName('language')
+        .setDescription('Change the bot language in this server (العربية / English)')
+        .addStringOption(opt =>
+          opt.setName('lang')
+            .setDescription('Choose language / اختر لغة البوت')
+            .setRequired(true)
+            .addChoices(
+              { name: '🇸🇦 العربية (Arabic)', value: 'AR' },
+              { name: '🇺🇸 English', value: 'EN' }
+            )
+        )
     ),
 
   async execute(interaction, client) {
@@ -131,6 +144,30 @@ module.exports = {
 
     const sub = interaction.options.getSubcommand();
     const guildId = interaction.guild.id;
+
+    // 5. /set language
+    if (sub === 'language') {
+      await interaction.deferReply({ flags: 64 });
+      const chosenLang = interaction.options.getString('lang').toUpperCase();
+      try {
+        if (typeof db.setGuildSetting === 'function') {
+          db.setGuildSetting(guildId, 'bot_language', chosenLang);
+        } else if (typeof db.updateGuildSettings === 'function') {
+          db.updateGuildSettings(guildId, { bot_language: chosenLang });
+        } else {
+          db.updateGuildSetting(guildId, 'bot_language', chosenLang);
+        }
+
+        const isAr = chosenLang === 'AR';
+        const replyMsg = isAr
+          ? '🇸🇦 تم تغيير لغة البوت في السيرفر بنجاح إلى: **العربية**'
+          : '🇺🇸 Bot language in this server has been successfully set to: **English**';
+
+        return interaction.editReply({ content: replyMsg });
+      } catch (err) {
+        return interaction.editReply({ content: `❌ Error saving language: ${err.message}` });
+      }
+    }
 
     // 1. /set message
     if (sub === 'message') {

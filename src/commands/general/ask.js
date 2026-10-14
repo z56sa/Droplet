@@ -121,16 +121,26 @@ async function generateWithRetry(ai, prompt, langOrGuildId = 'EN') {
     throw lastError || new Error('All models failed');
 }
 
+const config = require('../../config.json');
+
 module.exports = {
+    ownerOnly: true,
+    hidden: true,
     data: new SlashCommandBuilder()
         .setName('ask')
-        .setDescription('Ask Droplet anything')
+        .setDescription('Ask Droplet anything (Private Owner Assistant)')
+        .setDefaultMemberPermissions(0)
         .addStringOption(opt =>
             opt.setName('question')
                 .setDescription('Your question')
                 .setRequired(true)),
 
     async execute(interaction) {
+        const ownerId = process.env.OWNER_ID || config.ownerId || '1178342841882267744';
+        if (interaction.user.id !== ownerId) {
+            return interaction.reply({ content: '❌ هذا الأمر مخصص لمالك البوت فقط.', flags: 64 });
+        }
+
         const question = interaction.options.getString('question');
         const ai = getClient();
         if (!ai) {
