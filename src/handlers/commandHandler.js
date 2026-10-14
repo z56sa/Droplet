@@ -56,17 +56,16 @@ module.exports = async (client) => {
     try {
       logger.info(`جاري تسجيل ${slashCommandsArray.length} أمر سلاش للبوت (${client.user.id})...`);
       
-      // 1. تسجيل الأوامر فورياً لكل السيرفرات المتصل بها البوت (تظهر في ثانية واحدة بدون انتظار)
+      // 1. تنظيف أوامر السيرفرات القديمة (تفريغ Guild Commands لمنع ظهور أوامر مكررة مثل /ai أو /applications)
       if (client.guilds?.cache?.size > 0) {
         for (const [guildId, guild] of client.guilds.cache) {
           try {
             await rest.put(
               Routes.applicationGuildCommands(client.user.id, guildId),
-              { body: slashCommandsArray }
+              { body: [] }
             );
-            console.log(`[Slash Commands] Registered ${slashCommandsArray.length} commands to guild: ${guild.name} (${guildId}) ⚡`);
           } catch(e) {
-            console.error(`[Slash Commands] Failed to register to guild ${guildId}:`, e.message);
+            // تجاهل أخطاء صلاحيات السيرفر
           }
         }
       }
