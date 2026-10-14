@@ -88,11 +88,17 @@ module.exports = {
     });
     this.sendToLog(interaction.guild, banEmbed);
 
-    // رفع الحظر المؤقت بعد المدة
+    // رفع الحظر المؤقت بعد المدة (مع حفظ في قاعدة البيانات للاستمرار بعد إعادة التشغيل)
     if (durationMs) {
       const guildId = interaction.guild.id;
+      const unbanAt = Math.floor((Date.now() + durationMs) / 1000);
+      if (db.addTempBan) {
+        db.addTempBan(guildId, targetUser.id, interaction.user.id, reason, unbanAt);
+      }
+
       setTimeout(async () => {
         await interaction.guild.bans.remove(targetUser.id, t(guildId, 'moderation.ban.unban_audit')).catch(() => {});
+        if (db.removeTempBan) db.removeTempBan(guildId, targetUser.id);
         const unbanEmbed = new EmbedBuilder()
           .setColor(config.colors?.success || '#2ecc71')
           .setTitle(t(guildId, 'moderation.ban.unban_title'))

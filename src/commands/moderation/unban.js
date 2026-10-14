@@ -23,6 +23,7 @@ module.exports = {
     const userId = interaction.options.getString('userid');
     try {
       await interaction.guild.bans.remove(userId, t(lang, 'moderation.unban.audit_by', { tag: interaction.user.tag }));
+      if (db.removeTempBan) db.removeTempBan(interaction.guild.id, userId);
 
       const embed = new EmbedBuilder()
         .setColor(config.colors.success)
@@ -48,6 +49,7 @@ module.exports = {
 
     try {
       await message.guild.bans.remove(userId, t(lang, 'moderation.unban.audit_by', { tag: message.author.tag }));
+      if (db.removeTempBan) db.removeTempBan(message.guild.id, userId);
       const embed = new EmbedBuilder()
         .setColor(config.colors.success)
         .setTitle(t(lang, 'moderation.unban.title'))

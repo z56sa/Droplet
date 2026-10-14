@@ -816,6 +816,22 @@ try {
   `);
 } catch(e) {}
 
+// 🔨 جدول الحظر المؤقت (Temp Bans) لضمان فك الحظر حتى بعد إعادة تشغيل البوت
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS temp_bans (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      moderator_id TEXT NOT NULL,
+      reason TEXT,
+      unban_at INTEGER NOT NULL,
+      created_at INTEGER DEFAULT (strftime('%s','now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_temp_bans_unban ON temp_bans(unban_at);
+  `);
+} catch(e) {}
+
 // إعدادات السجن والرول في guild_settings
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN jail_role TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN jail_channel TEXT;"); } catch(e) {}
@@ -2965,6 +2981,22 @@ module.exports = {
   getExpiredTempMutes: () => {
     const now = Math.floor(Date.now() / 1000);
     return db.prepare('SELECT * FROM temp_mutes WHERE unmute_at <= ?').all(now);
+  },
+  // 🔨 Temp Bans System Exports
+  addTempBan: (guildId, userId, moderatorId, reason, unbanAt) => {
+    try {
+      return db.prepare(`
+        INSERT INTO temp_bans (guild_id, user_id, moderator_id, reason, unban_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(guildId, userId, moderatorId, reason, unbanAt);
+    } catch(e) { return null; }
+  },
+  removeTempBan: (guildId, userId) => {
+    return db.prepare('DELETE FROM temp_bans WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+  },
+  getExpiredTempBans: () => {
+    const now = Math.floor(Date.now() / 1000);
+    return db.prepare('SELECT * FROM temp_bans WHERE unban_at <= ?').all(now);
   },
   // Compatibility aliases
   getTopXp: getLeaderboard,

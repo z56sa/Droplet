@@ -188,6 +188,18 @@ class StaffShiftService {
                 }
             }
 
+            // ─── فحص انتهاء عقوبات الحظر المؤقت (Expired Temp Bans) ───
+            if (db.getExpiredTempBans) {
+                const expiredBans = db.getExpiredTempBans();
+                for (const row of expiredBans) {
+                    const guild = this.client.guilds.cache.get(row.guild_id) || await this.client.guilds.fetch(row.guild_id).catch(() => null);
+                    if (guild) {
+                        await guild.bans.remove(row.user_id, 'انتهاء مدة الحظر المؤقت التلقائي').catch(() => {});
+                    }
+                    db.removeTempBan(row.guild_id, row.user_id);
+                }
+            }
+
             // ─── فحص الترقيات التلقائية لطاقم الإدارة (Staff Auto-Promotions) ───
             if (db.getStaffRanks && db.checkStaffPromotion) {
                 for (const guild of this.client.guilds.cache.values()) {
