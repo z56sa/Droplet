@@ -2,17 +2,34 @@ const { EmbedBuilder } = require('discord.js');
 const db = require('../database');
 const { isEnabled } = require('./isEnabled');
 
-// ✅ السجلات المدعومة فقط (32 سجل) — أي حدث آخر يُتجاهل بصمت
+// ✅ السجلات المدعومة
 const ALLOWED_LOG_EVENTS = new Set([
-  'member_ban', 'member_timeout', 'member_kick', 'member_unban', 'member_join', 'member_leave', 'member_nick_change',
+  // الأعضاء والرتب
+  'member_ban', 'member_timeout', 'member_untimeout', 'member_kick', 'member_unban', 'member_join', 'member_leave', 'member_nick_change',
+  'member_boost_add', 'member_boost_remove',
   'role_give_member', 'role_remove_member', 'role_create', 'role_update', 'role_delete',
-  'msg_delete', 'msg_purge', 'msg_update',
+
+  // الرسائل
+  'msg_delete', 'msg_purge', 'msg_update', 'msg_reaction_add', 'msg_reaction_remove', 'msg_reaction_remove_all', 'msg_pin', 'msg_unpin',
+
+  // القنوات والثريدات
   'channel_create', 'channel_update', 'channel_delete', 'thread_create', 'thread_update', 'thread_delete', 'channel_perms_update',
-  'server_update',
-  'emoji_update', 'sticker_update',
-  'invite_create',
-  'vc_join', 'vc_leave', 'vc_switch', 'vc_disconnect', 'vc_mute_server',
-  'bot_add'
+
+  // السيرفر والدعوات
+  'server_update', 'invite_create', 'invite_delete', 'bot_add',
+
+  // الإيموجي والستيكرز
+  'emoji_create', 'emoji_update', 'emoji_delete', 'sticker_create', 'sticker_update', 'sticker_delete',
+
+  // الفعاليات المجدولة (Scheduled Events)
+  'event_create', 'event_update', 'event_delete', 'event_start', 'event_end', 'event_user_interested',
+
+  // الرومات الصوتية
+  'vc_join', 'vc_leave', 'vc_switch', 'vc_disconnect', 'vc_mute_server', 'vc_unmute_server',
+  'vc_deafen_server', 'vc_undeafen_server', 'vc_stream_start', 'vc_stream_stop',
+
+  // أوتومود
+  'automod_rule_create', 'automod_rule_update', 'automod_rule_delete'
 ]);
 
 /**
