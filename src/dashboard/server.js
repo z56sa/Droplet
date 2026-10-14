@@ -329,6 +329,44 @@ module.exports = function (app, client) {
         }
     });
 
+    app.post('/api/custom-roles/revoke', express.json(), async (req, res) => {
+        if (!req.session?.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+        const { guildId, roleId } = req.body;
+        if (!guildId || !roleId) return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
+        const allowed = (req.session.guilds || []).some(g => g.id === guildId);
+        if (!allowed) return res.status(403).json({ success: false, message: 'Forbidden' });
+        try {
+            const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
+            if (guild) {
+                const role = guild.roles.cache.get(roleId) || await guild.roles.fetch(roleId).catch(() => null);
+                if (role) await role.delete('إلغاء الرتبة المخصصة يدوياً من الداشبورد').catch(() => {});
+            }
+            database.deleteCustomRole(guildId, roleId);
+            return res.json({ success: true });
+        } catch(e) {
+            return res.status(500).json({ success: false, message: e.message });
+        }
+    });
+
+    app.post('/api/custom-roles/extend', express.json(), async (req, res) => {
+        if (!req.session?.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+        const { guildId, roleId, extraDays } = req.body;
+        if (!guildId || !roleId) return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
+        const allowed = (req.session.guilds || []).some(g => g.id === guildId);
+        if (!allowed) return res.status(403).json({ success: false, message: 'Forbidden' });
+        try {
+            const daysToAdd = parseInt(extraDays, 10) || 30;
+            const row = database.db.prepare('SELECT * FROM custom_roles WHERE guild_id = ? AND role_id = ?').get(guildId, roleId);
+            if (!row) return res.status(404).json({ success: false, message: 'الرتبة غير موجودة' });
+            const currentExp = (row.expires_at && row.expires_at > Math.floor(Date.now() / 1000)) ? row.expires_at : Math.floor(Date.now() / 1000);
+            const newExpires = currentExp + (daysToAdd * 24 * 3600);
+            database.db.prepare('UPDATE custom_roles SET expires_at = ? WHERE guild_id = ? AND role_id = ?').run(newExpires, guildId, roleId);
+            return res.json({ success: true, newExpires });
+        } catch(e) {
+            return res.status(500).json({ success: false, message: e.message });
+        }
+    });
+
     // 2. Real Discord OAuth2 Authentication Routes
     app.get('/auth/discord', (req, res) => {
         const { clientId, redirectUri } = getOAuthConfig(req);
@@ -11704,171 +11742,334 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <div class="space-y-6 text-right" dir="rtl">
 
                         <!-- Header -->
-                        <div class="bg-gradient-to-r from-amber-900/30 to-orange-900/20 border border-amber-500/20 p-5 rounded-2xl flex items-center gap-4">
-                            <span class="text-4xl">🏪</span>
-                            <div>
-                                <h3 class="text-lg font-black text-white">متجر السيرفر</h3>
-                                <p class="text-xs text-white mt-1">تحكم في عناصر المتجر وأسعارها — الأعضاء يشترون بالـ Gold عبر أمر <code class="text-amber-300 bg-black/30 px-1 rounded">#shop view</code></p>
-                            </div>
-                        </div>
-
-                        <!-- Shop Channel Selector -->
-                        <div class="bg-[#0b0d14] border border-amber-500/20 p-5 rounded-2xl">
-                            <div class="flex items-center gap-3 mb-4">
-                                <span class="text-2xl">📢</span>
+                        <div class="bg-gradient-to-r from-amber-900/40 via-orange-950/30 to-purple-950/40 border border-amber-500/30 p-5 rounded-2xl flex items-center justify-between gap-4 shadow-xl">
+                            <div class="flex items-center gap-4">
+                                <span class="text-4xl filter drop-shadow">🏪</span>
                                 <div>
-                                    <h4 class="text-sm font-black text-white">روم المتجر المخصص</h4>
-                                    <p class="text-xs text-gray-400 mt-0.5">اختر القناة التي سيُرسل إليها embed المتجر ليتصفحه الأعضاء ويشتروا منه</p>
+                                    <h3 class="text-lg font-black text-white flex items-center gap-2">
+                                        <span>متجر السيرفر والرتب الحصرية</span>
+                                        <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full font-mono">Pro Shop</span>
+                                    </h3>
+                                    <p class="text-xs text-gray-200 mt-1 font-medium">تحكم في عناصر المتجر وأسعارها — الأعضاء يشترون بالـ Gold 🪙 عبر أمر <code class="text-amber-300 bg-black/40 px-1.5 py-0.5 rounded font-mono font-bold">#shop view</code></p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <select id="shop_channel_id" class="flex-1 bg-[#161824] border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white">
-                                    <option value="">...اختر القناة</option>
-                                    ${guildTextChannels.map(c => `<option value="${c.id}" ${settings.shop_channel_id === c.id ? 'selected' : ''}>#${c.name}</option>`).join('')}
-                                </select>
-                                <button type="button" onclick="sendShopEmbed('${guildId}')" class="px-5 py-2.5 bg-gradient-to-l from-purple-600 to-blue-500 hover:opacity-90 text-white rounded-xl text-xs font-bold transition whitespace-nowrap shadow-md">
-                                    📤 إرسال المتجر للروم
-                                </button>
+                            <div class="hidden md:flex items-center gap-2 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 px-3 py-1.5 rounded-xl font-bold">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>متزامن مع الديسكورد</span>
                             </div>
-                            <p class="text-[11px] text-gray-400 mt-2">سيتم إرسال embed تفاعلي يعرض جميع عناصر المتجر وأسعارها في القناة المختارة</p>
                         </div>
 
-                        <!-- Shop Items Config Grid -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="shopItemsGrid">
+                        <!-- 2-Columns Layout: Settings & Live Preview -->
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                            
+                            <!-- Left/Main Column: Settings Form (8 cols) -->
+                            <div class="lg:col-span-7 space-y-6">
 
-                            <!-- Custom Role Card -->
-                            <div class="bg-[#0b1322] border border-blue-500/20 rounded-2xl overflow-hidden shadow-lg">
-                                <div class="bg-gradient-to-r from-blue-700/40 to-indigo-900/30 px-5 py-4 flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-2xl">👑</span>
+                                <!-- Shop Channel Selector -->
+                                <div class="bg-[#0b1322] border border-amber-500/30 p-5 rounded-2xl shadow-lg">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <span class="text-2xl">📢</span>
                                         <div>
-                                            <h4 class="text-sm font-black text-white">رتبة مخصصة</h4>
-                                            <p class="text-[11px] text-blue-200">Custom Role</p>
+                                            <h4 class="text-sm font-black text-white">روم إرسال لوحة المتجر</h4>
+                                            <p class="text-xs text-gray-300 mt-0.5">القناة التي سيُرسل إليها embed المتجر التفاعلي ليتصفحه الأعضاء ويشتروا منه</p>
                                         </div>
                                     </div>
-                                    <label class="toggle"><input type="checkbox" id="shop_role_enabled" ${shopSettings.customRole?.enabled !== false ? 'checked' : ''}><span class="slider"></span></label>
-                                </div>
-                                <div class="p-5 space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <label class="text-xs text-white">السعر (Gold 🪙)</label>
-                                        <input type="number" id="shop_role_price" value="${shopSettings.customRole?.price || 500}" min="1" class="w-28 bg-[#070d1d] border border-blue-500/20 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left">
+                                    <div class="flex items-center gap-2">
+                                        <select id="shop_channel_id" class="flex-1 bg-[#070d1d] border border-white/20 focus:border-amber-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none font-bold">
+                                            <option value="">...اختر القناة</option>
+                                            ${guildTextChannels.map(c => `<option value="${c.id}" ${settings.shop_channel_id === c.id ? 'selected' : ''}>#${c.name}</option>`).join('')}
+                                        </select>
+                                        <button type="button" onclick="confirmSendShopEmbed('${guildId}')" class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition whitespace-nowrap shadow-md cursor-pointer flex items-center gap-1.5">
+                                            <span>📤</span>
+                                            <span>إرسال للروم</span>
+                                        </button>
                                     </div>
-                                    <div class="flex items-center justify-between">
-                                        <label class="text-xs text-white">المدة (أيام)</label>
-                                        <input type="number" id="shop_role_days" value="${shopSettings.customRole?.duration || 30}" min="1" class="w-28 bg-[#070d1d] border border-blue-500/20 rounded-lg px-3 py-1.5 text-xs text-white font-mono text-left">
-                                    </div>
-                                    <p class="text-[11px] text-gray-400">يختار العضو الاسم واللون وتُنشأ الرتبة تلقائياً وتُعطى له</p>
+                                    <p class="text-[11px] text-gray-300 mt-2 font-medium">💡 يتم إرسال إيمبد تفاعلي فاخر مع أزرار تصفح ورصيد محفظة وقائمة شراء منسدلة فورية.</p>
                                 </div>
-                            </div>
 
-                            <!-- Badge/Cosmetic Card -->
-                            <div class="bg-[#0b1322] border border-purple-500/20 rounded-2xl overflow-hidden shadow-lg">
-                                <div class="bg-gradient-to-r from-purple-900/30 to-indigo-900/20 px-5 py-4 flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-2xl">🎖️</span>
-                                        <div>
-                                            <h4 class="text-sm font-black text-white">شارة / لقب مخصص</h4>
-                                            <p class="text-[11px] text-purple-200">Profile Badge / Title</p>
-                                        </div>
-                                    </div>
-                                    <label class="toggle"><input type="checkbox" id="shop_badge_enabled" ${shopSettings.badge?.enabled ? 'checked' : ''}><span class="slider"></span></label>
-                                </div>
-                                <div class="p-5 space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <label class="text-xs text-white">السعر (Gold 🪙)</label>
-                                        <input type="number" id="shop_badge_price" value="${shopSettings.badge?.price || 200}" min="1" class="w-28 bg-[#070d1d] border border-purple-500/20 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left">
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <label class="text-xs text-white">المدة (0 = دائم)</label>
-                                        <input type="number" id="shop_badge_days" value="${shopSettings.badge?.duration || 0}" min="0" class="w-28 bg-[#070d1d] border border-purple-500/20 rounded-lg px-3 py-1.5 text-xs text-white font-mono text-left">
-                                    </div>
-                                    <p class="text-[11px] text-gray-400">تظهر في بطاقة الهوية والبروفايل داخل الديسكورد</p>
-                                </div>
-                            </div>
+                                <!-- Shop Items Config Grid -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="shopItemsGrid">
 
-                        </div>
-
-                        <!-- Add Custom Product Button Bar -->
-                        <div class="flex items-center justify-between bg-[#0b1322] border border-amber-500/20 p-4 rounded-2xl">
-                            <button type="button" id="btnAddCustomProduct" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer">
-                                <span class="text-base font-black">➕</span>
-                                <span>إضافة منتج مخصص جديد</span>
-                            </button>
-                            <div class="text-right">
-                                <h4 class="text-xs font-black text-white flex items-center justify-end gap-1.5">
-                                    <span>منتجات المتجر المخصصة</span>
-                                    <span>🛍️</span>
-                                </h4>
-                                <p class="text-[10px] text-gray-400 mt-0.5">أضف أي منتج مخصص وحدد اسمه وسعره ووصفه ليعرض للأعضاء</p>
-                            </div>
-                        </div>
-
-                        <!-- Container for Dynamic Custom Products Cards -->
-                        <div id="dynamicProductsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Cards will be populated here -->
-                        </div>
-
-                        <!-- Hidden Data Input -->
-                        <input type="hidden" id="custom_products_data" name="custom_products" value="${Buffer.from(settings.custom_products || '[]').toString('base64')}">
-
-                        <!-- Save Button -->
-                        <button type="button" id="btnSaveShopSettings" class="w-full py-3.5 bg-gradient-to-l from-purple-600 to-blue-500 hover:opacity-95 text-white rounded-xl text-sm font-black transition shadow-lg shadow-purple-900/30 cursor-pointer">
-                            💾 حفظ إعدادات المتجر
-                        </button>
-
-                        <!-- Manual Grant -->
-                        <div class="bg-[#070d1d] border border-blue-500/20 p-5 rounded-2xl">
-                            <h5 class="text-xs font-black text-white mb-4 flex items-center gap-2"><span>🎁</span> منح رتبة مخصصة لعضو يدوياً (بدون دفع)</h5>
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-                                <div>
-                                    <label class="block text-[11px] text-white mb-1">آيدي العضو</label>
-                                    <input type="text" id="dash_role_user" placeholder="User ID" class="w-full bg-[#101c33] border border-blue-500/20 rounded-lg p-2 text-xs text-white font-mono">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] text-white mb-1">اسم الرتبة</label>
-                                    <input type="text" id="dash_role_name" placeholder="مثال: VIP King" class="w-full bg-[#101c33] border border-blue-500/20 rounded-lg p-2 text-xs text-white">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] text-white mb-1">اللون HEX</label>
-                                    <input type="color" id="dash_role_color" value="#60a5fa" class="w-full h-8 bg-[#101c33] border border-blue-500/20 rounded-lg cursor-pointer">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] text-white mb-1">المدة (أيام)</label>
-                                    <input type="number" id="dash_role_days" value="30" min="1" class="w-full bg-[#101c33] border border-blue-500/20 rounded-lg p-2 text-xs text-white">
-                                </div>
-                            </div>
-                            <button type="button" onclick="handleCreateDashRole('${guildId}')" class="mt-3 px-5 py-2 bg-gradient-to-l from-purple-600 to-blue-500 hover:opacity-90 text-white rounded-lg text-xs font-bold transition shadow-md cursor-pointer">
-                                👑 منح الرتبة المخصصة
-                            </button>
-                        </div>
-
-                        <!-- Active Items (Custom Roles) -->
-                        <div class="grid grid-cols-1 gap-4">
-                            <!-- Active Custom Roles -->
-                            <div class="bg-[#0b1322] border border-blue-500/20 p-5 rounded-2xl">
-                                <h4 class="text-sm font-black text-white mb-3 flex items-center justify-between">
-                                    <span>👑 الرتب الخاصة النشطة (${customRoles.length})</span>
-                                </h4>
-                                ${customRoles.length === 0 ? '<p class="text-xs text-gray-500">لا توجد رتب نشطة حالياً.</p>' : `
-                                    <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
-                                        ${customRoles.map(cr => `
-                                            <div class="flex items-center justify-between p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl text-xs">
+                                    <!-- Custom Role Card -->
+                                    <div class="bg-[#0b1322] border border-blue-500/30 rounded-2xl overflow-hidden shadow-lg">
+                                        <div class="bg-gradient-to-r from-blue-700/40 to-indigo-900/40 px-5 py-4 flex items-center justify-between border-b border-blue-500/20">
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-2xl">👑</span>
                                                 <div>
-                                                    <span class="font-bold text-white block">${cr.role_name}</span>
-                                                    <span class="text-[10px] text-blue-300 font-mono">&lt;@${cr.user_id}&gt;</span>
-                                                </div>
-                                                <div class="text-left">
-                                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold" style="background:${cr.role_color||'#60a5fa'};color:#ffffff;">${cr.role_color||'HEX'}</span>
-                                                    <span class="text-[10px] text-gray-400 block mt-1">⏳ ${new Date(cr.expires_at * 1000).toLocaleDateString(dashDateLocale(req, 'ar-SA'))}</span>
+                                                    <h4 class="text-sm font-black text-white">رتبة مخصصة</h4>
+                                                    <p class="text-[11px] text-blue-200 font-medium">Custom Role</p>
                                                 </div>
                                             </div>
-                                        `).join('')}
+                                            <label class="toggle"><input type="checkbox" id="shop_role_enabled" ${shopSettings.customRole?.enabled !== false ? 'checked' : ''}><span class="slider"></span></label>
+                                        </div>
+                                        <div class="p-5 space-y-3">
+                                            <div class="flex items-center justify-between">
+                                                <label class="text-xs text-white font-bold">السعر (Gold 🪙)</label>
+                                                <input type="number" id="shop_role_price" value="${shopSettings.customRole?.price || 500}" min="1" class="w-28 bg-[#070d1d] border border-blue-500/30 focus:border-blue-400 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left outline-none">
+                                            </div>
+                                            <div class="flex items-center justify-between">
+                                                <label class="text-xs text-white font-bold">المدة (أيام)</label>
+                                                <input type="number" id="shop_role_days" value="${shopSettings.customRole?.duration || 30}" min="1" class="w-28 bg-[#070d1d] border border-blue-500/30 focus:border-blue-400 rounded-lg px-3 py-1.5 text-xs text-white font-mono font-bold text-left outline-none">
+                                            </div>
+                                            <p class="text-[11px] text-gray-300 font-medium leading-relaxed">يختار العضو الاسم واللون بنفسه وتُنشأ له وتُضاف لحسابه فوراً.</p>
+                                        </div>
                                     </div>
-                                `}
+
+                                    <!-- Badge/Cosmetic Card -->
+                                    <div class="bg-[#0b1322] border border-purple-500/30 rounded-2xl overflow-hidden shadow-lg">
+                                        <div class="bg-gradient-to-r from-purple-900/40 to-indigo-900/30 px-5 py-4 flex items-center justify-between border-b border-purple-500/20">
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-2xl">🎖️</span>
+                                                <div>
+                                                    <h4 class="text-sm font-black text-white">شارة / لقب مخصص</h4>
+                                                    <p class="text-[11px] text-purple-200 font-medium">Profile Badge</p>
+                                                </div>
+                                            </div>
+                                            <label class="toggle"><input type="checkbox" id="shop_badge_enabled" ${shopSettings.badge?.enabled ? 'checked' : ''}><span class="slider"></span></label>
+                                        </div>
+                                        <div class="p-5 space-y-3">
+                                            <div class="flex items-center justify-between">
+                                                <label class="text-xs text-white font-bold">السعر (Gold 🪙)</label>
+                                                <input type="number" id="shop_badge_price" value="${shopSettings.badge?.price || 200}" min="1" class="w-28 bg-[#070d1d] border border-purple-500/30 focus:border-purple-400 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left outline-none">
+                                            </div>
+                                            <div class="flex items-center justify-between">
+                                                <label class="text-xs text-white font-bold">المدة (0 = دائم)</label>
+                                                <input type="number" id="shop_badge_days" value="${shopSettings.badge?.duration || 0}" min="0" class="w-28 bg-[#070d1d] border border-purple-500/30 focus:border-purple-400 rounded-lg px-3 py-1.5 text-xs text-white font-mono font-bold text-left outline-none">
+                                            </div>
+                                            <p class="text-[11px] text-gray-300 font-medium leading-relaxed">تظهر في بطاقة الهوية والبروفايل التفاعلي داخل الديسكورد.</p>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- Add Custom Product Header -->
+                                <div class="flex items-center justify-between bg-[#0b1322] border border-amber-500/30 p-4 rounded-2xl shadow-md">
+                                    <button type="button" id="btnAddCustomProduct" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer">
+                                        <span class="text-base font-black">➕</span>
+                                        <span>إضافة منتج مخصص جديد</span>
+                                    </button>
+                                    <div class="text-right">
+                                        <h4 class="text-xs font-black text-white flex items-center justify-end gap-1.5">
+                                            <span>منتجات المتجر المخصصة</span>
+                                            <span>🛍️</span>
+                                        </h4>
+                                        <p class="text-[10px] text-gray-300 mt-0.5">أضف أي منتج مخصص (حزم، صلاحيات، قنوات) وحدد سعره ووصفه</p>
+                                    </div>
+                                </div>
+
+                                <!-- Container for Dynamic Custom Products Cards -->
+                                <div id="dynamicProductsGrid" class="space-y-3">
+                                    <!-- Cards will be populated here -->
+                                </div>
+
+                                <!-- Hidden Data Input -->
+                                <input type="hidden" id="custom_products_data" name="custom_products" value="${Buffer.from(settings.custom_products || '[]').toString('base64')}">
+
+                                <!-- Manual Grant -->
+                                <div class="bg-[#070d1d] border border-blue-500/30 p-5 rounded-2xl shadow-lg">
+                                    <h5 class="text-xs font-black text-white mb-3 flex items-center gap-2"><span>🎁</span> منح رتبة مخصصة لعضو يدوياً (بدون خصم ذهب)</h5>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                        <div>
+                                            <label class="block text-[11px] text-white font-bold mb-1">آيدي العضو (User ID)</label>
+                                            <input type="text" id="dash_role_user" placeholder="مثال: 712345678901234567" class="w-full bg-[#101c33] border border-blue-500/30 focus:border-blue-400 rounded-lg p-2 text-xs text-white font-mono outline-none">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] text-white font-bold mb-1">اسم الرتبة</label>
+                                            <input type="text" id="dash_role_name" placeholder="مثال: VIP Emperor" class="w-full bg-[#101c33] border border-blue-500/30 focus:border-blue-400 rounded-lg p-2 text-xs text-white outline-none">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] text-white font-bold mb-1">اللون HEX</label>
+                                            <div class="flex items-center gap-2">
+                                                <input type="color" id="dash_role_color" value="#7c3aed" class="w-10 h-8 bg-transparent border-0 rounded cursor-pointer p-0">
+                                                <input type="text" id="dash_role_color_hex" value="#7C3AED" class="flex-1 bg-[#101c33] border border-blue-500/30 focus:border-blue-400 rounded-lg p-2 text-xs text-white font-mono uppercase text-center outline-none">
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] text-white font-bold mb-1">المدة (أيام)</label>
+                                            <input type="number" id="dash_role_days" value="30" min="1" class="w-full bg-[#101c33] border border-blue-500/30 focus:border-blue-400 rounded-lg p-2 text-xs text-white font-mono outline-none">
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="confirmCreateDashRole('${guildId}')" class="mt-4 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition shadow-md cursor-pointer flex items-center gap-1.5">
+                                        <span>👑</span>
+                                        <span>إنشاء ومنح الرتبة فوراً</span>
+                                    </button>
+                                </div>
+
+                                <!-- Active Items (Custom Roles Management Table) -->
+                                <div class="bg-[#0b1322] border border-blue-500/30 p-5 rounded-2xl shadow-lg">
+                                    <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+                                        <span class="text-xs font-bold text-blue-300 bg-blue-950/60 border border-blue-500/30 px-2.5 py-1 rounded-full font-mono">${customRoles.length} رتبة نشطة</span>
+                                        <h4 class="text-sm font-black text-white flex items-center gap-2">
+                                            <span>إدارة الرتب الخاصة النشطة</span>
+                                            <span>👑</span>
+                                        </h4>
+                                    </div>
+                                    ${customRoles.length === 0 ? '<div class="text-center py-6 text-xs text-gray-300">لا توجد أي رتب خاصة نشطة حالياً.</div>' : `
+                                        <div class="overflow-x-auto">
+                                            <table class="w-full text-right text-xs">
+                                                <thead>
+                                                    <tr class="text-gray-300 border-b border-white/10 pb-2">
+                                                        <th class="py-2 px-2 font-bold text-white">الرتبة</th>
+                                                        <th class="py-2 px-2 font-bold text-white">العضو</th>
+                                                        <th class="py-2 px-2 font-bold text-white">اللون</th>
+                                                        <th class="py-2 px-2 font-bold text-white">الانتهاء</th>
+                                                        <th class="py-2 px-2 font-bold text-center text-white">إجراءات</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-white/5">
+                                                    ${customRoles.map(cr => {
+                                                        const isExpired = cr.expires_at && cr.expires_at < Math.floor(Date.now() / 1000);
+                                                        const remDays = cr.expires_at ? Math.max(0, Math.ceil((cr.expires_at - Math.floor(Date.now() / 1000)) / (24 * 3600))) : 'دائم';
+                                                        return `
+                                                            <tr class="hover:bg-white/5 transition">
+                                                                <td class="py-2.5 px-2 font-bold text-white flex items-center gap-1.5">
+                                                                    <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:${cr.role_color||'#7c3aed'}"></span>
+                                                                    <span>${cr.role_name}</span>
+                                                                </td>
+                                                                <td class="py-2.5 px-2 font-mono text-[11px] text-blue-300">
+                                                                    <span>&lt;@${cr.user_id}&gt;</span>
+                                                                    <span class="block text-[9px] text-gray-300">${cr.user_id}</span>
+                                                                </td>
+                                                                <td class="py-2.5 px-2">
+                                                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold" style="background:${cr.role_color||'#7c3aed'};color:#ffffff;">${cr.role_color||'HEX'}</span>
+                                                                </td>
+                                                                <td class="py-2.5 px-2 text-[11px] ${isExpired ? 'text-rose-400 font-bold' : 'text-gray-200'}">
+                                                                    ${isExpired ? 'منتهية' : `${remDays} يوم`}
+                                                                    <span class="block text-[9px] text-gray-400 font-mono">${new Date(cr.expires_at * 1000).toLocaleDateString(dashDateLocale(req, 'ar-SA'))}</span>
+                                                                </td>
+                                                                <td class="py-2.5 px-2 text-center">
+                                                                    <div class="flex items-center justify-center gap-1.5">
+                                                                        <button type="button" onclick="extendRole('${guildId}', '${cr.role_id}')" title="تمديد 30 يوم" class="px-2 py-1 bg-blue-600/30 hover:bg-blue-600/60 text-blue-300 hover:text-white border border-blue-500/30 rounded-lg text-[10px] font-bold transition cursor-pointer">
+                                                                            +30 يوم
+                                                                        </button>
+                                                                        <button type="button" onclick="revokeRole('${guildId}', '${cr.role_id}')" title="إلغاء وحذف الرتبة" class="px-2 py-1 bg-rose-600/30 hover:bg-rose-600/60 text-rose-300 hover:text-white border border-rose-500/30 rounded-lg text-[10px] font-bold transition cursor-pointer">
+                                                                            إلغاء
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        `;
+                                                    }).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    `}
+                                </div>
+
+                            </div>
+
+                            <!-- Right Column: Live Discord Embed Preview (5 cols sticky) -->
+                            <div class="lg:col-span-5 sticky top-4 space-y-4">
+                                <div class="bg-[#1e1f22] border border-white/10 rounded-2xl p-4 shadow-2xl text-left" dir="ltr">
+                                    <div class="flex items-center justify-between pb-3 mb-3 border-b border-white/10" dir="rtl">
+                                        <span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-mono">Live Sync</span>
+                                        <h5 class="text-xs font-black text-white flex items-center gap-1.5">
+                                            <span>معاينة إيمبد المتجر الحية (Discord)</span>
+                                            <span>📱</span>
+                                        </h5>
+                                    </div>
+                                    
+                                    <!-- Discord Bot Header -->
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <img src="${botAvatarUrl}" class="w-8 h-8 rounded-full bg-indigo-600">
+                                        <div>
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="text-xs font-bold text-white">Droplet</span>
+                                                <span class="text-[9px] bg-[#5865F2] text-white px-1 rounded font-bold">BOT</span>
+                                            </div>
+                                            <span class="text-[10px] text-gray-400">Today at 2:20 PM</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Discord Embed Preview Card -->
+                                    <div class="bg-[#2b2d31] border-l-4 border-l-[#7c3aed] rounded-r-lg p-3 text-right" dir="rtl">
+                                        <div class="text-xs font-bold text-white mb-1">🏪 متجر السيرفر الرسمي | SERVER SHOP</div>
+                                        <p class="text-[11px] text-gray-300 leading-relaxed mb-3">
+                                            ✨ <strong>مرحباً بكم في متجر السيرفر الحصري!</strong><br>
+                                            يمكنك شراء رتب خاصة وقنوات مخصصة باستخدام عملة <strong>الذهب (Gold 🪙)</strong>.<br>
+                                            👇 اضغط على الأزرار بالأسفل لتصفح العناصر أو معرفة رصيدك الحالي:
+                                        </p>
+                                        
+                                        <div class="text-[11px] font-bold text-amber-300 mb-1.5">🛍️ الباقات والعناصر المتاحة للشراء فوراً</div>
+                                        <div id="previewItemsList" class="space-y-2 text-[11px] text-gray-200 bg-[#1e1f22]/60 p-2.5 rounded-lg border border-white/5">
+                                            <!-- Dynamically updated -->
+                                        </div>
+
+                                        <div class="mt-3 pt-2 border-t border-white/5 text-[9px] text-gray-400 flex items-center justify-between">
+                                            <span>${guild.name} • مدعوم بـ Droplet</span>
+                                            <span>🪙 Gold Economy</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Discord Buttons Preview -->
+                                    <div class="mt-3 space-y-2" dir="rtl">
+                                        <div class="flex gap-2">
+                                            <div class="flex-1 bg-[#5865F2] text-white py-1.5 px-3 rounded text-center text-xs font-bold shadow opacity-90 cursor-default flex items-center justify-center gap-1">
+                                                <span>🛍️</span>
+                                                <span>🛒 تصفح وشراء العناصر</span>
+                                            </div>
+                                            <div class="flex-1 bg-[#248046] text-white py-1.5 px-3 rounded text-center text-xs font-bold shadow opacity-90 cursor-default flex items-center justify-center gap-1">
+                                                <span>💰</span>
+                                                <span>🪙 رصيد محفظتي</span>
+                                            </div>
+                                        </div>
+                                        <!-- Simulated Select Menu -->
+                                        <div class="bg-[#111214] border border-white/10 rounded p-2 text-xs text-gray-300 flex items-center justify-between cursor-default">
+                                            <span class="text-gray-400">🛍️ اختر منتجاً مخصصاً لشرائه بالذهب...</span>
+                                            <span class="text-gray-400 text-xs">▼</span>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Toast Notification Container -->
+                        <div id="dashToast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 transform -translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+                            <div class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-3 rounded-2xl shadow-2xl border border-emerald-400/40 font-bold text-xs flex items-center gap-2">
+                                <span class="text-base" id="toastIcon">✅</span>
+                                <span id="toastMsg">تم حفظ التغييرات بنجاح!</span>
+                            </div>
+                        </div>
+
+                        <!-- Confirmation Modal -->
+                        <div id="confirmModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+                            <div class="bg-[#0b1322] border border-amber-500/40 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl transform scale-95 transition-transform" id="confirmModalCard">
+                                <span class="text-4xl block mb-2" id="confirmModalIcon">⚠️</span>
+                                <h4 class="text-base font-black text-white mb-2" id="confirmModalTitle">تأكيد العملية</h4>
+                                <p class="text-xs text-gray-300 mb-5 leading-relaxed" id="confirmModalDesc">هل أنت متأكد من المتابعة؟</p>
+                                <div class="flex items-center justify-center gap-3">
+                                    <button type="button" id="confirmModalCancel" class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-bold transition">إلغاء</button>
+                                    <button type="button" id="confirmModalOk" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-90 text-white rounded-xl text-xs font-bold transition shadow-lg">تأكيد ومتابعة</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sticky Save Bar (appears on any change) -->
+                        <div id="stickySaveBar" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 transform translate-y-28 opacity-0 transition-all duration-300 max-w-2xl w-[90%] pointer-events-none">
+                            <div class="bg-[#0b1322]/95 backdrop-blur-md border border-amber-500/40 rounded-2xl p-4 shadow-2xl flex items-center justify-between gap-4 pointer-events-auto">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></span>
+                                    <div class="text-right">
+                                        <span class="text-xs font-black text-white block">يوجد تغييرات غير محفوظة!</span>
+                                        <span class="text-[10px] text-gray-300">احفظ الإعدادات لتظهر فوراً في المتجر بالديسكورد</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" id="btnDiscardChanges" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-bold transition cursor-pointer">
+                                        تراجع
+                                    </button>
+                                    <button type="button" id="btnSaveShopSettings" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-purple-600 hover:opacity-95 text-white rounded-xl text-xs font-black transition shadow-lg shadow-amber-900/40 cursor-pointer flex items-center gap-1.5">
+                                        <span>💾</span>
+                                        <span id="saveBtnText">حفظ إعدادات المتجر</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                     </div>
+
                     <script>
                         (function() {
                             let customProducts = [];
@@ -11886,23 +12087,132 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             }
                             if (!Array.isArray(customProducts)) customProducts = [];
 
+                            const stickyBar = document.getElementById('stickySaveBar');
+                            function showStickyBar() {
+                                if (stickyBar) {
+                                    stickyBar.classList.remove('translate-y-28', 'opacity-0', 'pointer-events-none');
+                                    stickyBar.classList.add('translate-y-0', 'opacity-100');
+                                }
+                            }
+                            function hideStickyBar() {
+                                if (stickyBar) {
+                                    stickyBar.classList.add('translate-y-28', 'opacity-0', 'pointer-events-none');
+                                    stickyBar.classList.remove('translate-y-0', 'opacity-100');
+                                }
+                            }
+
+                            // Toast notification helper
+                            window.showToast = function(msg, isError = false) {
+                                const toast = document.getElementById('dashToast');
+                                const msgEl = document.getElementById('toastMsg');
+                                const iconEl = document.getElementById('toastIcon');
+                                if (!toast || !msgEl) return;
+                                msgEl.innerText = msg;
+                                iconEl.innerText = isError ? '❌' : '✅';
+                                toast.classList.remove('-translate-y-20', 'opacity-0', 'pointer-events-none');
+                                toast.classList.add('translate-y-0', 'opacity-100');
+                                setTimeout(() => {
+                                    toast.classList.add('-translate-y-20', 'opacity-0', 'pointer-events-none');
+                                    toast.classList.remove('translate-y-0', 'opacity-100');
+                                }, 3500);
+                            };
+
+                            // Custom confirmation modal
+                            window.showConfirmModal = function({ icon, title, desc, onConfirm }) {
+                                const modal = document.getElementById('confirmModal');
+                                if (!modal) return onConfirm && onConfirm();
+                                document.getElementById('confirmModalIcon').innerText = icon || '⚠️';
+                                document.getElementById('confirmModalTitle').innerText = title || 'تأكيد العملية';
+                                document.getElementById('confirmModalDesc').innerText = desc || 'هل أنت متأكد من المتابعة؟';
+                                modal.classList.remove('hidden');
+
+                                const cancelBtn = document.getElementById('confirmModalCancel');
+                                const okBtn = document.getElementById('confirmModalOk');
+
+                                const cleanup = () => {
+                                    modal.classList.add('hidden');
+                                    cancelBtn.onclick = null;
+                                    okBtn.onclick = null;
+                                };
+
+                                cancelBtn.onclick = cleanup;
+                                okBtn.onclick = () => {
+                                    cleanup();
+                                    if (onConfirm) onConfirm();
+                                };
+                            };
+
+                            // Sync color picker with HEX input
+                            const colorPicker = document.getElementById('dash_role_color');
+                            const colorHex = document.getElementById('dash_role_color_hex');
+                            if (colorPicker && colorHex) {
+                                colorPicker.addEventListener('input', function() {
+                                    colorHex.value = this.value.toUpperCase();
+                                });
+                                colorHex.addEventListener('input', function() {
+                                    if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
+                                        colorPicker.value = this.value;
+                                    }
+                                });
+                            }
+
+                            // Update Live Embed Preview
+                            function updateLivePreview() {
+                                const container = document.getElementById('previewItemsList');
+                                if (!container) return;
+                                const items = [];
+
+                                const roleEnabled = document.getElementById('shop_role_enabled')?.checked;
+                                const rolePrice = parseInt(document.getElementById('shop_role_price')?.value, 10) || 500;
+                                const roleDays = parseInt(document.getElementById('shop_role_days')?.value, 10) || 30;
+                                if (roleEnabled) {
+                                    items.push('<div>👑 <strong>رتبة مخصصة (Custom Role)</strong><br><span class="text-amber-300 font-mono">┗ ' + rolePrice.toLocaleString() + ' Gold 🪙</span> • مدة ' + roleDays + ' يوم</div>');
+                                }
+
+                                const badgeEnabled = document.getElementById('shop_badge_enabled')?.checked;
+                                const badgePrice = parseInt(document.getElementById('shop_badge_price')?.value, 10) || 200;
+                                const badgeDays = parseInt(document.getElementById('shop_badge_days')?.value, 10) || 0;
+                                if (badgeEnabled) {
+                                    items.push('<div>🎖️ <strong>شارة / لقب مخصص</strong><br><span class="text-amber-300 font-mono">┗ ' + badgePrice.toLocaleString() + ' Gold 🪙</span> • ' + (badgeDays > 0 ? badgeDays + ' يوم' : 'دائم') + '</div>');
+                                }
+
+                                customProducts.forEach(p => {
+                                    if (!p || !p.name) return;
+                                    const em = p.emoji || '🛍️';
+                                    const pr = Number(p.price || 0).toLocaleString();
+                                    const ds = (p.description || p.desc) ? ('<br><span class="text-gray-400 text-[10px]">  ' + (p.description || p.desc) + '</span>') : '';
+                                    items.push('<div>' + em + ' <strong>' + p.name + '</strong><br><span class="text-amber-300 font-mono">┗ ' + pr + ' Gold 🪙</span>' + ds + '</div>');
+                                });
+
+                                if (items.length === 0) {
+                                    container.innerHTML = '<span class="text-gray-400 italic">لا توجد عناصر متاحة للشراء حالياً.</span>';
+                                } else {
+                                    container.innerHTML = items.join('<hr class="border-white/5 my-1.5">');
+                                }
+                            }
+
                             function renderCustomCards() {
                                 const container = document.getElementById('dynamicProductsGrid');
                                 if (!container) return;
                                 if (customProducts.length === 0) {
-                                    container.innerHTML = '';
+                                    container.innerHTML = '<div class="text-center py-6 bg-[#070d1d] border border-dashed border-white/10 rounded-2xl text-xs text-gray-300 font-medium">لا توجد منتجات مخصصة حتى الآن. اضغط على "+ إضافة منتج مخصص جديد" بالأعلى لإضافة أول منتج.</div>';
+                                    updateLivePreview();
                                     return;
                                 }
 
                                 container.innerHTML = customProducts.map((p, idx) => {
                                     const safeName = (p.name || '').replace(/"/g, '&quot;');
-                                    const safeDesc = (p.description || '').replace(/"/g, '&quot;');
+                                    const safeDesc = (p.description || p.desc || '').replace(/"/g, '&quot;');
                                     const safeEmoji = (p.emoji || '🛍️').replace(/"/g, '&quot;');
                                     const price = p.price || 100;
 
-                                    return '<div class="bg-[#0b1322] border border-amber-500/30 rounded-2xl overflow-hidden shadow-lg">'
-                                        + '<div class="bg-gradient-to-r from-amber-900/40 to-orange-900/30 px-5 py-3.5 flex items-center justify-between">'
-                                        + '<button type="button" class="btn-del-prod text-rose-400 hover:text-rose-300 hover:bg-rose-950/50 w-7 h-7 rounded-lg flex items-center justify-center text-xs transition cursor-pointer" data-idx="' + idx + '" title="حذف هذا المنتج">✕</button>'
+                                    return '<div class="bg-[#0b1322] border border-amber-500/30 rounded-2xl overflow-hidden shadow-lg transition hover:border-amber-400/50">'
+                                        + '<div class="bg-gradient-to-r from-amber-900/40 to-orange-900/30 px-5 py-3.5 flex items-center justify-between border-b border-amber-500/20">'
+                                        + '<div class="flex items-center gap-2">'
+                                        + '<button type="button" class="btn-del-prod text-rose-400 hover:text-rose-200 hover:bg-rose-950/60 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer" data-idx="' + idx + '" title="حذف هذا المنتج">🗑️ حذف</button>'
+                                        + (idx > 0 ? '<button type="button" class="btn-up-prod text-gray-300 hover:text-white px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 text-xs" data-idx="' + idx + '" title="تحريك لأعلى">▲</button>' : '')
+                                        + (idx < customProducts.length - 1 ? '<button type="button" class="btn-down-prod text-gray-300 hover:text-white px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 text-xs" data-idx="' + idx + '" title="تحريك لأسفل">▼</button>' : '')
+                                        + '</div>'
                                         + '<div class="flex items-center gap-2">'
                                         + '<span class="text-xs font-bold text-amber-200">منتج مخصص #' + (idx + 1) + '</span>'
                                         + '<span class="text-xl">' + safeEmoji + '</span>'
@@ -11912,20 +12222,20 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         + '<div class="flex items-center gap-2">'
                                         + '<div class="flex-1">'
                                         + '<label class="block text-[11px] text-white font-bold mb-1 text-right">اسم المنتج</label>'
-                                        + '<input type="text" class="inp-prod-name w-full bg-[#070d1d] border border-amber-500/20 focus:border-amber-400 rounded-lg px-3 py-1.5 text-xs text-white outline-none text-right font-bold" data-idx="' + idx + '" placeholder="اكتب اسم المنتج..." value="' + safeName + '">'
+                                        + '<input type="text" class="inp-prod-name w-full bg-[#070d1d] border border-amber-500/30 focus:border-amber-400 rounded-lg px-3 py-1.5 text-xs text-white outline-none text-right font-bold" data-idx="' + idx + '" placeholder="اكتب اسم المنتج..." value="' + safeName + '">'
                                         + '</div>'
                                         + '<div class="w-16">'
                                         + '<label class="block text-[11px] text-white font-bold mb-1 text-center">الإيموجي</label>'
-                                        + '<input type="text" class="inp-prod-emoji w-full bg-[#070d1d] border border-amber-500/20 focus:border-amber-400 rounded-lg px-2 py-1.5 text-xs text-white outline-none text-center" data-idx="' + idx + '" value="' + safeEmoji + '">'
+                                        + '<input type="text" class="inp-prod-emoji w-full bg-[#070d1d] border border-amber-500/30 focus:border-amber-400 rounded-lg px-2 py-1.5 text-xs text-white outline-none text-center" data-idx="' + idx + '" value="' + safeEmoji + '">'
                                         + '</div>'
                                         + '</div>'
                                         + '<div class="flex items-center justify-between">'
                                         + '<label class="text-xs text-white font-bold">السعر (Gold 🪙)</label>'
-                                        + '<input type="number" class="inp-prod-price w-28 bg-[#070d1d] border border-amber-500/20 focus:border-amber-400 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left outline-none" data-idx="' + idx + '" min="1" value="' + price + '">'
+                                        + '<input type="number" class="inp-prod-price w-32 bg-[#070d1d] border border-amber-500/30 focus:border-amber-400 rounded-lg px-3 py-1.5 text-xs text-amber-300 font-mono font-bold text-left outline-none" data-idx="' + idx + '" min="1" value="' + price + '">'
                                         + '</div>'
                                         + '<div>'
-                                        + '<label class="block text-[11px] text-gray-400 mb-1 text-right">الوصف (اختياري)</label>'
-                                        + '<input type="text" class="inp-prod-desc w-full bg-[#070d1d] border border-white/10 focus:border-amber-400 rounded-lg px-3 py-1.5 text-xs text-gray-300 outline-none text-right" data-idx="' + idx + '" placeholder="تفاصيل المنتج..." value="' + safeDesc + '">'
+                                        + '<label class="block text-[11px] text-gray-300 font-bold mb-1 text-right">الوصف (اختياري)</label>'
+                                        + '<input type="text" class="inp-prod-desc w-full bg-[#070d1d] border border-white/20 focus:border-amber-400 rounded-lg px-3 py-1.5 text-xs text-gray-200 outline-none text-right" data-idx="' + idx + '" placeholder="تفاصيل المنتج أو كيفية تسليمه..." value="' + safeDesc + '">'
                                         + '</div>'
                                         + '</div>'
                                         + '</div>';
@@ -11936,62 +12246,121 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     el.addEventListener('input', function() {
                                         const i = parseInt(this.dataset.idx, 10);
                                         if (customProducts[i]) customProducts[i].name = this.value;
+                                        showStickyBar();
+                                        updateLivePreview();
                                     });
                                 });
                                 container.querySelectorAll('.inp-prod-emoji').forEach(el => {
-                                    el.addEventListener('change', function() {
+                                    el.addEventListener('input', function() {
                                         const i = parseInt(this.dataset.idx, 10);
                                         if (customProducts[i]) customProducts[i].emoji = this.value || '🛍️';
+                                        showStickyBar();
+                                        updateLivePreview();
                                     });
                                 });
                                 container.querySelectorAll('.inp-prod-price').forEach(el => {
                                     el.addEventListener('input', function() {
                                         const i = parseInt(this.dataset.idx, 10);
                                         if (customProducts[i]) customProducts[i].price = Math.max(1, parseInt(this.value, 10) || 1);
+                                        showStickyBar();
+                                        updateLivePreview();
                                     });
                                 });
                                 container.querySelectorAll('.inp-prod-desc').forEach(el => {
                                     el.addEventListener('input', function() {
                                         const i = parseInt(this.dataset.idx, 10);
                                         if (customProducts[i]) customProducts[i].description = this.value;
+                                        showStickyBar();
+                                        updateLivePreview();
                                     });
                                 });
                                 container.querySelectorAll('.btn-del-prod').forEach(el => {
                                     el.addEventListener('click', function() {
                                         const i = parseInt(this.dataset.idx, 10);
-                                        if (confirm('هل تريد حذف هذا المنتج؟')) {
-                                            customProducts.splice(i, 1);
+                                        window.showConfirmModal({
+                                            icon: '🗑️',
+                                            title: 'حذف المنتج',
+                                            desc: 'هل أنت متأكد من حذف هذا المنتج من قائمة المتجر؟',
+                                            onConfirm: () => {
+                                                customProducts.splice(i, 1);
+                                                renderCustomCards();
+                                                showStickyBar();
+                                            }
+                                        });
+                                    });
+                                });
+                                container.querySelectorAll('.btn-up-prod').forEach(el => {
+                                    el.addEventListener('click', function() {
+                                        const i = parseInt(this.dataset.idx, 10);
+                                        if (i > 0) {
+                                            const temp = customProducts[i];
+                                            customProducts[i] = customProducts[i - 1];
+                                            customProducts[i - 1] = temp;
                                             renderCustomCards();
+                                            showStickyBar();
                                         }
                                     });
                                 });
+                                container.querySelectorAll('.btn-down-prod').forEach(el => {
+                                    el.addEventListener('click', function() {
+                                        const i = parseInt(this.dataset.idx, 10);
+                                        if (i < customProducts.length - 1) {
+                                            const temp = customProducts[i];
+                                            customProducts[i] = customProducts[i + 1];
+                                            customProducts[i + 1] = temp;
+                                            renderCustomCards();
+                                            showStickyBar();
+                                        }
+                                    });
+                                });
+
+                                updateLivePreview();
                             }
+
+                            // Trigger sticky bar on toggle/price changes
+                            ['shop_role_enabled', 'shop_role_price', 'shop_role_days', 'shop_badge_enabled', 'shop_badge_price', 'shop_badge_days'].forEach(id => {
+                                const el = document.getElementById(id);
+                                if (el) {
+                                    el.addEventListener('change', () => { showStickyBar(); updateLivePreview(); });
+                                    el.addEventListener('input', () => { showStickyBar(); updateLivePreview(); });
+                                }
+                            });
 
                             // Add Product Button
                             const addBtn = document.getElementById('btnAddCustomProduct');
                             if (addBtn) {
                                 addBtn.addEventListener('click', function(e) {
                                     e.preventDefault();
-                                    if (customProducts.length >= 20) return alert('الحد الأقصى هو 20 منتج');
+                                    if (customProducts.length >= 20) return alert('الحد الأقصى هو 20 منتج مخصص');
                                     customProducts.push({
                                         id: Date.now(),
-                                        name: 'منتج جديد',
+                                        name: 'منتج مخصص #' + (customProducts.length + 1),
                                         emoji: '🛍️',
                                         price: 100,
                                         description: ''
                                     });
                                     renderCustomCards();
+                                    showStickyBar();
                                 });
                             }
 
-                            // Save Button
+                            // Discard Changes Button
+                            const discardBtn = document.getElementById('btnDiscardChanges');
+                            if (discardBtn) {
+                                discardBtn.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    location.reload();
+                                });
+                            }
+
+                            // Save Button Ajax Handler
                             const saveBtn = document.getElementById('btnSaveShopSettings');
                             if (saveBtn) {
                                 saveBtn.addEventListener('click', async function(e) {
                                     e.preventDefault();
                                     const guildId = '${guildId}';
 
-                                    // Collect products directly from the DOM to guarantee 100% accurate typed values
+                                    // Collect products from DOM
                                     const container = document.getElementById('dynamicProductsGrid');
                                     const collected = [];
                                     if (container) {
@@ -12036,7 +12405,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                     try {
                                         saveBtn.disabled = true;
-                                        saveBtn.innerText = '⏳ جاري الحفظ...';
+                                        const saveBtnText = document.getElementById('saveBtnText');
+                                        if (saveBtnText) saveBtnText.innerText = 'جاري الحفظ...';
+
                                         const res = await fetch('/api/shop/settings', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
@@ -12044,17 +12415,17 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         });
                                         const resData = await res.json();
                                         if (resData && resData.success) {
-                                            alert('✅ تم حفظ إعدادات المتجر والمنتجات بنجاح!');
-                                            location.reload();
+                                            hideStickyBar();
+                                            window.showToast('✅ تم حفظ إعدادات المتجر والمنتجات بنجاح!');
                                         } else {
-                                            alert('❌ خطأ: ' + (resData?.message || 'فشل الحفظ'));
-                                            saveBtn.disabled = false;
-                                            saveBtn.innerText = '💾 حفظ إعدادات المتجر';
+                                            window.showToast(resData?.message || 'فشل حفظ الإعدادات', true);
                                         }
                                     } catch(err) {
-                                        alert('❌ خطأ في الاتصال بالخادم');
+                                        window.showToast('خطأ في الاتصال بالخادم', true);
+                                    } finally {
                                         saveBtn.disabled = false;
-                                        saveBtn.innerText = '💾 حفظ إعدادات المتجر';
+                                        const saveBtnText = document.getElementById('saveBtnText');
+                                        if (saveBtnText) saveBtnText.innerText = 'حفظ إعدادات المتجر';
                                     }
                                 });
                             }
@@ -12063,38 +12434,122 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             renderCustomCards();
                         })();
 
-                        async function sendShopEmbed(guildId) {
+                        // Confirm & send shop embed
+                        window.confirmSendShopEmbed = function(guildId) {
                             const channelId = document.getElementById('shop_channel_id').value;
-                            if (!channelId) return alert('يرجى اختيار القناة أولاً');
-                            if (!confirm('هل تريد إرسال embed المتجر إلى هذه القناة؟')) return;
-                            try {
-                                const res = await fetch('/api/shop/send-embed', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ guildId, channelId })
-                                });
-                                const d = await res.json();
-                                if (d.success) {
-                                    await fetch('/api/shop/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guildId, shopItems: null, shopChannelId: channelId }) });
-                                    alert('✅ تم إرسال المتجر للقناة بنجاح!');
-                                    location.reload();
-                                } else alert(d.message || 'فشل الإرسال');
-                            } catch(e) { alert('خطأ في الاتصال'); }
-                        }
+                            if (!channelId) return window.showToast('يرجى اختيار القناة أولاً', true);
 
-                        async function handleCreateDashRole(guildId) {
+                            window.showConfirmModal({
+                                icon: '📢',
+                                title: 'إرسال المتجر للروم',
+                                desc: 'هل تريد إرسال embed المتجر التفاعلي بكامل عناصره إلى هذه القناة الآن؟',
+                                onConfirm: async () => {
+                                    try {
+                                        const res = await fetch('/api/shop/send-embed', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ guildId, channelId })
+                                        });
+                                        const d = await res.json();
+                                        if (d.success) {
+                                            window.showToast('✅ تم إرسال المتجر للقناة بنجاح!');
+                                        } else {
+                                            window.showToast(d.message || 'فشل الإرسال', true);
+                                        }
+                                    } catch(e) {
+                                        window.showToast('خطأ في الاتصال بالخادم', true);
+                                    }
+                                }
+                            });
+                        };
+
+                        // Confirm & grant manual role
+                        window.confirmCreateDashRole = function(guildId) {
                             const userId = document.getElementById('dash_role_user').value.trim();
                             const roleName = document.getElementById('dash_role_name').value.trim();
-                            const roleColor = document.getElementById('dash_role_color').value;
+                            const roleColor = document.getElementById('dash_role_color_hex').value.trim() || document.getElementById('dash_role_color').value;
                             const days = parseInt(document.getElementById('dash_role_days').value, 10) || 30;
-                            if (!userId || !roleName) return alert('يرجى كتابة آيدي العضو واسم الرتبة');
-                            try {
-                                const res = await fetch('/api/custom-roles/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guildId, userId, roleName, roleColor, days }) });
-                                const d = await res.json();
-                                if (d.success) location.reload();
-                                else alert(d.message || 'فشل إنشاء الرتبة');
-                            } catch(e) { alert('خطأ في الاتصال'); }
-                        }
+
+                            if (!userId || !roleName) return window.showToast('يرجى كتابة آيدي العضو واسم الرتبة', true);
+
+                            window.showConfirmModal({
+                                icon: '👑',
+                                title: 'منح رتبة مخصصة',
+                                desc: 'سيتم إنشاء الرتبة "' + roleName + '" باللون ' + roleColor + ' ومنحها للعضو لمدة ' + days + ' يوماً. هل تود المتابعة؟',
+                                onConfirm: async () => {
+                                    try {
+                                        const res = await fetch('/api/custom-roles/create', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ guildId, userId, roleName, roleColor, days })
+                                        });
+                                        const d = await res.json();
+                                        if (d.success) {
+                                            window.showToast('🎉 تم إنشاء ومنح الرتبة بنجاح!');
+                                            setTimeout(() => location.reload(), 1200);
+                                        } else {
+                                            window.showToast(d.message || 'فشل إنشاء الرتبة', true);
+                                        }
+                                    } catch(e) {
+                                        window.showToast('خطأ في الاتصال بالخادم', true);
+                                    }
+                                }
+                            });
+                        };
+
+                        // Role Extend
+                        window.extendRole = function(guildId, roleId) {
+                            window.showConfirmModal({
+                                icon: '⏳',
+                                title: 'تمديد مدة الرتبة',
+                                desc: 'هل تريد تمديد صلاحية هذه الرتبة الخاصة لمدة 30 يوماً إضافية؟',
+                                onConfirm: async () => {
+                                    try {
+                                        const res = await fetch('/api/custom-roles/extend', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ guildId, roleId, extraDays: 30 })
+                                        });
+                                        const d = await res.json();
+                                        if (d.success) {
+                                            window.showToast('✅ تم تمديد الرتبة بنجاح!');
+                                            setTimeout(() => location.reload(), 1000);
+                                        } else {
+                                            window.showToast(d.message || 'فشل التمديد', true);
+                                        }
+                                    } catch(e) {
+                                        window.showToast('خطأ في الاتصال بالخادم', true);
+                                    }
+                                }
+                            });
+                        };
+
+                        // Role Revoke
+                        window.revokeRole = function(guildId, roleId) {
+                            window.showConfirmModal({
+                                icon: '⚠️',
+                                title: 'إلغاء وحذف الرتبة',
+                                desc: 'سيتم حذف الرتبة نهائياً من سيرفر الديسكورد وسحبها من العضو. هل أنت متأكد؟',
+                                onConfirm: async () => {
+                                    try {
+                                        const res = await fetch('/api/custom-roles/revoke', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ guildId, roleId })
+                                        });
+                                        const d = await res.json();
+                                        if (d.success) {
+                                            window.showToast('🗑️ تم إلغاء وحذف الرتبة بنجاح!');
+                                            setTimeout(() => location.reload(), 1000);
+                                        } else {
+                                            window.showToast(d.message || 'فشل الإلغاء', true);
+                                        }
+                                    } catch(e) {
+                                        window.showToast('خطأ في الاتصال بالخادم', true);
+                                    }
+                                }
+                            });
+                        };
                     </script>
                 `;
             } else {
@@ -12177,7 +12632,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex items-center justify-between pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
                                 <div class="flex items-center gap-3">
                                     <label class="toggle"><input id="masterToggle" data-modkey="${(function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})()}" type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})(), this.checked, this)" ${(function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_k==='general_enabled'){return (String(_v)==='0'||String(_v)==='false')?'':'checked';}if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
-                                    <button type="button" id="topSaveBtn" onclick="try{if(window.saveCommandsExplicit){window.saveCommandsExplicit();}else if(window.submitSettingsForm){submitSettingsForm(document.getElementById('settingsForm'));}else{alert('⚠️ سكربت الحفظ غير متاح');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}" class="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-900/30 flex items-center gap-2 cursor-pointer">
+                                    <button type="button" id="topSaveBtn" onclick="try{if(window.saveCommandsExplicit){window.saveCommandsExplicit();}else if(window.submitSettingsForm){submitSettingsForm(document.getElementById('settingsForm'));}else{alert('⚠️ سكربت الحفظ غير متاح');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}" class="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-900/30 flex items-center gap-2 cursor-pointer${section === 'custom_shop' ? ' hidden' : ''}">
                                         <span>💾</span>
                                         <span>حفظ التغييرات</span>
                                     </button>
@@ -12189,7 +12644,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
 
 
-                            ${(section === 'general' || section === 'commands' || section === 'store') ? `
+                            ${(section === 'general' || section === 'commands' || section === 'store' || section === 'custom_shop') ? `
                                 <div id="settingsContainer" class="space-y-6">
                                     ${formFieldsHtml}
                                 </div>
