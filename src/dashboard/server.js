@@ -2103,15 +2103,6 @@ module.exports = function (app, client) {
                 }
             } catch (err) {}
 
-            let isGuildPremium = false;
-            let premiumInfo = null;
-            try {
-                if (database.isGuildPremium) {
-                    isGuildPremium = database.isGuildPremium(guildId);
-                    premiumInfo = database.getPremiumGuildInfo ? database.getPremiumGuildInfo(guildId) : null;
-                }
-            } catch (err) {}
-
             const userAvatar = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
             const botAvatarUrl = client?.user?.avatar ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
             const guildIcon = guild.icon ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
@@ -2242,33 +2233,17 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="relative flex items-center justify-between">
                                 <div class="flex items-center gap-4">
                                     <div class="text-right">
-                                        <div class="flex items-center gap-2 justify-end">
-                                            ${isGuildPremium 
-                                                ? `<span class="px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/50 text-[10px] font-black tracking-wide">👑 PRO SUBSCRIPTION</span>` 
-                                                : `<span class="px-2 py-0.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-black">FREE TIER</span>`
-                                            }
-                                            <h2 class="text-2xl font-black text-white">${guild.name || "Droplet'BOT"}</h2>
-                                        </div>
+                                        <h2 class="text-2xl font-black text-white">${guild.name || "Droplet'BOT"}</h2>
                                         <p class="text-white/80 text-xs font-mono mt-0.5">ID: ${guildId}</p>
                                         <div class="flex items-center gap-1.5 mt-2 justify-end">
                                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                                             <span class="text-xs text-emerald-300 font-bold">البوت متصل ويعمل</span>
                                         </div>
                                     </div>
-                                    <img src="${guild.icon ? `https://cdn.discordapp.com/icons/${guildId}/${guild.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-20 h-20 rounded-3xl ring-4 ${isGuildPremium ? 'ring-amber-400/60' : 'ring-blue-400/40'} shadow-xl object-cover">
+                                    <img src="${guild.icon ? `https://cdn.discordapp.com/icons/${guildId}/${guild.icon}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-20 h-20 rounded-3xl ring-4 ring-blue-400/40 shadow-xl object-cover">
                                 </div>
-                                <div class="text-left flex flex-col items-end gap-2">
-                                    ${!isGuildPremium ? `
-                                        <button type="button" onclick="window.openPremiumModal()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black font-black text-xs rounded-xl shadow-lg shadow-amber-500/20 transition flex items-center gap-1.5 cursor-pointer">
-                                            <span>👑</span>
-                                            <span>ترقية إلى بريميوم</span>
-                                        </button>
-                                    ` : `
-                                        <div class="px-3 py-1.5 rounded-xl bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs font-bold flex items-center gap-1.5">
-                                            <span>✨</span>
-                                            <span>سيرفر مميز نشط</span>
-                                        </div>
-                                    `}
+                                <div class="text-left">
+                                    <div class="text-5xl font-black text-white/10 select-none">🏰</div>
                                 </div>
                             </div>
                         </div>
@@ -11789,17 +11764,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="flex items-center gap-3">
                                     <div class="text-right">
                                         <h3 class="font-bold text-white text-xs truncate max-w-[130px]">${guild.name}</h3>
-                                        <div class="flex items-center gap-1.5 justify-end mt-0.5">
-                                            ${isGuildPremium 
-                                                ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-black"><span>👑</span><span>بريميوم</span></span>` 
-                                                : `<button type="button" onclick="window.openPremiumModal()" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white text-[9px] font-black transition cursor-pointer shadow-sm"><span>⚡</span><span>ترقية</span></button>`
-                                            }
-                                            <span class="text-[10px] text-gray-400 font-mono">${guild.memberCount || botGuild?.memberCount || 0} عضو</span>
-                                        </div>
+                                        <span class="text-[10px] text-white">الأعضاء: ${guild.memberCount || botGuild?.memberCount || 0}</span>
                                     </div>
                                     <div class="relative">
-                                        <img src="${guildIcon}" class="w-10 h-10 rounded-xl bg-[#14233c] object-cover ring-2 ${isGuildPremium ? 'ring-amber-400' : 'ring-blue-400/50'} shadow-md">
-                                        ${isGuildPremium ? `<span class="absolute -top-1.5 -right-1.5 text-xs">👑</span>` : ''}
+                                        <img src="${guildIcon}" class="w-10 h-10 rounded-xl bg-[#14233c] object-cover ring-2 ring-blue-400/50 shadow-md">
                                     </div>
                                 </div>
                             </div>
@@ -12660,96 +12628,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     else if (t.id === 'btnSaveEmbedDraft') __embSaveFallback();
                     else __embClearFallback();
                 });
-                <!-- 👑 Premium Upgrade & Key Redeem Modal -->
-                <div id="premiumModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
-                    <div class="bg-[#0b1325] border border-amber-500/30 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative text-right" dir="rtl">
-                        <button type="button" onclick="window.closePremiumModal()" class="absolute top-5 left-5 text-gray-400 hover:text-white text-lg transition">✕</button>
-                        
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-2xl shrink-0">
-                                👑
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-black text-white">ترقية السيرفر إلى Droplet Premium</h3>
-                                <p class="text-xs text-amber-300 font-bold">افتح القوة الكاملة لإدارة وحماية سيرفرك</p>
-                            </div>
-                        </div>
-
-                        <div class="bg-[#060c1c] border border-blue-500/20 rounded-2xl p-4 my-5 space-y-2.5 text-xs text-gray-200">
-                            <div class="flex items-center gap-2 text-white font-bold pb-1 border-b border-white/5">
-                                <span class="text-amber-400">✨</span>
-                                <span>ماذا ستحصل مع باقة البريميوم؟</span>
-                            </div>
-                            <div class="flex items-center gap-2"><span>🎫</span><span>أقسام تذاكر غير محدودة مع حفظ سجلات الـ Transcripts النصية</span></div>
-                            <div class="flex items-center gap-2"><span>💬</span><span>حتى 100 رد تلقائي بدلاً من 8 ردود فقط</span></div>
-                            <div class="flex items-center gap-2"><span>🛡️</span><span>مكافحة الغزو الذكية (Anti-Raid Advanced) وقائمة بيضاء موسعة</span></div>
-                            <div class="flex items-center gap-2"><span>🏆</span><span>كروت مستوى (XP) مخصصة ومكافآت رتب مضاعفة</span></div>
-                            <div class="flex items-center gap-2"><span>👮</span><span>نظام تتبع شيفتات ونشاط المشرفين والترقيات التلقائية</span></div>
-                        </div>
-
-                        <!-- Redeem Key Form -->
-                        <div class="space-y-3">
-                            <label class="block text-xs font-bold text-gray-300">هل تمتلك كود تفعيل؟ أدخله هنا:</label>
-                            <div class="flex gap-2">
-                                <input type="text" id="premiumKeyCodeInput" placeholder="DROPLET-PRO-XXXX-XXXX" class="flex-1 bg-[#060c1c] border border-amber-500/30 focus:border-amber-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono text-center tracking-wider" dir="ltr">
-                                <button type="button" id="btnRedeemKey" onclick="window.submitPremiumRedeem()" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black font-black text-xs rounded-xl transition shadow-lg shadow-amber-500/20 cursor-pointer">
-                                    تفعيل الكود
-                                </button>
-                            </div>
-                            <p id="premiumRedeemMsg" class="text-xs hidden"></p>
-                        </div>
-
-                        <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
-                            <span>لشراء كود تفعيل جديد:</span>
-                            <a href="https://discord.gg" target="_blank" class="text-amber-300 hover:underline font-bold flex items-center gap-1">
-                                <span>تواصل مع الدعم الفني</span>
-                                <span>↗</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <script>
-                window.openPremiumModal = function() {
-                    var m = document.getElementById('premiumModal');
-                    if (m) m.classList.remove('hidden');
-                };
-                window.closePremiumModal = function() {
-                    var m = document.getElementById('premiumModal');
-                    if (m) m.classList.add('hidden');
-                };
-                window.submitPremiumRedeem = async function() {
-                    var inp = document.getElementById('premiumKeyCodeInput');
-                    var msg = document.getElementById('premiumRedeemMsg');
-                    var btn = document.getElementById('btnRedeemKey');
-                    var code = (inp ? inp.value : '').trim();
-                    if (!code) {
-                        if (msg) { msg.textContent = '⚠️ يرجى إدخال الكود أولاً'; msg.className = 'text-xs text-amber-400 block'; }
-                        return;
-                    }
-                    if (btn) { btn.disabled = true; btn.textContent = 'جاري التفعيل...'; }
-                    var gId = window.location.pathname.split('/')[2];
-                    try {
-                        var res = await fetch('/api/guild/' + gId + '/premium/redeem', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ keyCode: code })
-                        });
-                        var data = await res.json();
-                        if (data && data.success) {
-                            if (msg) { msg.textContent = '🎉 ' + data.message + ' جاري تحديث الصفحة...'; msg.className = 'text-xs text-emerald-400 font-bold block'; }
-                            setTimeout(function() { window.location.reload(); }, 1500);
-                        } else {
-                            if (msg) { msg.textContent = '❌ ' + (data.error || 'تعذر تفعيل الكود'); msg.className = 'text-xs text-red-400 block'; }
-                        }
-                    } catch(e) {
-                        if (msg) { msg.textContent = '❌ خطأ في الاتصال بالخادم'; msg.className = 'text-xs text-red-400 block'; }
-                    } finally {
-                        if (btn) { btn.disabled = false; btn.textContent = 'تفعيل الكود'; }
-                    }
-                };
                 </script>
-
                 ${embedScriptHtml ? `<script>
 ${embedScriptHtml}
 </script>` : ''}
