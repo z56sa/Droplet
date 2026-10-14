@@ -11990,7 +11990,33 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 saveBtn.addEventListener('click', async function(e) {
                                     e.preventDefault();
                                     const guildId = '${guildId}';
-                                    const filtered = customProducts.filter(p => p.name && p.name.trim());
+
+                                    // Collect products directly from the DOM to guarantee 100% accurate typed values
+                                    const container = document.getElementById('dynamicProductsGrid');
+                                    const collected = [];
+                                    if (container) {
+                                        const nameInputs = container.querySelectorAll('.inp-prod-name');
+                                        const emojiInputs = container.querySelectorAll('.inp-prod-emoji');
+                                        const priceInputs = container.querySelectorAll('.inp-prod-price');
+                                        const descInputs = container.querySelectorAll('.inp-prod-desc');
+
+                                        nameInputs.forEach((nEl, idx) => {
+                                            const nameVal = (nEl.value || '').trim();
+                                            if (!nameVal) return;
+                                            const emojiVal = emojiInputs[idx]?.value?.trim() || '🛍️';
+                                            const priceVal = Math.max(1, parseInt(priceInputs[idx]?.value, 10) || 100);
+                                            const descVal = descInputs[idx]?.value?.trim() || '';
+                                            const prodId = customProducts[idx]?.id || (Date.now() + idx);
+                                            collected.push({
+                                                id: prodId,
+                                                name: nameVal,
+                                                emoji: emojiVal,
+                                                price: priceVal,
+                                                description: descVal
+                                            });
+                                        });
+                                    }
+
                                     const data = {
                                         guildId,
                                         shopItems: {
@@ -12005,7 +12031,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                 duration: +(document.getElementById('shop_badge_days')?.value || 0)
                                             }
                                         },
-                                        customProducts: filtered
+                                        customProducts: collected
                                     };
 
                                     try {
