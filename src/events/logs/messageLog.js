@@ -37,37 +37,56 @@ module.exports = [
       }
       const hasImage = !!imageAtt;
 
-      // البحث في سجل التدقيق لمعرفة ما إذا كان هناك مشرف قام بالحذف أو التعرف على الكاتب
+      // ── البحث في سجل التدقيق لمعرفة من حذف الرسالة ──
       let deletedBy = null;
+      let selfDeleted = false;
       try {
-        // انتظار قصير (800ms) حتى يسجل ديسكورد عملية الحذف في الـ Audit Log
-        await new Promise(r => setTimeout(r, 800));
+        // ننتظر 1.5 ثانية لأن ديسكورد يحتاج وقتاً لكتابة الحذف في Audit Log
+        await new Promise(r => setTimeout(r, 1500));
 
-        const auditLogs = await guild.fetchAuditLogs({ limit: 6, type: AuditLogEvent.MessageDelete }).catch(() => null);
+        const auditLogs = await guild.fetchAuditLogs({ limit: 10, type: AuditLogEvent.MessageDelete }).catch(() => null);
         if (auditLogs && auditLogs.entries.size > 0) {
           const now = Date.now();
+
+          // نبحث عن أقرب سجل حذف في نفس القناة خلال 20 ثانية
           const entry = auditLogs.entries.find(e => {
-            const matchesChannel = !e.extra?.channel || e.extra.channel.id === message.channelId;
-            const matchesTarget = !authorId || !e.target || e.target.id === authorId;
-            const isRecent = (now - e.createdTimestamp) < 15000;
-            return matchesChannel && matchesTarget && isRecent;
+            const sameChannel = e.extra?.channel?.id === message.channelId;
+            const isRecent = (now - e.createdTimestamp) < 20000;
+            // إذا كان الكاتب معروفاً نتحقق أن الـ target هو نفس الكاتب
+            const targetMatches = !authorId || !e.target || e.target.id === authorId;
+            return sameChannel && isRecent && targetMatches;
           });
 
           if (entry) {
-            // إذا كان المنفذ ليس هو نفس كاتب الرسالة
-            if (entry.executor && entry.executor.id !== authorId) {
-              deletedBy = entry.executor;
-            }
-            // إذا لم يكن الكاتب معروفاً، وسجل التدقيق يحتوي على target (وهو صاحب الرسالة المحذوفة)
+            console.log(`[MSGLOG-AUDIT] found entry executor=${entry.executor?.id} target=${entry.target?.id} authorId=${authorId}`);
+
+            // استخراج كاتب الرسالة من سجل التدقيق إذا لم يكن معروفاً
             if (!authorId && entry.target && !entry.target.bot) {
               authorId = entry.target.id;
-              authorTag = entry.target.tag || `${entry.target.username}`;
+              authorTag = entry.target.tag || entry.target.username;
               authorUsername = entry.target.username;
               if (typeof entry.target.displayAvatarURL === 'function') {
                 authorAvatar = entry.target.displayAvatarURL({ dynamic: true });
               }
             }
+
+            // تحديد من حذف الرسالة
+            if (entry.executor) {
+              if (entry.executor.id === authorId) {
+                // الكاتب حذف رسالته بنفسه
+                selfDeleted = true;
+              } else {
+                // شخص آخر (مشرف/بوت) حذف الرسالة
+                deletedBy = entry.executor;
+              }
+            }
+          } else {
+            // لم يوجد سجل تدقيق = الكاتب حذف رسالته بنفسه (عمليات الحذف الذاتي لا تُسجَّل في Audit Log)
+            if (authorId) selfDeleted = true;
           }
+        } else {
+          // لا توجد سجلات تدقيق حديثة = حذف ذاتي
+          if (authorId) selfDeleted = true;
         }
       } catch (err) {
         console.error('[MSGLOG-AUDIT-ERR]:', err);
@@ -95,8 +114,13 @@ module.exports = [
         { name: '📌 القناة', value: `<#${message.channelId}>`, inline: true }
       ];
 
+      // حقل: من حذف الرسالة؟
       if (deletedBy) {
-        fields.push({ name: '🛡️ تم الحذف بواسطة', value: `<@${deletedBy.id}> (${deletedBy.tag || deletedBy.username})`, inline: true });
+        fields.push({ name: '🗑️ حُذفت بواسطة', value: `<@${deletedBy.id}> (${deletedBy.tag || deletedBy.username})`, inline: true });
+      } else if (selfDeleted && authorId) {
+        fields.push({ name: '🗑️ حُذفت بواسطة', value: `<@${authorId}> *(حذف ذاتي)*`, inline: true });
+      } else {
+        fields.push({ name: '🗑️ حُذفت بواسطة', value: '*غير معروف*', inline: true });
       }
 
       fields.push({
