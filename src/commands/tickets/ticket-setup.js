@@ -73,6 +73,14 @@ module.exports = {
 
     const channel = interaction.options.getChannel('channel');
     const panelType = interaction.options.getString('type');
+
+    const isPremium = db.isGuildPremium ? db.isGuildPremium(interaction.guild.id) : false;
+    if (panelType === 'dropdown' && !isPremium) {
+      return interaction.reply({
+        content: '👑 لوحة التذاكر المتقدمة متعددة الأقسام (Dropdown Categories) مخصصة لمشتركي **Droplet Premium**.\nفي الخطة المجانية يمكنك إنشاء لوحة الزر التفاعلي المباشر (`button`).\nللترقية استخدم الأمر `/premium`.',
+        flags: 64
+      });
+    }
     const title = interaction.options.getString('title') || t(lang, 'tickets.ticketsetup.def_title');
     const description = interaction.options.getString('description') || t(lang, 'tickets.ticketsetup.def_description');
     const buttonLabel = interaction.options.getString('button_label') || t(lang, 'tickets.ticketsetup.def_button_label');
