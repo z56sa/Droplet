@@ -9728,70 +9728,14 @@ formFieldsHtml = `<div class="space-y-6 text-right" dir="rtl">
 
 </div>`;
             } else if (section === 'appearance') {
-                if (!isGuildPremium) {
-                    formFieldsHtml = `
-                    <div class="space-y-6 text-right" dir="rtl">
-                        <!-- Premium Locked Teaser Banner -->
-                        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-950/40 via-[#0f172a] to-purple-950/40 border border-amber-500/30 p-8 shadow-2xl">
-                            <div class="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-                                <div class="space-y-3 text-right">
-                                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black">
-                                        <span>👑</span>
-                                        <span>ميزة حصرية لمشتركي Droplet Premium</span>
-                                    </div>
-                                    <h3 class="text-2xl font-black text-white">تخصيص مظهر وهوية البوت بالكامل</h3>
-                                    <p class="text-xs text-gray-300 max-w-xl leading-relaxed">
-                                        اجعل البوت يبدو وكأنه بوت خاص وحصري لسيرفرك فقط! يمكنك تغيير اسم البوت وصورته الرمزية (Avatar) والبنر (Banner) ووصف البوت (About Me) ليظهر بها في هذا السيرفر دون التأثير على السيرفرات الأخرى.
-                                    </p>
-                                </div>
-                                <button type="button" onclick="window.openPremiumModal()" class="px-7 py-3.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black font-black text-sm rounded-2xl shadow-xl shadow-amber-500/30 hover:scale-105 transition transform flex items-center gap-2 shrink-0 cursor-pointer">
-                                    <span>👑</span>
-                                    <span>ترقية السيرفر وفتح المظهر</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Locked Appearance Preview Showcase -->
-                        <div class="bg-[#0b1322] border border-blue-500/20 rounded-3xl overflow-hidden shadow-2xl relative select-none">
-                            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center p-6 text-center">
-                                <div class="w-16 h-16 rounded-3xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center text-3xl shadow-xl mb-3">
-                                    🔒
-                                </div>
-                                <h4 class="text-lg font-black text-white mb-1">تخصيص الهوية مقفل</h4>
-                                <p class="text-xs text-gray-300 max-w-md mb-4">هذا السيرفر على الخطة المجانية. قم بالترقية إلى بريميوم لتفعيل تخصيص الاسم والبنر والصورة فوراً.</p>
-                                <button type="button" onclick="window.openPremiumModal()" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-black text-xs rounded-xl shadow-lg shadow-amber-500/30 hover:brightness-110 transition cursor-pointer">
-                                    👑 إدخال كود التفعيل / الترقية
-                                </button>
-                            </div>
-
-                            <!-- Mock Preview Background -->
-                            <div class="h-32 bg-[#14233c] relative flex items-center justify-center opacity-40">
-                                <div class="text-center">
-                                    <h2 class="text-2xl font-black text-amber-100 tracking-wider">Custom Server Banner</h2>
-                                    <p class="text-xs text-amber-200/80 font-mono mt-0.5">discord.gg/droplet</p>
-                                </div>
-                                <div class="absolute -bottom-6 right-8 flex items-center gap-3">
-                                    <div class="w-16 h-16 rounded-2xl bg-[#070d1d] ring-4 ring-[#0b1322] shadow-xl flex items-center justify-center text-2xl">🤖</div>
-                                </div>
-                            </div>
-                            <div class="pt-8 pb-5 px-8 flex items-center justify-between opacity-40">
-                                <span class="text-[10px] text-gray-500 font-mono">ID: ${client?.user?.id || 'BOT_ID'}</span>
-                                <div class="text-right">
-                                    <h4 class="font-black text-white text-base">${guild.name || "Droplet'BOT"} Bot</h4>
-                                    <span class="text-[11px] text-white font-mono">@${client?.user?.username || 'droplet'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
-                } else {
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
                         
                         <!-- Header Banner -->
                         <div class="bg-gradient-to-r from-[#0d1729] via-[#14233c] to-[#0d1729] border border-blue-500/20 p-6 rounded-3xl flex items-center justify-between shadow-2xl">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-2xl bg-amber-400/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-xl shadow-lg">👑</div>
+                                <div class="w-10 h-10 rounded-2xl bg-blue-400/20 text-blue-400 border border-blue-500/20 flex items-center justify-center text-xl shadow-lg">⭐</div>
                                 <div class="text-right">
-                                    <h3 class="font-black text-white text-lg">تخصيص البوت <span class="text-xs text-amber-400 font-bold bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-lg mr-2">PRO</span></h3>
+                                    <h3 class="font-black text-white text-lg">تخصيص البوت</h3>
                                     <p class="text-white text-xs mt-0.5">غير اسم البوت وصورته وبنره لكل سيرفر</p>
                                 </div>
                             </div>
@@ -9938,7 +9882,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         }
                     }
                     </script>`;
-                }
             } else if (section === 'settings') {
 formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl">
                         
@@ -11899,7 +11842,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="flex items-center gap-2"><span>نظرة عامة</span><span class="${section === 'overview' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">🎛️</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/appearance" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'appearance' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
-                                        <span class="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-black">👑 PRO</span>
+                                        <span></span>
                                         <span class="flex items-center gap-2"><span>مظهر البوت</span><span class="${section === 'appearance' ? 'text-white' : 'text-white group-hover:text-[#c084fc]'}">🎨</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/settings" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'settings' ? 'bg-gradient-to-r from-[#a855f7] to-[#2563eb] text-white font-black shadow-md shadow-[#c084fc]/20' : 'text-gray-300 hover:text-white hover:bg-white/5'} transition group">
@@ -12715,9 +12658,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     e.preventDefault(); e.stopPropagation();
                     if (t.id === 'btnSendEmbed') __embSendFallback();
                     else if (t.id === 'btnSaveEmbedDraft') __embSaveFallback();
+                    else __embClearFallback();
                 });
-                </script>
-
                 <!-- 👑 Premium Upgrade & Key Redeem Modal -->
                 <div id="premiumModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
                     <div class="bg-[#0b1325] border border-amber-500/30 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative text-right" dir="rtl">
@@ -13131,17 +13073,6 @@ ${embedScriptHtml}
                     }
                 }
             }
-            // ✅ فحص ميزات البريميوم: منع تعديل مظهر البوت إذا لم يكن السيرفر بريميوم
-            const isGuildPremium = database.isGuildPremium ? database.isGuildPremium(guildId) : false;
-            if (!isGuildPremium && settings) {
-                if (settings.bot_nickname !== undefined || settings.bot_about !== undefined || settings.bot_avatar !== undefined || settings.bot_banner !== undefined) {
-                    delete settings.bot_nickname;
-                    delete settings.bot_about;
-                    delete settings.bot_avatar;
-                    delete settings.bot_banner;
-                }
-            }
-
             if (database.updateGuildSettings) {
                 database.updateGuildSettings(guildId, settings);
             }
