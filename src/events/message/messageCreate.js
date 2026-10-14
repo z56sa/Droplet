@@ -5,6 +5,7 @@ const config = require('../../config.json');
 const { askAI } = require('../../utils/ai');
 const { getGuildLang, t } = require('../../utils/lang');
 const { isEnabled } = require('../../utils/isEnabled');
+const { cacheMessage } = require('../../utils/messageCache');
 
 const spamMap = new Map();
 
@@ -145,6 +146,8 @@ module.exports = {
   name: 'messageCreate',
   async execute(message, client) {
     if (!message.guild || message.author.bot) return;
+
+    try { cacheMessage(message); } catch {}
 
     dlog(`[MSG DEBUG] content="${message.content}" | channel=${message.channel.id} | author=${message.author.tag}`);
 

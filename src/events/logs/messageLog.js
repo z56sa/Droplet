@@ -1,5 +1,7 @@
 const { sendServerLog } = require('../../utils/serverLogger');
 const db = require('../../database');
+const { AuditLogEvent } = require('discord.js');
+const { cacheMessage, getCachedMessage } = require('../../utils/messageCache');
 
 // تتبع آخر تثبيت لكل قناة للتمييز بين التثبيت وإلغائه
 const lastPinMap = new Map(); // channelId -> ms timestamp
@@ -9,30 +11,97 @@ module.exports = [
     name: 'messageDelete',
     async execute(message) {
       try { console.log(`[MSGLOG-DBG] messageDelete fired guild=${message.guildId || message.guild?.id} ch=${message.channelId} bot=${message.author?.bot}`); } catch {}
-      if (!message.guild || message.author?.bot) return;
+      const guild = message.guild;
+      if (!guild) return;
+
+      // محاولة جلب الرسالة إذا كانت جزئية
       try { if (message.partial) await message.fetch().catch(() => {}); } catch {}
+
+      // استرجاع البيانات من الكاش الخاص بنا إذا كانت مفقودة من Discord.js
+      const cached = getCachedMessage(message.id);
+
+      // إذا كان الكاتب بوتاً، نتجاهل
+      if (message.author?.bot || cached?.author?.bot) return;
+
+      // تجهيز بيانات الكاتب والمحتوى
+      let authorId = message.author?.id || cached?.author?.id || null;
+      let authorTag = message.author?.tag || cached?.author?.tag || null;
+      let authorUsername = message.author?.username || cached?.author?.username || null;
+      let authorAvatar = (typeof message.author?.displayAvatarURL === 'function' ? message.author.displayAvatarURL({ dynamic: true }) : null) || cached?.author?.avatarURL || null;
+      let content = message.content || cached?.content || '';
+      
+      // فحص المرفقات والصور
+      let imageAtt = message.attachments?.find(a => a.contentType?.startsWith('image') || /\.(png|jpe?g|webp|gif)$/i.test(a.url));
+      if (!imageAtt && cached?.attachments?.length > 0) {
+        imageAtt = cached.attachments.find(a => a.contentType?.startsWith('image') || /\.(png|jpe?g|webp|gif)$/i.test(a.url));
+      }
+      const hasImage = !!imageAtt;
+
+      // البحث في سجل التدقيق لمعرفة ما إذا كان هناك مشرف قام بالحذف أو التعرف على الكاتب
+      let deletedBy = null;
+      try {
+        const auditLogs = await guild.fetchAuditLogs({ limit: 3, type: AuditLogEvent.MessageDelete }).catch(() => null);
+        if (auditLogs) {
+          const entry = auditLogs.entries.find(e => 
+            e.extra?.channel?.id === message.channelId &&
+            (!e.target || e.target.id === authorId) &&
+            (Date.now() - e.createdTimestamp < 10000)
+          );
+          if (entry) {
+            if (entry.executor && entry.executor.id !== authorId) {
+              deletedBy = entry.executor;
+            }
+            if (!authorId && entry.target) {
+              authorId = entry.target.id;
+              authorTag = entry.target.tag;
+              authorUsername = entry.target.username;
+              if (typeof entry.target.displayAvatarURL === 'function') {
+                authorAvatar = entry.target.displayAvatarURL({ dynamic: true });
+              }
+            }
+          }
+        }
+      } catch (err) {}
+
       // تجاهل الغوست-بينج هنا — معالج messageDelete يرسل تنبيهه الخاص
       try {
-        const s = db.getGuildSettings ? db.getGuildSettings(message.guild.id) : {};
+        const s = db.getGuildSettings ? db.getGuildSettings(guild.id) : {};
         if (s.anti_ghost_ping) {
           const hasM = message.mentions?.users?.size > 0 || message.mentions?.roles?.size > 0;
           const admin = message.member?.permissions?.has(0x8n);
           if (hasM && !admin) return;
         }
       } catch {}
-      const imageAtt = message.attachments?.find(a => a.contentType?.startsWith('image') || /\.(png|jpe?g|webp|gif)$/i.test(a.url));
-      const hasImage = !!imageAtt;
+
+      // تنسيق حقل الكاتب
+      let authorValue = 'غير معروف';
+      if (authorId) {
+        const displayTag = authorTag || authorUsername || authorId;
+        authorValue = `<@${authorId}> (${displayTag})\n\`ID: ${authorId}\``;
+      }
+
+      const fields = [
+        { name: '👤 الكاتب', value: authorValue, inline: true },
+        { name: '📌 القناة', value: `<#${message.channelId}>`, inline: true }
+      ];
+
+      if (deletedBy) {
+        fields.push({ name: '🛡️ تم الحذف بواسطة', value: `<@${deletedBy.id}> (${deletedBy.tag || deletedBy.username})`, inline: true });
+      }
+
+      fields.push({
+        name: '📝 المحتوى',
+        value: content ? (content.length > 1000 ? content.slice(0, 1000) + '...' : content) : (hasImage ? '*[صورة مرفقة]*' : '*[لا يوجد محتوى مسجل]*'),
+        inline: false
+      });
+
       const eventId = 'msg_delete';
-      await sendServerLog(message.guild, eventId, 'messages', {
+      await sendServerLog(guild, eventId, 'messages', {
         title: hasImage ? '🖼️ حذف صورة' : '🗑️ حذف رسالة',
         desc: `تم حذف رسالة في <#${message.channelId}>`,
-        fields: [
-          { name: '👤 الكاتب', value: message.author ? `<@${message.author.id}> (${message.author.tag})` : 'غير معروف', inline: true },
-          { name: '📌 القناة', value: `<#${message.channelId}>`, inline: true },
-          { name: '📝 المحتوى', value: message.content?.slice(0, 1000) || (hasImage ? '*[صورة مرفقة]*' : '*[لا يوجد محتوى]*'), inline: false }
-        ],
-        image: imageAtt ? imageAtt.proxyURL || imageAtt.url : null,
-        thumbnail: message.author?.displayAvatarURL({ dynamic: true })
+        fields,
+        image: imageAtt ? (imageAtt.proxyURL || imageAtt.url) : null,
+        thumbnail: authorAvatar
       });
     }
   },
@@ -43,18 +112,31 @@ module.exports = [
       if (!newMessage.guild || newMessage.author?.bot) return;
       try { if (oldMessage.partial) await oldMessage.fetch().catch(() => {}); } catch {}
       try { if (newMessage.partial) await newMessage.fetch().catch(() => {}); } catch {}
-      if (oldMessage.content === newMessage.content) return;
+      
+      // تحديث كاش الرسالة
+      try { cacheMessage(newMessage); } catch {}
+
+      const cached = getCachedMessage(oldMessage.id);
+      const oldContent = oldMessage.content || cached?.content || '';
+      const newContent = newMessage.content || '';
+
+      if (oldContent === newContent) return;
+
+      const author = newMessage.author || oldMessage.author || (cached?.author ? { id: cached.author.id, tag: cached.author.tag } : null);
+      const authorText = author ? `<@${author.id}> (${author.tag || author.username || author.id})` : 'غير معروف';
+      const authorAvatar = newMessage.author?.displayAvatarURL({ dynamic: true }) || cached?.author?.avatarURL || null;
+
       await sendServerLog(newMessage.guild, 'msg_update', 'messages', {
         title: '✏️ تعديل رسالة',
         desc: `تم تعديل رسالة في <#${newMessage.channelId}>`,
         fields: [
-          { name: '👤 الكاتب', value: `<@${newMessage.author.id}> (${newMessage.author.tag})`, inline: true },
+          { name: '👤 الكاتب', value: authorText, inline: true },
           { name: '📌 القناة', value: `<#${newMessage.channelId}>`, inline: true },
-          { name: '📝 قبل', value: oldMessage.content?.slice(0, 500) || '*[لا يوجد]*', inline: false },
-          { name: '📝 بعد', value: newMessage.content?.slice(0, 500) || '*[لا يوجد]*', inline: false },
+          { name: '📝 قبل', value: oldContent.slice(0, 500) || '*[لا يوجد]*', inline: false },
+          { name: '📝 بعد', value: newContent.slice(0, 500) || '*[لا يوجد]*', inline: false },
           { name: '🔗 الرابط', value: `[اضغط هنا](${newMessage.url})`, inline: true }
         ],
-        thumbnail: newMessage.author?.displayAvatarURL({ dynamic: true })
+        thumbnail: authorAvatar
       });
     }
   },
