@@ -1,7 +1,66 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { askAI } = require('../../utils/ai');
+const { askAI, detectLanguage } = require('../../utils/ai');
+const https = require('https');
 const config = require('../../config.json');
 const { t } = require('../../utils/lang');
+
+// ==========================================
+// 📎 FILE ATTACHMENT READER
+// ==========================================
+// الامتدادات المدعومة للقراءة
+const SUPPORTED_EXTENSIONS = new Set([
+    'js', 'ts', 'jsx', 'tsx', 'mjs', 'cjs',
+    'py', 'pyw',
+    'java', 'kt',
+    'cpp', 'cc', 'cxx', 'c', 'h', 'hpp',
+    'cs',
+    'rs',
+    'go',
+    'rb',
+    'php',
+    'swift',
+    'sql', 'psql',
+    'sh', 'bash', 'zsh',
+    'json', 'yaml', 'yml', 'toml', 'env',
+    'html', 'htm', 'css', 'scss', 'sass',
+    'xml', 'graphql', 'gql',
+    'md', 'txt', 'log'
+]);
+
+const MAX_FILE_SIZE = 150_000; // 150KB max
+
+/**
+ * يقرأ محتوى ملف مرفق من Discord
+ * @param {import('discord.js').Attachment} attachment
+ * @returns {Promise<{content: string, name: string, ext: string}|null>}
+ */
+function readAttachment(attachment) {
+    return new Promise((resolve) => {
+        try {
+            const name = attachment.name || 'file';
+            const ext = name.split('.').pop()?.toLowerCase() || '';
+
+            if (!SUPPORTED_EXTENSIONS.has(ext)) {
+                return resolve(null);
+            }
+            if (attachment.size > MAX_FILE_SIZE) {
+                return resolve({ content: null, name, ext, tooLarge: true });
+            }
+
+            const url = new URL(attachment.url);
+            const lib = url.protocol === 'https:' ? https : require('http');
+
+            lib.get(attachment.url, (res) => {
+                let data = '';
+                res.on('data', chunk => { if (data.length < MAX_FILE_SIZE) data += chunk; });
+                res.on('end', () => resolve({ content: data, name, ext }));
+                res.on('error', () => resolve(null));
+            }).on('error', () => resolve(null));
+        } catch {
+            resolve(null);
+        }
+    });
+}
 
 /**
  * تقسيم الردود الطويلة بذكاء مع الحفاظ على كتل الأكواد (Code Blocks) دون تشويه
@@ -226,6 +285,10 @@ const PREFIX_MODES = {
     '--test': 'test', '-t': 'test',
     '--review': 'review', '--pr': 'review',
     '--code': 'code', '-c': 'code',
+    '--docs': 'docs', '--doc': 'docs',
+    '--database': 'database', '--db': 'database', '--sql': 'database',
+    '--algo': 'algo', '--algorithm': 'algo', '--dsa': 'algo',
+    '--optimize': 'optimize', '--perf': 'optimize', '-o': 'optimize',
     '--chat': 'chat',
 };
 
@@ -247,14 +310,47 @@ function parsePrefixArgs(args) {
     return { mode, language, query: cleanArgs.join(' ') };
 }
 
+const HELP_TEXT = [
+    '**🤖 Droplet AI — أوضاع الاستخدام الكاملة:**',
+    '',
+    '**📝 الأساسية:**',
+    '`#ai <سؤال>` — كشف تلقائي ذكي',
+    '`#ai --code <طلب>` — توليد كود احترافي',
+    '`#ai --chat <رسالة>` — محادثة عامة',
+    '',
+    '**🔧 تحليل الكود:**',
+    '`#ai --debug <الكود أو الخطأ>` — تشخيص وإصلاح الأخطاء',
+    '`#ai --explain <الكود>` — شرح عميق + تحليل التعقيد',
+    '`#ai --refactor <الكود>` — تحسين الكود وإعادة هيكلته',
+    '`#ai --optimize <الكود>` — تحسين الأداء والسرعة',
+    '`#ai --review <الكود>` — مراجعة PR كمهندس كبير',
+    '',
+    '**🏗️ التصميم والهندسة:**',
+    '`#ai --arch <المتطلبات>` — هندسة الأنظمة والمعمارية',
+    '`#ai --database <الـ Query>` — تحسين قواعد البيانات + Schema',
+    '`#ai --algo <المشكلة>` — خوارزميات وهياكل البيانات',
+    '',
+    '**📚 التوثيق والاختبار:**',
+    '`#ai --docs <الكود>` — توليد Documentation/JSDoc/Docstrings',
+    '`#ai --test <الكود>` — توليد Unit Tests احترافية',
+    '`#ai --security <الكود>` — تدقيق أمني شامل (OWASP)',
+    '',
+    '**⚙️ خيارات إضافية:**',
+    '`#ai --lang python <السؤال>` — تحديد لغة البرمجة',
+    '`#ai reset` — مسح الجلسة',
+    '`#ai stats` — إحصائيات الجلسة',
+    '',
+    '**📎 إرفاق ملف:** أرفق أي ملف كود مع الأمر وسيقرأه الـ AI تلقائياً!',
+].join('\n');
+
 module.exports = {
     name: 'ai',
-    description: 'Droplet AI — مهندس برمجيات ذكي متخصص وعلى مستوى عالمي',
+    description: 'Droplet AI — مهندس برمجيات ذكي متخصص على مستوى عالمي',
     aliases: ['bot-ai', 'gpt', 'code', 'debug', 'audit'],
     category: 'general',
     data: new SlashCommandBuilder()
         .setName('ai')
-        .setDescription('Droplet AI — Staff Engineer Level: Code, Debug, Security, Architecture & More')
+        .setDescription('Droplet AI — Staff Engineer Level: Code, Debug, Security, Docs, DB, Algorithms & More')
         .addStringOption(option =>
             option.setName('prompt')
                 .setDescription('السؤال، الكود، أو التعليمة التي تريد إرسالها')
@@ -269,17 +365,26 @@ module.exports = {
                     { name: '💻 Code — توليد كود احترافي', value: 'code' },
                     { name: '🐞 Debug — تشخيص وإصلاح الأخطاء', value: 'debug' },
                     { name: '📖 Explain — شرح عميق وتحليل التعقيد', value: 'explain' },
-                    { name: '⚡ Refactor — تحسين الأداء والهيكلة', value: 'refactor' },
+                    { name: '⚡ Refactor — تحسين الكود وإعادة الهيكلة', value: 'refactor' },
+                    { name: '🚀 Optimize — تحسين الأداء والسرعة', value: 'optimize' },
                     { name: '🛡️ Security — تدقيق أمني شامل OWASP', value: 'security' },
                     { name: '🧪 Test — توليد Unit Tests احترافية', value: 'test' },
                     { name: '🔍 Review — مراجعة PR كمهندس كبير', value: 'review' },
                     { name: '🏗️ Architecture — تصميم أنظمة وهندسة معمارية', value: 'arch' },
+                    { name: '📚 Docs — توليد Documentation شاملة', value: 'docs' },
+                    { name: '🗄️ Database — تحسين Queries وتصميم Schema', value: 'database' },
+                    { name: '🧮 Algorithm — خوارزميات وهياكل البيانات', value: 'algo' },
                     { name: '💬 Chat — محادثة عامة', value: 'chat' }
                 )
         )
         .addStringOption(option =>
             option.setName('language')
-                .setDescription('لغة البرمجة (مثال: JavaScript, Python, C++, Rust, SQL)')
+                .setDescription('لغة البرمجة — إذا فارغ يكتشف تلقائياً (مثال: JavaScript, Python, Rust, SQL)')
+                .setRequired(false)
+        )
+        .addAttachmentOption(option =>
+            option.setName('file')
+                .setDescription('📎 ارفق ملف كود ليقرأه ويحلله الـ AI (js, py, ts, sql, json...)')
                 .setRequired(false)
         )
         .addBooleanOption(option =>
@@ -301,14 +406,34 @@ module.exports = {
         }
 
         await interaction.deferReply();
+
         const prompt = interaction.options.getString('prompt');
         const mode = interaction.options.getString('mode') || 'auto';
         const language = interaction.options.getString('language') || null;
+        const attachment = interaction.options.getAttachment('file');
+
+        // قراءة الملف المرفق إن وجد
+        let fileContent = null;
+        let fileName = null;
+        if (attachment) {
+            const fileData = await readAttachment(attachment);
+            if (fileData?.tooLarge) {
+                return interaction.editReply({ content: `⚠️ الملف \`${fileData.name}\` كبير جداً (الحد الأقصى 150KB).` });
+            }
+            if (fileData?.content) {
+                fileContent = fileData.content;
+                fileName = fileData.name;
+            } else if (fileData === null) {
+                return interaction.editReply({ content: `⚠️ نوع الملف غير مدعوم. الأنواع المدعومة: JS, TS, PY, SQL, JSON, GO, RS, C++...` });
+            }
+        }
 
         await sendFormattedAIResponse(interaction, prompt, true, interaction.guild.id, {
             mode,
             language,
-            userId: interaction.user.id
+            userId: interaction.user.id,
+            fileContent,
+            fileName
         });
     },
 
@@ -330,32 +455,41 @@ module.exports = {
             return message.reply(`📊 الجلسة: **${stats.messages}** رسائل | **${stats.turns}** تبادلات في السياق`);
         }
 
-        // تحليل الوضع والأعلام من الـ args
-        const { mode, language, query } = parsePrefixArgs(args);
-
-        if (!query) {
-            const helpText = [
-                '**🤖 Droplet AI — أوضاع الاستخدام:**',
-                '`#ai <سؤال>` — وضع تلقائي',
-                '`#ai --debug <الكود>` — تشخيص وإصلاح أخطاء',
-                '`#ai --explain <الكود>` — شرح الكود',
-                '`#ai --refactor <الكود>` — تحسين الكود',
-                '`#ai --security <الكود>` — تدقيق أمني',
-                '`#ai --test <الكود>` — توليد Unit Tests',
-                '`#ai --review <الكود>` — مراجعة PR',
-                '`#ai --arch <المتطلبات>` — تصميم معماري',
-                '`#ai --lang python <السؤال>` — تحديد لغة',
-                '`#ai reset` — مسح الجلسة',
-                '`#ai stats` — إحصائيات الجلسة',
-            ].join('\n');
-            return message.reply(helpText);
+        if (args[0] === 'help' || args[0] === '--help' || args[0] === '-h' || !args.length) {
+            return message.reply(HELP_TEXT);
         }
 
+        // تحليل الأعلام من الـ args
+        const { mode, language, query } = parsePrefixArgs(args);
+
+        // قراءة الملف المرفق إن وجد
+        let fileContent = null;
+        let fileName = null;
+        if (message.attachments.size > 0) {
+            const att = message.attachments.first();
+            const fileData = await readAttachment(att);
+            if (fileData?.tooLarge) {
+                return message.reply(`⚠️ الملف \`${fileData.name}\` كبير جداً (الحد الأقصى 150KB).`);
+            }
+            if (fileData?.content) {
+                fileContent = fileData.content;
+                fileName = fileData.name;
+            }
+        }
+
+        if (!query && !fileContent) {
+            return message.reply(HELP_TEXT);
+        }
+
+        const finalQuery = query || `حلل هذا الملف: ${fileName}`;
         const waiting = await message.reply(t(message.guild.id, 'general.ai.processing'));
-        await sendFormattedAIResponse(waiting, query, false, message.guild.id, {
+        await sendFormattedAIResponse(waiting, finalQuery, false, message.guild.id, {
             mode,
             language,
-            userId: message.author.id
+            userId: message.author.id,
+            fileContent,
+            fileName
         });
     }
 };
+

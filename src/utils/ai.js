@@ -382,9 +382,164 @@ OUTPUT REQUIREMENTS:
 ---
 ${text}`,
 
+    docs: (lang, text) => `
+[📚 DOCUMENTATION GENERATOR MODE — Professional Docs]
+Target Language: ${lang || 'Auto-detect'}
+
+DOCUMENTATION PROTOCOL:
+1. 📋 MODULE OVERVIEW: وصف الملف/الوحدة ووظيفتها الرئيسية.
+2. 🔧 FUNCTION DOCS: لكل دالة/ميثود:
+   - وصف شامل لما تفعله
+   - @param — كل معامل مع نوعه وشرحه
+   - @returns — نوع القيمة المُعادة وشرحها
+   - @throws — الاستثناءات المحتملة
+   - @example — مثال استخدام واقعي
+3. 📖 README SECTION: مقطع README جاهز للنسخ يغطي الاستخدام الأساسي.
+4. 🏷️ TYPE DEFINITIONS: تعريفات TypeScript/JSDoc للأنواع المستخدمة إن وجدت.
+
+أنتج الـ Documentation بالصيغة المناسبة للغة (JSDoc لـ JS/TS، Docstrings لـ Python، JavaDoc لـ Java...).
+
+---
+${text}`,
+
+    database: (lang, text) => `
+[🗄️ DATABASE EXPERT MODE — Query Optimization & Schema Design]
+Database Type: ${lang || 'Auto-detect (SQL/NoSQL/MongoDB/Redis)'}
+
+DATABASE PROTOCOL:
+1. 🔍 QUERY ANALYSIS: تحليل الـ Query الحالي — مشاكل الأداء، N+1 problems، Cartesian products.
+2. ⚡ OPTIMIZED QUERY: الـ Query المحسّن مع شرح كل تحسين.
+3. 📊 INDEXES: الـ Indexes المقترحة (أي columns، Composite vs Single، Partial Indexes).
+4. 🏗️ SCHEMA IMPROVEMENTS: تحسينات هيكل الجداول/Collections (Normalization، Denormalization، Partitioning).
+5. 📈 EXECUTION PLAN: كيف يُنفَّذ الـ Query ولماذا الإصدار الجديد أسرع (EXPLAIN ANALYZE).
+6. 🔒 SECURITY: SQL Injection prevention، Parameterized Queries.
+7. 💾 CACHING STRATEGY: متى تستخدم Redis/Memcached وكيف.
+
+---
+${text}`,
+
+    algo: (lang, text) => `
+[🧮 ALGORITHM & DATA STRUCTURES MODE — Computer Science Expert]
+Target Language: ${lang || 'Auto-detect'}
+
+ALGORITHM PROTOCOL:
+1. 🎯 PROBLEM ANALYSIS: فهم المشكلة وتعريف المدخلات والمخرجات بدقة.
+2. 🧠 APPROACH OPTIONS: عرض 2-3 نهج للحل مع مقارنة تعقيداتها.
+3. 🏆 OPTIMAL SOLUTION: الحل الأمثل مع الكود الكامل.
+4. 📊 COMPLEXITY ANALYSIS:
+   - Time Complexity: الحالة الأفضل / المتوسطة / الأسوأ (Best/Avg/Worst)
+   - Space Complexity: ذاكرة مؤقتة إضافية vs المدخلات
+5. 🔬 DRY RUN: تتبع خطوة بخطوة على مثال واقعي.
+6. 🧩 EDGE CASES: قائمة الحالات الحافة وكيف يتعاملها الكود.
+7. 🚀 OPTIMIZATIONS: تحسينات إضافية (memoization، space optimization، bit manipulation إن أمكن).
+
+---
+${text}`,
+
+    optimize: (lang, text) => `
+[🚀 PERFORMANCE OPTIMIZATION MODE — Speed & Efficiency Expert]
+Target Language: ${lang || 'Auto-detect'}
+
+OPTIMIZATION PROTOCOL:
+1. 🔎 BOTTLENECK DETECTION: تحديد نقاط الاختناق والأماكن الأبطأ في الكود.
+2. 📊 BEFORE METRICS: تقدير أداء الكود الحالي (Big-O، Memory, I/O operations).
+3. ⚡ OPTIMIZATIONS APPLIED:
+   - Algorithmic improvements (خفض التعقيد)
+   - Memory optimizations (تقليل التخصيص وإعادة الاستخدام)
+   - I/O optimizations (Batching، Streaming، Caching)
+   - Concurrency (Async/Parallel processing إن أمكن)
+   - Language-specific optimizations
+4. 💎 OPTIMIZED CODE: الكود المحسّن بالكامل.
+5. 📈 AFTER METRICS: تقدير الأداء بعد التحسين والفرق المتوقع.
+6. 🧪 PROFILING TIPS: كيف تقيس الأداء فعلياً (benchmark code مضمّن).
+
+---
+${text}`,
+
     auto: (lang, text) => text,
     chat: (lang, text) => text
 };
+
+// ==========================================
+// 🔬 AUTO LANGUAGE DETECTOR
+// ==========================================
+const LANG_SIGNATURES = {
+    javascript: [/\b(const|let|var|function|=>|require|module\.exports|async|await)\b/, /\.js$/i],
+    typescript: [/\b(interface|type\s+\w+\s*=|:\s*(string|number|boolean|void|any)\b|<T>|as\s+\w+)\b/, /\.ts$/i],
+    python: [/\b(def |import |from |elif |print\(|self\.|__init__|lambda |class \w+:)\b/, /\.py$/i],
+    java: [/\b(public\s+class|System\.out\.println|@Override|import\s+java\.|void\s+main)\b/, /\.java$/i],
+    cpp: [/#include\s*<|std::|cout\s*<<|cin\s*>>|\bnamespace\b|->|\bnew\b.*\bdelete\b/, /\.(cpp|cc|cxx|h|hpp)$/i],
+    csharp: [/\b(using\s+System|Console\.Write|namespace\s+\w+|public\s+class|\.NET|async\s+Task)\b/, /\.cs$/i],
+    rust: [/\b(fn\s+\w+|let\s+mut|impl\s+\w+|use\s+std::|println!|match\s+\w+|->|&str|Vec<)\b/, /\.rs$/i],
+    go: [/\b(func\s+\w+|import\s+"|package\s+\w+|:=|fmt\.Print|goroutine|go\s+func)\b/, /\.go$/i],
+    sql: [/\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|JOIN|CREATE\s+TABLE|ALTER|DROP|INDEX)\b/i, /\.(sql)$/i],
+    mongodb: [/\b(db\.\w+\.(find|insert|update|aggregate|deleteOne)|mongoose\.|Schema\.|\.populate\()\b/],
+    bash: [/^(#!\/bin\/(bash|sh)|echo\s+|export\s+\w+=|source\s+|\$\{\w+\}|\bgrep\b|\bsed\b)/m, /\.(sh|bash)$/i],
+    html: [/<html|<head|<body|<div|<script|<!DOCTYPE/i, /\.html$/i],
+    css: [/[{};]\s*\n|:\s*\w+;|@media|@keyframes|\.[\w-]+\s*{/, /\.(css|scss|sass|less)$/i],
+};
+
+/**
+ * يكتشف لغة البرمجة تلقائياً من الكود
+ * @param {string} text - نص قد يحتوي كود
+ * @param {string|null} filename - اسم الملف إن وجد
+ * @returns {string|null}
+ */
+function detectLanguage(text, filename = null) {
+    if (!text) return null;
+    const combined = (filename || '') + '\n' + text;
+    let bestMatch = null;
+    let bestScore = 0;
+
+    for (const [lang, patterns] of Object.entries(LANG_SIGNATURES)) {
+        let score = 0;
+        for (const pattern of patterns) {
+            const matches = combined.match(pattern);
+            if (matches) score += matches.length;
+        }
+        if (score > bestScore) {
+            bestScore = score;
+            bestMatch = lang;
+        }
+    }
+    return bestScore >= 2 ? bestMatch : null;
+}
+
+// ==========================================
+// 📊 CODE METRICS ANALYZER (Pre-AI Analysis)
+// ==========================================
+/**
+ * يحلل مقاييس الكود قبل إرساله للـ AI لإثراء الـ prompt بسياق تقني دقيق
+ */
+function analyzeCodeMetrics(code) {
+    if (!code || typeof code !== 'string') return null;
+
+    const lines = code.split('\n');
+    const totalLines = lines.length;
+    const blankLines = lines.filter(l => l.trim() === '').length;
+    const codeLines = totalLines - blankLines;
+
+    // قياس عمق التداخل (نعمق الـ Nesting)
+    let maxNesting = 0;
+    let currentNesting = 0;
+    for (const ch of code) {
+        if (ch === '{' || ch === '(') {
+            currentNesting++;
+            if (currentNesting > maxNesting) maxNesting = currentNesting;
+        } else if (ch === '}' || ch === ')') {
+            currentNesting = Math.max(0, currentNesting - 1);
+        }
+    }
+
+    // عد الدوال
+    const functionCount = (code.match(/\bfunction\b|\b=>\s*{|\bdef\s+\w+|\bfn\s+\w+/g) || []).length;
+    // عد التعليقات
+    const commentLines = lines.filter(l => l.trim().startsWith('//') || l.trim().startsWith('#') || l.trim().startsWith('*')).length;
+    // اكتشاف async operations
+    const asyncCount = (code.match(/\basync\b|\bawait\b|\.then\(|\.catch\(/g) || []).length;
+
+    return { totalLines, codeLines, blankLines, maxNesting, functionCount, commentLines, asyncCount };
+}
 
 // ==========================================
 // 🤖 MAIN ASK AI FUNCTION
@@ -394,22 +549,55 @@ async function askAI(promptText, options = {}) {
         return '❌ يرجى كتابة سؤال صالح.';
     }
 
-    const { mode = 'auto', userId = null, language = null } = options;
+    const {
+        mode = 'auto',
+        userId = null,
+        language = null,
+        fileContent = null,    // محتوى الملف المرفق
+        fileName = null,       // اسم الملف المرفق
+        preAnalysis = true,    // تفعيل التحليل المسبق للكود
+    } = options;
 
     const ai = getClient();
     if (!ai) {
         return '❌ لم يتم ضبط مفتاح `GEMINI_API_KEY` في متغيرات البيئة.';
     }
 
-    // بناء Prompt المتخصص
+    // ── كشف اللغة التلقائي ──
+    const codeToAnalyze = fileContent || promptText;
+    const detectedLang = language || detectLanguage(codeToAnalyze, fileName);
+
+    // ── تحليل مقاييس الكود (إذا كان الوضع تقنياً) ──
+    let metricsContext = '';
+    if (preAnalysis && mode !== 'chat' && mode !== 'auto') {
+        const metrics = analyzeCodeMetrics(codeToAnalyze);
+        if (metrics && metrics.totalLines > 5) {
+            metricsContext = `\n[📊 Code Metrics Pre-Analysis]\n` +
+                `- Lines: ${metrics.codeLines} code / ${metrics.totalLines} total\n` +
+                `- Max Nesting Depth: ${metrics.maxNesting} levels ${metrics.maxNesting > 4 ? '⚠️ (عميق جداً)' : ''}\n` +
+                `- Functions Detected: ${metrics.functionCount}\n` +
+                `- Comment Lines: ${metrics.commentLines} (${Math.round(metrics.commentLines / metrics.totalLines * 100)}%)\n` +
+                `- Async Operations: ${metrics.asyncCount}\n`;
+        }
+    }
+
+    // ── بناء الـ Prompt المتخصص ──
     const promptBuilder = MODE_PROMPTS[mode] || MODE_PROMPTS.auto;
-    let enrichedPrompt = promptBuilder(language, promptText.trim());
+    let coreContent = promptText.trim();
+
+    // إذا كان هناك ملف مرفق، أدمجه في الـ prompt
+    if (fileContent) {
+        coreContent = `${promptText.trim()}\n\n[📎 الملف المرفق: ${fileName || 'code_file'}]\n\`\`\`${detectedLang || ''}\n${fileContent.slice(0, 8000)}\n\`\`\``;
+    }
+
+    let enrichedPrompt = promptBuilder(detectedLang, coreContent);
+    if (metricsContext) enrichedPrompt = metricsContext + '\n' + enrichedPrompt;
 
     const isCoding = mode !== 'chat' && (mode !== 'auto' || isCodingQuery(promptText));
     const useThinking = needsDeepThinking(mode, promptText);
 
     // البحث الحي على الإنترنت (للوضع التلقائي فقط)
-    if (needsLiveBrowsing(promptText) && mode === 'auto') {
+    if (needsLiveBrowsing(promptText) && mode === 'auto' && !fileContent) {
         try {
             const webResults = await searchWeb(promptText.trim());
             if (webResults && webResults.length > 20) {
@@ -429,9 +617,10 @@ async function askAI(promptText, options = {}) {
         if (userId) {
             updateConversationHistory(userId, promptText.trim(), text);
         }
-        // إضافة footer صغير عند استخدام التفكير العميق
+        // إضافة footer عند استخدام التفكير العميق
         if (useThinking) {
-            return text + `\n\n-# 🧠 *تم معالجة هذا الطلب بوضع التفكير العميق (Thinking Mode) عبر ${model}*`;
+            const detectedInfo = detectedLang ? ` | اللغة: \`${detectedLang}\`` : '';
+            return text + `\n\n-# 🧠 *Thinking Mode via ${model}${detectedInfo}*`;
         }
         return text;
     } catch (error) {
@@ -450,6 +639,8 @@ module.exports = {
     searchWeb,
     isCodingQuery,
     needsDeepThinking,
+    detectLanguage,
+    analyzeCodeMetrics,
     clearUserConversation,
     getSessionStats
 };
