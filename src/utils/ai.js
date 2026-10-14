@@ -77,11 +77,49 @@ function needsLiveBrowsing(text) {
 }
 
 const Droplet_SYSTEM_INSTRUCTION = `
-أنت المساعد الذكي الرسمي المدمج داخل بوت الديسكورد العربي "Droplet" (دروبلت).
-صفتك: متحدث لبق، ذكي، سريع البديهة، مطلع على الإنترنت، وتتحدث باللغة العربية الفصحى الواضحة والودية مع لمسة احترافية وممتعة.
+أنت "Droplet AI" (دروبلت)، الذكاء الاصطناعي الفائق والمدمج في بوت Droplet.
+أنت تمتلك عقلية كبير مهندسي البرمجيات (Staff Software Engineer & Principal Architect) ومبرمج خبير وعالم حاسوب عبقري.
+
+🎯 التخصصات البرمجية والتقنية:
+1. إتقان شامل لكافة لغات البرمجة والتقنيات:
+   - JavaScript, TypeScript, Node.js, Discord.js (v14+), React, Next.js, Vue, Express, NestJS
+   - Python (FastAPI, Django, Flask, Data Science, AI/ML, Automation, Scripting)
+   - C++, C, C#, Rust, Go, Java, Kotlin, Swift
+   - قواعد البيانات: MongoDB (Mongoose), PostgreSQL, MySQL, Redis, SQLite, Prisma, TypeORM
+   - أمن المعلومات (Cybersecurity), DevOps, Docker, Git, CI/CD, Linux/Bash, REST APIs, GraphQL, WebSockets
+
+🧠 معايير وأسلوب كتابة الأكواد والحلول:
+- كتابة كود نظيف، احترافي، خالي من الأخطاء والـ Bugs، ومطابق لأحدث معايير الصناعة (Production-ready).
+- مراعاة معايير Clean Code, SOLID Principles, DRY, Design Patterns والتعامل الدقيق مع استثناءات الأخطاء (Error Handling & Edge Cases).
+- كفاءة الأداء وسرعة التنفيذ وحساب التعقيد الزمني والمكاني (Time & Space Complexity / Big O).
+- كتابة تعليقات توضيحية هادفة وموجزة لشرح الأجزاء المعقدة.
+- تنسيق الأكواد بشكل سليم داخل Markdown Fenced Code Blocks مع تحديد لغة البرمجة دائماً (مثل \`\`\`javascript أو \`\`\`python).
+- عند إصلاح الأخطاء (Debugging): حدد سبب المشكلة بدقة واشرح الحل وقدّم الكود المصحح كاملاً أو الأجزاء المعدلة بوضوح.
+- عند تقديم حلول معمارية أو أنظمة: اشرح الخيارات، المزايا، العيوب، والسبب وراء اختيار النهج الأفضل.
+
+💬 لغة التخاطب والأسلوب:
+- تحدث بلغة عربية فصيحة، واضحة، محترفة ومباشرة.
+- المصطلحات التقنية، أسماء المتغيرات، الدوال، والمكتبات تُكتب بالإنجليزية لتجنب التشويه والارتباك.
+- الإيجاز والتركيز: قدّم الزبدة والحل التقني الفوري والنموذجي بدون مقدمات طويلة غير مفيدة.
+- في الأسئلة العامة غير البرمجية: حافظ على ذكائك ولبقاتك وسرعة بديهتك.
 `;
 
-// النماذج بالترتيب: الأساسي ثم الاحتياطي. تأكد من أسمائها في Google AI Studio
+// كلمات مفتاحية لاكتشاف هل الطلب برمجي/تقني لتخفيض درجة العشوائية وضمان دقة الأكواد
+const CODING_INDICATORS = [
+    'code', 'function', 'class', 'error', 'debug', 'bug', 'fix', 'api', 'const', 'let', 'var',
+    'sql', 'database', 'mongo', 'script', 'python', 'javascript', 'typescript', 'java', 'c++',
+    'c#', 'rust', 'go', 'html', 'css', 'react', 'node', 'discord.js', 'bot', 'json', 'regex',
+    'async', 'await', 'promise', 'query', 'syntax', 'برمجة', 'كود', 'دالة', 'خطأ', 'صلح', 'حل',
+    'سيرفر', 'قاعدة بيانات', 'تطبيق', 'موقع', 'بايثون', 'جافاسكربت', 'خوارزمية', 'مشكلة', 'ديسكورد'
+];
+
+function isCodingQuery(text) {
+    if (!text || typeof text !== 'string') return false;
+    const lower = text.toLowerCase();
+    return CODING_INDICATORS.some(ind => lower.includes(ind));
+}
+
+// النماذج بالترتيب: الأساسي ثم الاحتياطي
 const MODELS = [
     process.env.GEMINI_MODEL,
     process.env.GEMINI_FALLBACK_MODEL,
@@ -90,15 +128,21 @@ const MODELS = [
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-async function generateWithRetry(ai, prompt) {
+async function generateWithRetry(ai, prompt, isCoding = false) {
     let lastError;
+    // تخفيض الـ temperature في الأكواد لضمان الدقة وتجنب التخمين غير المنطقي
+    const temperature = isCoding ? 0.2 : 0.7;
+
     for (const model of MODELS) {
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
                 const response = await ai.models.generateContent({
                     model,
                     contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                    config: { systemInstruction: Droplet_SYSTEM_INSTRUCTION, temperature: 0.7 }
+                    config: {
+                        systemInstruction: Droplet_SYSTEM_INSTRUCTION,
+                        temperature
+                    }
                 });
                 const text = response.text || response.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (text) return text;
@@ -145,8 +189,10 @@ async function askAI(promptText) {
         }
     }
 
+    const coding = isCodingQuery(promptText);
+
     try {
-        return await generateWithRetry(ai, enrichedPrompt);
+        return await generateWithRetry(ai, enrichedPrompt, coding);
     } catch (error) {
         console.error('[AI Critical Error Details]:', error);
         const status = Number(error?.status || error?.code || 0);
@@ -158,4 +204,4 @@ async function askAI(promptText) {
     }
 }
 
-module.exports = { askAI, Droplet_SYSTEM_INSTRUCTION, searchWeb };
+module.exports = { askAI, Droplet_SYSTEM_INSTRUCTION, searchWeb, isCodingQuery };

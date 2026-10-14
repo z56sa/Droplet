@@ -3,6 +3,57 @@ const { askAI } = require('../../utils/ai');
 const config = require('../../config.json');
 const { t } = require('../../utils/lang');
 
+/**
+ * تقسيم الردود الطويلة بذكاء مع الحفاظ على كتل الأكواد (Code Blocks) دون تشويه
+ */
+function splitMessageSmart(text, maxLength = 1950) {
+    if (text.length <= maxLength) return [text];
+
+    const chunks = [];
+    let currentChunk = '';
+    let inCodeBlock = false;
+    let codeLanguage = '';
+
+    const lines = text.split('\n');
+
+    for (const line of lines) {
+        // فحص بداية أو نهاية كتلة كود
+        const codeBlockMatch = line.match(/^```(\w+)?/);
+        
+        // التحقق من تجاوز الحجم
+        if ((currentChunk + '\n' + line).length > maxLength) {
+            if (inCodeBlock) {
+                // إغلاق كتلة الكود الحالية في الجزء الحالي
+                currentChunk += '\n```';
+                chunks.push(currentChunk);
+                // فتح كتلة كود جديدة بنفس اللغة في الجزء التالي
+                currentChunk = '```' + codeLanguage + '\n' + line;
+            } else {
+                chunks.push(currentChunk);
+                currentChunk = line;
+            }
+        } else {
+            currentChunk = currentChunk ? (currentChunk + '\n' + line) : line;
+        }
+
+        if (codeBlockMatch) {
+            if (!inCodeBlock) {
+                inCodeBlock = true;
+                codeLanguage = codeBlockMatch[1] || '';
+            } else {
+                inCodeBlock = false;
+                codeLanguage = '';
+            }
+        }
+    }
+
+    if (currentChunk.trim().length > 0) {
+        chunks.push(currentChunk);
+    }
+
+    return chunks.length > 0 ? chunks : [text];
+}
+
 async function sendFormattedAIResponse(target, query, isInteraction = false, langOrGuildId = 'EN') {
     try {
         const response = await askAI(query);
@@ -15,8 +66,8 @@ async function sendFormattedAIResponse(target, query, isInteraction = false, lan
             }
         }
 
-        // If the reply exceeds 2000 chars, split it into chunks
-        const chunks = response.match(/[\s\S]{1,1950}/g) || [response];
+        // If the reply exceeds 2000 chars, split it smartly preserving code blocks
+        const chunks = splitMessageSmart(response, 1950);
         if (isInteraction) {
             await target.editReply({ content: chunks[0] });
             for (let i = 1; i < chunks.length; i++) {
