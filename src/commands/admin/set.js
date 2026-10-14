@@ -121,6 +121,7 @@ module.exports = {
               { name: '🏆 Competing', value: 'Competing' }
             )
         )
+    )
     // 5. /set language
     .addSubcommand(sub =>
       sub.setName('language')
