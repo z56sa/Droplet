@@ -74,43 +74,13 @@ module.exports = {
         return;
       }
 
-      // 2.0 أزرار متجر السيرفر التفاعلي (Shop Embed Buttons)
-      if (interaction.isButton() && (interaction.customId === 'shop_view' || interaction.customId === 'shop_balance' || interaction.customId.startsWith('shop_buy_modal_'))) {
+      // 2.0 زر فحص رصيد المحفظة (Shop / Wallet Balance Button)
+      if (interaction.isButton() && interaction.customId === 'shop_balance') {
         const guildId = interaction.guild.id;
         const userId = interaction.user.id;
 
-        // فتح نافذة شراء مباشرة عند الضغط على أزرار الشراء السريعة
-        if (interaction.customId.startsWith('shop_buy_modal_')) {
-          const itemKey = interaction.customId.replace('shop_buy_modal_', '');
-          if (itemKey === 'role') {
-            const modal = new ModalBuilder()
-              .setCustomId('modal_shop_buy_role')
-              .setTitle('👑 شراء رتبة خاصة مخصصة');
-            const nameInput = new TextInputBuilder()
-              .setCustomId('role_name')
-              .setLabel('اسم الرتبة المطلوبة')
-              .setStyle(TextInputStyle.Short)
-              .setPlaceholder('مثال: VIP Emperor')
-              .setRequired(true)
-              .setMaxLength(32);
-            const colorInput = new TextInputBuilder()
-              .setCustomId('role_color')
-              .setLabel('لون الرتبة (HEX كود يبدأ بـ #)')
-              .setStyle(TextInputStyle.Short)
-              .setPlaceholder('#7C3AED')
-              .setRequired(true)
-              .setMaxLength(7);
-            modal.addComponents(
-              new ActionRowBuilder().addComponents(nameInput),
-              new ActionRowBuilder().addComponents(colorInput)
-            );
-            return interaction.showModal(modal);
-          }
-        }
-
         await interaction.deferReply({ flags: 64 }).catch(() => {});
 
-        // 🌐 جلب رصيد الذهب الحي من Turso Cloud مع دمج المحلي
         let userCoins = db.getCoins(userId, guildId);
         try {
           if (db.getTursoUser) {
@@ -121,172 +91,13 @@ module.exports = {
           }
         } catch (e) {}
 
-        if (interaction.customId === 'shop_balance') {
-          const balEmbed = new EmbedBuilder()
-            .setColor('#2563EB')
-            .setTitle('🪙 محفظتك في Droplet | رصيد السيرفر والداشبورد')
-            .setDescription(`مرحباً ${interaction.user}، رصيدك الحالي من عملة الذهب هو:\n\n✨ **${userCoins.toLocaleString()}** Gold 🪙\n\n> 🌐 **متصل ومتزامن مع Turso Cloud والداشبورد مباشرة!**\n> 💡 يمكنك جمع المزيد عبر الراتب اليومي \`#daily\`، العمل \`#work\`، والتفاعل في الشات!`)
-            .setFooter({ text: 'Droplet Economy System • متزامن مع تورسو' })
-            .setTimestamp();
-          return interaction.editReply({ embeds: [balEmbed] });
-        }
-
-        if (interaction.customId === 'shop_view') {
-          const settings = db.getGuildSettings ? db.getGuildSettings(guildId) : {};
-          let shopSettings = { customRole: { enabled: true, price: 500, duration: 30 }, voiceRoom: { enabled: true, price: 800, duration: 30 }, textRoom: { enabled: true, price: 600, duration: 30 }, badge: { enabled: false, price: 200, duration: 0 } };
-          try { if (settings?.shop_items) shopSettings = JSON.parse(settings.shop_items); } catch(e) {}
-
-          let customProducts = [];
-          try {
-            if (settings?.custom_products) {
-              customProducts = typeof settings.custom_products === 'string' ? JSON.parse(settings.custom_products) : settings.custom_products;
-            }
-          } catch(e) {}
-          if (!Array.isArray(customProducts)) customProducts = [];
-
-          const shopEmbed = new EmbedBuilder()
-            .setColor('#7C3AED')
-            .setTitle('🛒 متجر السيرفر التفاعلي الفاخر')
-            .setDescription(`مرحباً ${interaction.user}! رصيدك المتاح: **${userCoins.toLocaleString()}** Gold 🪙\n\nاضغط على الأزرار أو اختر من القائمة بالأسفل لشراء المنتجات المخصصة والعناصر مباشرة:`)
-            .setTimestamp();
-
-          const buyButtons = [];
-          if (shopSettings.customRole?.enabled !== false) {
-            shopEmbed.addFields({
-              name: '👑 رتبة مخصصة (Custom Role)',
-              value: `• السعر: **${(shopSettings.customRole?.price || 500).toLocaleString()}** Gold 🪙\n• المدة: **${shopSettings.customRole?.duration || 30}** يوم\n• الميزة: تختار الاسم واللون وتُنشأ لك وتُعطى لحسابك فوراً!`,
-              inline: false
-            });
-            buyButtons.push(new ButtonBuilder().setCustomId('shop_buy_modal_role').setLabel('👑 شراء رتبة خاصة').setStyle(ButtonStyle.Primary));
-          }
-
-          if (shopSettings.badge?.enabled) {
-            shopEmbed.addFields({
-              name: '🎖️ شارة / لقب مخصص (Badge)',
-              value: `• السعر: **${(shopSettings.badge?.price || 200).toLocaleString()}** Gold 🪙\n• المدة: ${shopSettings.badge?.duration > 0 ? `**${shopSettings.badge.duration}** يوم` : '**دائم**'}\n• الميزة: تظهر في بروفايلك وهويتك!`,
-              inline: false
-            });
-          }
-
-          if (customProducts.length > 0) {
-            const prodLines = customProducts.map((p, idx) => {
-              const emoji = p.emoji || '🛍️';
-              const name = p.name || `منتج #${idx + 1}`;
-              const price = Number(p.price || 0).toLocaleString();
-              const desc = p.description || p.desc ? `\n  *${p.description || p.desc}*` : '';
-              return `${emoji} **${name}** — **${price}** Gold 🪙${desc}`;
-            });
-
-            shopEmbed.addFields({
-              name: '🎁 منتجات السيرفر المخصصة (Custom Products)',
-              value: prodLines.join('\n\n').slice(0, 1024),
-              inline: false
-            });
-          }
-
-          const actionRows = [];
-          if (buyButtons.length > 0) {
-            actionRows.push(new ActionRowBuilder().addComponents(buyButtons.slice(0, 5)));
-          }
-
-          if (customProducts.length > 0) {
-            const selectOptions = customProducts.slice(0, 25).map((p, idx) => {
-              const opt = {
-                label: (p.name || `منتج #${idx + 1}`).slice(0, 100),
-                value: String(p.id || idx),
-                description: `${Number(p.price || 0).toLocaleString()} Gold 🪙${p.description || p.desc ? ` - ${p.description || p.desc}` : ''}`.slice(0, 100)
-              };
-              if (p.emoji && typeof p.emoji === 'string' && p.emoji.trim()) {
-                opt.emoji = p.emoji.trim();
-              } else {
-                opt.emoji = '🛍️';
-              }
-              return opt;
-            });
-
-            const selectMenu = new StringSelectMenuBuilder()
-              .setCustomId('shop_buy_custom_select')
-              .setPlaceholder('🛍️ اختر منتجاً مخصصاً لشرائه بالذهب...')
-              .addOptions(selectOptions);
-
-            actionRows.push(new ActionRowBuilder().addComponents(selectMenu));
-          }
-
-          return interaction.editReply({ embeds: [shopEmbed], components: actionRows });
-        }
-        return;
-      }
-
-      // 2.0.1 شراء المنتجات المخصصة عبر القائمة التفاعلية في الديسكورد
-      if (interaction.isStringSelectMenu() && interaction.customId === 'shop_buy_custom_select') {
-        await interaction.deferReply({ flags: 64 }).catch(() => {});
-        const guildId = interaction.guild.id;
-        const userId = interaction.user.id;
-        const selectedId = interaction.values[0];
-
-        const settings = db.getGuildSettings ? db.getGuildSettings(guildId) : {};
-        let customProducts = [];
-        try {
-          if (settings?.custom_products) {
-            customProducts = typeof settings.custom_products === 'string' ? JSON.parse(settings.custom_products) : settings.custom_products;
-          }
-        } catch(e) {}
-        if (!Array.isArray(customProducts)) customProducts = [];
-
-        const product = customProducts.find((p, idx) => String(p.id) === selectedId || String(idx) === selectedId);
-        if (!product) {
-          return interaction.editReply({ content: '❌ هذا المنتج لم يعد متوفراً في المتجر حالياً.' });
-        }
-
-        const price = Math.max(0, Number(product.price || 0));
-
-        // التحقق من الرصيد الحي
-        let userCoins = db.getCoins(userId, guildId);
-        try {
-          if (db.getTursoUser) {
-            const tursoData = await db.getTursoUser(userId);
-            if (tursoData && tursoData.coins !== null && tursoData.coins > userCoins) {
-              userCoins = tursoData.coins;
-            }
-          }
-        } catch(e) {}
-
-        if (userCoins < price) {
-          return interaction.editReply({
-            content: `❌ عذراً! رصيدك غير كافٍ لشراء **${product.emoji || '🛍️'} ${product.name}**.\n• السعر المطلوب: **${price.toLocaleString()}** Gold 🪙\n• رصيدك الحالي: **${userCoins.toLocaleString()}** Gold 🪙`
-          });
-        }
-
-        // خصم المبلغ وتحديث الرصيد
-        db.removeCoins(userId, guildId, price);
-
-        const receiptEmbed = new EmbedBuilder()
-          .setColor('#10B981')
-          .setTitle('🎉 تم إتمام عملية الشراء بنجاح!')
-          .setDescription(`تهانينا ${interaction.user}! لقد اشتريت:\n\n### ${product.emoji || '🛍️'} **${product.name}**\n${product.description || product.desc ? `> *${product.description || product.desc}*\n\n` : ''}• **المبلغ المخصوم:** \`${price.toLocaleString()}\` Gold 🪙\n• **رصيدك المتبقي:** \`${Math.max(0, userCoins - price).toLocaleString()}\` Gold 🪙`)
-          .setFooter({ text: `${interaction.guild.name} • متجر السيرفر الرسمي`, iconURL: interaction.guild.iconURL() })
+        const balEmbed = new EmbedBuilder()
+          .setColor('#2563EB')
+          .setTitle('🪙 محفظتك في Droplet | رصيد السيرفر والداشبورد')
+          .setDescription(`مرحباً ${interaction.user}، رصيدك الحالي من عملة الذهب هو:\n\n✨ **${userCoins.toLocaleString()}** Gold 🪙\n\n> 🌐 **متصل ومتزامن مع Turso Cloud والداشبورد مباشرة!**\n> 💡 يمكنك جمع المزيد عبر الراتب اليومي \`#daily\`، العمل \`#work\`، والتفاعل في الشات!`)
+          .setFooter({ text: 'Droplet Economy System • متزامن مع تورسو' })
           .setTimestamp();
-
-        // إشعار روم السجلات أو الإدارة بالطلب
-        try {
-          const logChannelId = settings.log_channel_id || settings.mod_log_channel || settings.shop_channel_id;
-          if (logChannelId) {
-            const logCh = interaction.guild.channels.cache.get(logChannelId) || await interaction.guild.channels.fetch(logChannelId).catch(() => null);
-            if (logCh) {
-              const adminLogEmbed = new EmbedBuilder()
-                .setColor('#F59E0B')
-                .setTitle('📦 طلب شراء منتج مخصص جديد | New Shop Purchase')
-                .setDescription(`قام عضو بشراء منتج من المتجر:\n\n• **المشتري:** ${interaction.user} (\`${interaction.user.tag}\` - \`${interaction.user.id}\`)\n• **المنتج:** ${product.emoji || '🛍️'} **${product.name}**\n• **السعر المدفوع:** **${price.toLocaleString()}** Gold 🪙\n• **التفاصيل:** ${product.description || product.desc || 'لا يوجد وصف'}`)
-                .setFooter({ text: `معرّف المنتج: ${product.id || 'N/A'}` })
-                .setTimestamp();
-              await logCh.send({ embeds: [adminLogEmbed] }).catch(() => {});
-            }
-          }
-        } catch(logErr) {
-          console.error('[Shop Custom Purchase Log Error]:', logErr);
-        }
-
-        return interaction.editReply({ embeds: [receiptEmbed] });
+        return interaction.editReply({ embeds: [balEmbed] });
       }
 
       // 2. التعامل مع أزرار الرتب التفاعلية (Reaction Roles)
@@ -473,68 +284,7 @@ module.exports = {
         });
       }
 
-      // 2.3.1 معالجة نوافذ شراء المتجر المباشرة (Shop Modal Submissions)
-      if (interaction.isModalSubmit() && interaction.customId.startsWith('modal_shop_buy_')) {
-        await interaction.deferReply({ flags: 64 }).catch(() => {});
-        const guildId = interaction.guild.id;
-        const userId = interaction.user.id;
 
-        const settings = db.getGuildSettings ? db.getGuildSettings(guildId) : {};
-        let shopSettings = { customRole: { enabled: true, price: 500, duration: 30 }, voiceRoom: { enabled: true, price: 800, duration: 30 }, textRoom: { enabled: true, price: 600, duration: 30 }, badge: { enabled: false, price: 200, duration: 0 } };
-        try { if (settings?.shop_items) shopSettings = JSON.parse(settings.shop_items); } catch(e) {}
-
-        // جلب رصيد المستخدم الحي من Turso
-        let userCoins = db.getCoins(userId, guildId);
-        try {
-          if (db.getTursoUser) {
-            const tursoData = await db.getTursoUser(userId);
-            if (tursoData && tursoData.coins !== null && tursoData.coins > userCoins) {
-              userCoins = tursoData.coins;
-            }
-          }
-        } catch(e) {}
-
-        // 1. شراء رتبة مخصصة
-        if (interaction.customId === 'modal_shop_buy_role') {
-          const price = shopSettings.customRole?.price || 500;
-          const duration = shopSettings.customRole?.duration || 30;
-          if (userCoins < price) {
-            return interaction.editReply({ content: `❌ عذراً! رصيدك غير كافٍ. المطلوب **${price.toLocaleString()}** Gold ورصيدك الحالي هو **${userCoins.toLocaleString()}** Gold 🪙.` });
-          }
-
-          const roleName = interaction.fields.getTextInputValue('role_name').trim();
-          let roleColor = interaction.fields.getTextInputValue('role_color').trim();
-          if (!/^#[0-9A-Fa-f]{6}$/.test(roleColor)) {
-            roleColor = '#7C3AED'; // Fallback to theme color
-          }
-
-          try {
-            const createdRole = await interaction.guild.roles.create({
-              name: roleName,
-              color: roleColor,
-              reason: `Custom Shop Role purchased by ${interaction.user.tag}`
-            });
-            await interaction.member.roles.add(createdRole).catch(() => {});
-
-            // خصم الرصيد محلياً وفي Turso
-            db.removeCoins(userId, guildId, price);
-            const expiresAt = Math.floor(Date.now() / 1000) + (duration * 24 * 3600);
-            db.addCustomRole(guildId, userId, createdRole.id, roleName, roleColor, null, expiresAt);
-
-            const successEmbed = new EmbedBuilder()
-              .setColor(roleColor)
-              .setTitle('🎉 تم شراء وإنشاء الرتبة بنجاح!')
-              .setDescription(`تم إنشاء رتبتك الخاصة **${roleName}** وإضافتها إلى حسابك بنجاح!\n\n• السعر المخصوم: **${price.toLocaleString()}** Gold 🪙\n• الصلاحية: **${duration}** يوم (<t:${expiresAt}:R>)\n• اللون: \`${roleColor}\``)
-              .setTimestamp();
-
-            return interaction.editReply({ embeds: [successEmbed] });
-          } catch(err) {
-            console.error('[Shop Buy Role Error]:', err);
-            return interaction.editReply({ content: `❌ حدث خطأ أثناء إنشاء الرتبة: ${err.message}` });
-          }
-        }
-        return;
-      }
 
 
 
