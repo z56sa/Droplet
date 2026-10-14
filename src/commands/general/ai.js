@@ -54,9 +54,9 @@ function splitMessageSmart(text, maxLength = 1950) {
     return chunks.length > 0 ? chunks : [text];
 }
 
-async function sendFormattedAIResponse(target, query, isInteraction = false, langOrGuildId = 'EN') {
+async function sendFormattedAIResponse(target, query, isInteraction = false, langOrGuildId = 'EN', options = {}) {
     try {
-        const response = await askAI(query);
+        const response = await askAI(query, options);
 
         if (response.length <= 2000) {
             if (isInteraction) {
@@ -92,16 +92,40 @@ async function sendFormattedAIResponse(target, query, isInteraction = false, lan
 
 module.exports = {
     name: 'ai',
-    description: 'التحدث مع الذكاء الاصطناعي (Droplet AI)',
-    aliases: ['bot-ai', 'gpt'],
+    description: 'التحدث مع الذكاء الاصطناعي البرمجي المتقدم (Droplet AI)',
+    aliases: ['bot-ai', 'gpt', 'code', 'debug'],
     category: 'general',
     data: new SlashCommandBuilder()
         .setName('ai')
-        .setDescription('Chat with the AI (Droplet AI)')
+        .setDescription('Chat with Droplet Advanced AI (Coding Architect & General Assistant)')
         .addStringOption(option =>
             option.setName('prompt')
-                .setDescription('The question or text to send to the AI')
+                .setDescription('The question, code, or instruction to send to the AI')
                 .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName('mode')
+                .setDescription('Specialized mode (Default: Auto-detect)')
+                .setRequired(false)
+                .addChoices(
+                    { name: '🤖 Auto / كشف تلقائي ذكي', value: 'auto' },
+                    { name: '💻 Code Generation / كتابة كود', value: 'code' },
+                    { name: '🐞 Debug & Fix / فحص وإصلاح الأخطاء', value: 'debug' },
+                    { name: '📖 Explain Code / شرح الكود والتعقيد', value: 'explain' },
+                    { name: '⚡ Refactor & Optimize / تحسين الأداء والهيكلة', value: 'refactor' },
+                    { name: '🏗️ System Architecture / هندسة ومعمارية الأنظمة', value: 'arch' },
+                    { name: '💬 General Chat / محادثة عامة', value: 'chat' }
+                )
+        )
+        .addStringOption(option =>
+            option.setName('language')
+                .setDescription('Programming language (e.g., JavaScript, Python, C++, SQL, Rust)')
+                .setRequired(false)
+        )
+        .addBooleanOption(option =>
+            option.setName('reset')
+                .setDescription('Reset your conversation history before asking')
+                .setRequired(false)
         ),
 
     async execute(interaction) {
@@ -109,9 +133,23 @@ module.exports = {
         if (interaction.user.id !== ownerId) {
             return interaction.reply({ content: t(interaction.guild.id, 'general.ai.owner_only'), flags: 64 });
         }
+
+        const reset = interaction.options.getBoolean('reset');
+        if (reset) {
+            const { clearUserConversation } = require('../../utils/ai');
+            clearUserConversation(interaction.user.id);
+        }
+
         await interaction.deferReply();
         const prompt = interaction.options.getString('prompt');
-        await sendFormattedAIResponse(interaction, prompt, true, interaction.guild.id);
+        const mode = interaction.options.getString('mode') || 'auto';
+        const language = interaction.options.getString('language') || null;
+
+        await sendFormattedAIResponse(interaction, prompt, true, interaction.guild.id, {
+            mode,
+            language,
+            userId: interaction.user.id
+        });
     },
 
     async executePrefix(message, args) {
@@ -119,12 +157,22 @@ module.exports = {
         if (message.author.id !== ownerId) {
             return; // Ignore non-owners
         }
+
+        if (args[0] === 'reset' || args[0] === 'clear') {
+            const { clearUserConversation } = require('../../utils/ai');
+            clearUserConversation(message.author.id);
+            return message.reply('🧹 تم مسح سجل المحادثة والبدء بجلسة برمجية جديدة.');
+        }
+
         const query = args.join(' ');
         if (!query) {
             return message.reply(t(message.guild.id, 'general.ai.need_query'));
         }
 
         const waiting = await message.reply(t(message.guild.id, 'general.ai.processing'));
-        await sendFormattedAIResponse(waiting, query, false, message.guild.id);
+        await sendFormattedAIResponse(waiting, query, false, message.guild.id, {
+            mode: 'auto',
+            userId: message.author.id
+        });
     }
 };

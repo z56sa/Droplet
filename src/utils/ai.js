@@ -166,10 +166,46 @@ async function generateWithRetry(ai, prompt, isCoding = false) {
     throw lastError;
 }
 
-async function askAI(promptText) {
+// ذاكرة المحادثة لكل مستخدم (تخزين آخر 6 رسائل للاستمرارية في البرمجة والأسئلة التراكمية)
+const userConversations = new Map();
+const CONVERSATION_TIMEOUT = 10 * 60 * 1000; // تنتهي الجلسة بعد 10 دقائق من الخمول
+
+function getConversationHistory(userId) {
+    if (!userId) return [];
+    const session = userConversations.get(userId);
+    if (!session) return [];
+    if (Date.now() - session.lastActive > CONVERSATION_TIMEOUT) {
+        userConversations.delete(userId);
+        return [];
+    }
+    return session.history;
+}
+
+function updateConversationHistory(userId, userText, botText) {
+    if (!userId) return;
+    let session = userConversations.get(userId);
+    if (!session || (Date.now() - session.lastActive > CONVERSATION_TIMEOUT)) {
+        session = { history: [], lastActive: Date.now() };
+    }
+    session.history.push({ role: 'user', parts: [{ text: userText }] });
+    session.history.push({ role: 'model', parts: [{ text: botText }] });
+    if (session.history.length > 8) {
+        session.history = session.history.slice(session.history.length - 8);
+    }
+    session.lastActive = Date.now();
+    userConversations.set(userId, session);
+}
+
+function clearUserConversation(userId) {
+    if (userId) userConversations.delete(userId);
+}
+
+async function askAI(promptText, options = {}) {
     if (!promptText || typeof promptText !== 'string' || !promptText.trim()) {
         return '❌ يرجى كتابة سؤال صالح.';
     }
+
+    const { mode = 'auto', userId = null, language = null } = options;
 
     const ai = getClient();
     if (!ai) {
@@ -177,31 +213,82 @@ async function askAI(promptText) {
     }
 
     let enrichedPrompt = promptText.trim();
+    let isCoding = (mode !== 'chat' && (mode !== 'auto' || isCodingQuery(promptText)));
 
-    if (needsLiveBrowsing(promptText)) {
+    // توجيه ذكي حسب وضع البرمجة المختار (Mode Specialization)
+    if (mode === 'debug') {
+        enrichedPrompt = `[وضع تشخيص وتصحيح الأخطاء - Debugging Mode]:\nلغة البرمجة المستهدفة: ${language || 'تلقائي'}\nقم بما يلي بدقة:\n1. تحليل سبب المشكلة أو الـ Bug بدقة واقتضاب.\n2. توضيح الخطأ الجذري (Root Cause).\n3. تقديم الكود المصحح بالكامل داخل كتل كود منسقة جاهز للعمل والنسخ.\n\nالكود / المشكلة:\n${promptText.trim()}`;
+        isCoding = true;
+    } else if (mode === 'explain') {
+        enrichedPrompt = `[وضع الشرح والتحليل - Code Explanation Mode]:\nقم بشرح الكود/المفهوم التالي بأسلوب مهندس برمجيات كبير:\n1. ما الذي يقوم به هذا الكود بالتحديد؟\n2. شرح سطر بسطر أو خطوة بخطوة للأجزاء الحيوية.\n3. تحليل الكفاءة والتعقيد (Time & Space Complexity) ونقاط القوة والضعف.\n\nالكود / السؤال:\n${promptText.trim()}`;
+        isCoding = true;
+    } else if (mode === 'refactor') {
+        enrichedPrompt = `[وضع تحسين وإعادة الهيكلة - Code Refactor & Optimize Mode]:\nقم بإعادة كتابة وتحسين الكود التالي لأقصى درجات الأداء والنظافة وفق مبادئ Clean Code و SOLID:\n1. إزالة التكرارات وجعله أسرع وأكثر أماناً.\n2. تحسين أسماء المتغيرات والدوال.\n3. الكود المحسن بالكامل مع تعليقات موجزة توضح التحسينات.\n\nالكود المراد تحسينه:\n${promptText.trim()}`;
+        isCoding = true;
+    } else if (mode === 'arch') {
+        enrichedPrompt = `[وضع المعمارية وتصميم الأنظمة - System Architecture Mode]:\nقم بتصميم معمارية النظام أو التطبيق المطلوب وفق أفضل الممارسات:\n1. الهيكلية المعمارية المقترحة (Architecture Diagram / Flow).\n2. اختيار التقنيات وقواعد البيانات وتبرير السبب.\n3. هيكل الملفات والمجلدات الموصى به (Folder Structure).\n4. نماذج أو دوال توضيحية لربط المكونات الرئيسية.\n\nالمتطلبات:\n${promptText.trim()}`;
+        isCoding = true;
+    } else if (mode === 'code' && language) {
+        enrichedPrompt = `[لغة البرمجة: ${language}]\n${promptText.trim()}`;
+        isCoding = true;
+    }
+
+    if (needsLiveBrowsing(promptText) && mode === 'auto') {
         try {
             const webResults = await searchWeb(promptText.trim());
             if (webResults && webResults.length > 20) {
-                enrichedPrompt = `[نتائج البحث الحي من الويب]:\n- ${webResults}\n\n[سؤال المستخدم]: ${promptText.trim()}\n\n(يرجى الإجابة بدقة بالاعتماد على نتائج البحث الحي المرفقة أعلاه وصياغتها بأسلوبك الذكي والجميل).`;
+                enrichedPrompt = `[نتائج البحث الحي من الويب]:\n- ${webResults}\n\n[سؤال المستخدم]: ${enrichedPrompt}\n\n(يرجى الإجابة بدقة بالاعتماد على نتائج البحث الحي المرفقة أعلاه وصياغتها بأسلوبك الذكي والجميل).`;
             }
         } catch (err) {
             console.warn('[Web Search Fallback Error]:', err?.message || err);
         }
     }
 
-    const coding = isCodingQuery(promptText);
+    // تجميع سياق المحادثة السابقة
+    const history = getConversationHistory(userId);
+    const contents = [...history, { role: 'user', parts: [{ text: enrichedPrompt }] }];
 
-    try {
-        return await generateWithRetry(ai, enrichedPrompt, coding);
-    } catch (error) {
-        console.error('[AI Critical Error Details]:', error);
-        const status = Number(error?.status || error?.code || 0);
+    const temperature = isCoding ? 0.2 : 0.7;
 
-        if (status === 429) return '⏳ تجاوزنا حد الطلبات، حاول بعد قليل.';
-        if (status === 503) return '⏳ خوادم Gemini مزدحمة الآن، حاول بعد دقيقة.';
-        if (status === 400 || status === 404) return '❌ إعدادات النموذج أو المفتاح غير صحيحة، تواصل مع الإدارة.';
-        return '❌ عذراً، حدث خطأ أثناء الاتصال بالذكاء الاصطناعي، يرجى المحاولة لاحقاً.';
+    for (const model of MODELS) {
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const response = await ai.models.generateContent({
+                    model,
+                    contents,
+                    config: {
+                        systemInstruction: Droplet_SYSTEM_INSTRUCTION,
+                        temperature
+                    }
+                });
+                const text = response.text || response.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                    if (userId) {
+                        updateConversationHistory(userId, promptText.trim(), text);
+                    }
+                    return text;
+                }
+                throw new Error('EMPTY_RESPONSE');
+            } catch (error) {
+                const status = Number(error?.status || error?.code || 0);
+                console.warn(`[AI] ${model} attempt ${attempt + 1} failed: ${status} ${error?.message?.slice(0, 120)}`);
+                if (status === 400 || status === 404) break;
+                if ([429, 500, 503].includes(status)) {
+                    await sleep(1000 * Math.pow(2, attempt));
+                    continue;
+                }
+                break;
+            }
+        }
     }
+
+    return '❌ عذراً، لم نتمكن من الحصول على استجابة من الذكاء الاصطناعي حالياً. يرجى المحاولة بعد قليل.';
 }
 
-module.exports = { askAI, Droplet_SYSTEM_INSTRUCTION, searchWeb, isCodingQuery };
+module.exports = {
+    askAI,
+    Droplet_SYSTEM_INSTRUCTION,
+    searchWeb,
+    isCodingQuery,
+    clearUserConversation
+};
