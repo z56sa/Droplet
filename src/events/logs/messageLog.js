@@ -17,24 +17,27 @@ module.exports = [
       // محاولة جلب الرسالة إذا كانت جزئية
       try { if (message.partial) await message.fetch().catch(() => {}); } catch {}
 
-      // استرجاع البيانات من الكاش الخاص بنا إذا كانت مفقودة من Discord.js
+      // استرجاع البيانات: 1) Discord.js | 2) الذاكرة | 3) قاعدة البيانات (يبقى بعد إعادة التشغيل)
       const cached = getCachedMessage(message.id);
+      const dbCached = (!cached && db.getMessageFromLogCache) ? db.getMessageFromLogCache(message.id) : null;
 
       // إذا كان الكاتب بوتاً، نتجاهل
       if (message.author?.bot || cached?.author?.bot) return;
 
-      // تجهيز بيانات الكاتب والمحتوى
-      let authorId = message.author?.id || cached?.author?.id || null;
-      let authorTag = message.author?.tag || cached?.author?.tag || null;
+      // تجهيز بيانات الكاتب والمحتوى (الأولوية: Discord.js ← ذاكرة ← قاعدة البيانات)
+      let authorId = message.author?.id || cached?.author?.id || dbCached?.author_id || null;
+      let authorTag = message.author?.tag || cached?.author?.tag || dbCached?.author_tag || null;
       let authorUsername = message.author?.username || cached?.author?.username || null;
-      let authorAvatar = (typeof message.author?.displayAvatarURL === 'function' ? message.author.displayAvatarURL({ dynamic: true }) : null) || cached?.author?.avatarURL || null;
-      let content = message.content || cached?.content || '';
-      
+      let authorAvatar = (typeof message.author?.displayAvatarURL === 'function' ? message.author.displayAvatarURL({ dynamic: true }) : null)
+                        || cached?.author?.avatarURL
+                        || dbCached?.author_avatar_url || null;
+      let content = message.content || cached?.content || dbCached?.content || '';
+
       // فحص المرفقات والصور
-      let imageAtt = message.attachments?.find(a => a.contentType?.startsWith('image') || /\.(png|jpe?g|webp|gif)$/i.test(a.url));
-      if (!imageAtt && cached?.attachments?.length > 0) {
-        imageAtt = cached.attachments.find(a => a.contentType?.startsWith('image') || /\.(png|jpe?g|webp|gif)$/i.test(a.url));
-      }
+      const rawAtts = message.attachments?.size > 0
+        ? [...message.attachments.values()]
+        : (cached?.attachments || dbCached?.attachments || []);
+      let imageAtt = rawAtts.find(a => a.contentType?.startsWith('image') || /\.(png|jpe?g|webp|gif)$/i.test(a.url || ''));
       const hasImage = !!imageAtt;
 
       // ── البحث في سجل التدقيق لمعرفة من حذف الرسالة ──

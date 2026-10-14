@@ -937,6 +937,26 @@ function getTrackedGuildInfo(guildId) {
   }
 }
 
+// جدول كاش الرسائل الأخيرة لعرض المحتوى عند الحذف (يبقى حتى بعد إعادة التشغيل)
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS message_log_cache (
+      message_id TEXT PRIMARY KEY,
+      guild_id TEXT NOT NULL,
+      channel_id TEXT NOT NULL,
+      author_id TEXT NOT NULL,
+      author_tag TEXT,
+      author_avatar_url TEXT,
+      content TEXT DEFAULT '',
+      attachments_json TEXT DEFAULT '[]',
+      created_at INTEGER DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_mlc_guild ON message_log_cache(guild_id);
+    CREATE INDEX IF NOT EXISTS idx_mlc_channel ON message_log_cache(channel_id);
+    CREATE INDEX IF NOT EXISTS idx_mlc_created ON message_log_cache(created_at);
+  `);
+} catch(e) {}
+
 // جدول كاش بيانات المستخدمين (الاسم والصورة والمعرف) لحفظها في Turso وعرضها في لوحات الصدارة
 try {
   db.exec(`
@@ -3100,6 +3120,58 @@ module.exports = {
       console.error('[TURSO] Error fetching user in getTursoUser:', e.message);
     }
     return null;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // 📨 Message Log Cache (لحفظ بيانات الرسائل قبل حذفها)
+  // ──────────────────────────────────────────────────────────
+  saveMessageToLogCache: (data) => {
+    try {
+      if (!data || !data.messageId) return;
+      db.prepare(`
+        INSERT INTO message_log_cache (message_id, guild_id, channel_id, author_id, author_tag, author_avatar_url, content, attachments_json, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(message_id) DO UPDATE SET
+          content = excluded.content,
+          author_tag = excluded.author_tag,
+          author_avatar_url = excluded.author_avatar_url,
+          attachments_json = excluded.attachments_json
+      `).run(
+        String(data.messageId),
+        String(data.guildId || ''),
+        String(data.channelId || ''),
+        String(data.authorId || ''),
+        String(data.authorTag || ''),
+        String(data.authorAvatarUrl || ''),
+        String(data.content || ''),
+        JSON.stringify(data.attachments || []),
+        Math.floor(Date.now() / 1000)
+      );
+    } catch(e) {}
+  },
+
+  getMessageFromLogCache: (messageId) => {
+    try {
+      const row = db.prepare('SELECT * FROM message_log_cache WHERE message_id = ?').get(String(messageId));
+      if (!row) return null;
+      return {
+        ...row,
+        attachments: (() => { try { return JSON.parse(row.attachments_json || '[]'); } catch { return []; } })()
+      };
+    } catch(e) { return null; }
+  },
+
+  deleteMessageFromLogCache: (messageId) => {
+    try {
+      db.prepare('DELETE FROM message_log_cache WHERE message_id = ?').run(String(messageId));
+    } catch(e) {}
+  },
+
+  pruneOldMessageCache: () => {
+    try {
+      const cutoff = Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60); // 7 أيام
+      db.prepare('DELETE FROM message_log_cache WHERE created_at < ?').run(cutoff);
+    } catch(e) {}
   },
 
   db

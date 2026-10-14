@@ -147,7 +147,26 @@ module.exports = {
   async execute(message, client) {
     if (!message.guild || message.author.bot) return;
 
+    // حفظ بيانات الرسالة في الذاكرة وقاعدة البيانات لضمان معرفة محتوى الرسائل المحذوفة
     try { cacheMessage(message); } catch {}
+    try {
+      const db = require('../../database');
+      if (db.saveMessageToLogCache) {
+        db.saveMessageToLogCache({
+          messageId: message.id,
+          guildId: message.guildId,
+          channelId: message.channelId,
+          authorId: message.author.id,
+          authorTag: message.author.tag || message.author.username,
+          authorAvatarUrl: typeof message.author.displayAvatarURL === 'function'
+            ? message.author.displayAvatarURL({ dynamic: true, size: 256 }) : '',
+          content: message.content || '',
+          attachments: message.attachments?.map(a => ({
+            name: a.name, url: a.url, proxyURL: a.proxyURL, contentType: a.contentType
+          })) || []
+        });
+      }
+    } catch {}
 
     dlog(`[MSG DEBUG] content="${message.content}" | channel=${message.channel.id} | author=${message.author.tag}`);
 
