@@ -11982,10 +11982,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="flex items-center gap-2"><span>الرد التلقائي</span><span class="text-white group-hover:text-blue-400">💬</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/applications" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'applications' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-black">👑 PRO</span>
-                                            ${navBadge('applications_enabled')}
-                                        </div>
+                                        ${navBadge('applications_enabled')}
                                         <span class="flex items-center gap-2"><span>التقديمات</span><span class="text-white group-hover:text-blue-400">📝</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/suggestions" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'suggestions' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
@@ -12022,17 +12019,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="flex items-center gap-2"><span>الرقابة التلقائية</span><span class="text-white group-hover:text-blue-400">🤖</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/antiraid" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'antiraid' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-black">👑 PRO</span>
-                                            ${navBadge('antiraid_enabled')}
-                                        </div>
+                                        ${navBadge('antiraid_enabled')}
                                         <span class="flex items-center gap-2"><span>مكافحة الغزو</span><span class="text-white group-hover:text-blue-400">🚨</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/staff-activity" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'staff-activity' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-black">👑 PRO</span>
-                                            ${navBadge('staff_activity_enabled')}
-                                        </div>
+                                        ${navBadge('staff_activity_enabled')}
                                         <span class="flex items-center gap-2"><span>نشاط الإدارة</span><span class="text-white group-hover:text-blue-400">👮</span></span>
                                     </a>
                                 </div>
@@ -12742,38 +12733,16 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                         </div>
 
-                        <div class="bg-[#060c1c] border border-amber-500/20 rounded-2xl p-4 my-5 space-y-3 text-xs text-gray-200">
-                            <div class="flex items-center justify-between pb-2 border-b border-white/5">
-                                <span class="text-amber-300 font-bold text-[11px]">مزايا باقة Droplet Pro / Elite</span>
-                                <span class="text-amber-400 text-xs font-black">👑 3 محاور رئيسية</span>
+                        <div class="bg-[#060c1c] border border-blue-500/20 rounded-2xl p-4 my-5 space-y-2.5 text-xs text-gray-200">
+                            <div class="flex items-center gap-2 text-white font-bold pb-1 border-b border-white/5">
+                                <span class="text-amber-400">✨</span>
+                                <span>ماذا ستحصل مع باقة البريميوم؟</span>
                             </div>
-                            
-                            <!-- المحور 1: المظهر والبراندينج -->
-                            <div class="space-y-1">
-                                <div class="text-amber-300 font-bold flex items-center gap-1.5 text-[11px]">
-                                    <span>🎨</span>
-                                    <span>1. المظهر والبراندينج الاحترافي:</span>
-                                </div>
-                                <p class="text-gray-300 text-[11px] pr-4">• تخصيص اسم وبنر وصورة البوت الخاصة لكل سيرفر، مع كروت رتب وXP بتصاميم استثنائية.</p>
-                            </div>
-
-                            <!-- المحور 2: الأتمتة العميقة -->
-                            <div class="space-y-1">
-                                <div class="text-purple-300 font-bold flex items-center gap-1.5 text-[11px]">
-                                    <span>⚡</span>
-                                    <span>2. الأتمتة العميقة لسيرفرك:</span>
-                                </div>
-                                <p class="text-gray-300 text-[11px] pr-4">• تذاكر بأقسام غير محدودة مع حفظ سجلات Transcripts، نظام التقديمات (Forms)، ورد تلقائي واسع حتى 100 رد.</p>
-                            </div>
-
-                            <!-- المحور 3: التقارير والإدارة -->
-                            <div class="space-y-1">
-                                <div class="text-blue-300 font-bold flex items-center gap-1.5 text-[11px]">
-                                    <span>📊</span>
-                                    <span>3. التقارير وإدارة الطاقم:</span>
-                                </div>
-                                <p class="text-gray-300 text-[11px] pr-4">• تتبع شيفتات ونشاط المشرفين والترقيات التلقائية، إحصائيات متقدمة، وسجلات أمان وحماية متطورة.</p>
-                            </div>
+                            <div class="flex items-center gap-2"><span>🎫</span><span>أقسام تذاكر غير محدودة مع حفظ سجلات الـ Transcripts النصية</span></div>
+                            <div class="flex items-center gap-2"><span>💬</span><span>حتى 100 رد تلقائي بدلاً من 8 ردود فقط</span></div>
+                            <div class="flex items-center gap-2"><span>🛡️</span><span>مكافحة الغزو الذكية (Anti-Raid Advanced) وقائمة بيضاء موسعة</span></div>
+                            <div class="flex items-center gap-2"><span>🏆</span><span>كروت مستوى (XP) مخصصة ومكافآت رتب مضاعفة</span></div>
+                            <div class="flex items-center gap-2"><span>👮</span><span>نظام تتبع شيفتات ونشاط المشرفين والترقيات التلقائية</span></div>
                         </div>
 
                         <!-- Redeem Key Form -->
