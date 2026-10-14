@@ -240,6 +240,23 @@ module.exports = function (app, client) {
             if (shopSettings.customRole?.enabled !== false) items.push(`👑 **رتبة مخصصة (Custom Role)**\n┗ السعر: **${(shopSettings.customRole?.price || 500).toLocaleString()}** Gold 🪙 • المدة: **${shopSettings.customRole?.duration || 30}** يوم`);
             if (shopSettings.badge?.enabled) items.push(`🎖️ **شارة / لقب مخصص (Badge)**\n┗ السعر: **${(shopSettings.badge?.price || 200).toLocaleString()}** Gold 🪙 • المدة: ${shopSettings.badge?.duration > 0 ? `**${shopSettings.badge.duration}** يوم` : '**دائم**'}`);
 
+            let customProducts = [];
+            try {
+                if (settings.custom_products) {
+                    customProducts = typeof settings.custom_products === 'string' ? JSON.parse(settings.custom_products) : settings.custom_products;
+                }
+            } catch(e) {}
+
+            if (Array.isArray(customProducts)) {
+                for (const prod of customProducts) {
+                    if (!prod || !prod.name) continue;
+                    const emoji = prod.emoji || '🎁';
+                    const descText = prod.description || prod.desc || '';
+                    const desc = descText ? ` • ${descText}` : '';
+                    items.push(`${emoji} **${prod.name}**\n┗ السعر: **${Number(prod.price || 0).toLocaleString()}** Gold 🪙${desc}`);
+                }
+            }
+
             embed.addFields({ name: '🛍️ الباقات والعناصر المتاحة للشراء فوراً', value: items.length ? items.join('\n\n') : 'لا توجد عناصر متاحة حالياً', inline: false });
 
             const row = new ActionRowBuilder().addComponents(

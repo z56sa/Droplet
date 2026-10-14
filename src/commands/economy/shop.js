@@ -58,22 +58,48 @@ module.exports = {
 
     // ─── 1. View Shop ───
     if (sub === 'view') {
+      const settings = db.getGuildSettings ? db.getGuildSettings(guildId) : {};
+      let customProducts = [];
+      try {
+        if (settings?.custom_products) {
+          customProducts = typeof settings.custom_products === 'string' ? JSON.parse(settings.custom_products) : settings.custom_products;
+        }
+      } catch(e) {}
+      if (!Array.isArray(customProducts)) customProducts = [];
+
+      const fields = [
+        {
+          name: t(guildId, 'economy.shop.view_roles_title'),
+          value: t(guildId, 'economy.shop.view_roles_value', { price: SHOP_PRICES.custom_role_days_30.toLocaleString() }),
+          inline: false
+        },
+        {
+          name: t(guildId, 'economy.shop.view_cos_title'),
+          value: t(guildId, 'economy.shop.view_cos_value', { gold: SHOP_PRICES.avatar_frame_gold.toLocaleString(), neon: SHOP_PRICES.avatar_frame_neon.toLocaleString(), vip: SHOP_PRICES.badge_vip.toLocaleString() }),
+          inline: false
+        }
+      ];
+
+      if (customProducts.length > 0) {
+        const prodLines = customProducts.map((p, idx) => {
+          const emoji = p.emoji || '🛍️';
+          const name = p.name || `منتج #${idx + 1}`;
+          const price = Number(p.price || 0).toLocaleString();
+          const desc = p.description || p.desc ? ` - *${p.description || p.desc}*` : '';
+          return `${emoji} **${name}**: **${price}** Gold 🪙${desc}`;
+        });
+        fields.push({
+          name: '🎁 منتجات السيرفر المخصصة',
+          value: prodLines.join('\n').slice(0, 1024),
+          inline: false
+        });
+      }
+
       const embed = new EmbedBuilder()
         .setColor('#8b5cf6')
         .setTitle(t(guildId, 'economy.shop.view_title'))
         .setDescription(t(guildId, 'economy.shop.view_desc', { user: userId, coins: userCoins.toLocaleString() }))
-        .addFields(
-          {
-            name: t(guildId, 'economy.shop.view_roles_title'),
-            value: t(guildId, 'economy.shop.view_roles_value', { price: SHOP_PRICES.custom_role_days_30.toLocaleString() }),
-            inline: false
-          },
-          {
-            name: t(guildId, 'economy.shop.view_cos_title'),
-            value: t(guildId, 'economy.shop.view_cos_value', { gold: SHOP_PRICES.avatar_frame_gold.toLocaleString(), neon: SHOP_PRICES.avatar_frame_neon.toLocaleString(), vip: SHOP_PRICES.badge_vip.toLocaleString() }),
-            inline: false
-          }
-        )
+        .addFields(fields)
         .setFooter({ text: t(guildId, 'economy.shop.footer') })
         .setTimestamp();
 
