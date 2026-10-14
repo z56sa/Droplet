@@ -76,41 +76,70 @@ function needsLiveBrowsing(text) {
     return PHRASE_KEYWORDS.some(p => lower.includes(p));
 }
 
+// ==========================================
+// 🧠 DROPLET AI — APEX SYSTEM INSTRUCTION
+// ==========================================
 const Droplet_SYSTEM_INSTRUCTION = `
-أنت "Droplet AI" (دروبلت)، الذكاء الاصطناعي الفائق والمدمج في بوت Droplet.
-أنت تمتلك عقلية كبير مهندسي البرمجيات (Staff Software Engineer & Principal Architect) ومبرمج خبير وعالم حاسوب عبقري.
+أنت "Droplet AI" — ذكاء اصطناعي على مستوى كبير مهندسي البرمجيات في Google و Meta و OpenAI.
+هويتك الجوهرية: Staff Software Engineer + Principal Architect + Security Researcher + Algorithm Scientist.
+أنت لا تقدم مجرد إجابات — أنت تفكر كمهندس يبني أنظمة لملايين المستخدمين.
 
-🎯 التخصصات البرمجية والتقنية:
-1. إتقان شامل لكافة لغات البرمجة والتقنيات:
-   - JavaScript, TypeScript, Node.js, Discord.js (v14+), React, Next.js, Vue, Express, NestJS
-   - Python (FastAPI, Django, Flask, Data Science, AI/ML, Automation, Scripting)
-   - C++, C, C#, Rust, Go, Java, Kotlin, Swift
-   - قواعد البيانات: MongoDB (Mongoose), PostgreSQL, MySQL, Redis, SQLite, Prisma, TypeORM
-   - أمن المعلومات (Cybersecurity), DevOps, Docker, Git, CI/CD, Linux/Bash, REST APIs, GraphQL, WebSockets
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔬 منهجية التفكير والحل (Reasoning Protocol):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+عند استقبال أي طلب برمجي أو تقني، اتبع هذا المسار الذهني الداخلي قبل الإجابة:
+1. UNDERSTAND: ما المشكلة الحقيقية؟ هل السؤال المطروح هو المشكلة الجذرية أم عَرَض لمشكلة أعمق؟
+2. CONSTRAINTS: ما القيود؟ (أداء، أمان، حجم بيانات، توافق API، ميزانية ذاكرة)
+3. DESIGN: ما الحل الأمثل؟ لماذا هو أفضل من البدائل؟
+4. IMPLEMENT: تنفيذ الحل بكود نظيف، آمن، وموثق.
+5. VERIFY: هل الكود صحيح؟ هل يتعامل مع edge cases؟ هل آمن؟
 
-🧠 معايير وأسلوب كتابة الأكواد والحلول:
-- كتابة كود نظيف، احترافي، خالي من الأخطاء والـ Bugs، ومطابق لأحدث معايير الصناعة (Production-ready).
-- مراعاة معايير Clean Code, SOLID Principles, DRY, Design Patterns والتعامل الدقيق مع استثناءات الأخطاء (Error Handling & Edge Cases).
-- كفاءة الأداء وسرعة التنفيذ وحساب التعقيد الزمني والمكاني (Time & Space Complexity / Big O).
-- كتابة تعليقات توضيحية هادفة وموجزة لشرح الأجزاء المعقدة.
-- تنسيق الأكواد بشكل سليم داخل Markdown Fenced Code Blocks مع تحديد لغة البرمجة دائماً (مثل \`\`\`javascript أو \`\`\`python).
-- عند إصلاح الأخطاء (Debugging): حدد سبب المشكلة بدقة واشرح الحل وقدّم الكود المصحح كاملاً أو الأجزاء المعدلة بوضوح.
-- عند تقديم حلول معمارية أو أنظمة: اشرح الخيارات، المزايا، العيوب، والسبب وراء اختيار النهج الأفضل.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛡️ معايير الكود (Code Excellence Standards):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- كل كود تكتبه يجب أن يكون Production-Ready: معالجة استثناءات، تحقق من المدخلات، لوجنج مناسب.
+- مبادئ SOLID كاملة + YAGNI + DRY + Fail Fast + Defense in Depth.
+- Big-O Analysis: دائماً فكر في Time & Space Complexity وذكرها عند الأهمية.
+- Security-First: لا تكتب كوداً فيه SQL Injection / XSS / RCE / IDOR ثغرات.
+- عند وجود أكثر من حل، قدّم الأفضل وأذكر البدائل وأسباب تفضيلك.
+- كتل الأكواد دائماً بـ fenced blocks مع تحديد اللغة: \`\`\`javascript, \`\`\`python, \`\`\`sql... إلخ.
 
-💬 لغة التخاطب والأسلوب:
-- تحدث بلغة عربية فصيحة، واضحة، محترفة ومباشرة.
-- المصطلحات التقنية، أسماء المتغيرات، الدوال، والمكتبات تُكتب بالإنجليزية لتجنب التشويه والارتباك.
-- الإيجاز والتركيز: قدّم الزبدة والحل التقني الفوري والنموذجي بدون مقدمات طويلة غير مفيدة.
-- في الأسئلة العامة غير البرمجية: حافظ على ذكائك ولبقاتك وسرعة بديهتك.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌐 التخصصات والإتقان التقني الكامل:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Languages: JavaScript/ES2024, TypeScript, Python, C++/20, Rust, Go, Java, C#, SQL, Bash
+Runtimes & Frameworks: Node.js, Discord.js v14+, React/Next.js, Vue, Fastify, NestJS, FastAPI, Django, Spring Boot
+Databases: PostgreSQL, MySQL, MongoDB, Redis, SQLite, DynamoDB, Elasticsearch, Prisma, Drizzle ORM
+Infrastructure: Docker, Kubernetes, CI/CD (GitHub Actions), Linux, Nginx, Cloudflare Workers, AWS/GCP
+Security: OWASP Top 10, JWT/OAuth2, Rate Limiting, Encryption (AES-256, bcrypt, argon2), Pentesting basics
+Advanced: Algorithms & Data Structures, System Design, Concurrency, Distributed Systems, WebSockets, gRPC
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💬 أسلوب الإجابة والتواصل:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- اللغة: عربية فصيحة واضحة ومباشرة. المصطلحات والكود والمتغيرات بالإنجليزية دائماً.
+- الإيجاز الذكي: لا مقدمات مطولة. ابدأ بالجوهر فوراً.
+- الصدق التقني: إذا كان السؤال يحتوي خطأ في المنطق أو النهج، صحّح النهج قبل الإجابة عليه.
+- الثقة المهنية: تحدث بثقة مهندس خبير، لكن أقرّ بحدود المعرفة عند وجودها.
+- في الأسئلة العامة: احتفظ بذكائك ولبقتك وحيويتك دون افتعال.
 `;
 
-// كلمات مفتاحية لاكتشاف هل الطلب برمجي/تقني لتخفيض درجة العشوائية وضمان دقة الأكواد
+// ==========================================
+// 🎯 CODING DETECTION ENGINE
+// ==========================================
 const CODING_INDICATORS = [
+    // English keywords
     'code', 'function', 'class', 'error', 'debug', 'bug', 'fix', 'api', 'const', 'let', 'var',
     'sql', 'database', 'mongo', 'script', 'python', 'javascript', 'typescript', 'java', 'c++',
-    'c#', 'rust', 'go', 'html', 'css', 'react', 'node', 'discord.js', 'bot', 'json', 'regex',
-    'async', 'await', 'promise', 'query', 'syntax', 'برمجة', 'كود', 'دالة', 'خطأ', 'صلح', 'حل',
-    'سيرفر', 'قاعدة بيانات', 'تطبيق', 'موقع', 'بايثون', 'جافاسكربت', 'خوارزمية', 'مشكلة', 'ديسكورد'
+    'c#', 'rust', 'go', 'html', 'css', 'react', 'node', 'discord.js', 'json', 'regex',
+    'async', 'await', 'promise', 'query', 'syntax', 'import', 'export', 'module', 'package',
+    'array', 'object', 'string', 'integer', 'loop', 'recursion', 'algorithm', 'sort', 'search',
+    'auth', 'token', 'jwt', 'oauth', 'encrypt', 'hash', 'bcrypt', 'docker', 'git', 'deploy',
+    'endpoint', 'request', 'response', 'middleware', 'webhook', 'socket', 'rest', 'graphql',
+    // Arabic keywords
+    'برمجة', 'كود', 'دالة', 'خطأ', 'صلح', 'حل', 'سيرفر', 'قاعدة بيانات', 'تطبيق', 'موقع',
+    'بايثون', 'جافاسكربت', 'خوارزمية', 'مشكلة', 'ديسكورد', 'مصادقة', 'تشفير', 'أمان', 'ثغرة',
+    'نشر', 'خادم', 'متغير', 'حلقة', 'شرط', 'صنف', 'وراثة', 'واجهة', 'مكتبة', 'حزمة'
 ];
 
 function isCodingQuery(text) {
@@ -119,56 +148,82 @@ function isCodingQuery(text) {
     return CODING_INDICATORS.some(ind => lower.includes(ind));
 }
 
-// النماذج بالترتيب: الأساسي ثم الاحتياطي
-const MODELS = [
-    process.env.GEMINI_MODEL,
-    process.env.GEMINI_FALLBACK_MODEL,
-    'gemini-2.5-flash'
-].filter(Boolean);
+// ==========================================
+// 🚀 SMART MODEL ROUTER
+// ==========================================
+// يختار النموذج الأمثل بناءً على نوع المهمة وصعوبتها
+const MODELS = (() => {
+    const primary = process.env.GEMINI_MODEL;
+    const fallback = process.env.GEMINI_FALLBACK_MODEL;
+    const base = 'gemini-2.5-flash';
+    return [primary, fallback, base].filter(Boolean);
+})();
+
+// نماذج التفكير العميق (Thinking Models) لحل المشاكل الصعبة
+const THINKING_MODELS = (() => {
+    const pro = process.env.GEMINI_PRO_MODEL || 'gemini-2.5-pro';
+    const flash = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    return [pro, flash].filter(Boolean);
+})();
+
+// هل المهمة تستوجب التفكير العميق؟ (Architecture, Security Audit, Complex Algorithms)
+function needsDeepThinking(mode, text) {
+    if (['arch', 'security', 'review'].includes(mode)) return true;
+    const deepIndicators = [
+        'design a system', 'architect', 'scale', 'million users', 'distributed',
+        'security audit', 'vulnerability', 'pen test', 'exploit', 'race condition',
+        'memory leak', 'deadlock', 'concurrency', 'optimize algorithm', 'O(n',
+        'هندسة نظام', 'ثغرة أمنية', 'تحسين خوارزمية', 'نظام موزع', 'أداء'
+    ];
+    return deepIndicators.some(d => text.toLowerCase().includes(d.toLowerCase()));
+}
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-async function generateWithRetry(ai, prompt, isCoding = false) {
-    let lastError;
-    // تخفيض الـ temperature في الأكواد لضمان الدقة وتجنب التخمين غير المنطقي
-    const temperature = isCoding ? 0.2 : 0.7;
+// ==========================================
+// ⚡ GENERATE WITH SMART RETRY + THINKING
+// ==========================================
+async function generateWithSmartRetry(ai, contents, { isCoding = false, useThinking = false } = {}) {
+    const temperature = isCoding ? 0.15 : 0.72;
+    const modelList = useThinking ? [...THINKING_MODELS, ...MODELS] : MODELS;
 
-    for (const model of MODELS) {
+    for (const model of modelList) {
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
-                const response = await ai.models.generateContent({
-                    model,
-                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                    config: {
-                        systemInstruction: Droplet_SYSTEM_INSTRUCTION,
-                        temperature
-                    }
-                });
+                const config = {
+                    systemInstruction: Droplet_SYSTEM_INSTRUCTION,
+                    temperature
+                };
+
+                // تفعيل Thinking Budget للنماذج التي تدعمه
+                if (useThinking && (model.includes('2.5') || model.includes('thinking'))) {
+                    config.thinkingConfig = { thinkingBudget: 8000 };
+                }
+
+                const response = await ai.models.generateContent({ model, contents, config });
                 const text = response.text || response.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (text) return text;
+                if (text) return { text, model };
                 throw new Error('EMPTY_RESPONSE');
             } catch (error) {
-                lastError = error;
                 const status = Number(error?.status || error?.code || 0);
-                console.warn(`[AI] ${model} attempt ${attempt + 1} failed: ${status} ${error?.message?.slice(0, 120)}`);
-
-                // 400/404: النموذج أو المفتاح خطأ، انتقل للنموذج التالي
+                console.warn(`[AI] ${model} attempt ${attempt + 1} failed: ${status} ${error?.message?.slice(0, 100)}`);
                 if (status === 400 || status === 404) break;
-                // 429/500/503: مؤقتة، انتظر ثم أعد المحاولة
                 if ([429, 500, 503].includes(status)) {
-                    await sleep(1000 * Math.pow(2, attempt)); // 1s, 2s, 4s
+                    await sleep(1000 * Math.pow(2, attempt));
                     continue;
                 }
                 break;
             }
         }
     }
-    throw lastError;
+    throw new Error('All AI models failed after retries.');
 }
 
-// ذاكرة المحادثة لكل مستخدم (تخزين آخر 6 رسائل للاستمرارية في البرمجة والأسئلة التراكمية)
+// ==========================================
+// 💾 CONVERSATION MEMORY ENGINE
+// ==========================================
 const userConversations = new Map();
-const CONVERSATION_TIMEOUT = 10 * 60 * 1000; // تنتهي الجلسة بعد 10 دقائق من الخمول
+const CONVERSATION_TIMEOUT = 15 * 60 * 1000; // 15 دقيقة خمول
 
 function getConversationHistory(userId) {
     if (!userId) return [];
@@ -184,13 +239,15 @@ function getConversationHistory(userId) {
 function updateConversationHistory(userId, userText, botText) {
     if (!userId) return;
     let session = userConversations.get(userId);
-    if (!session || (Date.now() - session.lastActive > CONVERSATION_TIMEOUT)) {
-        session = { history: [], lastActive: Date.now() };
+    if (!session || Date.now() - session.lastActive > CONVERSATION_TIMEOUT) {
+        session = { history: [], lastActive: Date.now(), messageCount: 0 };
     }
     session.history.push({ role: 'user', parts: [{ text: userText }] });
     session.history.push({ role: 'model', parts: [{ text: botText }] });
-    if (session.history.length > 8) {
-        session.history = session.history.slice(session.history.length - 8);
+    session.messageCount = (session.messageCount || 0) + 1;
+    // احتفظ بآخر 12 رسالة (6 تبادلات) مع ضغط القديمة
+    if (session.history.length > 12) {
+        session.history = session.history.slice(session.history.length - 12);
     }
     session.lastActive = Date.now();
     userConversations.set(userId, session);
@@ -200,6 +257,138 @@ function clearUserConversation(userId) {
     if (userId) userConversations.delete(userId);
 }
 
+function getSessionStats(userId) {
+    if (!userId) return null;
+    const session = userConversations.get(userId);
+    if (!session) return null;
+    const age = Math.round((Date.now() - session.lastActive) / 1000);
+    return { messages: session.messageCount || 0, turns: Math.floor(session.history.length / 2), idleSeconds: age };
+}
+
+// ==========================================
+// 🧬 ELITE MODE PROMPT ENGINEER
+// ==========================================
+const MODE_PROMPTS = {
+    debug: (lang, text) => `
+[🐞 DEBUGGING MODE — Root Cause Analysis]
+Target Language: ${lang || 'Auto-detect'}
+
+PROTOCOL:
+1. 🔍 ROOT CAUSE: حدد السبب الجذري بدقة جراحية (ليس العرض، الجذر).
+2. 💡 EXPLANATION: اشرح لماذا يحدث هذا الخطأ بالضبط.
+3. 🔧 FIX: قدّم الكود المصحح كاملاً جاهز للنسخ والتشغيل.
+4. ⚡ PREVENTION: كيف تتجنب هذا النوع من الأخطاء مستقبلاً؟
+
+---
+${text}`,
+
+    explain: (lang, text) => `
+[📖 CODE EXPLANATION MODE — Deep Analysis]
+Target Language: ${lang || 'Auto-detect'}
+
+PROTOCOL:
+1. 🎯 PURPOSE: ماذا يفعل هذا الكود/المفهوم؟ (جملة واحدة مباشرة)
+2. 🔬 DEEP DIVE: شرح الأجزاء المهمة سطراً بسطر أو خطوة بخطوة.
+3. 📊 COMPLEXITY: Time Complexity و Space Complexity مع التحليل.
+4. ✅ STRENGTHS: نقاط القوة.
+5. ⚠️ WEAKNESSES: نقاط الضعف أو المخاطر المحتملة.
+6. 🚀 BETTER APPROACH: هل يوجد نهج أفضل؟
+
+---
+${text}`,
+
+    refactor: (lang, text) => `
+[⚡ REFACTOR & OPTIMIZE MODE — Production Grade]
+Target Language: ${lang || 'Auto-detect'}
+
+PROTOCOL:
+1. 🔎 ANALYSIS: ما مشاكل الكود الحالي؟ (Performance, Readability, Security, Maintainability)
+2. 💎 REFACTORED CODE: الكود المُحسّن بالكامل، نظيف وجاهز للإنتاج.
+3. 📈 IMPROVEMENTS TABLE: جدول بالتحسينات (قبل → بعد).
+4. 🧪 EDGE CASES: edge cases تم معالجتها في النسخة الجديدة.
+
+---
+${text}`,
+
+    arch: (lang, text) => `
+[🏗️ SYSTEM ARCHITECTURE MODE — Staff Engineer Level]
+
+PROTOCOL:
+1. 🧩 ARCHITECTURE OVERVIEW: الهيكلية المقترحة مع شرح كل طبقة.
+2. 🛠️ TECH STACK: اختيار التقنيات مع تبرير دقيق لكل اختيار.
+3. 📁 FOLDER STRUCTURE: هيكل المشروع الكامل.
+4. 🔗 KEY INTERFACES: أمثلة كود على واجهات الربط بين المكونات الرئيسية.
+5. 📈 SCALABILITY: كيف يتمدد هذا النظام؟ (Horizontal/Vertical Scaling)
+6. ⚠️ TRADE-OFFS: مقايضات التصميم والبدائل المرفوضة ولماذا.
+
+---
+${text}`,
+
+    security: (lang, text) => `
+[🛡️ SECURITY AUDIT MODE — Penetration Tester + Secure Code Reviewer]
+Target Language: ${lang || 'Auto-detect'}
+
+AUDIT PROTOCOL (OWASP-based):
+1. 🔴 CRITICAL VULNERABILITIES: ثغرات خطيرة (SQL Injection, RCE, Authentication Bypass...).
+2. 🟠 HIGH SEVERITY: مشاكل أمنية عالية الخطورة (IDOR, XSS, CSRF, Insecure Deserialization...).
+3. 🟡 MEDIUM / LOW: مخاطر متوسطة (Info Disclosure, Rate Limit Missing, Weak Crypto...).
+4. 🔧 SECURE FIX: الكود المُصحّح بطريقة آمنة لكل ثغرة.
+5. 🏆 SECURITY SCORE: تقييم الأمان من 10 مع توصيات ختامية.
+
+---
+${text}`,
+
+    test: (lang, text) => `
+[🧪 UNIT TEST GENERATOR MODE — Test-Driven Excellence]
+Target Language: ${lang || 'Auto-detect'}
+Test Framework: ${lang?.toLowerCase().includes('python') ? 'pytest' : lang?.toLowerCase().includes('java') ? 'JUnit' : 'Jest / Vitest'}
+
+PROTOCOL:
+1. 🎯 TEST PLAN: ما الوحدات والحالات التي يجب اختبارها؟
+2. ✅ HAPPY PATH TESTS: اختبارات المسار الصحيح الأساسية.
+3. ❌ EDGE CASE TESTS: حالات الحافة والقيم الاستثنائية.
+4. 💥 ERROR / EXCEPTION TESTS: اختبارات معالجة الأخطاء والاستثناءات.
+5. 🔄 MOCK & STUB: استخدام mocks للـ dependencies الخارجية.
+الكود المراد اختباره كاملاً جاهز للنسخ.
+
+---
+${text}`,
+
+    review: (lang, text) => `
+[🔍 CODE REVIEW MODE — Senior Engineer PR Review]
+Target Language: ${lang || 'Auto-detect'}
+
+REVIEW PROTOCOL:
+1. 📋 SUMMARY: ملخص عام لما يفعله هذا الكود.
+2. 🔴 BLOCKERS: مشاكل يجب حلها قبل الدمج (Bugs, Security, Breaking Changes).
+3. 🟡 SUGGESTIONS: اقتراحات تحسين (Performance, Readability, Best Practices).
+4. 🟢 PRAISE: نقاط قوة الكود (ما تم بشكل ممتاز).
+5. ✏️ INLINE COMMENTS: تعليقات مفصلة على أسطر بعينها.
+6. ✅ FINAL VERDICT: هل يُوافق على الدمج؟ ولماذا؟
+
+---
+${text}`,
+
+    code: (lang, text) => `
+[💻 CODE GENERATION MODE — Production Quality]
+Target Language: ${lang || 'Auto-detect'}
+
+OUTPUT REQUIREMENTS:
+- كود كامل، نظيف، Production-Ready، مباشر للنسخ والاستخدام.
+- Error handling شامل لكل edge case متوقع.
+- تعليقات موجزة على الأجزاء غير البديهية.
+- إذا احتاج لمكتبات خارجية، اذكرها مع أمر التثبيت.
+
+---
+${text}`,
+
+    auto: (lang, text) => text,
+    chat: (lang, text) => text
+};
+
+// ==========================================
+// 🤖 MAIN ASK AI FUNCTION
+// ==========================================
 async function askAI(promptText, options = {}) {
     if (!promptText || typeof promptText !== 'string' || !promptText.trim()) {
         return '❌ يرجى كتابة سؤال صالح.';
@@ -209,80 +398,50 @@ async function askAI(promptText, options = {}) {
 
     const ai = getClient();
     if (!ai) {
-        return '❌ لم يتم ضبط مفتاح `GEMINI_API_KEY` في متغيرات البيئة (Environment Variables).';
+        return '❌ لم يتم ضبط مفتاح `GEMINI_API_KEY` في متغيرات البيئة.';
     }
 
-    let enrichedPrompt = promptText.trim();
-    let isCoding = (mode !== 'chat' && (mode !== 'auto' || isCodingQuery(promptText)));
+    // بناء Prompt المتخصص
+    const promptBuilder = MODE_PROMPTS[mode] || MODE_PROMPTS.auto;
+    let enrichedPrompt = promptBuilder(language, promptText.trim());
 
-    // توجيه ذكي حسب وضع البرمجة المختار (Mode Specialization)
-    if (mode === 'debug') {
-        enrichedPrompt = `[وضع تشخيص وتصحيح الأخطاء - Debugging Mode]:\nلغة البرمجة المستهدفة: ${language || 'تلقائي'}\nقم بما يلي بدقة:\n1. تحليل سبب المشكلة أو الـ Bug بدقة واقتضاب.\n2. توضيح الخطأ الجذري (Root Cause).\n3. تقديم الكود المصحح بالكامل داخل كتل كود منسقة جاهز للعمل والنسخ.\n\nالكود / المشكلة:\n${promptText.trim()}`;
-        isCoding = true;
-    } else if (mode === 'explain') {
-        enrichedPrompt = `[وضع الشرح والتحليل - Code Explanation Mode]:\nقم بشرح الكود/المفهوم التالي بأسلوب مهندس برمجيات كبير:\n1. ما الذي يقوم به هذا الكود بالتحديد؟\n2. شرح سطر بسطر أو خطوة بخطوة للأجزاء الحيوية.\n3. تحليل الكفاءة والتعقيد (Time & Space Complexity) ونقاط القوة والضعف.\n\nالكود / السؤال:\n${promptText.trim()}`;
-        isCoding = true;
-    } else if (mode === 'refactor') {
-        enrichedPrompt = `[وضع تحسين وإعادة الهيكلة - Code Refactor & Optimize Mode]:\nقم بإعادة كتابة وتحسين الكود التالي لأقصى درجات الأداء والنظافة وفق مبادئ Clean Code و SOLID:\n1. إزالة التكرارات وجعله أسرع وأكثر أماناً.\n2. تحسين أسماء المتغيرات والدوال.\n3. الكود المحسن بالكامل مع تعليقات موجزة توضح التحسينات.\n\nالكود المراد تحسينه:\n${promptText.trim()}`;
-        isCoding = true;
-    } else if (mode === 'arch') {
-        enrichedPrompt = `[وضع المعمارية وتصميم الأنظمة - System Architecture Mode]:\nقم بتصميم معمارية النظام أو التطبيق المطلوب وفق أفضل الممارسات:\n1. الهيكلية المعمارية المقترحة (Architecture Diagram / Flow).\n2. اختيار التقنيات وقواعد البيانات وتبرير السبب.\n3. هيكل الملفات والمجلدات الموصى به (Folder Structure).\n4. نماذج أو دوال توضيحية لربط المكونات الرئيسية.\n\nالمتطلبات:\n${promptText.trim()}`;
-        isCoding = true;
-    } else if (mode === 'code' && language) {
-        enrichedPrompt = `[لغة البرمجة: ${language}]\n${promptText.trim()}`;
-        isCoding = true;
-    }
+    const isCoding = mode !== 'chat' && (mode !== 'auto' || isCodingQuery(promptText));
+    const useThinking = needsDeepThinking(mode, promptText);
 
+    // البحث الحي على الإنترنت (للوضع التلقائي فقط)
     if (needsLiveBrowsing(promptText) && mode === 'auto') {
         try {
             const webResults = await searchWeb(promptText.trim());
             if (webResults && webResults.length > 20) {
-                enrichedPrompt = `[نتائج البحث الحي من الويب]:\n- ${webResults}\n\n[سؤال المستخدم]: ${enrichedPrompt}\n\n(يرجى الإجابة بدقة بالاعتماد على نتائج البحث الحي المرفقة أعلاه وصياغتها بأسلوبك الذكي والجميل).`;
+                enrichedPrompt = `[🌐 نتائج البحث الحي]\n${webResults}\n\n[سؤال المستخدم]: ${enrichedPrompt}`;
             }
         } catch (err) {
-            console.warn('[Web Search Fallback Error]:', err?.message || err);
+            console.warn('[Web Search Error]:', err?.message);
         }
     }
 
-    // تجميع سياق المحادثة السابقة
+    // بناء محتوى المحادثة مع السياق السابق
     const history = getConversationHistory(userId);
     const contents = [...history, { role: 'user', parts: [{ text: enrichedPrompt }] }];
 
-    const temperature = isCoding ? 0.2 : 0.7;
-
-    for (const model of MODELS) {
-        for (let attempt = 0; attempt < 3; attempt++) {
-            try {
-                const response = await ai.models.generateContent({
-                    model,
-                    contents,
-                    config: {
-                        systemInstruction: Droplet_SYSTEM_INSTRUCTION,
-                        temperature
-                    }
-                });
-                const text = response.text || response.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (text) {
-                    if (userId) {
-                        updateConversationHistory(userId, promptText.trim(), text);
-                    }
-                    return text;
-                }
-                throw new Error('EMPTY_RESPONSE');
-            } catch (error) {
-                const status = Number(error?.status || error?.code || 0);
-                console.warn(`[AI] ${model} attempt ${attempt + 1} failed: ${status} ${error?.message?.slice(0, 120)}`);
-                if (status === 400 || status === 404) break;
-                if ([429, 500, 503].includes(status)) {
-                    await sleep(1000 * Math.pow(2, attempt));
-                    continue;
-                }
-                break;
-            }
+    try {
+        const { text, model } = await generateWithSmartRetry(ai, contents, { isCoding, useThinking });
+        if (userId) {
+            updateConversationHistory(userId, promptText.trim(), text);
         }
+        // إضافة footer صغير عند استخدام التفكير العميق
+        if (useThinking) {
+            return text + `\n\n-# 🧠 *تم معالجة هذا الطلب بوضع التفكير العميق (Thinking Mode) عبر ${model}*`;
+        }
+        return text;
+    } catch (error) {
+        console.error('[AI Critical Error]:', error?.message);
+        const status = Number(error?.status || error?.code || 0);
+        if (status === 429) return '⏳ تجاوزنا حد الطلبات، حاول بعد قليل.';
+        if (status === 503) return '⏳ خوادم Gemini مشغولة الآن، حاول بعد دقيقة.';
+        if (status === 400 || status === 404) return '❌ إعدادات النموذج أو المفتاح غير صحيحة، تواصل مع الإدارة.';
+        return '❌ عذراً، حدث خطأ أثناء معالجة طلبك. يرجى المحاولة لاحقاً.';
     }
-
-    return '❌ عذراً، لم نتمكن من الحصول على استجابة من الذكاء الاصطناعي حالياً. يرجى المحاولة بعد قليل.';
 }
 
 module.exports = {
@@ -290,5 +449,7 @@ module.exports = {
     Droplet_SYSTEM_INSTRUCTION,
     searchWeb,
     isCodingQuery,
-    clearUserConversation
+    needsDeepThinking,
+    clearUserConversation,
+    getSessionStats
 };
