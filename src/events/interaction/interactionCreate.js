@@ -626,6 +626,7 @@ module.exports = {
         try {
           const _me = interaction.guild.members.me || await interaction.guild.members.fetchMe().catch(() => null);
           if (!_me || !_me.permissions.has(PermissionFlagsBits.ManageChannels)) {
+            _ticketCreating.delete(interaction.user.id);
             return interaction.editReply({ content: '❌ البوت يفتقد صلاحية **إدارة القنوات (Manage Channels)** — فعّلها من إعدادات السيرفر ثم أعد المحاولة.' }).catch(() => {});
           }
         } catch {}

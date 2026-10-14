@@ -1413,14 +1413,15 @@ function setCoins(userId, guildId, amount) {
   return u.coins || 0;
 }
 
-const transferCoins = db.transaction((guildId, senderId, receiverId, amount) => {
+const transferCoins = db.transaction((guildId, senderId, receiverId, amount, tax = 0) => {
   const sender = getUser(senderId, guildId);
   const currentCoins = sender.coins || 0;
-  if (currentCoins < amount) {
+  const totalDeduction = amount + Math.max(0, tax);
+  if (currentCoins < totalDeduction) {
     throw new Error('INSUFFICIENT_FUNDS');
   }
 
-  db.prepare('UPDATE users SET coins = coins - ? WHERE user_id = ? AND guild_id = ?').run(amount, senderId, guildId);
+  db.prepare('UPDATE users SET coins = coins - ? WHERE user_id = ? AND guild_id = ?').run(totalDeduction, senderId, guildId);
   getUser(receiverId, guildId);
   db.prepare('UPDATE users SET coins = coins + ? WHERE user_id = ? AND guild_id = ?').run(amount, receiverId, guildId);
 
@@ -1916,6 +1917,14 @@ function isTempVoice(channelId) {
 
 function getTempVoice(channelId) {
   return db.prepare('SELECT * FROM temp_voices WHERE channel_id = ?').get(channelId);
+}
+
+function getAllTempVoices() {
+  try {
+    return db.prepare('SELECT * FROM temp_voices').all();
+  } catch (e) {
+    return [];
+  }
 }
 
 function deleteTempVoice(channelId) {
@@ -2769,6 +2778,7 @@ module.exports = {
   createTempVoice,
   isTempVoice,
   getTempVoice,
+  getAllTempVoices,
   deleteTempVoice,
   setReactionRole,
   getReactionRole,

@@ -25,6 +25,26 @@ module.exports = {
       client.registerSlashCommands().catch(() => {});
     }
 
+    // تنظيف الرومات الصوتية المؤقتة الفارغة المتبقية بعد إعادة التشغيل
+    try {
+      const db = require('../../database');
+      if (db.getAllTempVoices) {
+        const tempVoices = db.getAllTempVoices();
+        for (const tv of tempVoices) {
+          const guild = client.guilds.cache.get(tv.guild_id);
+          if (guild) {
+            const ch = guild.channels.cache.get(tv.channel_id) || await guild.channels.fetch(tv.channel_id).catch(() => null);
+            if (!ch || ch.members.size === 0) {
+              if (ch) await ch.delete('تنظيف الرومات المؤقتة الفارغة بعد إعادة التشغيل').catch(() => {});
+              db.deleteTempVoice(tv.channel_id);
+            }
+          } else {
+            db.deleteTempVoice(tv.channel_id);
+          }
+        }
+      }
+    } catch (e) {}
+
     const totalMembers = client.guilds.cache.reduce((acc, g) => acc + (g.memberCount || g.members.cache.size || 0), 0);
     logger.info(`البوت متواجد في ${client.guilds.cache.size} سيرفر(ات) ويخدم ${totalMembers} مستخدم.`);
 

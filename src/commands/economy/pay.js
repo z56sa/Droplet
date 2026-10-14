@@ -38,8 +38,7 @@ module.exports = {
       const settings = db.getGuildSettings ? db.getGuildSettings(guildId) : {};
       const taxRate = Math.max(0, Math.min(50, Number(settings.transfer_tax ?? 0) || 0));
       const tax = Math.floor(amount * taxRate / 100);
-      const result = db.transferCoins(guildId, sender.id, recipient.id, amount);
-      if (tax > 0) { try { db.removeCoins(sender.id, guildId, tax); } catch {} }
+      const result = db.transferCoins(guildId, sender.id, recipient.id, amount, tax);
       const embed = new EmbedBuilder()
         .setColor('#10B981')
         .setTitle(t(guildId, 'economy.pay.title'))
@@ -88,8 +87,7 @@ module.exports = {
       const settings = db.getGuildSettings ? db.getGuildSettings(guildId) : {};
       const taxRate = Math.max(0, Math.min(50, Number(settings.transfer_tax ?? 0) || 0));
       const tax = Math.floor(amount * taxRate / 100);
-      const result = db.transferCoins(guildId, sender.id, recipient.id, amount);
-      if (tax > 0) { try { db.removeCoins(sender.id, guildId, tax); } catch {} }
+      const result = db.transferCoins(guildId, sender.id, recipient.id, amount, tax);
       const embed = new EmbedBuilder()
         .setColor('#10B981')
         .setTitle(t(guildId, 'economy.pay.title'))
