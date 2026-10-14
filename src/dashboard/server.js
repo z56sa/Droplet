@@ -665,56 +665,9 @@ module.exports = function (app, client) {
     app.post('/api/logs/save', (req, res) => {
         try {
             const { settings } = req.body;
+            // يمكنك هنا إضافة الكود الخاص بـ database.updateLogsSettings(settings)
             console.log('Received log settings:', settings);
             res.json({ success: true });
-        } catch (err) {
-            res.status(500).json({ success: false, error: err.message });
-        }
-    });
-
-    // ============================================================
-    // 👑 PREMIUM API — Status & Key Redemption
-    // ============================================================
-    app.get('/api/guild/:guildId/premium', (req, res) => {
-        try {
-            const { guildId } = req.params;
-            const isPremium = db.isGuildPremium ? db.isGuildPremium(guildId) : false;
-            const info = db.getPremiumGuildInfo ? db.getPremiumGuildInfo(guildId) : null;
-            res.json({
-                success: true,
-                isPremium,
-                tier: info?.tier || 'free',
-                expiresAt: info?.expires_at || null,
-                isLifetime: info ? (info.expires_at === null || info.expires_at === 0) : false
-            });
-        } catch (err) {
-            res.status(500).json({ success: false, error: err.message });
-        }
-    });
-
-    app.post('/api/guild/:guildId/premium/redeem', (req, res) => {
-        try {
-            const { guildId } = req.params;
-            const { keyCode } = req.body;
-            const userId = req.session?.user?.id || 'dashboard';
-
-            if (!keyCode) {
-                return res.status(400).json({ success: false, error: 'يرجى إدخال كود التفعيل' });
-            }
-
-            const result = db.redeemPremiumKey ? db.redeemPremiumKey(keyCode, guildId, userId) : { success: false, reason: 'NOT_IMPLEMENTED' };
-            if (!result.success) {
-                if (result.reason === 'INVALID_KEY') return res.status(400).json({ success: false, error: 'كود التفعيل غير صالح' });
-                if (result.reason === 'ALREADY_USED') return res.status(400).json({ success: false, error: 'تم استخدام هذا الكود مسبقاً' });
-                return res.status(400).json({ success: false, error: 'تعذر تفعيل الكود' });
-            }
-
-            res.json({
-                success: true,
-                message: 'تم تفعيل البريميوم بنجاح!',
-                tier: result.tier,
-                expiresAt: result.expiresAt
-            });
         } catch (err) {
             res.status(500).json({ success: false, error: err.message });
         }

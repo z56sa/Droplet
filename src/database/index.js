@@ -832,29 +832,6 @@ try {
   `);
 } catch(e) {}
 
-// 👑 جدول اشتراكات البريميوم للسيرفرات (Premium Subscriptions)
-try {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS premium_guilds (
-      guild_id TEXT PRIMARY KEY,
-      tier TEXT DEFAULT 'pro',
-      activated_by TEXT,
-      expires_at INTEGER, -- timestamp in seconds (null = lifetime)
-      created_at INTEGER DEFAULT (strftime('%s','now'))
-    );
-    CREATE TABLE IF NOT EXISTS premium_keys (
-      key_code TEXT PRIMARY KEY,
-      duration_days INTEGER NOT NULL, -- e.g. 30, 365, 0 = lifetime
-      tier TEXT DEFAULT 'pro',
-      created_by TEXT,
-      used_by TEXT,
-      used_guild_id TEXT,
-      used_at INTEGER,
-      created_at INTEGER DEFAULT (strftime('%s','now'))
-    );
-  `);
-} catch(e) {}
-
 // إعدادات السجن والرول في guild_settings
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN jail_role TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN jail_channel TEXT;"); } catch(e) {}
@@ -3020,85 +2997,6 @@ module.exports = {
   getExpiredTempBans: () => {
     const now = Math.floor(Date.now() / 1000);
     return db.prepare('SELECT * FROM temp_bans WHERE unban_at <= ?').all(now);
-  },
-  // 👑 Premium System Exports
-  isGuildPremium: (guildId) => {
-    if (!guildId) return false;
-    try {
-      const row = db.prepare('SELECT * FROM premium_guilds WHERE guild_id = ?').get(String(guildId));
-      if (!row) return false;
-      if (row.expires_at === null || row.expires_at === 0) return true; // lifetime
-      const now = Math.floor(Date.now() / 1000);
-      if (row.expires_at > now) return true;
-      // انتهت صلاحيته -> نحذفه تلقائياً
-      db.prepare('DELETE FROM premium_guilds WHERE guild_id = ?').run(String(guildId));
-      return false;
-    } catch(e) { return false; }
-  },
-  getPremiumGuildInfo: (guildId) => {
-    try {
-      return db.prepare('SELECT * FROM premium_guilds WHERE guild_id = ?').get(String(guildId)) || null;
-    } catch(e) { return null; }
-  },
-  setGuildPremium: (guildId, durationDays = 0, activatedBy = null, tier = 'pro') => {
-    try {
-      const expiresAt = durationDays > 0 ? Math.floor(Date.now() / 1000) + (durationDays * 86400) : null;
-      db.prepare(`
-        INSERT INTO premium_guilds (guild_id, tier, activated_by, expires_at)
-        VALUES (?, ?, ?, ?)
-        ON CONFLICT(guild_id) DO UPDATE SET
-          tier = excluded.tier,
-          activated_by = excluded.activated_by,
-          expires_at = excluded.expires_at
-      `).run(String(guildId), tier, activatedBy ? String(activatedBy) : null, expiresAt);
-      return true;
-    } catch(e) { return false; }
-  },
-  removeGuildPremium: (guildId) => {
-    try {
-      db.prepare('DELETE FROM premium_guilds WHERE guild_id = ?').run(String(guildId));
-      return true;
-    } catch(e) { return false; }
-  },
-  createPremiumKey: (durationDays = 30, createdBy = null, tier = 'pro') => {
-    try {
-      const crypto = require('crypto');
-      const keyCode = `DROPLET-${tier.toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-      db.prepare(`
-        INSERT INTO premium_keys (key_code, duration_days, tier, created_by)
-        VALUES (?, ?, ?, ?)
-      `).run(keyCode, durationDays, tier, createdBy ? String(createdBy) : null);
-      return keyCode;
-    } catch(e) { return null; }
-  },
-  redeemPremiumKey: (keyCode, guildId, userId) => {
-    try {
-      const key = db.prepare('SELECT * FROM premium_keys WHERE key_code = ?').get(String(keyCode).trim());
-      if (!key) return { success: false, reason: 'INVALID_KEY' };
-      if (key.used_at) return { success: false, reason: 'ALREADY_USED' };
-
-      const expiresAt = key.duration_days > 0 ? Math.floor(Date.now() / 1000) + (key.duration_days * 86400) : null;
-      db.transaction(() => {
-        db.prepare(`
-          INSERT INTO premium_guilds (guild_id, tier, activated_by, expires_at)
-          VALUES (?, ?, ?, ?)
-          ON CONFLICT(guild_id) DO UPDATE SET
-            tier = excluded.tier,
-            activated_by = excluded.activated_by,
-            expires_at = excluded.expires_at
-        `).run(String(guildId), key.tier || 'pro', String(userId), expiresAt);
-
-        db.prepare(`
-          UPDATE premium_keys SET
-            used_by = ?,
-            used_guild_id = ?,
-            used_at = ?
-          WHERE key_code = ?
-        `).run(String(userId), String(guildId), Math.floor(Date.now() / 1000), key.key_code);
-      })();
-
-      return { success: true, tier: key.tier, durationDays: key.duration_days, expiresAt };
-    } catch(e) { return { success: false, reason: 'ERROR', error: e.message }; }
   },
   // Compatibility aliases
   getTopXp: getLeaderboard,
