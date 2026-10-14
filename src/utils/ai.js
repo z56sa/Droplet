@@ -132,6 +132,17 @@ function isCodingQuery(text) {
     return CODING_INDICATORS.some(ind => lower.includes(ind));
 }
 
+function needsDeepThinking(mode, text = '') {
+    if (['arch', 'security', 'review', 'algo', 'optimize'].includes(mode)) return true;
+    const deepIndicators = [
+        'design a system', 'architect', 'scale', 'million users', 'distributed',
+        'security audit', 'vulnerability', 'pen test', 'exploit', 'race condition',
+        'memory leak', 'deadlock', 'concurrency', 'optimize algorithm', 'O(n',
+        'هندسة نظام', 'ثغرة أمنية', 'تحسين خوارزمية', 'نظام موزع', 'أداء'
+    ];
+    return deepIndicators.some(d => text.toLowerCase().includes(d.toLowerCase()));
+}
+
 // ==========================================
 // 🚀 SMART MODEL ROUTER
 // ==========================================
