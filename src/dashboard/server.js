@@ -197,13 +197,14 @@ module.exports = function (app, client) {
     // ─── Shop Settings API ───
     app.post('/api/shop/settings', express.json(), async (req, res) => {
         if (!req.session?.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
-        const { guildId, shopItems, shopChannelId } = req.body;
+        const { guildId, shopItems, shopChannelId, customProducts } = req.body;
         if (!guildId) return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
         const allowed = (req.session.guilds || []).some(g => g.id === guildId);
         if (!allowed) return res.status(403).json({ success: false, message: 'Forbidden' });
         try {
             if (shopItems) database.updateGuildSetting(guildId, 'shop_items', JSON.stringify(shopItems));
             if (shopChannelId) database.updateGuildSetting(guildId, 'shop_channel_id', shopChannelId);
+            if (Array.isArray(customProducts)) database.updateGuildSetting(guildId, 'custom_products', JSON.stringify(customProducts));
             return res.json({ success: true });
         } catch(e) {
             return res.status(500).json({ success: false, message: e.message });
@@ -11770,6 +11771,31 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                         </div>
 
+                        <!-- ==================== منتجات مخصصة ==================== -->
+                        <div class="bg-[#0b1322] border border-amber-500/20 rounded-2xl overflow-hidden shadow-lg">
+                            <div class="bg-gradient-to-r from-amber-900/30 to-orange-900/20 px-5 py-4 flex items-center justify-between">
+                                <button type="button" onclick="addCustomProduct()" class="flex items-center gap-2 px-4 py-2 bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/40 text-amber-300 rounded-xl text-xs font-bold transition cursor-pointer">
+                                    <span class="text-lg">➕</span>
+                                    <span>إضافة منتج جديد</span>
+                                </button>
+                                <div class="flex items-center gap-3">
+                                    <div>
+                                        <h4 class="text-sm font-black text-white text-right">منتجات مخصصة</h4>
+                                        <p class="text-[11px] text-amber-200 text-right">Custom Products</p>
+                                    </div>
+                                    <span class="text-2xl">🛍️</span>
+                                </div>
+                            </div>
+                            <div class="p-5 space-y-3">
+                                <p class="text-[11px] text-gray-400 text-right mb-3">أضف منتجات مخصصة تظهر في المتجر — يمكنك تحديد الاسم والسعر والوصف لكل منتج.</p>
+                                <div id="customProductsList" class="space-y-3"></div>
+                                <div id="customProductsEmpty" class="py-8 text-center text-gray-500 text-xs bg-[#070d1d] border border-dashed border-amber-500/20 rounded-xl">
+                                    لم تُضف أي منتجات مخصصة بعد — اضغط على "إضافة منتج جديد" أعلاه
+                                </div>
+                                <input type="hidden" id="custom_products_data" name="custom_products" value="${(settings.custom_products || '').replace(/"/g, '&quot;')}">
+                            </div>
+                        </div>
+
                         <!-- Save Button -->
                         <button type="button" onclick="saveShopSettings('${guildId}')" class="w-full py-3.5 bg-gradient-to-l from-purple-600 to-blue-500 hover:opacity-95 text-white rounded-xl text-sm font-black transition shadow-lg shadow-purple-900/30">
                             💾 حفظ إعدادات المتجر
@@ -11829,6 +11855,82 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                     </div>
                     <script>
+                        // ====== Custom Products System ======
+                        let _customProducts = [];
+                        try {
+                            const _raw = document.getElementById('custom_products_data')?.value || '';
+                            if (_raw) _customProducts = JSON.parse(_raw);
+                            if (!Array.isArray(_customProducts)) _customProducts = [];
+                        } catch(e) { _customProducts = []; }
+
+                        function _saveProductsToHidden() {
+                            const el = document.getElementById('custom_products_data');
+                            if (el) el.value = JSON.stringify(_customProducts);
+                        }
+
+                        function addCustomProduct() {
+                            if (_customProducts.length >= 20) return alert('الحد الأقصى هو 20 منتج مخصص');
+                            _customProducts.push({ id: Date.now(), name: '', description: '', price: 100, emoji: '🎁' });
+                            _saveProductsToHidden();
+                            _renderProducts();
+                        }
+
+                        function removeCustomProduct(idx) {
+                            if (!confirm('هل تريد حذف هذا المنتج؟')) return;
+                            _customProducts.splice(idx, 1);
+                            _saveProductsToHidden();
+                            _renderProducts();
+                        }
+
+                        function updateProduct(idx, field, value) {
+                            if (_customProducts[idx] !== undefined) {
+                                _customProducts[idx][field] = field === 'price' ? Math.max(1, parseInt(value) || 1) : value;
+                                _saveProductsToHidden();
+                            }
+                        }
+
+                        function _renderProducts() {
+                            const list = document.getElementById('customProductsList');
+                            const empty = document.getElementById('customProductsEmpty');
+                            if (!list) return;
+                            if (_customProducts.length === 0) {
+                                list.innerHTML = '';
+                                if (empty) { empty.style.display = ''; }
+                                return;
+                            }
+                            if (empty) { empty.style.display = 'none'; }
+                            list.innerHTML = _customProducts.map((p, i) => {
+                                const nm = (p.name || '').replace(/"/g, '&quot;');
+                                const ds = (p.description || '').replace(/"/g, '&quot;');
+                                const em = (p.emoji || '🎁').replace(/"/g, '&quot;');
+                                return '<div class="bg-[#070d1d] border border-amber-500/20 hover:border-amber-400/40 p-4 rounded-xl transition">'
+                                    + '<div class="flex items-start gap-3">'
+                                    + '<div class="flex flex-col items-center gap-1 flex-shrink-0">'
+                                    + '<input type="text" value="' + em + '" maxlength="4" onchange="updateProduct(' + i + ',\'emoji\',this.value)" class="w-12 h-12 bg-[#0b1322] border border-amber-500/30 rounded-xl text-center text-2xl outline-none" title="إيموجي المنتج">'
+                                    + '<span class="text-[9px] text-gray-500">إيموجي</span>'
+                                    + '</div>'
+                                    + '<div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">'
+                                    + '<div class="sm:col-span-2">'
+                                    + '<label class="block text-[10px] text-amber-300 font-bold mb-1">اسم المنتج *</label>'
+                                    + '<input type="text" value="' + nm + '" placeholder="مثال: باقة VIP — شهر" oninput="updateProduct(' + i + ',\'name\',this.value)" class="w-full bg-[#0b1322] border border-amber-500/20 focus:border-amber-400 rounded-lg px-3 py-2 text-xs text-white outline-none text-right">'
+                                    + '</div>'
+                                    + '<div>'
+                                    + '<label class="block text-[10px] text-amber-300 font-bold mb-1">السعر 🪙</label>'
+                                    + '<input type="number" value="' + (p.price || 100) + '" min="1" oninput="updateProduct(' + i + ',\'price\',this.value)" class="w-full bg-[#0b1322] border border-amber-500/20 focus:border-amber-400 rounded-lg px-3 py-2 text-xs text-amber-300 font-bold font-mono outline-none text-left">'
+                                    + '</div>'
+                                    + '<div class="sm:col-span-3">'
+                                    + '<label class="block text-[10px] text-gray-400 mb-1">الوصف (اختياري)</label>'
+                                    + '<input type="text" value="' + ds + '" placeholder="وصف مختصر للمنتج يظهر في المتجر..." oninput="updateProduct(' + i + ',\'description\',this.value)" class="w-full bg-[#0b1322] border border-white/10 focus:border-amber-400 rounded-lg px-3 py-2 text-xs text-gray-300 outline-none text-right">'
+                                    + '</div>'
+                                    + '</div>'
+                                    + '<button type="button" onclick="removeCustomProduct(' + i + ')" class="text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 w-8 h-8 rounded-lg flex items-center justify-center text-sm transition cursor-pointer flex-shrink-0 mt-1" title="حذف المنتج">✕</button>'
+                                    + '</div>'
+                                    + '</div>';
+                            }).join('');
+                        }
+
+                        try { _renderProducts(); } catch(e) {}
+
                         async function sendShopEmbed(guildId) {
                             const channelId = document.getElementById('shop_channel_id').value;
                             if (!channelId) return alert('يرجى اختيار القناة أولاً');
@@ -11848,17 +11950,25 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             } catch(e) { alert('خطأ في الاتصال'); }
                         }
                         async function saveShopSettings(guildId) {
+                            let customProducts = [];
+                            try { customProducts = JSON.parse(document.getElementById('custom_products_data')?.value || '[]'); } catch(e) {}
+                            // Validate products
+                            const validProducts = customProducts.filter(p => p.name && p.name.trim());
+                            if (customProducts.length > 0 && validProducts.length < customProducts.length) {
+                                if (!confirm('بعض المنتجات لا تحتوي على اسم — هل تريد المتابعة وحفظ المنتجات المكتملة فقط؟')) return;
+                            }
                             const data = {
                                 guildId,
                                 shopItems: {
                                     customRole: { enabled: document.getElementById('shop_role_enabled')?.checked || false, price: +(document.getElementById('shop_role_price')?.value || 500), duration: +(document.getElementById('shop_role_days')?.value || 30) },
                                     badge:      { enabled: document.getElementById('shop_badge_enabled')?.checked || false, price: +(document.getElementById('shop_badge_price')?.value || 200), duration: +(document.getElementById('shop_badge_days')?.value || 0) }
-                                }
+                                },
+                                customProducts: validProducts
                             };
                             try {
                                 const res = await fetch('/api/shop/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
                                 const d = await res.json();
-                                if (d.success) { alert('✅ تم حفظ إعدادات المتجر'); location.reload(); }
+                                if (d.success) { alert('✅ تم حفظ إعدادات المتجر (' + validProducts.length + ' منتج مخصص)'); location.reload(); }
                                 else alert(d.message || 'فشل الحفظ');
                             } catch(e) { alert('خطأ في الاتصال'); }
                         }
