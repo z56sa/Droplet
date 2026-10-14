@@ -76,8 +76,8 @@ module.exports = {
       .setTitle(t(lang, 'economy.daily.title'))
       .setThumbnail(user.displayAvatarURL({ dynamic: true }))
       .addFields(
-        { name: t(lang, 'economy.daily.field_reward'), value: `\`+${reward}\` ⭐ Star Coin`, inline: true },
-        { name: t(lang, 'economy.daily.field_new_balance'), value: `\`${(newUserData.coins || newUserData.credits || 0).toLocaleString()}\` ⭐`, inline: true },
+        { name: t(lang, 'economy.daily.field_reward'), value: `\`+${reward}\` 🪙 Gold`, inline: true },
+        { name: t(lang, 'economy.daily.field_new_balance'), value: `\`${(newUserData.coins || newUserData.credits || 0).toLocaleString()}\` 🪙`, inline: true },
         { name: t(lang, 'economy.daily.field_streak', { streak }), value: streakBar, inline: false }
       )
       .setFooter({ text: nextStreakTarget ? t(lang, 'economy.daily.footer_next', { left: nextStreakTarget - streak }) : t(lang, 'economy.daily.footer_top') })

@@ -31,9 +31,9 @@ module.exports = {
     'economy.leaderboard.title_xp': '🏆 Top XP leaders | {guild}',
     'economy.leaderboard.empty_xp': 'No activity data yet in this server.',
     'economy.leaderboard.row_xp': '**Level {level}** ({xp} XP)',
-    'economy.leaderboard.title_coins': '⭐ Top Star Coin holders | {guild}',
+    'economy.leaderboard.title_coins': '🪙 Top Gold holders | {guild}',
     'economy.leaderboard.empty_coins': 'No balance data yet.',
-    'economy.leaderboard.row_coins': '**{coins}** credits 🪙',
+    'economy.leaderboard.row_coins': '**{coins}** Gold 🪙',
 
     // ===== economy.rank =====
     'economy.rank.not_found': '❌ Member not found in this server.',
@@ -69,11 +69,11 @@ module.exports = {
     'economy.bank.invalid_amount': '❌ Enter a valid amount or type `all`.',
     'economy.bank.deposit_title': '✅ Deposited to bank',
     'economy.bank.deposit_field': '💰 Deposited',
-    'economy.bank.deposit_insufficient': '❌ Not enough in your wallet! You have `{wallet}` ⭐',
+    'economy.bank.deposit_insufficient': '❌ Not enough in your wallet! You have `{wallet}` 🪙',
     'economy.bank.deposit_error': '❌ An error occurred during deposit.',
     'economy.bank.withdraw_title': '✅ Withdrawn from bank',
     'economy.bank.withdraw_field': '💰 Withdrawn',
-    'economy.bank.withdraw_insufficient': '❌ Not enough in your bank! You have `{bank}` ⭐ in the bank.',
+    'economy.bank.withdraw_insufficient': '❌ Not enough in your bank! You have `{bank}` 🪙 in the bank.',
     'economy.bank.withdraw_error': '❌ An error occurred during withdrawal.',
 
     // ===== common =====
@@ -278,9 +278,9 @@ module.exports = {
     'economy.leaderboard.title_xp': '🏆 توب المتصدرين في المستويات | {guild}',
     'economy.leaderboard.empty_xp': 'لا توجد بيانات تفاعل بعد في هذا السيرفر.',
     'economy.leaderboard.row_xp': '**المستوى {level}** ({xp} XP)',
-    'economy.leaderboard.title_coins': '⭐ توب الأثرياء في Star Coin | {guild}',
+    'economy.leaderboard.title_coins': '🪙 توب الأثرياء في الذهب | {guild}',
     'economy.leaderboard.empty_coins': 'لا توجد بيانات أرصدة بعد.',
-    'economy.leaderboard.row_coins': '**{coins}** كريدت 🪙',
+    'economy.leaderboard.row_coins': '**{coins}** ذهب 🪙',
 
     // ===== economy.rank =====
     'economy.rank.not_found': '❌ العضو غير موجود في السيرفر.',
@@ -316,11 +316,11 @@ module.exports = {
     'economy.bank.invalid_amount': '❌ أدخل مبلغاً صحيحاً أو اكتب `all`.',
     'economy.bank.deposit_title': '✅ تم الإيداع في البنك',
     'economy.bank.deposit_field': '💰 تم إيداع',
-    'economy.bank.deposit_insufficient': '❌ ليس في محفظتك كافٍ! لديك `{wallet}` ⭐',
+    'economy.bank.deposit_insufficient': '❌ ليس في محفظتك كافٍ! لديك `{wallet}` 🪙',
     'economy.bank.deposit_error': '❌ حدث خطأ أثناء عملية الإيداع.',
     'economy.bank.withdraw_title': '✅ تم السحب من البنك',
     'economy.bank.withdraw_field': '💰 تم سحب',
-    'economy.bank.withdraw_insufficient': '❌ ليس في بنكك كافٍ! لديك `{bank}` ⭐ في البنك.',
+    'economy.bank.withdraw_insufficient': '❌ ليس في بنكك كافٍ! لديك `{bank}` 🪙 في البنك.',
     'economy.bank.withdraw_error': '❌ حدث خطأ أثناء عملية السحب.',
 
     // ===== common =====

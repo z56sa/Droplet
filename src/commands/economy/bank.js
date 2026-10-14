@@ -44,9 +44,9 @@ module.exports = {
         .setTitle(t(lang, 'economy.bank.title_balance', { name: user.username }))
         .setThumbnail(user.displayAvatarURL({ dynamic: true }))
         .addFields(
-          { name: t(lang, 'economy.bank.field_wallet'), value: `\`${wallet.toLocaleString()}\` ⭐`, inline: true },
-          { name: t(lang, 'economy.bank.field_bank'), value: `\`${bank.toLocaleString()}\` ⭐`, inline: true },
-          { name: t(lang, 'economy.bank.field_total'), value: `\`${(wallet + bank).toLocaleString()}\` ⭐`, inline: true }
+          { name: t(lang, 'economy.bank.field_wallet'), value: `\`${wallet.toLocaleString()}\` 🪙`, inline: true },
+          { name: t(lang, 'economy.bank.field_bank'), value: `\`${bank.toLocaleString()}\` 🪙`, inline: true },
+          { name: t(lang, 'economy.bank.field_total'), value: `\`${(wallet + bank).toLocaleString()}\` 🪙`, inline: true }
         )
         .setFooter({ text: t(lang, 'economy.bank.footer') })
         .setTimestamp();
@@ -65,9 +65,9 @@ module.exports = {
         const embed = new EmbedBuilder().setColor('#27ae60')
           .setTitle(t(lang, 'economy.bank.deposit_title'))
           .addFields(
-            { name: t(lang, 'economy.bank.deposit_field'), value: `\`${amount.toLocaleString()}\` ⭐`, inline: true },
-            { name: t(lang, 'economy.bank.field_wallet'), value: `\`${res.wallet.toLocaleString()}\` ⭐`, inline: true },
-            { name: t(lang, 'economy.bank.field_bank'), value: `\`${res.bank.toLocaleString()}\` ⭐`, inline: true }
+            { name: t(lang, 'economy.bank.deposit_field'), value: `\`${amount.toLocaleString()}\` 🪙`, inline: true },
+            { name: t(lang, 'economy.bank.field_wallet'), value: `\`${res.wallet.toLocaleString()}\` 🪙`, inline: true },
+            { name: t(lang, 'economy.bank.field_bank'), value: `\`${res.bank.toLocaleString()}\` 🪙`, inline: true }
           ).setTimestamp();
         return reply({ embeds: [embed] });
       } catch (err) {
@@ -83,9 +83,9 @@ module.exports = {
         const embed = new EmbedBuilder().setColor('#e67e22')
           .setTitle(t(lang, 'economy.bank.withdraw_title'))
           .addFields(
-            { name: t(lang, 'economy.bank.withdraw_field'), value: `\`${amount.toLocaleString()}\` ⭐`, inline: true },
-            { name: t(lang, 'economy.bank.field_wallet'), value: `\`${res.wallet.toLocaleString()}\` ⭐`, inline: true },
-            { name: t(lang, 'economy.bank.field_bank'), value: `\`${res.bank.toLocaleString()}\` ⭐`, inline: true }
+            { name: t(lang, 'economy.bank.withdraw_field'), value: `\`${amount.toLocaleString()}\` 🪙`, inline: true },
+            { name: t(lang, 'economy.bank.field_wallet'), value: `\`${res.wallet.toLocaleString()}\` 🪙`, inline: true },
+            { name: t(lang, 'economy.bank.field_bank'), value: `\`${res.bank.toLocaleString()}\` 🪙`, inline: true }
           ).setTimestamp();
         return reply({ embeds: [embed] });
       } catch (err) {

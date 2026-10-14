@@ -8,11 +8,11 @@ const WORK_COOLDOWN = 4 * 60 * 60 * 1000; // 4 ساعات
 
 module.exports = {
   name: 'work',
-  description: 'اعمل لتكسب Star Coin (كل 4 ساعات)',
+  description: 'اعمل لتكسب عملة الذهب (كل 4 ساعات)',
   aliases: ['اشتغل', 'شغل'],
   data: new SlashCommandBuilder()
     .setName('work')
-    .setDescription('اعمل لتكسب Star Coin ⭐ 💼'),
+    .setDescription('اعمل لتكسب عملة الذهب 🪙 💼'),
 
   async execute(interaction) {
     await interaction.deferReply();
@@ -62,8 +62,8 @@ module.exports = {
       .setTitle(job.title)
       .setDescription(`${job.msg}${bonusText}`)
       .addFields(
-        { name: t(lang, 'economy.work.field_salary'), value: `\`+${reward.toLocaleString()}\` ⭐ Star Coin`, inline: true },
-        { name: t(lang, 'economy.work.field_balance'), value: `\`${(newUserData.coins || newUserData.credits || 0).toLocaleString()}\` ⭐`, inline: true }
+        { name: t(lang, 'economy.work.field_salary'), value: `\`+${reward.toLocaleString()}\` 🪙 Gold`, inline: true },
+        { name: t(lang, 'economy.work.field_balance'), value: `\`${(newUserData.coins || newUserData.credits || 0).toLocaleString()}\` 🪙`, inline: true }
       )
       .setFooter({ text: t(lang, 'economy.work.footer') })
       .setTimestamp();

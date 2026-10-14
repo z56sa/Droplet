@@ -6,7 +6,7 @@ const { isEnabled } = require('../../utils/isEnabled');
 
 module.exports = {
   name: 'leaderboard',
-  description: 'عرض قائمة المتصدرين في السيرفر (المستويات أو Star Coin)',
+  description: 'عرض قائمة المتصدرين في السيرفر (المستويات أو الذهب Gold)',
   aliases: ['top', 'توب', 'متصدرين'],
   data: new SlashCommandBuilder()
     .setName('leaderboard')
@@ -17,7 +17,7 @@ module.exports = {
         .setRequired(false)
         .addChoices(
           { name: '🏆 المستويات (XP)', value: 'xp' },
-          { name: '⭐ نجوم (Star Coin)', value: 'credits' }
+          { name: '🪙 الذهب (Gold)', value: 'credits' }
         )
     ),
 
