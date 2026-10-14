@@ -190,12 +190,19 @@ module.exports = {
           }
 
           if (customProducts.length > 0) {
-            const selectOptions = customProducts.slice(0, 25).map((p, idx) => ({
-              label: (p.name || `منتج #${idx + 1}`).slice(0, 100),
-              value: String(p.id || idx),
-              description: `${Number(p.price || 0).toLocaleString()} Gold 🪙${p.description || p.desc ? ` - ${p.description || p.desc}` : ''}`.slice(0, 100),
-              emoji: (p.emoji && p.emoji.length <= 4) ? p.emoji : '🛍️'
-            }));
+            const selectOptions = customProducts.slice(0, 25).map((p, idx) => {
+              const opt = {
+                label: (p.name || `منتج #${idx + 1}`).slice(0, 100),
+                value: String(p.id || idx),
+                description: `${Number(p.price || 0).toLocaleString()} Gold 🪙${p.description || p.desc ? ` - ${p.description || p.desc}` : ''}`.slice(0, 100)
+              };
+              if (p.emoji && typeof p.emoji === 'string' && p.emoji.trim()) {
+                opt.emoji = p.emoji.trim();
+              } else {
+                opt.emoji = '🛍️';
+              }
+              return opt;
+            });
 
             const selectMenu = new StringSelectMenuBuilder()
               .setCustomId('shop_buy_custom_select')

@@ -11862,8 +11862,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <!-- Cards will be populated here -->
                                 </div>
 
-                                <!-- Hidden Data Input -->
-                                <input type="hidden" id="custom_products_data" name="custom_products" value="${Buffer.from(settings.custom_products || '[]').toString('base64')}">
+                                <input type="hidden" id="custom_products_data" name="custom_products" value="${Buffer.from(settings.custom_products || '[]', 'utf8').toString('base64')}">
 
                                 <!-- Manual Grant -->
                                 <div class="bg-[#070d1d] border border-blue-500/30 p-5 rounded-2xl shadow-lg">
@@ -12331,7 +12330,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             if (addBtn) {
                                 addBtn.addEventListener('click', function(e) {
                                     e.preventDefault();
-                                    if (customProducts.length >= 20) return alert('الحد الأقصى هو 20 منتج مخصص');
+                                    if (customProducts.length >= 20) return window.showToast('الحد الأقصى هو 20 منتج مخصص', true);
                                     customProducts.push({
                                         id: Date.now(),
                                         name: 'منتج مخصص #' + (customProducts.length + 1),
