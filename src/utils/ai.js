@@ -135,60 +135,38 @@ function isCodingQuery(text) {
 // ==========================================
 // 🚀 SMART MODEL ROUTER
 // ==========================================
-// يختار النموذج الأمثل بناءً على نوع المهمة وصعوبتها
-const MODELS = (() => {
-    const primary = process.env.GEMINI_MODEL;
-    const fallback = process.env.GEMINI_FALLBACK_MODEL;
-    const base = 'gemini-2.5-flash';
-    return [primary, fallback, base].filter(Boolean);
-})();
-
-// نماذج التفكير العميق (Thinking Models) لحل المشاكل الصعبة
-const THINKING_MODELS = (() => {
-    const pro = process.env.GEMINI_PRO_MODEL || 'gemini-2.5-pro';
-    const flash = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-    return [pro, flash].filter(Boolean);
-})();
-
-// هل المهمة تستوجب التفكير العميق؟ (Architecture, Security Audit, Complex Algorithms)
-function needsDeepThinking(mode, text) {
-    if (['arch', 'security', 'review'].includes(mode)) return true;
-    const deepIndicators = [
-        'design a system', 'architect', 'scale', 'million users', 'distributed',
-        'security audit', 'vulnerability', 'pen test', 'exploit', 'race condition',
-        'memory leak', 'deadlock', 'concurrency', 'optimize algorithm', 'O(n',
-        'هندسة نظام', 'ثغرة أمنية', 'تحسين خوارزمية', 'نظام موزع', 'أداء'
-    ];
-    return deepIndicators.some(d => text.toLowerCase().includes(d.toLowerCase()));
-}
+const MODELS = [
+    process.env.GEMINI_MODEL,
+    process.env.GEMINI_FALLBACK_MODEL,
+    'gemini-2.5-flash',
+    'gemini-1.5-flash'
+].filter(Boolean);
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 // ==========================================
-// ⚡ GENERATE WITH SMART RETRY + THINKING
+// ⚡ GENERATE WITH SMART RETRY
 // ==========================================
-async function generateWithSmartRetry(ai, contents, { isCoding = false, useThinking = false } = {}) {
+async function generateWithSmartRetry(ai, contents, { isCoding = false } = {}) {
     const temperature = isCoding ? 0.15 : 0.72;
-    const modelList = useThinking ? [...THINKING_MODELS, ...MODELS] : MODELS;
+    let lastError;
 
-    for (const model of modelList) {
-        for (let attempt = 0; attempt < 3; attempt++) {
+    for (const model of MODELS) {
+        for (let attempt = 0; attempt < 2; attempt++) {
             try {
-                const config = {
-                    systemInstruction: Droplet_SYSTEM_INSTRUCTION,
-                    temperature
-                };
-
-                // تفعيل Thinking Budget للنماذج التي تدعمه
-                if (useThinking && (model.includes('2.5') || model.includes('thinking'))) {
-                    config.thinkingConfig = { thinkingBudget: 8000 };
-                }
-
-                const response = await ai.models.generateContent({ model, contents, config });
+                const response = await ai.models.generateContent({
+                    model,
+                    contents,
+                    config: {
+                        systemInstruction: Droplet_SYSTEM_INSTRUCTION,
+                        temperature
+                    }
+                });
                 const text = response.text || response.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (text) return { text, model };
                 throw new Error('EMPTY_RESPONSE');
             } catch (error) {
+                lastError = error;
                 const status = Number(error?.status || error?.code || 0);
                 console.warn(`[AI] ${model} attempt ${attempt + 1} failed: ${status} ${error?.message?.slice(0, 100)}`);
                 if (status === 400 || status === 404) break;
@@ -200,7 +178,7 @@ async function generateWithSmartRetry(ai, contents, { isCoding = false, useThink
             }
         }
     }
-    throw new Error('All AI models failed after retries.');
+    throw lastError || new Error('All AI models failed after retries.');
 }
 
 // ==========================================
@@ -597,14 +575,9 @@ async function askAI(promptText, options = {}) {
     const contents = [...history, { role: 'user', parts: [{ text: enrichedPrompt }] }];
 
     try {
-        const { text, model } = await generateWithSmartRetry(ai, contents, { isCoding, useThinking });
+        const { text, model } = await generateWithSmartRetry(ai, contents, { isCoding });
         if (userId) {
             updateConversationHistory(userId, promptText.trim(), text);
-        }
-        // إضافة footer عند استخدام التفكير العميق
-        if (useThinking) {
-            const detectedInfo = detectedLang ? ` | اللغة: \`${detectedLang}\`` : '';
-            return text + `\n\n-# 🧠 *Thinking Mode via ${model}${detectedInfo}*`;
         }
         return text;
     } catch (error) {
