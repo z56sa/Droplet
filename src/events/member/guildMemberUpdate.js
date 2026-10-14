@@ -11,7 +11,16 @@ module.exports = {
     if (!settings) return;
     // ✅ حماية رتب الانضمام الخطرة: سحب الإدارة الممنوحة حديثاً دون وجه حق
     try {
-      const { PermissionFlagsBits: _PFB } = require('discord.js');
+      const { PermissionFlagsBits: _PFB, AuditLogEvent: _ALE } = require('discord.js');
+      const antiNuke = require('../../utils/antiNuke');
+
+      // فحص التسكيت الجماعي (Mass Timeout)
+      if (!oldMember.communicationDisabledUntil && newMember.communicationDisabledUntil) {
+        if (newMember.communicationDisabledUntilTimestamp > Date.now()) {
+          antiNuke.checkAction(guild, 'massTimeout', _ALE.MemberUpdate).catch(() => {});
+        }
+      }
+
       const _dangerOn = isEnabled(settings.anti_join_danger_roles, isEnabled(settings.anti_onboarding_danger, false));
       if (_dangerOn && oldMember && newMember) {
         const hadAdmin = oldMember.roles.cache.some(r => r.permissions.has(_PFB.Administrator));

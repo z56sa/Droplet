@@ -4,171 +4,182 @@ const config = require('../config.json');
 const logger = require('./logger');
 const { isEnabled } = require('./isEnabled');
 
-// تخزين محاولات الإجراءات الإدارية لكل مشرف: guildId -> { modId -> { channels: [], roles: [], bans: [], kicks: [] } }
-const actionTracking = new Map();
-
-// ذاكرة مؤقتة للسجلات التي تمت معالجتها لمنع التكرار (Deduplication)
+// ذاكرة مؤقتة في الرام للسرعة (يُدعم الآن بـ SQLite للاستمرارية بعد الإعادة)
 const processedAuditLogIds = new Set();
 
 // ✅ ربط المفاتيح التفصيلية للداشبورد بأنواع الإجراءات
 const ACTION_TOGGLE_MAP = {
-  channelDelete: ['anti_channel_delete'],
-  channelCreate: ['anti_channel_create'],
-  channelUpdate: ['anti_channel_update', 'anti_channel_permissions', 'anti_channel_move'],
-  roleDelete: ['anti_role_delete'],
-  roleCreate: ['anti_role_create'],
-  roleUpdate: ['anti_role_update'],
-  webhookCreate: ['anti_webhook_create'],
-  webhookDelete: ['anti_webhook_create', 'anti_webhook_update'],
-  webhookUpdate: ['anti_webhook_update'],
-  guildUpdate: ['anti_server_name_change', 'anti_server_icon_change'],
-  banAdd: ['anti_mass_ban'],
-  memberKick: ['anti_mass_kick'],
-  botAdd: ['anti_bot_add', 'anti_bot'],
+  channelDelete:  ['anti_channel_delete'],
+  channelCreate:  ['anti_channel_create'],
+  channelUpdate:  ['anti_channel_update', 'anti_channel_permissions', 'anti_channel_move'],
+  roleDelete:     ['anti_role_delete'],
+  roleCreate:     ['anti_role_create'],
+  roleUpdate:     ['anti_role_update'],
+  webhookCreate:  ['anti_webhook_create'],
+  webhookDelete:  ['anti_webhook_create', 'anti_webhook_update'],
+  webhookUpdate:  ['anti_webhook_update'],
+  guildUpdate:    ['anti_server_name_change', 'anti_server_icon_change'],
+  banAdd:         ['anti_mass_ban'],
+  memberKick:     ['anti_mass_kick'],
+  botAdd:         ['anti_bot_add', 'anti_bot'],
+  massUnban:      ['anti_mass_unban'],
+  massTimeout:    ['anti_mass_timeout'],
+  emojiDelete:    ['anti_emoji_delete'],
+  inviteSpam:     ['anti_invite_spam'],
+};
+
+// حدود افتراضية لكل نوع إجراء
+const DEFAULT_LIMITS = {
+  channelDelete:  3,
+  channelCreate:  3,
+  channelUpdate:  3,
+  roleDelete:     3,
+  roleCreate:     3,
+  roleUpdate:     3,
+  webhookCreate:  3,
+  webhookDelete:  3,
+  webhookUpdate:  3,
+  guildUpdate:    2,
+  banAdd:         3,
+  memberKick:     3,
+  botAdd:         1,
+  massUnban:      5,
+  massTimeout:    3,
+  emojiDelete:    5,
+  inviteSpam:     5,
+};
+
+const ACTION_LABELS = {
+  channelDelete: 'حذف متكرر للروم والقنوات',
+  channelCreate: 'إنشاء قنوات مكثف بشكل مريب (Spam Channels)',
+  channelUpdate: 'تعديل متكرر للقنوات والصلاحيات',
+  roleDelete:    'حذف متكرر للرتب',
+  roleCreate:    'إنشاء رتب مكثف بشكل مريب (Spam Roles)',
+  roleUpdate:    'تعديل متكرر للرتب والصلاحيات',
+  webhookCreate: 'تلاعب متكرر بالويب هوك',
+  webhookDelete: 'تلاعب متكرر بالويب هوك',
+  webhookUpdate: 'تلاعب متكرر بالويب هوك',
+  guildUpdate:   'تغيير متكرر لاسم/أيقونة السيرفر',
+  banAdd:        'حظر جماعي للأعضاء (Mass Ban)',
+  memberKick:    'طرد متكرر للأعضاء (Mass Kick)',
+  botAdd:        'إضافة بوتات غير مصرح بها (Unauthorized Bot Add)',
+  massUnban:     'رفع حظر جماعي مشبوه (Mass Unban)',
+  massTimeout:   'تسكيت جماعي للأعضاء (Mass Timeout)',
+  emojiDelete:   'حذف جماعي للإيموجي (Mass Emoji Delete)',
+  inviteSpam:    'إنشاء روابط دعوة بشكل مكثف (Invite Spam)',
 };
 
 function isActionTypeEnabled(settings, actionType) {
   const keys = ACTION_TOGGLE_MAP[actionType];
   if (!keys) return true;
 
-  // إذا تم تفعيل أي مفتاح تفصيلي صراحة
-  const hasExplicitTrue = keys.some(k => settings[k] !== undefined && settings[k] !== null && settings[k] !== '' && isEnabled(settings[k], false));
+  const hasExplicitTrue = keys.some(k =>
+    settings[k] !== undefined && settings[k] !== null && settings[k] !== '' && isEnabled(settings[k], false)
+  );
   if (hasExplicitTrue) return true;
 
-  // إذا تم تعطيل جميع المفاتيح التفصيلية صراحة
-  const hasExplicitFalse = keys.every(k => settings[k] !== undefined && settings[k] !== null && settings[k] !== '' && !isEnabled(settings[k], true));
+  const hasExplicitFalse = keys.every(k =>
+    settings[k] !== undefined && settings[k] !== null && settings[k] !== '' && !isEnabled(settings[k], true)
+  );
   if (hasExplicitFalse && keys.some(k => settings[k] !== undefined && settings[k] !== null && settings[k] !== '')) {
     return false;
   }
-
-  // في حال لم يُحدد إعداد فرعي، نعتمد على المفتاح العام (Master Anti-Nuke)
   return true;
 }
+
+// تنظيف دوري لقاعدة البيانات (كل 5 دقائق)
+setInterval(() => {
+  try { db.pruneNukeActions(); } catch {}
+}, 5 * 60 * 1000);
 
 const antiNuke = {
   /**
    * فحص وتنفيذ إجراء الحماية عند تجاوز الحد المسموح
+   * @param {Guild} guild
+   * @param {string} actionType - نوع الإجراء
+   * @param {AuditLogEvent|null} logType - نوع سجل التدقيق (null = بدون fetch مسبق)
+   * @param {string|null} executorId - معرف المنفذ (إذا كان معروفاً مسبقاً)
    */
-  async checkAction(guild, actionType, logType) {
+  async checkAction(guild, actionType, logType, executorId = null) {
     if (!guild) return;
     const settings = db.getGuildSettings(guild.id) || {};
     const _master = (settings.anti_nuke_enabled !== undefined && settings.anti_nuke_enabled !== null && settings.anti_nuke_enabled !== '')
       ? settings.anti_nuke_enabled : settings.antinuke_enabled;
     if (!isEnabled(_master, false)) return;
-
-    // ✅ المفتاح التفصيلي
     if (!isActionTypeEnabled(settings, actionType)) return;
 
     try {
-      const fetchedLogs = await guild.fetchAuditLogs({
-        limit: 1,
-        type: logType
-      }).catch(() => null);
+      let executor = null;
 
-      if (!fetchedLogs) return;
-      const logEntry = fetchedLogs.entries.first();
-      if (!logEntry) return;
+      if (executorId) {
+        // المنفذ مُعرَف مسبقاً (من guildAuditLogEntryCreate مثلاً)
+        executor = { id: executorId, tag: executorId };
+      } else if (logType !== null) {
+        // جلب آخر 5 سجلات بدلاً من 1 لمنع الفقدان عند التسارع
+        const fetchedLogs = await guild.fetchAuditLogs({ limit: 5, type: logType }).catch(() => null);
+        if (!fetchedLogs) return;
 
-      // فحص حداثة السجل لمنع المعالجة الخاطئة للسجلات القديمة (أقل من 15 ثانية)
-      if (Date.now() - logEntry.createdTimestamp > 15000) return;
+        // نبحث عن أحدث سجل لم يُعالج بعد (أقل من 15 ثانية)
+        const now = Date.now();
+        for (const [, entry] of fetchedLogs.entries) {
+          if (now - entry.createdTimestamp > 15000) continue;
+          if (processedAuditLogIds.has(entry.id)) continue;
+          processedAuditLogIds.add(entry.id);
+          setTimeout(() => processedAuditLogIds.delete(entry.id), 60000);
+          executor = entry.executor;
+          break;
+        }
+        if (!executor) return;
+      } else {
+        return;
+      }
 
-      // منع التكرار لمعالجة نفس السجل
-      if (processedAuditLogIds.has(logEntry.id)) return;
-      processedAuditLogIds.add(logEntry.id);
-      setTimeout(() => processedAuditLogIds.delete(logEntry.id), 60000);
-
-      const executor = logEntry.executor;
       if (!executor || executor.id === guild.client.user.id || executor.id === guild.ownerId) return;
 
-      // فحص القائمة البيضاء (Whitelist & Anti Mod)
-      if (db.isUserWhitelisted && db.isUserWhitelisted(guild.id, executor.id, 'whitelist')) {
-        return; // مستثنى من الحماية
-      }
+      // فحص القائمة البيضاء
+      if (db.isUserWhitelisted && db.isUserWhitelisted(guild.id, executor.id, 'whitelist')) return;
       if (settings.antinuke_whitelist_role) {
         const member = await guild.members.fetch(executor.id).catch(() => null);
-        if (member && member.roles.cache.has(settings.antinuke_whitelist_role)) {
-          return; // مستثنى من الحماية
-        }
+        if (member && member.roles.cache.has(settings.antinuke_whitelist_role)) return;
       }
 
-      const now = Date.now();
-      const oneMinuteAgo = now - 60000;
+      // ✅ الحفظ في SQLite (مستمر عبر restarts)
+      db.saveNukeAction(guild.id, executor.id, actionType);
 
-      if (!actionTracking.has(guild.id)) {
-        actionTracking.set(guild.id, new Map());
-      }
-      const guildActions = actionTracking.get(guild.id);
+      // قراءة الإجراءات الأخيرة (آخر 60 ثانية) من SQLite + RAM
+      const sinceMs = Date.now() - 60000;
+      const recentActions = db.getNukeActions(guild.id, executor.id, actionType, sinceMs);
+      const count = recentActions.length;
 
-      if (!guildActions.has(executor.id)) {
-        guildActions.set(executor.id, {
-          channelDelete: [],
-          channelCreate: [],
-          channelUpdate: [],
-          roleDelete: [],
-          roleCreate: [],
-          roleUpdate: [],
-          webhookCreate: [],
-          webhookDelete: [],
-          webhookUpdate: [],
-          guildUpdate: [],
-          banAdd: [],
-          memberKick: [],
-          botAdd: []
-        });
-      }
-      const userRecord = guildActions.get(executor.id);
-
-      // تنظيف السجلات القديمة التي مضى عليها أكثر من دقيقة
-      userRecord[actionType] = (userRecord[actionType] || []).filter(t => t > oneMinuteAgo);
-      userRecord[actionType].push(now);
-
-      let limit = 3;
-      let actionLabel = 'إجراء إداري مشبوه';
-
-      if (actionType === 'channelDelete') {
-        limit = settings.antinuke_channel_limit || 3;
-        actionLabel = 'حذف متكرر للرومات والقنوات';
-      } else if (actionType === 'channelCreate') {
-        limit = settings.antinuke_channel_limit || 3;
-        actionLabel = 'إنشاء قنوات مكثف بشكل مريب (Spam Channels)';
-      } else if (actionType === 'channelUpdate') {
-        limit = settings.antinuke_channel_limit || 3;
-        actionLabel = 'تعديل متكرر للقنوات والصلاحيات';
-      } else if (actionType === 'roleDelete') {
-        limit = settings.antinuke_role_limit || 3;
-        actionLabel = 'حذف متكرر للرتب';
-      } else if (actionType === 'roleCreate') {
-        limit = settings.antinuke_role_limit || 3;
-        actionLabel = 'إنشاء رتب مكثف بشكل مريب (Spam Roles)';
-      } else if (actionType === 'roleUpdate') {
-        limit = settings.antinuke_role_limit || 3;
-        actionLabel = 'تعديل متكرر للرتب والصلاحيات';
-      } else if (actionType === 'webhookCreate' || actionType === 'webhookDelete' || actionType === 'webhookUpdate') {
-        limit = 3;
-        actionLabel = 'تلاعب متكرر بالويب هوك';
-      } else if (actionType === 'guildUpdate') {
-        limit = 2;
-        actionLabel = 'تغيير متكرر لاسم/أيقونة السيرفر';
+      // تحديد الحد حسب الإعدادات أو الافتراضي
+      let limit = DEFAULT_LIMITS[actionType] ?? 3;
+      if (actionType === 'channelDelete' || actionType === 'channelCreate' || actionType === 'channelUpdate') {
+        limit = settings.antinuke_channel_limit || limit;
+      } else if (actionType === 'roleDelete' || actionType === 'roleCreate' || actionType === 'roleUpdate') {
+        limit = settings.antinuke_role_limit || limit;
       } else if (actionType === 'banAdd') {
-        limit = settings.antinuke_ban_limit || 3;
-        actionLabel = 'حظر جماعي للأعضاء (Mass Ban)';
+        limit = settings.antinuke_ban_limit || limit;
       } else if (actionType === 'memberKick') {
-        limit = settings.antinuke_kick_limit || 3;
-        actionLabel = 'طرد متكرر للأعضاء (Mass Kick)';
+        limit = settings.antinuke_kick_limit || limit;
       } else if (actionType === 'botAdd') {
-        limit = settings.antinuke_bot_limit || 1;
-        actionLabel = 'إضافة بوتات غير مصرح بها (Unauthorized Bot Add)';
+        limit = settings.antinuke_bot_limit || limit;
       }
 
-      if (userRecord[actionType].length >= limit) {
-        const member = await guild.members.fetch(executor.id).catch(() => null);
-        if (!member || !member.manageable) return;
+      const actionLabel = ACTION_LABELS[actionType] || 'إجراء إداري مشبوه';
+
+      if (count >= limit) {
+        // جلب العضو لتطبيق العقوبة
+        let execMember = null;
+        try {
+          execMember = await guild.members.fetch(executor.id);
+        } catch {}
+        if (!execMember || !execMember.manageable) return;
 
         const punishment = settings.antinuke_punishment || 'strip_roles';
         let punishmentLabel = 'سحب كافة الصلاحيات والرتب الإدارية';
 
-        // 1. تحديد وسحب الرتب الخطيرة دفعة واحدة
-        const dangerousRoles = member.roles.cache.filter(r =>
+        // 1. سحب الرتب الخطيرة
+        const dangerousRoles = execMember.roles.cache.filter(r =>
           r.permissions.has(PermissionFlagsBits.Administrator) ||
           r.permissions.has(PermissionFlagsBits.ManageGuild) ||
           r.permissions.has(PermissionFlagsBits.ManageChannels) ||
@@ -176,40 +187,38 @@ const antiNuke = {
           r.permissions.has(PermissionFlagsBits.BanMembers) ||
           r.permissions.has(PermissionFlagsBits.KickMembers)
         );
-
         const dangerousRoleIds = Array.from(dangerousRoles.keys());
         if (dangerousRoleIds.length > 0) {
-          await member.roles.remove(dangerousRoleIds, `[Anti-Nuke] سحب رتب بسبب ${actionLabel}`).catch(() => {});
+          await execMember.roles.remove(dangerousRoleIds, `[Anti-Nuke] سحب رتب بسبب ${actionLabel}`).catch(() => {});
         }
 
-        // 2. تطبيق العقوبة المختارة فوراً
+        // 2. تطبيق العقوبة
         if (punishment === 'ban') {
-          await member.ban({ reason: `[Anti-Nuke] تجاوز الحد الأقصى لـ ${actionLabel}` }).catch(() => {});
-          punishmentLabel = 'حظر نهائي من السيرفر (Ban) + سحب الرتب';
+          await execMember.ban({ reason: `[Anti-Nuke] ${actionLabel}` }).catch(() => {});
+          punishmentLabel = 'حظر نهائي (Ban) + سحب الرتب';
         } else if (punishment === 'kick') {
-          await member.kick(`[Anti-Nuke] تجاوز الحد الأقصى لـ ${actionLabel}`).catch(() => {});
-          punishmentLabel = 'طرد فوري من السيرفر (Kick) + سحب الرتب';
+          await execMember.kick(`[Anti-Nuke] ${actionLabel}`).catch(() => {});
+          punishmentLabel = 'طرد فوري (Kick) + سحب الرتب';
         } else if (punishment === 'timeout') {
-          await member.timeout(24 * 60 * 60 * 1000, `[Anti-Nuke] تجاوز الحد الأقصى لـ ${actionLabel}`).catch(() => {});
-          punishmentLabel = 'عزل وتسكيت لمدة 24 ساعة (Timeout) + سحب الرتب';
+          await execMember.timeout(24 * 60 * 60 * 1000, `[Anti-Nuke] ${actionLabel}`).catch(() => {});
+          punishmentLabel = 'تسكيت 24 ساعة (Timeout) + سحب الرتب';
         } else if (punishment === 'jail') {
           if (settings.jail_role) {
-            await member.roles.add(settings.jail_role, `[Anti-Nuke] سجن بسبب ${actionLabel}`).catch(() => {});
-            punishmentLabel = 'عزل في السجن (Jail) + سحب الرتب';
+            await execMember.roles.add(settings.jail_role, `[Anti-Nuke] ${actionLabel}`).catch(() => {});
+            punishmentLabel = 'سجن (Jail) + سحب الرتب';
           } else {
-            await member.timeout(24 * 60 * 60 * 1000, `[Anti-Nuke] تجاوز الحد الأقصى لـ ${actionLabel}`).catch(() => {});
-            punishmentLabel = 'عزل وتسكيت (Timeout) + سحب الرتب';
+            await execMember.timeout(24 * 60 * 60 * 1000, `[Anti-Nuke] ${actionLabel}`).catch(() => {});
+            punishmentLabel = 'تسكيت (Timeout) + سحب الرتب';
           }
         }
 
-        logger.warn(`[ANTI-NUKE] تم تطبيق عقوبة (${punishmentLabel}) على المشرف ${executor.tag} في سيرفر ${guild.name} بسبب ${actionLabel}!`);
+        logger.warn(`[ANTI-NUKE] عقوبة (${punishmentLabel}) على ${executor.tag ?? executor.id} في ${guild.name} بسبب ${actionLabel}`);
 
-        // تسجيل في سجلات الأمان (Security Logs)
         if (db.logSecurityEvent) {
           db.logSecurityEvent(guild.id, 'security', 'auto_punish', executor.id, null, actionLabel, punishmentLabel);
         }
 
-        // 3. إرسال تنبيه في قناة الطوارئ أو اللوق
+        // 3. تنبيه قناة الطوارئ
         const alertChannelId = settings.antinuke_alert_channel || settings.antiraid_log_channel || settings.log_channel;
         if (alertChannelId) {
           const alertChannel = guild.channels.cache.get(alertChannelId);
@@ -217,29 +226,28 @@ const antiNuke = {
             const alertEmbed = new EmbedBuilder()
               .setColor('#FF0033')
               .setTitle('🚨 إحباط محاولة تخريب أمني (Anti-Nuke Action)')
-              .setDescription(`🛡️ تم رصد محاولة تخريب وتم إحباطها بنجاح بواسطة نظام الحماية الذكي.`)
+              .setDescription('🛡️ تم رصد محاولة تخريب وتم إحباطها بواسطة نظام الحماية الذكي.')
               .addFields(
-                { name: '👤 المشرف الفاعل', value: `<@${executor.id}> (\`${executor.tag}\`)`, inline: true },
+                { name: '👤 المشرف الفاعل', value: `<@${executor.id}> (\`${executor.tag ?? executor.id}\`)`, inline: true },
                 { name: '⚠️ نوع المخالفة', value: `\`${actionLabel}\``, inline: true },
-                { name: '📊 التكرار المسجل', value: `\`${userRecord[actionType].length}/${limit}\` خلال 60 ثانية`, inline: true },
-                { name: '⚖️ الإجراء والعقوبة المطبقة', value: `**${punishmentLabel}**`, inline: false }
+                { name: '📊 التكرار المسجل', value: `\`${count}/${limit}\` خلال 60 ثانية`, inline: true },
+                { name: '⚖️ العقوبة المطبقة', value: `**${punishmentLabel}**`, inline: false }
               )
-              .setThumbnail(executor.displayAvatarURL({ dynamic: true }))
+              .setThumbnail(execMember.displayAvatarURL?.({ dynamic: true }) || null)
               .setFooter({ text: 'نظام الحماية المتقدم • Anti-Nuke Shield' })
               .setTimestamp();
-
             await alertChannel.send({ embeds: [alertEmbed] }).catch(() => {});
           }
         }
 
-        // 4. إشعار مباشر للأونر على الخاص
+        // 4. إشعار الأونر على الخاص
         const owner = await guild.fetchOwner().catch(() => null);
         if (owner) {
-          owner.send(`🚨 **تحذير أمني عاجل في سيرفرك: ${guild.name}**\nقام المشرف <@${executor.id}> (\`${executor.tag}\`) بـ **${actionLabel}** وتجاوز الحد المسموح.\n🛡️ **العقوبة المنفذة فوراً:** ${punishmentLabel}`).catch(() => {});
+          owner.send(`🚨 **تحذير أمني عاجل في سيرفرك: ${guild.name}**\nقام <@${executor.id}> (\`${executor.tag ?? executor.id}\`) بـ **${actionLabel}** وتجاوز الحد المسموح.\n🛡️ **العقوبة المنفذة:** ${punishmentLabel}`).catch(() => {});
         }
 
-        // تصفير السجل بعد العقوبة
-        userRecord[actionType] = [];
+        // تصفير سجل هذا المستخدم لهذا الإجراء في DB بعد العقوبة
+        try { db.db.prepare('DELETE FROM nuke_action_tracking WHERE guild_id = ? AND user_id = ? AND action_type = ?').run(guild.id, executor.id, actionType); } catch {}
       }
     } catch (err) {
       logger.error('خطأ في معالجة Anti-Nuke:', err);

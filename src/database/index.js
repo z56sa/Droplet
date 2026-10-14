@@ -957,6 +957,21 @@ try {
   `);
 } catch(e) {}
 
+// جدول تتبع إجراءات Anti-Nuke (يبقى بعد إعادة التشغيل لمنع الاستغلال)
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS nuke_action_tracking (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      action_type TEXT NOT NULL,
+      timestamp INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_nat_guild_user ON nuke_action_tracking(guild_id, user_id, action_type);
+    CREATE INDEX IF NOT EXISTS idx_nat_timestamp ON nuke_action_tracking(timestamp);
+  `);
+} catch(e) {}
+
 // جدول كاش بيانات المستخدمين (الاسم والصورة والمعرف) لحفظها في Turso وعرضها في لوحات الصدارة
 try {
   db.exec(`
@@ -3171,6 +3186,29 @@ module.exports = {
     try {
       const cutoff = Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60); // 7 أيام
       db.prepare('DELETE FROM message_log_cache WHERE created_at < ?').run(cutoff);
+    } catch(e) {}
+  },
+
+  // ---- Anti-Nuke persistent tracking ----
+  saveNukeAction: (guildId, userId, actionType) => {
+    try {
+      db.prepare('INSERT INTO nuke_action_tracking (guild_id, user_id, action_type, timestamp) VALUES (?, ?, ?, ?)')
+        .run(String(guildId), String(userId), String(actionType), Date.now());
+    } catch(e) {}
+  },
+
+  getNukeActions: (guildId, userId, actionType, sinceMs) => {
+    try {
+      return db.prepare(
+        'SELECT timestamp FROM nuke_action_tracking WHERE guild_id = ? AND user_id = ? AND action_type = ? AND timestamp > ?'
+      ).all(String(guildId), String(userId), String(actionType), sinceMs).map(r => r.timestamp);
+    } catch(e) { return []; }
+  },
+
+  pruneNukeActions: () => {
+    try {
+      const cutoff = Date.now() - 2 * 60 * 1000; // احتفظ بآخر دقيقتين فقط
+      db.prepare('DELETE FROM nuke_action_tracking WHERE timestamp < ?').run(cutoff);
     } catch(e) {}
   },
 
