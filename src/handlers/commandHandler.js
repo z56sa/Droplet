@@ -56,16 +56,17 @@ module.exports = async (client) => {
     try {
       logger.info(`جاري تسجيل ${slashCommandsArray.length} أمر سلاش للبوت (${client.user.id})...`);
       
-      // 1. تنظيف أوامر السيرفرات القديمة (تفريغ Guild Commands لمنع ظهور أوامر مكررة مثل /ai أو /applications)
+      // 1. تسجيل أوامر السيرفرات فورياً (Guild Commands) لتظهر في ديسكورد فوراً وبدون انتظار كاش الـ 1 ساعة
       if (client.guilds?.cache?.size > 0) {
         for (const [guildId, guild] of client.guilds.cache) {
           try {
             await rest.put(
               Routes.applicationGuildCommands(client.user.id, guildId),
-              { body: [] }
+              { body: slashCommandsArray }
             );
+            logger.info(`[GUILD SLASH] ✅ تم تسجيل أوامر السلاش فورياً لسيرفر: ${guild.name} (${guildId})`);
           } catch(e) {
-            // تجاهل أخطاء صلاحيات السيرفر
+            logger.warn(`[GUILD SLASH] تعذر التسجيل لسيرفر ${guildId}: ${e.message}`);
           }
         }
       }
