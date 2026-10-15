@@ -2497,6 +2497,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 <span id="badgeCatGiveaways" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">1/1</span>
                 <span class="flex items-center gap-1.5"><span>قيف اواي</span><span>🎁</span></span>
             </button>
+            <button type="button" id="btnCatGames" onclick="window.switchCmdCategory('games')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-white hover:text-gray-300 hover:bg-white/5 transition cursor-pointer">
+                <span id="badgeCatGames" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">1/1</span>
+                <span class="flex items-center gap-1.5"><span>الألعاب والتحديات</span><span>🎮</span></span>
+            </button>
             <button type="button" id="btnCatInvites" onclick="window.switchCmdCategory('invites')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-white hover:text-gray-300 hover:bg-white/5 transition cursor-pointer">
                 <span id="badgeCatInvites" class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 rounded-lg text-[10px] font-mono">1/1</span>
                 <span class="flex items-center gap-1.5"><span>Invite Tracker</span><span>🔗</span></span>
@@ -2649,6 +2653,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         giveaways: { title: '\u0642\u064a\u0641 \u0627\u0648\u0627\u064a', desc: '\u0625\u062f\u0627\u0631\u0629 \u0645\u0633\u0627\u0628\u0642\u0627\u062a \u0648\u0633\u062d\u0648\u0628\u0627\u062a \u0627\u0644\u0642\u064a\u0641 \u0623\u0648\u0627\u064a', icon: '\ud83c\udf89', items: [
             { name: '/giveaway', desc: '\u0625\u062f\u0627\u0631\u0629 \u0633\u062d\u0648\u0628\u0627\u062a \u0627\u0644\u0642\u064a\u0641 \u0623\u0648\u0627\u064a \u0627\u0644\u0645\u062a\u0642\u062f\u0645\u0629', badge: '', icon: '\ud83c\udf89' }
         ]},
+        games: { title: 'الألعاب والتحديات', desc: 'ألعاب التحدي والذكاء الجماعية في الشات', icon: '🎮', items: [
+            { name: '/game', desc: 'ألعاب التحدي والذكاء الجماعية في الشات 🎮', badge: '', icon: '🎮' }
+        ]},
         invites: { title: 'Invite Tracker', desc: '\u0645\u062a\u062a\u0628\u0639 \u062f\u0639\u0648\u0627\u062a \u0627\u0644\u0623\u0639\u0636\u0627\u0621 \u0648\u0625\u062d\u0635\u0627\u0626\u064a\u0627\u062a \u0627\u0644\u062f\u0639\u0648\u0627\u062a', icon: '\ud83d\udd17', items: [
             { name: '/invites', desc: '\u0623\u0648\u0627\u0645\u0631 \u0646\u0638\u0627\u0645 \u0645\u062a\u062a\u0628\u0639 \u0627\u0644\u062f\u0639\u0648\u0627\u062a (Invite Tracker)', badge: '', icon: '\ud83d\udd17' }
         ]},
@@ -2685,7 +2692,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
         ]}
     };
 
-    var baseCats = ['general', 'moderation', 'protection', 'welcome', 'autoresponder', 'tickets', 'levels', 'economy', 'autoroles', 'giveaways', 'invites', 'applications', 'suggestions', 'automod', 'tempvoice', 'admin'];
+    var baseCats = ['general', 'moderation', 'protection', 'welcome', 'autoresponder', 'tickets', 'levels', 'economy', 'autoroles', 'giveaways', 'games', 'invites', 'applications', 'suggestions', 'automod', 'tempvoice', 'admin'];
     var seenCmds = {};
     var allItems = [];
     for (var ck = 0; ck < baseCats.length; ck++) {
@@ -2707,14 +2714,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
     var catBtnMap = {
         all:'btnCatAll', general:'btnCatGeneral', moderation:'btnCatModeration', protection:'btnCatProtection',
         welcome:'btnCatWelcome', autoresponder:'btnCatAutoresponder', tickets:'btnCatTickets', levels:'btnCatLevels',
-        economy:'btnCatEconomy', autoroles:'btnCatAutoroles', giveaways:'btnCatGiveaways', invites:'btnCatInvites',
+        economy:'btnCatEconomy', autoroles:'btnCatAutoroles', giveaways:'btnCatGiveaways', games:'btnCatGames', invites:'btnCatInvites',
         applications:'btnCatApplications', suggestions:'btnCatSuggestions', automod:'btnCatAutomod', tempvoice:'btnCatTempvoice',
         admin:'btnCatAdmin'
     };
     var catBadgeMap = {
         all:'badgeCatAll', general:'badgeCatGeneral', moderation:'badgeCatModeration', protection:'badgeCatProtection',
         welcome:'badgeCatWelcome', autoresponder:'badgeCatAutoresponder', tickets:'badgeCatTickets', levels:'badgeCatLevels',
-        economy:'badgeCatEconomy', autoroles:'badgeCatAutoroles', giveaways:'badgeCatGiveaways', invites:'badgeCatInvites',
+        economy:'badgeCatEconomy', autoroles:'badgeCatAutoroles', giveaways:'badgeCatGiveaways', games:'badgeCatGames', invites:'badgeCatInvites',
         applications:'badgeCatApplications', suggestions:'badgeCatSuggestions', automod:'badgeCatAutomod', tempvoice:'badgeCatTempvoice',
         admin:'badgeCatAdmin'
     };
@@ -11476,43 +11483,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                         </div>
 
-                        <!-- جوائز الرصيد للألعاب -->
-                        <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl shadow-lg space-y-4">
-                            <h4 class="text-sm font-bold text-amber-400 flex items-center gap-2">
-                                <span>💰</span> مكافآت الرصيد للفائزين (Coins Rewards)
-                            </h4>
-                            <p class="text-xs text-gray-400">حدد عدد الكريدت/الكوينز التي يحصل عليها الفائز تلقائياً في حسابه عند الإجابة الصحيحة:</p>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="text-xs font-bold text-white">🌍 عواصم ودول</span>
-                                        <span class="text-xs font-mono text-emerald-400 font-bold">+${capitalsReward} 🪙</span>
-                                    </div>
-                                    <label class="block text-[11px] text-gray-400 mb-1">جائزة الفائز</label>
-                                    <input type="number" name="game_reward_capitals" value="${capitalsReward}" min="0" max="10000" class="w-full bg-[#0b1329] border border-blue-500/30 focus:border-blue-400 rounded-lg px-3 py-2 text-xs text-white text-right font-mono">
-                                </div>
-
-                                <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="text-xs font-bold text-white">🧩 تفكيك/تركيب الكلمات</span>
-                                        <span class="text-xs font-mono text-emerald-400 font-bold">+${wordsReward} 🪙</span>
-                                    </div>
-                                    <label class="block text-[11px] text-gray-400 mb-1">جائزة الفائز</label>
-                                    <input type="number" name="game_reward_words" value="${wordsReward}" min="0" max="10000" class="w-full bg-[#0b1329] border border-blue-500/30 focus:border-blue-400 rounded-lg px-3 py-2 text-xs text-white text-right font-mono">
-                                </div>
-
-                                <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="text-xs font-bold text-white">⚡ أسرع واحد يكتب</span>
-                                        <span class="text-xs font-mono text-emerald-400 font-bold">+${fastReward} 🪙</span>
-                                    </div>
-                                    <label class="block text-[11px] text-gray-400 mb-1">جائزة الفائز</label>
-                                    <input type="number" name="game_reward_fast" value="${fastReward}" min="0" max="10000" class="w-full bg-[#0b1329] border border-blue-500/30 focus:border-blue-400 rounded-lg px-3 py-2 text-xs text-white text-right font-mono">
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- كروت استعراض الألعاب المتوفرة -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl shadow-lg space-y-4">
                             <h4 class="text-sm font-bold text-white flex items-center gap-2">
@@ -11636,17 +11606,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             ` : `
                             <form id="settingsForm" class="space-y-6" onsubmit="event.preventDefault();try{if(window.submitSettingsForm){submitSettingsForm(this);}else{alert('⚠️ سكربت الحفظ لم يُحمّل ['+'save:'+typeof window.submitSettingsForm+'|mod:'+typeof window.toggleModule+'|cats:'+typeof window.collectTicketCatsFromDOM+'] — حدّث الصفحة بـ Ctrl+F5');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}return false;">
                                 ${formFieldsHtml}
-
-                                <div class="pt-6 border-t border-blue-500/20 flex items-center justify-between flex-row-reverse${(section === 'embed' || section === 'logs' || section === 'store') ? ' hidden' : ''}">
-                                    <button type="button" onclick="try{if(window.submitSettingsForm){submitSettingsForm(document.getElementById('settingsForm'));}else{alert('⚠️ سكربت الحفظ لم يُحمّل ['+'save:'+typeof window.submitSettingsForm+'|mod:'+typeof window.toggleModule+'|cats:'+typeof window.collectTicketCatsFromDOM+'] — حدّث الصفحة بـ Ctrl+F5');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}return false;" class="js-save-btn px-8 py-3 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-black/20 flex items-center gap-2">
-                                        <span>💾</span>
-                                        <span>حفظ التغييرات</span>
-                                    </button>
-                                    <span id="saveStatus" class="text-xs text-emerald-400 font-bold hidden flex items-center gap-1.5">
-                                        <span>✅</span>
-                                        <span>تم الحفظ وتطبيق التغييرات في السيرفر بنجاح!</span>
-                                    </span>
-                                </div>
                             </form>
                             `}
                         </div>
