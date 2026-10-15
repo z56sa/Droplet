@@ -11714,22 +11714,48 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     .slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 2px; bottom: 2px; background: white; border-radius: 50%; transition: .3s; }
                     input:checked + .slider { background: linear-gradient(135deg, #a855f7, #2563eb); border-color: #3b82f6; }
                     input:checked + .slider:before { transform: translateX(20px); }
-                /* Droplet blended headings */ h1[class*="text-white"]:not([style]), h2[class*="text-white"]:not([style]) { background:linear-gradient(90deg,#c084fc,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent !important; }</style>
+                /* Droplet blended headings */ h1[class*="text-white"]:not([style]), h2[class*="text-white"]:not([style]) { background:linear-gradient(90deg,#c084fc,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent !important; }
+
+                /* 📱 Mobile drawer styling */
+                @media (max-width: 1023px) {
+                    #serverSidebarNav {
+                        position: fixed !important;
+                        top: 0 !important;
+                        bottom: 0 !important;
+                        right: 0 !important;
+                        z-index: 60 !important;
+                        height: 100vh !important;
+                        max-width: 85vw !important;
+                        box-shadow: -10px 0 30px rgba(0,0,0,0.8) !important;
+                        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                    }
+                    #serverSidebarNav.sidebar-closed {
+                        transform: translateX(100%) !important;
+                    }
+                    #serverSidebarNav.sidebar-open {
+                        transform: translateX(0) !important;
+                    }
+                }
+                </style>
                 <script src="/i18n.js"></script><script src="/i18n-dash.js"></script><script src="/i18n-dash2.js"></script>
                 <script src="/js/settings-save.js?v=${global._dropletBootTime || '1'}"></script>
                 <script>window.DOT_GROUPS = ${JSON.stringify(DOT_GROUPS)};</script>
             </head>
             <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#060c1d] text-white">
-                <header class="h-16 bg-[#081026]/95 backdrop-blur-md border-b border-blue-500/20 px-6 flex items-center justify-between sticky top-0 z-40">
-                    <div class="flex items-center gap-3">
+                <header class="h-16 bg-[#081026]/95 backdrop-blur-md border-b border-blue-500/20 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40">
+                    <div class="flex items-center gap-2 sm:gap-3">
+                        <!-- 📱 زر فتح قائمة الأقسام للهواتف -->
+                        <button type="button" onclick="toggleMobileSidebar()" class="lg:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 text-blue-400 hover:text-white border border-blue-500/20 transition flex items-center justify-center cursor-pointer" title="القائمة">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                        </button>
                         <button type="button" onclick="window.dropletI18n.toggleLang()" class="droplet-lang-toggle-btn px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-blue-500/20 text-blue-100 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs">
                             <span class="text-sm">🌐</span>
                             <span class="font-black text-xs uppercase tracking-wider">EN</span>
                         </button>
-                        <span class="text-gray-700">|</span>
-                        <a href="/dashboard/manage" data-i18n="back_to_dashboard" class="text-xs text-blue-400 font-bold hover:text-white transition">الرجوع للوحة التحكم</a>
-                        <span class="text-gray-700">|</span>
-                        <a href="https://discord.gg/zduGPYv7pE" target="_blank" data-i18n="support_server" class="text-xs text-white hover:text-blue-100 transition">الدعم الفني</a>
+                        <span class="text-gray-700 hidden sm:inline">|</span>
+                        <a href="/dashboard/manage" data-i18n="back_to_dashboard" class="text-xs text-blue-400 font-bold hover:text-white transition hidden sm:inline">الرجوع للوحة التحكم</a>
+                        <span class="text-gray-700 hidden sm:inline">|</span>
+                        <a href="https://discord.gg/zduGPYv7pE" target="_blank" data-i18n="support_server" class="text-xs text-white hover:text-blue-100 transition hidden sm:inline">الدعم الفني</a>
                     </div>
                     <div class="flex items-center gap-2">
                         <span id="dropletBuildTag" title="نسخة التشغيل الحية — قارنها مع آخر تحديث معلن" class="text-[10px] font-mono text-gray-600 hover:text-gray-300 transition cursor-default">build …</span>
@@ -11738,21 +11764,24 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     </div>
                 </header>
 
-                <div class="flex-1 flex overflow-hidden">
+                <!-- 📱 خلفية معتمة للهواتف عند فتح القائمة الجانبية -->
+                <div id="mobileSidebarBackdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 hidden lg:hidden transition-opacity"></div>
+
+                <div class="flex-1 flex overflow-hidden relative">
                     
                     <!-- Main Content Form Area -->
-                    <main class="flex-1 p-8 overflow-y-auto ${section === 'embed' ? 'max-w-7xl' : 'max-w-4xl'} mx-auto">
-                        <div class="${section === 'logs' ? '' : 'probot-card border border-blue-500/20 rounded-3xl p-8 shadow-2xl mb-8'}">
-                            <div class="flex items-center justify-between pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
-                                <div class="flex items-center gap-3">
+                    <main class="flex-1 p-3 sm:p-6 lg:p-8 overflow-y-auto ${section === 'embed' ? 'max-w-7xl' : 'max-w-4xl'} mx-auto w-full">
+                        <div class="${section === 'logs' ? '' : 'probot-card border border-blue-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl mb-8'}">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 sm:pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
+                                <div class="flex items-center gap-3 order-2 sm:order-1">
                                     <label class="toggle"><input id="masterToggle" data-modkey="${(function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})()}" type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})(), this.checked, this)" ${(function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_k==='general_enabled'){return (String(_v)==='0'||String(_v)==='false')?'':'checked';}if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
                                     <button type="button" id="topSaveBtn" onclick="try{if(window.saveCommandsExplicit){window.saveCommandsExplicit();}else if(window.submitSettingsForm){submitSettingsForm(document.getElementById('settingsForm'));}else{alert('⚠️ سكربت الحفظ غير متاح');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}" class="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-900/30 flex items-center gap-2 cursor-pointer">
                                         <span>💾</span>
                                         <span>حفظ التغييرات</span>
                                     </button>
                                 </div>
-                                <div class="text-right">
-                                    <h2 class="text-2xl font-black text-white">${title}</h2>
+                                <div class="text-right order-1 sm:order-2 w-full sm:w-auto">
+                                    <h2 class="text-xl sm:text-2xl font-black text-white">${title}</h2>
                                     <p class="text-white text-xs mt-1">يتم تطبيق كل التعديلات وحفظها مباشرة في سيرفر الديسكورد لحظياً بدون إعادة تشغيل.</p>
                                 </div>
                             </div>
@@ -11771,13 +11800,17 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     </main>
 
                     <!-- Server Settings Navigation Sidebar (Novax Style) -->
-                    <aside class="w-72 bg-[#060b16] border-l border-blue-500/20 flex flex-col shrink-0 h-full select-none">
+                    <aside id="serverSidebarNav" class="sidebar-closed w-72 bg-[#060b16] border-l border-blue-500/20 flex flex-col shrink-0 h-full select-none">
                         
                         <!-- Server Card Top -->
                         <div class="p-3">
                             <div class="bg-[#0b1322] border border-blue-500/20 rounded-2xl p-3 flex items-center justify-between shadow-lg">
-                                <div class="text-white text-xs">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
+                                <div class="flex items-center gap-1.5">
+                                    <!-- 📱 زر إغلاق القائمة في الموبايل -->
+                                    <button type="button" onclick="toggleMobileSidebar()" class="lg:hidden w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center text-xs font-bold transition cursor-pointer" title="إغلاق">✕</button>
+                                    <div class="text-white text-xs">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
+                                    </div>
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <div class="text-right">
@@ -12017,7 +12050,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     </aside>
 
                     <!-- Server Rail (Far Right - Novax Style) -->
-                    <div class="w-18 bg-[#040810] border-l border-blue-500/20 py-4 px-2 flex flex-col items-center gap-3 shrink-0 overflow-y-auto select-none">
+                    <div class="hidden lg:flex w-18 bg-[#040810] border-l border-blue-500/20 py-4 px-2 flex-col items-center gap-3 shrink-0 overflow-y-auto select-none">
                         <!-- Home Icon Button -->
                         <a href="/dashboard" title="الصفحة الرئيسية" class="w-12 h-12 rounded-2xl bg-[#0b1322] hover:bg-blue-400/30 border border-blue-500/20 hover:border-blue-400/50 flex items-center justify-center text-gray-300 hover:text-gray-300 transition shadow-lg mb-1 group">
                             <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -12030,6 +12063,22 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 </div>
 
                 <script>
+                function toggleMobileSidebar() {
+                    const aside = document.getElementById('serverSidebarNav');
+                    const backdrop = document.getElementById('mobileSidebarBackdrop');
+                    if (!aside) return;
+                    const isOpen = aside.classList.contains('sidebar-open');
+                    if (isOpen) {
+                        aside.classList.remove('sidebar-open');
+                        aside.classList.add('sidebar-closed');
+                        if (backdrop) backdrop.classList.add('hidden');
+                    } else {
+                        aside.classList.remove('sidebar-closed');
+                        aside.classList.add('sidebar-open');
+                        if (backdrop) backdrop.classList.remove('hidden');
+                    }
+                }
+
                 function toggleNavGroup(groupId) {
                     const el = document.getElementById(groupId);
                     const arrow = document.getElementById('arrow_' + groupId);
