@@ -2092,6 +2092,7 @@ module.exports = function (app, client) {
                 'levels': 'Levels & XP System 🏆',
                 'autoroles': 'Auto Roles on Join 🎖️',
                 'giveaways': 'Giveaways System 🎁',
+                'games': 'نظام الألعاب والتحديات التنافسية 🎮',
                 'suggestions': 'Suggestions & Feedback System 💡',
                 'invites': 'Advanced Invite Tracker 🔗',
                 'broadcast': 'Broadcast System 📢',
@@ -11426,6 +11427,114 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         initEmbedEditor();
                     }
                 `
+            } else if (section === 'games') {
+                const gamesEnabled = settings.games_enabled !== 0 && settings.games_enabled !== '0' && settings.games_enabled !== false;
+                const capitalsReward = settings.game_reward_capitals || 75;
+                const wordsReward = settings.game_reward_words || 60;
+                const fastReward = settings.game_reward_fast || 85;
+                const gamesChannel = settings.games_channel || '';
+
+                formFieldsHtml = `
+                    <div class="space-y-6 text-right" dir="rtl">
+                        <!-- Hero Card -->
+                        <div class="bg-[#0b1329] border border-blue-500/20 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                            <div class="flex items-center justify-between">
+                                <div class="text-right">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-2xl">🎮</span>
+                                        <h3 class="text-lg font-black text-white">نظام الألعاب والتحديات التفاعلية</h3>
+                                    </div>
+                                    <p class="text-xs text-gray-400 leading-relaxed">
+                                        ألعاب ذكاء وتحديات تفاعلية في الشات (عواصم ودول، تفكيك/تركيب الكلمات، وأسرع واحد يكتب) مع مكافآت رصيد فورية للفائزين عبر أمر السلاش <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game</code>.
+                                    </p>
+                                </div>
+                                <div class="text-4xl text-blue-400/20 select-none">🕹️</div>
+                            </div>
+                        </div>
+
+                        <!-- إعدادات القناة والتحكم -->
+                        <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl shadow-lg space-y-4">
+                            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                <span>⚙️</span> إعدادات القناة والتشغيل
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-300 mb-2">قناة الألعاب المخصصة (اختياري)</label>
+                                    ${renderChannelSelect('games_channel', gamesChannel)}
+                                    <p class="text-[11px] text-gray-500 mt-1">إذا حُددت، لن يتم تشغيل الألعاب إلا في هذه القناة لحفظ تنظيم الشات.</p>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-300 mb-2">حالة نظام الألعاب</label>
+                                    <div class="bg-[#070d1d] border border-blue-500/20 rounded-xl px-4 py-3 flex items-center justify-between">
+                                        <span class="text-xs text-gray-300">تفعيل الأمر <span class="font-mono text-blue-400">/game</span> للأعضاء</span>
+                                        <label class="toggle">
+                                            <input type="checkbox" name="games_enabled" value="1" ${gamesEnabled ? 'checked' : ''}>
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- جوائز الرصيد للألعاب -->
+                        <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl shadow-lg space-y-4">
+                            <h4 class="text-sm font-bold text-amber-400 flex items-center gap-2">
+                                <span>💰</span> مكافآت الرصيد للفائزين (Coins Rewards)
+                            </h4>
+                            <p class="text-xs text-gray-400">حدد عدد الكريدت/الكوينز التي يحصل عليها الفائز تلقائياً في حسابه عند الإجابة الصحيحة:</p>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-xs font-bold text-white">🌍 عواصم ودول</span>
+                                        <span class="text-xs font-mono text-emerald-400 font-bold">+${capitalsReward} 🪙</span>
+                                    </div>
+                                    <label class="block text-[11px] text-gray-400 mb-1">جائزة الفائز</label>
+                                    <input type="number" name="game_reward_capitals" value="${capitalsReward}" min="0" max="10000" class="w-full bg-[#0b1329] border border-blue-500/30 focus:border-blue-400 rounded-lg px-3 py-2 text-xs text-white text-right font-mono">
+                                </div>
+
+                                <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-xs font-bold text-white">🧩 تفكيك/تركيب الكلمات</span>
+                                        <span class="text-xs font-mono text-emerald-400 font-bold">+${wordsReward} 🪙</span>
+                                    </div>
+                                    <label class="block text-[11px] text-gray-400 mb-1">جائزة الفائز</label>
+                                    <input type="number" name="game_reward_words" value="${wordsReward}" min="0" max="10000" class="w-full bg-[#0b1329] border border-blue-500/30 focus:border-blue-400 rounded-lg px-3 py-2 text-xs text-white text-right font-mono">
+                                </div>
+
+                                <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-xs font-bold text-white">⚡ أسرع واحد يكتب</span>
+                                        <span class="text-xs font-mono text-emerald-400 font-bold">+${fastReward} 🪙</span>
+                                    </div>
+                                    <label class="block text-[11px] text-gray-400 mb-1">جائزة الفائز</label>
+                                    <input type="number" name="game_reward_fast" value="${fastReward}" min="0" max="10000" class="w-full bg-[#0b1329] border border-blue-500/30 focus:border-blue-400 rounded-lg px-3 py-2 text-xs text-white text-right font-mono">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- كروت استعراض الألعاب المتوفرة -->
+                        <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl shadow-lg space-y-4">
+                            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                <span>🎲</span> الألعاب المدعومة حالياً
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div class="p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl text-xs space-y-1">
+                                    <span class="font-bold text-blue-400 block">🌍 عواصم الدول (24+ دولة)</span>
+                                    <p class="text-gray-400 text-[11px]">يسأل البوت عن عاصمة دولة عربية أو عالمية مع مؤقت 20 ثانية وفحص مرن للهمزات.</p>
+                                </div>
+                                <div class="p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl text-xs space-y-1">
+                                    <span class="font-bold text-purple-400 block">🧩 تفكيك وتركيب الكلمات</span>
+                                    <p class="text-gray-400 text-[11px]">يعرض البوت حروفاً مبعثرة للتركيب، أو كلمة لتفكيكها مع مراعاة المسافات.</p>
+                                </div>
+                                <div class="p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl text-xs space-y-1">
+                                    <span class="font-bold text-amber-400 block">⚡ أسرع كتابة (Fast Typing)</span>
+                                    <p class="text-gray-400 text-[11px]">عرض أمثال وجمل شهيرة، وأسرع من يكتب الجملة بالكامل بدون أخطاء يفوز.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
             } else if (section === 'staff_system') {
                 return res.redirect(`/dashboard/${guildId}`);
             } else {
@@ -11664,6 +11773,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <a href="/dashboard/${guildId}/giveaways" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'giveaways' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
                                         ${navBadge('giveaways_enabled')}
                                         <span class="flex items-center gap-2"><span>قيف اواي</span><span class="text-white group-hover:text-blue-400">🎁</span></span>
+                                    </a>
+                                    <a href="/dashboard/${guildId}/games" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'games' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
+                                        ${navBadge('games_enabled')}
+                                        <span class="flex items-center gap-2"><span>الألعاب والتحديات</span><span class="text-white group-hover:text-blue-400">🎮</span></span>
                                     </a>
                                     <a href="/dashboard/${guildId}/invites" class="flex items-center justify-between px-3 py-2 rounded-xl ${section === 'invites' ? 'bg-gradient-to-l from-purple-600 to-blue-500 text-white font-bold shadow-md' : 'text-gray-300 hover:text-gray-300 hover:bg-[#151724]'} transition group">
                                         ${navBadge('invites_enabled')}

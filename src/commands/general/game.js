@@ -94,12 +94,22 @@ module.exports = {
       return interaction.reply({ content: '⚠️ هناك لعبة جارية بالفعل في هذه القناة! انتظر حتى تنتهي.', ephemeral: true });
     }
 
+    // فحص إعدادات الداشبورد
+    const settings = db.getGuildSettings ? (db.getGuildSettings(interaction.guildId) || {}) : {};
+    if (settings.games_enabled === 0 || settings.games_enabled === '0' || settings.games_enabled === false) {
+      return interaction.reply({ content: '🔒 نظام الألعاب معطل حالياً في هذا السيرفر من لوحة التحكم.', ephemeral: true });
+    }
+
+    if (settings.games_channel && settings.games_channel !== channelId) {
+      return interaction.reply({ content: `⚠️ تم تخصيص الألعاب لتعمل فقط في روم: <#${settings.games_channel}>!`, ephemeral: true });
+    }
+
     const chosenType = interaction.options.getString('type') || 'random';
     await interaction.deferReply();
-    await this.startGame(interaction.channel, interaction.user, interaction.guild.id, chosenType, (opts) => interaction.editReply(opts));
+    await this.startGame(interaction.channel, interaction.user, interaction.guild.id, chosenType, (opts) => interaction.editReply(opts), settings);
   },
 
-  async startGame(channel, starter, guildId, type, replyMethod) {
+  async startGame(channel, starter, guildId, type, replyMethod, settings = {}) {
     if (type === 'random') {
       const types = ['capitals', 'words', 'fast'];
       type = types[Math.floor(Math.random() * types.length)];
@@ -109,11 +119,11 @@ module.exports = {
 
     try {
       if (type === 'capitals') {
-        await this.runCapitalsGame(channel, starter, guildId, replyMethod);
+        await this.runCapitalsGame(channel, starter, guildId, replyMethod, settings);
       } else if (type === 'words') {
-        await this.runWordsGame(channel, starter, guildId, replyMethod);
+        await this.runWordsGame(channel, starter, guildId, replyMethod, settings);
       } else if (type === 'fast') {
-        await this.runFastGame(channel, starter, guildId, replyMethod);
+        await this.runFastGame(channel, starter, guildId, replyMethod, settings);
       }
     } catch (err) {
       console.error('Game error:', err);
@@ -124,10 +134,10 @@ module.exports = {
   },
 
   // 1. لعبة العواصم
-  async runCapitalsGame(channel, starter, guildId, replyMethod) {
+  async runCapitalsGame(channel, starter, guildId, replyMethod, settings = {}) {
     const item = CAPITALS_DATA[Math.floor(Math.random() * CAPITALS_DATA.length)];
     const expected = normalizeArabicText(item.capital);
-    const rewardCoins = 75;
+    const rewardCoins = Number(settings.game_reward_capitals) || 75;
 
     const embed = new EmbedBuilder()
       .setColor('#3498db')
@@ -178,10 +188,10 @@ module.exports = {
   },
 
   // 2. لعبة تفكيك وتركيب الكلمات
-  async runWordsGame(channel, starter, guildId, replyMethod) {
+  async runWordsGame(channel, starter, guildId, replyMethod, settings = {}) {
     const word = WORDS_DATA[Math.floor(Math.random() * WORDS_DATA.length)];
     const isUnscramble = Math.random() > 0.5; // تركيب أو تفكيك
-    const rewardCoins = 60;
+    const rewardCoins = Number(settings.game_reward_words) || 60;
 
     let title, question, targetAnswer;
 
@@ -247,10 +257,10 @@ module.exports = {
   },
 
   // 3. لعبة أسرع واحد يكتب
-  async runFastGame(channel, starter, guildId, replyMethod) {
+  async runFastGame(channel, starter, guildId, replyMethod, settings = {}) {
     const textTarget = FAST_TYPING_DATA[Math.floor(Math.random() * FAST_TYPING_DATA.length)];
     const normalizedTarget = normalizeArabicText(textTarget);
-    const rewardCoins = 85;
+    const rewardCoins = Number(settings.game_reward_fast) || 85;
     const startTime = Date.now();
 
     const embed = new EmbedBuilder()
