@@ -2,7 +2,6 @@ const { PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 const db = require('../../database');
 const embedUtil = require('../../utils/embed');
 const config = require('../../config.json');
-const { askAI } = require('../../utils/ai');
 const { getGuildLang, t } = require('../../utils/lang');
 const { isEnabled } = require('../../utils/isEnabled');
 const { cacheMessage } = require('../../utils/messageCache');
@@ -243,48 +242,6 @@ module.exports = {
     if (isStaff && db.addStaffMessages) {
       db.addStaffMessages(guildId, userId, 1);
       if (db.touchStaffShiftAction) db.touchStaffShiftAction(guildId, userId);
-    }
-
-    // 🤖 Droplet AI
-    const cleanContent = message.content ? message.content.trim() : '';
-    const botMentionRegex = new RegExp(`^<@!?${client.user?.id}>`);
-    const isBotMentioned = botMentionRegex.test(cleanContent) ||
-      (message.mentions && message.mentions.has(client.user?.id) && !message.mentions.everyone);
-
-    const dropletCallRegex = /^(?:droplet|دروبلت)(?:[\s,:!?؟-]+(.+)|$)/i;
-    const matchDroplet = cleanContent.match(dropletCallRegex);
-
-
-    if (isBotMentioned || matchDroplet) {
-      const ownerId = process.env.OWNER_ID || config.ownerId || '1178342841882267744';
-      if (message.author.id !== ownerId) {
-        return; // تجاهل الأعضاء العاديين، الذكاء الاصطناعي مخصص للمالك ومساعدته في إدارة البوت فقط
-      }
-
-      let userPrompt = '';
-      if (isBotMentioned) {
-        userPrompt = cleanContent.replace(botMentionRegex, '').replace(new RegExp(`<@!?${client.user?.id}>`, 'g'), '').trim();
-      } else if (matchDroplet) {
-        userPrompt = (matchDroplet[1] || '').trim();
-      }
-      if (!userPrompt) userPrompt = 'أهلاً بك يا مالك البوت! كيف يمكنني مساعدتك في تطوير وإدارة Droplet اليوم؟';
-
-      try {
-        await message.channel.sendTyping().catch(() => {});
-        const aiResponse = await askAI(userPrompt);
-        if (aiResponse) {
-          const chunks = aiResponse.length <= 2000 ? [aiResponse] : (aiResponse.match(/[\s\S]{1,1950}/g) || [aiResponse]);
-          await message.reply({ content: chunks[0] }).catch(async () => {
-            await message.channel.send({ content: chunks[0] }).catch(() => {});
-          });
-          for (let i = 1; i < chunks.length; i++) {
-            await message.channel.send({ content: chunks[i] }).catch(() => {});
-          }
-        }
-        return;
-      } catch (err) {
-        console.error('[Auto Droplet AI Error]:', err);
-      }
     }
 
 
