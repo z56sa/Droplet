@@ -73,9 +73,6 @@ function normalizeArabicText(text) {
 }
 
 module.exports = {
-  name: 'game',
-  description: 'تشغيل ألعاب التحدي والذكاء وسرعة الكتابة في الشات',
-  aliases: ['لعبة', 'العاب', 'games'],
   data: new SlashCommandBuilder()
     .setName('game')
     .setDescription('ألعاب التحدي والذكاء الجماعية في الشات 🎮')
@@ -100,21 +97,6 @@ module.exports = {
     const chosenType = interaction.options.getString('type') || 'random';
     await interaction.deferReply();
     await this.startGame(interaction.channel, interaction.user, interaction.guild.id, chosenType, (opts) => interaction.editReply(opts));
-  },
-
-  async executePrefix(message, args) {
-    const channelId = message.channel.id;
-    if (activeGames.has(channelId)) {
-      return message.reply('⚠️ هناك لعبة جارية بالفعل في هذه القناة! انتظر حتى تنتهي.');
-    }
-
-    let chosenType = 'random';
-    const arg = (args[0] || '').toLowerCase();
-    if (arg === 'عواصم' || arg === 'capitals' || arg === 'دولة') chosenType = 'capitals';
-    else if (arg === 'كلمات' || arg === 'words' || arg === 'تفكيك' || arg === 'تركيب') chosenType = 'words';
-    else if (arg === 'اسرع' || arg === 'fast' || arg === 'سرعة') chosenType = 'fast';
-
-    await this.startGame(message.channel, message.author, message.guild.id, chosenType, (opts) => message.reply(opts));
   },
 
   async startGame(channel, starter, guildId, type, replyMethod) {
