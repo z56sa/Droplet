@@ -11719,29 +11719,37 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 /* 📱 Mobile drawer styling */
                 @media (max-width: 1023px) {
                     #serverSidebarNav {
+                        display: none !important;
+                    }
+                    #serverSidebarNav.sidebar-open {
+                        display: flex !important;
                         position: fixed !important;
                         top: 0 !important;
                         bottom: 0 !important;
                         right: 0 !important;
-                        z-index: 60 !important;
-                        height: 100vh !important;
+                        width: 290px !important;
                         max-width: 85vw !important;
-                        box-shadow: -10px 0 30px rgba(0,0,0,0.8) !important;
-                        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                        height: 100vh !important;
+                        z-index: 60 !important;
+                        box-shadow: -10px 0 30px rgba(0,0,0,0.85) !important;
                     }
-                    #serverSidebarNav.sidebar-closed {
-                        transform: translateX(100%) !important;
+                }
+                @media (min-width: 1024px) {
+                    #serverSidebarNav {
+                        display: flex !important;
+                        position: static !important;
                     }
-                    #serverSidebarNav.sidebar-open {
-                        transform: translateX(0) !important;
-                    }
+                }
+                html, body {
+                    overflow-x: hidden !important;
+                    max-width: 100vw !important;
                 }
                 </style>
                 <script src="/i18n.js"></script><script src="/i18n-dash.js"></script><script src="/i18n-dash2.js"></script>
                 <script src="/js/settings-save.js?v=${global._dropletBootTime || '1'}"></script>
                 <script>window.DOT_GROUPS = ${JSON.stringify(DOT_GROUPS)};</script>
             </head>
-            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#060c1d] text-white">
+            <body data-droplet-manual-lang="true" class="min-h-screen flex flex-col bg-[#060c1d] text-white w-full max-w-full overflow-x-hidden">
                 <header class="h-16 bg-[#081026]/95 backdrop-blur-md border-b border-blue-500/20 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40">
                     <div class="flex items-center gap-2 sm:gap-3">
                         <!-- 📱 زر فتح قائمة الأقسام للهواتف -->
@@ -11767,10 +11775,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 <!-- 📱 خلفية معتمة للهواتف عند فتح القائمة الجانبية -->
                 <div id="mobileSidebarBackdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 hidden lg:hidden transition-opacity"></div>
 
-                <div class="flex-1 flex overflow-hidden relative">
+                <div class="flex-1 flex overflow-hidden relative w-full min-w-0 max-w-full">
                     
                     <!-- Main Content Form Area -->
-                    <main class="flex-1 p-3 sm:p-6 lg:p-8 overflow-y-auto ${section === 'embed' ? 'max-w-7xl' : 'max-w-4xl'} mx-auto w-full">
+                    <main class="flex-1 min-w-0 p-3 sm:p-6 lg:p-8 overflow-y-auto ${section === 'embed' ? 'max-w-7xl' : 'max-w-4xl'} mx-auto w-full">
                         <div class="${section === 'logs' ? '' : 'probot-card border border-blue-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl mb-8'}">
                             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 sm:pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
                                 <div class="flex items-center gap-3 order-2 sm:order-1">
