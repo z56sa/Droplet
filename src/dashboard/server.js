@@ -13794,7 +13794,7 @@ ${embedScriptHtml}
 
             // Trigger immediate update
             try {
-                const StatChannelsService = require('./services/statChannels');
+                const StatChannelsService = require('../services/statChannels');
                 // Force update by running the service tick
                 const tempSvc = new StatChannelsService(client);
                 tempSvc._updateChannel({ guild_id: guildId, channel_id: channel_id.trim(), stat_type, custom_prefix: custom_prefix || '', enabled: 1 }).catch(() => {});
@@ -13833,7 +13833,7 @@ ${embedScriptHtml}
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
-            const StatChannelsService = require('./services/statChannels');
+            const StatChannelsService = require('../services/statChannels');
             const svc = new StatChannelsService(client);
             await svc.forceUpdateGuild(guildId);
             res.json({ success: true, message: 'تم تحديث قنوات الإحصائيات الآن!' });
