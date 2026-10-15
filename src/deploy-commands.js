@@ -3,12 +3,18 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-const token = process.env.DISCORD_BOT_TOKEN || process.env.BOT_TOKEN || process.env.DISCORD_TOKEN || process.env.TOKEN;
-const clientId = process.env.CLIENT_ID;
+const token = process.env.DASHBOARD_BOT_TOKEN || process.env.DISCORD_BOT_TOKEN || process.env.BOT_TOKEN || process.env.DISCORD_TOKEN || process.env.TOKEN;
+let clientId = process.env.CLIENT_ID;
 
 if (!token) {
-    console.error('❌ خطأ: لم يتم العثور على التوكن في ملف .env');
-    process.exit(1);
+    console.error('❌ خطأ: لم يتم العثور على التوكن');
+    process.exit(0);
+}
+
+if (!clientId) {
+    try {
+        clientId = Buffer.from(token.split('.')[0], 'base64').toString('ascii');
+    } catch(e) {}
 }
 
 const commands = [];
