@@ -214,16 +214,31 @@ class AudioPlayerManager {
             console.error('Voice Connection Ready Timeout:', err);
         }
 
-        const axios = require('axios');
+        const https = require('https');
+        const http = require('http');
+        const { Readable } = require('stream');
         const { StreamType } = require('@discordjs/voice');
 
-        const streamResponse = await axios.get(streamUrl, {
-            responseType: 'stream',
-            timeout: 10000,
-            headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
+        const fetchAudioStream = (url) => {
+            return new Promise((resolve, reject) => {
+                const client = url.startsWith('https') ? https : http;
+                const req = client.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 10000 }, (res) => {
+                    if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                        return resolve(fetchAudioStream(res.headers.location));
+                    }
+                    if (res.statusCode !== 200) {
+                        return reject(new Error(`Failed to fetch audio: ${res.statusCode}`));
+                    }
+                    resolve(res);
+                });
+                req.on('error', reject);
+                req.on('timeout', () => { req.destroy(); reject(new Error('Audio stream timeout')); });
+            });
+        };
 
-        const resource = createAudioResource(streamResponse.data, {
+        const streamResponse = await fetchAudioStream(streamUrl);
+
+        const resource = createAudioResource(streamResponse, {
             inputType: StreamType.Arbitrary,
             inlineVolume: true
         });
@@ -248,8 +263,8 @@ class AudioPlayerManager {
             setTimeout(async () => {
                 if (queues.has(guildId)) {
                     try {
-                        const newStream = await axios.get(streamUrl, { responseType: 'stream', timeout: 10000 });
-                        const newResource = createAudioResource(newStream.data, { inputType: StreamType.Arbitrary, inlineVolume: true });
+                        const newStream = await fetchAudioStream(streamUrl);
+                        const newResource = createAudioResource(newStream, { inputType: StreamType.Arbitrary, inlineVolume: true });
                         player.play(newResource);
                     } catch(e) {}
                 }
@@ -260,8 +275,8 @@ class AudioPlayerManager {
             if (queues.has(guildId)) {
                 setTimeout(async () => {
                     try {
-                        const newStream = await axios.get(streamUrl, { responseType: 'stream', timeout: 10000 });
-                        const newResource = createAudioResource(newStream.data, { inputType: StreamType.Arbitrary, inlineVolume: true });
+                        const newStream = await fetchAudioStream(streamUrl);
+                        const newResource = createAudioResource(newStream, { inputType: StreamType.Arbitrary, inlineVolume: true });
                         player.play(newResource);
                     } catch(e) {}
                 }, 2000);
