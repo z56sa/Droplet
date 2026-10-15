@@ -6294,23 +6294,23 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                             <!-- Navigation Tabs (Exact to Versa Tab Bar) -->
                             <div class="flex items-center gap-2 bg-[#080e1c] border border-blue-500/20 p-1.5 rounded-2xl">
-                                <button type="button" onclick="switchLevelTab('settings')" id="btnTabLvlSettings" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(!currentTab || currentTab === 'settings') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-white shadow-md' : 'text-white hover:text-gray-300'} flex items-center gap-1">
+                                <button type="button" onclick="switchLevelTab('settings')" id="btnTabLvlSettings" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(!currentTab || currentTab === 'settings') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white'} flex items-center gap-1">
                                     <span>الإعدادات</span>
                                     <span>⚙️</span>
                                 </button>
-                                <button type="button" onclick="switchLevelTab('text_roles')" id="btnTabLvlText" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'text_roles') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-white shadow-md' : 'text-white hover:text-gray-300'} flex items-center gap-1">
+                                <button type="button" onclick="switchLevelTab('text_roles')" id="btnTabLvlText" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'text_roles') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white'} flex items-center gap-1">
                                     <span>رتب كتابية</span>
                                     <span>📜</span>
                                 </button>
-                                <button type="button" onclick="switchLevelTab('voice_roles')" id="btnTabLvlVoice" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'voice_roles') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-white shadow-md' : 'text-white hover:text-gray-300'} flex items-center gap-1">
+                                <button type="button" onclick="switchLevelTab('voice_roles')" id="btnTabLvlVoice" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'voice_roles') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white'} flex items-center gap-1">
                                     <span>رتب صوتية</span>
                                     <span>🎵</span>
                                 </button>
-                                <button type="button" onclick="switchLevelTab('shared_roles')" id="btnTabLvlShared" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'shared_roles') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-white shadow-md' : 'text-white hover:text-gray-300'} flex items-center gap-1">
+                                <button type="button" onclick="switchLevelTab('shared_roles')" id="btnTabLvlShared" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'shared_roles') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white'} flex items-center gap-1">
                                     <span>رتب مشتركة</span>
                                     <span>✨</span>
                                 </button>
-                                <button type="button" onclick="switchLevelTab('leaderboard')" id="btnTabLvlLeaderboard" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'leaderboard') ? 'bg-gradient-to-r from-blue-400 to-indigo-600 text-white shadow-md' : 'text-white hover:text-gray-300'} flex items-center gap-1">
+                                <button type="button" onclick="switchLevelTab('leaderboard')" id="btnTabLvlLeaderboard" class="px-4 py-1.5 rounded-xl text-xs font-bold transition ${(currentTab === 'leaderboard') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-white'} flex items-center gap-1">
                                     <span>المتصدرين</span>
                                     <span>🏆</span>
                                 </button>
@@ -6573,11 +6573,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl space-y-5 shadow-xl">
                                 <div class="flex items-center justify-between border-b border-blue-500/20 pb-3">
                                     <div class="flex items-center gap-2">
-                                        <button type="button" onclick="openAddLevelRoleModal('text')" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                                        <button type="button" onclick="openAddLevelRoleModal('text')" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-900/30">
                                             <span>➕</span>
                                             <span>إضافة رتبة</span>
                                         </button>
-                                        <button type="button" onclick="location.reload()" class="px-3.5 py-2 bg-[#070d1d] hover:bg-white/5 border border-blue-500/20 text-white hover:text-gray-300 rounded-xl text-xs font-bold transition flex items-center gap-1">
+                                        <button type="button" onclick="location.reload()" class="px-3.5 py-2.5 bg-[#070d1d] hover:bg-white/5 border border-blue-500/20 text-white hover:text-gray-300 rounded-xl text-xs font-bold transition flex items-center gap-1">
                                             <span>🔄</span>
                                             <span>مزامنة</span>
                                         </button>
@@ -6605,7 +6605,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <div class="w-12 h-12 rounded-full bg-white/5 text-white flex items-center justify-center text-xl mx-auto">📜</div>
                                             <h5 class="text-xs font-bold text-gray-300">لا توجد رتب مستويات</h5>
                                             <p class="text-[10px] text-gray-500">أضف رتب لمكافأة الأعضاء النشطين</p>
-                                            <button type="button" onclick="openAddLevelRoleModal('text')" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black transition inline-flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                                            <button type="button" onclick="openAddLevelRoleModal('text')" class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition inline-flex items-center gap-1.5 shadow-lg shadow-blue-900/40">
+                                                <span>➕</span>
                                                 <span>إضافة أول رتبة</span>
                                             </button>
                                         </div>
@@ -6635,11 +6636,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl space-y-5 shadow-xl">
                                 <div class="flex items-center justify-between border-b border-blue-500/20 pb-3">
                                     <div class="flex items-center gap-2">
-                                        <button type="button" onclick="openAddLevelRoleModal('voice')" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                                        <button type="button" onclick="openAddLevelRoleModal('voice')" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-900/30">
                                             <span>➕</span>
                                             <span>إضافة رتبة</span>
                                         </button>
-                                        <button type="button" onclick="location.reload()" class="px-3.5 py-2 bg-[#070d1d] hover:bg-white/5 border border-blue-500/20 text-white hover:text-gray-300 rounded-xl text-xs font-bold transition flex items-center gap-1">
+                                        <button type="button" onclick="location.reload()" class="px-3.5 py-2.5 bg-[#070d1d] hover:bg-white/5 border border-blue-500/20 text-white hover:text-gray-300 rounded-xl text-xs font-bold transition flex items-center gap-1">
                                             <span>🔄</span>
                                             <span>مزامنة</span>
                                         </button>
@@ -6667,7 +6668,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <div class="w-12 h-12 rounded-full bg-pink-950/40 text-pink-400 flex items-center justify-center text-xl mx-auto border border-pink-500/20">🎵</div>
                                             <h5 class="text-xs font-bold text-gray-300">لا توجد رتب مستويات</h5>
                                             <p class="text-[10px] text-gray-500">أضف رتب لمكافأة الأعضاء النشطين</p>
-                                            <button type="button" onclick="openAddLevelRoleModal('voice')" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black transition inline-flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                                            <button type="button" onclick="openAddLevelRoleModal('voice')" class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition inline-flex items-center gap-1.5 shadow-lg shadow-blue-900/40">
+                                                <span>➕</span>
                                                 <span>إضافة أول رتبة</span>
                                             </button>
                                         </div>
@@ -6697,11 +6699,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl space-y-5 shadow-xl">
                                 <div class="flex items-center justify-between border-b border-blue-500/20 pb-3">
                                     <div class="flex items-center gap-2">
-                                        <button type="button" onclick="openAddSharedRoleModal()" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                                        <button type="button" onclick="openAddSharedRoleModal()" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-900/30">
                                             <span>➕</span>
                                             <span>إضافة شرط</span>
                                         </button>
-                                        <button type="button" onclick="location.reload()" class="px-3.5 py-2 bg-[#070d1d] hover:bg-white/5 border border-blue-500/20 text-white hover:text-gray-300 rounded-xl text-xs font-bold transition flex items-center gap-1">
+                                        <button type="button" onclick="location.reload()" class="px-3.5 py-2.5 bg-[#070d1d] hover:bg-white/5 border border-blue-500/20 text-white hover:text-gray-300 rounded-xl text-xs font-bold transition flex items-center gap-1">
                                             <span>🔄</span>
                                             <span>مزامنة</span>
                                         </button>
@@ -6761,7 +6763,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <div class="w-12 h-12 rounded-full bg-amber-950/40 text-amber-400 flex items-center justify-center text-xl mx-auto border border-amber-500/20">✨</div>
                                             <h5 class="text-xs font-bold text-gray-300">لا توجد رتب مشتركة</h5>
                                             <p class="text-[10px] text-gray-500">أضف شرطاً مزدوجاً يمنح رتبة عند تحقق مستوى صوتي وكتابي معاً</p>
-                                            <button type="button" onclick="openAddSharedRoleModal()" class="px-5 py-2 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl text-xs font-black transition inline-flex items-center gap-1.5 shadow-lg shadow-blue-800/40">
+                                            <button type="button" onclick="openAddSharedRoleModal()" class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition inline-flex items-center gap-1.5 shadow-lg shadow-blue-900/40">
+                                                <span>➕</span>
                                                 <span>إضافة أول شرط</span>
                                             </button>
                                         </div>
@@ -6842,8 +6845,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             if (el) el.classList.toggle('hidden', t !== tab);
                             if (btn) {
                                 btn.className = t === tab 
-                                    ? "px-4 py-1.5 rounded-xl text-xs font-bold transition bg-gradient-to-r from-blue-400 to-indigo-600 text-white shadow-md flex items-center gap-1"
-                                    : "px-4 py-1.5 rounded-xl text-xs font-bold transition text-blue-300 hover:text-white flex items-center gap-1";
+                                    ? "px-4 py-1.5 rounded-xl text-xs font-bold transition bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md flex items-center gap-1"
+                                    : "px-4 py-1.5 rounded-xl text-xs font-bold transition text-gray-400 hover:text-white flex items-center gap-1";
                             }
                         });
                     }
