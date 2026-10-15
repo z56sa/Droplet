@@ -45,6 +45,11 @@ const CATEGORIES = {
     color: '#eab308',
     commands: ['daily', 'balance', 'tax', 'profile', 'rank', 'top']
   },
+  games: {
+    emoji: '🎮',
+    color: '#00d26a',
+    commands: ['game']
+  },
   autoline: {
     emoji: '📏',
     color: '#06b6d4',
