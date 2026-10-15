@@ -6834,6 +6834,97 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                         </div>
 
+                        <!-- مودال مخصص لإضافة رتب المستويات (الكتابية / الصوتية) -->
+                        <div id="modalAddLevelRole" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden" dir="rtl">
+                            <div class="bg-[#0b1322] border border-blue-500/30 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+                                <div class="flex items-center justify-between border-b border-blue-500/20 pb-3">
+                                    <button type="button" onclick="closeAddLevelRoleModal()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition cursor-pointer text-sm font-bold">✕</button>
+                                    <div class="text-right">
+                                        <h4 class="text-sm font-black text-white flex items-center gap-1.5 justify-end">
+                                            <span id="modalLevelRoleTitle">إضافة رتبة مستوى</span>
+                                            <span id="modalLevelRoleIcon">📜</span>
+                                        </h4>
+                                        <p class="text-[10px] text-gray-400 mt-0.5" id="modalLevelRoleSubtitle">حدد رقم المستوى والرتبة التي يحصل عليها العضو</p>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <div class="space-y-1.5 text-right">
+                                        <label class="block text-xs font-bold text-white" id="modalLevelInputLabel">رقم المستوى المطلوب</label>
+                                        <input type="number" id="modalLevelNumber" min="1" max="1000" placeholder="مثال: 5 أو 10 أو 20" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right">
+                                        <p class="text-[10px] text-gray-500">رقم المستوى الذي عند الوصول إليه تُمنح الرتبة تلقائياً</p>
+                                    </div>
+
+                                    <div class="space-y-1.5 text-right">
+                                        <label class="block text-xs font-bold text-white">الرتبة الممنوحة</label>
+                                        <select id="modalLevelRoleId" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right cursor-pointer">
+                                            <option value="">...اختر الرتبة من السيرفر</option>
+                                            ${guildRoles.map(r => `<option value="${r.id}">@ ${r.name}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-end gap-2 pt-2 border-t border-blue-500/20">
+                                    <button type="button" onclick="closeAddLevelRoleModal()" class="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs font-bold transition cursor-pointer">إلغاء</button>
+                                    <button type="button" id="btnSubmitLevelRole" onclick="submitAddLevelRoleModal()" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-blue-900/30 flex items-center gap-1.5 cursor-pointer">
+                                        <span>➕</span>
+                                        <span>حفظ وإضافة</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- مودال مخصص لإضافة رتب الشرط المزدوج (المشتركة) -->
+                        <div id="modalAddSharedRole" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden" dir="rtl">
+                            <div class="bg-[#0b1322] border border-blue-500/30 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+                                <div class="flex items-center justify-between border-b border-blue-500/20 pb-3">
+                                    <button type="button" onclick="closeAddSharedRoleModal()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition cursor-pointer text-sm font-bold">✕</button>
+                                    <div class="text-right">
+                                        <h4 class="text-sm font-black text-white flex items-center gap-1.5 justify-end">
+                                            <span>إضافة رتبة بشرط مزدوج</span>
+                                            <span>✨</span>
+                                        </h4>
+                                        <p class="text-[10px] text-gray-400 mt-0.5">تُمنح الرتبة عند تحقق مستوى كتابي وصوتي معاً</p>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div class="space-y-1.5 text-right">
+                                            <label class="block text-xs font-bold text-white flex items-center justify-end gap-1">
+                                                <span>المستوى الصوتي</span>
+                                                <span>🎵</span>
+                                            </label>
+                                            <input type="number" id="modalSharedVoiceLevel" min="1" max="1000" placeholder="مثال: 5" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right">
+                                        </div>
+                                        <div class="space-y-1.5 text-right">
+                                            <label class="block text-xs font-bold text-white flex items-center justify-end gap-1">
+                                                <span>المستوى الكتابي</span>
+                                                <span>💬</span>
+                                            </label>
+                                            <input type="number" id="modalSharedTextLevel" min="1" max="1000" placeholder="مثال: 10" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right">
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-1.5 text-right">
+                                        <label class="block text-xs font-bold text-white">الرتبة الممنوحة عند تحقق الشرطين</label>
+                                        <select id="modalSharedRoleId" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right cursor-pointer">
+                                            <option value="">...اختر الرتبة من السيرفر</option>
+                                            ${guildRoles.map(r => `<option value="${r.id}">@ ${r.name}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-end gap-2 pt-2 border-t border-blue-500/20">
+                                    <button type="button" onclick="closeAddSharedRoleModal()" class="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs font-bold transition cursor-pointer">إلغاء</button>
+                                    <button type="button" id="btnSubmitSharedRole" onclick="submitAddSharedRoleModal()" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-blue-900/30 flex items-center gap-1.5 cursor-pointer">
+                                        <span>➕</span>
+                                        <span>حفظ وإضافة</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <script>
@@ -6851,54 +6942,120 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         });
                     }
 
-                    async function openAddLevelRoleModal(rewardType = 'text') {
-                        const typeLabel = rewardType === 'voice' ? 'الصوتي' : 'الكتابي';
-                        const level = prompt('أدخل رقم المستوى ' + typeLabel + ' المطلوب (مثال: 5 أو 10 أو 20):');
-                        if (!level || isNaN(level)) return;
-                        const roleId = prompt('أدخل ID الرتبة الممنوحة:');
-                        if (!roleId || !roleId.trim()) return;
+                    var _currentRewardType = 'text';
+
+                    function openAddLevelRoleModal(rewardType = 'text') {
+                        _currentRewardType = rewardType;
+                        const isVoice = rewardType === 'voice';
+                        document.getElementById('modalLevelRoleTitle').innerText = isVoice ? 'إضافة رتبة مستوى صوتي' : 'إضافة رتبة مستوى كتابي';
+                        document.getElementById('modalLevelRoleIcon').innerText = isVoice ? '🎵' : '📜';
+                        document.getElementById('modalLevelInputLabel').innerText = isVoice ? 'رقم المستوى الصوتي المطلوب' : 'رقم المستوى الكتابي المطلوب';
+                        document.getElementById('modalLevelRoleSubtitle').innerText = isVoice ? 'يحصل العضو على هذه الرتبة عند الوصول لمستوى صوتي معين' : 'يحصل العضو على هذه الرتبة عند الوصول لمستوى كتابي معين';
+                        document.getElementById('modalLevelNumber').value = '';
+                        document.getElementById('modalLevelRoleId').value = '';
+                        document.getElementById('modalAddLevelRole').classList.remove('hidden');
+                        setTimeout(() => document.getElementById('modalLevelNumber').focus(), 50);
+                    }
+
+                    function closeAddLevelRoleModal() {
+                        document.getElementById('modalAddLevelRole').classList.add('hidden');
+                    }
+
+                    async function submitAddLevelRoleModal() {
+                        const levelVal = document.getElementById('modalLevelNumber').value;
+                        const roleIdVal = document.getElementById('modalLevelRoleId').value;
+
+                        if (!levelVal || isNaN(levelVal) || parseInt(levelVal) < 1) {
+                            alert('⚠️ يرجى إدخال رقم مستوى صحيح (مثال: 5 أو 10)');
+                            document.getElementById('modalLevelNumber').focus();
+                            return;
+                        }
+                        if (!roleIdVal) {
+                            alert('⚠️ يرجى اختيار الرتبة من القائمة');
+                            document.getElementById('modalLevelRoleId').focus();
+                            return;
+                        }
+
+                        const btn = document.getElementById('btnSubmitLevelRole');
+                        btn.disabled = true;
+                        btn.innerHTML = '<span>⏳</span><span>جاري الحفظ...</span>';
 
                         try {
                             const res = await fetch('/api/guild/${guildId}/level-reward', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ level: parseInt(level), roleId: roleId.trim(), rewardType })
+                                body: JSON.stringify({ level: parseInt(levelVal), roleId: roleIdVal.trim(), rewardType: _currentRewardType })
                             });
                             const data = await res.json();
                             if (data.success) {
-                                alert('✅ تمت إضافة رتبة المستوى بنجاح!');
                                 location.reload();
                             } else {
                                 alert('❌ خطأ: ' + (data.error || 'فشل الإضافة'));
+                                btn.disabled = false;
+                                btn.innerHTML = '<span>➕</span><span>حفظ وإضافة</span>';
                             }
                         } catch(e) {
                             alert('حدث خطأ في الاتصال بالخادم');
+                            btn.disabled = false;
+                            btn.innerHTML = '<span>➕</span><span>حفظ وإضافة</span>';
                         }
                     }
 
-                    async function openAddSharedRoleModal() {
-                        const textLevel = prompt('أدخل الحد الأدنى للمستوى الكتابي (مثال: 10):');
-                        if (!textLevel || isNaN(textLevel)) return;
-                        const voiceLevel = prompt('أدخل الحد الأدنى للمستوى الصوتي (مثال: 5):');
-                        if (!voiceLevel || isNaN(voiceLevel)) return;
-                        const roleId = prompt('أدخل ID الرتبة الممنوحة عند تحقق الشرطين:');
-                        if (!roleId || !roleId.trim()) return;
+                    function openAddSharedRoleModal() {
+                        document.getElementById('modalSharedTextLevel').value = '';
+                        document.getElementById('modalSharedVoiceLevel').value = '';
+                        document.getElementById('modalSharedRoleId').value = '';
+                        document.getElementById('modalAddSharedRole').classList.remove('hidden');
+                        setTimeout(() => document.getElementById('modalSharedTextLevel').focus(), 50);
+                    }
+
+                    function closeAddSharedRoleModal() {
+                        document.getElementById('modalAddSharedRole').classList.add('hidden');
+                    }
+
+                    async function submitAddSharedRoleModal() {
+                        const textVal = document.getElementById('modalSharedTextLevel').value;
+                        const voiceVal = document.getElementById('modalSharedVoiceLevel').value;
+                        const roleIdVal = document.getElementById('modalSharedRoleId').value;
+
+                        if (!textVal || isNaN(textVal) || parseInt(textVal) < 1) {
+                            alert('⚠️ يرجى إدخال رقم المستوى الكتابي (مثال: 10)');
+                            document.getElementById('modalSharedTextLevel').focus();
+                            return;
+                        }
+                        if (!voiceVal || isNaN(voiceVal) || parseInt(voiceVal) < 1) {
+                            alert('⚠️ يرجى إدخال رقم المستوى الصوتي (مثال: 5)');
+                            document.getElementById('modalSharedVoiceLevel').focus();
+                            return;
+                        }
+                        if (!roleIdVal) {
+                            alert('⚠️ يرجى اختيار الرتبة من القائمة');
+                            document.getElementById('modalSharedRoleId').focus();
+                            return;
+                        }
+
+                        const btn = document.getElementById('btnSubmitSharedRole');
+                        btn.disabled = true;
+                        btn.innerHTML = '<span>⏳</span><span>جاري الحفظ...</span>';
 
                         try {
                             const res = await fetch('/api/guild/${guildId}/level-reward', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ level: parseInt(textLevel), voiceLevel: parseInt(voiceLevel), roleId: roleId.trim(), rewardType: 'shared' })
+                                body: JSON.stringify({ level: parseInt(textVal), voiceLevel: parseInt(voiceVal), roleId: roleIdVal.trim(), rewardType: 'shared' })
                             });
                             const data = await res.json();
                             if (data.success) {
-                                alert('✅ تمت إضافة رتبة الشرط المزدوج بنجاح!');
                                 location.reload();
                             } else {
                                 alert('❌ خطأ: ' + (data.error || 'فشل الإضافة'));
+                                btn.disabled = false;
+                                btn.innerHTML = '<span>➕</span><span>حفظ وإضافة</span>';
                             }
                         } catch(e) {
                             alert('حدث خطأ في الاتصال بالخادم');
+                            btn.disabled = false;
+                            btn.innerHTML = '<span>➕</span><span>حفظ وإضافة</span>';
                         }
                     }
 
@@ -6910,7 +7067,6 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             });
                             const data = await res.json();
                             if (data.success) {
-                                alert('✅ تم الحذف بنجاح!');
                                 location.reload();
                             } else {
                                 alert('❌ فشل الحذف');
