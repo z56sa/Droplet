@@ -8637,16 +8637,11 @@ var LOG_CATEGORIES = {
         ]
     },
     messages: {
-        title: 'الرسائل', icon: '💬', desc: 'أحداث حذف وتعديل الرسائل والتفاعلات', defaultColor: '#60a5fa',
+        title: 'الرسائل', icon: '💬', desc: 'أحداث حذف وتعديل الرسائل', defaultColor: '#60a5fa',
         items: [
             { id: 'msg_delete', title: 'حذف رسالة', desc: 'عند حذف رسالة', icon: '🗑️' },
             { id: 'msg_purge', title: 'حذف رسائل', desc: 'عند حذف عدة رسائل دفعة واحدة', icon: '🧹' },
-            { id: 'msg_update', title: 'تعديل رسالة', desc: 'عند تعديل رسالة', icon: '✏️' },
-            { id: 'msg_reaction_add', title: 'إضافة تفاعل', desc: 'عند إضافة تفاعل على رسالة', icon: '❤️' },
-            { id: 'msg_reaction_remove', title: 'إزالة تفاعل', desc: 'عند إزالة تفاعل من رسالة', icon: '💔' },
-            { id: 'msg_reaction_remove_all', title: 'مسح جميع التفاعلات', desc: 'عند مسح جميع التفاعلات من رسالة', icon: '🗑️' },
-            { id: 'msg_pin', title: 'تثبيت رسالة', desc: 'عند تثبيت رسالة', icon: '📌' },
-            { id: 'msg_unpin', title: 'إلغاء تثبيت رسالة', desc: 'عند إلغاء تثبيت رسالة', icon: '📍' }
+            { id: 'msg_update', title: 'تعديل رسالة', desc: 'عند تعديل رسالة', icon: '✏️' }
         ]
     },
     channels: {
