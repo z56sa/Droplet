@@ -19,6 +19,7 @@ const MAX_ROWS_PER_PUSH = 3000;
 const MAX_PROFILES_PER_PUSH = 2000;
 
 let _pushing = false;
+let _running = false;
 let _lastPush = { at: 0, ok: null, rows: 0, err: null };
 
 function getDb(getLocalDb) {
@@ -139,6 +140,7 @@ function start(getLocalDb) {
     console.log('[BRIDGE] ℹ️ DASHBOARD_SYNC_URL not set — bot→dashboard bridge disabled.');
     return;
   }
+  _running = true;
   console.log(`[BRIDGE] ✅ Bot→Dashboard bridge enabled → ${target} (every 3 minutes).`);
   const loop = () => pushOnce(getLocalDb);
   setTimeout(loop, FIRST_PUSH_DELAY_MS);
@@ -147,4 +149,4 @@ function start(getLocalDb) {
   setTimeout(loop, FIRST_PUSH_DELAY_MS + 45000);
 }
 
-module.exports = { start, pushOnce, getState: () => _lastPush };
+module.exports = { start, pushOnce, getState: () => _lastPush, isRunning: () => _running };

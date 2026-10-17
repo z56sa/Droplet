@@ -1255,6 +1255,7 @@ module.exports = function (app, client) {
                 _diag.xpUsers = rawDb.prepare('SELECT COUNT(*) as n FROM users WHERE xp > 0').get()?.n || 0;
                 try {
                     const bridgeDiag = require('../utils/dashboardBridge');
+                    _diag.bridgeRunning = !!(bridgeDiag.isRunning && bridgeDiag.isRunning());
                     _diag.lastPush = bridgeDiag.getState ? bridgeDiag.getState() : null;
                 } catch (e) {}
             } catch (e) {}
@@ -1268,8 +1269,9 @@ module.exports = function (app, client) {
                 : '';
             const _diagBridgeHtml = (() => {
                 try {
+                    if (!_diag.bridgeRunning) return ''; // الجسر مو مفعّل بهذي الخدمة — لا نعرض شي يلخبط
                     const push = _diag.lastPush;
-                    if (!push || !push.at) return '<span class="text-gray-500">الجسر من البوت: لن يبدأ بعد (أول دفعة خلال دقائق من إقلاع خدمة البوت)</span>';
+                    if (!push || !push.at) return '<span class="text-gray-500">جسر البوت: أول دفعة خلال دقائق من الإقلاع…</span>';
                     const pushOk = push.ok ? `<span class="text-emerald-400 font-bold">جسر البوت ✅</span>` : `<span class="text-amber-400 font-bold">جسر البوت ⚠️ فشل</span>`;
                     const errHtml = push.err ? ` • <span class="text-amber-400 font-mono">${String(push.err).slice(0, 80)}</span>` : '';
                     return `<span class="text-gray-500">${pushOk} — آخر دفع: <span class="font-mono text-gray-400">${push.rows}</span> صف • منذ ${Math.floor((Date.now() - push.at) / 1000)}ث${errHtml}</span>`;
