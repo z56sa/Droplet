@@ -17,6 +17,10 @@ class TursoSync {
     this.syncQueue = [];
     this.isProcessingQueue = false;
 
+    // 🔍 حقول تشخيص (تُعرض على صفحة الداشبورد لمعرفة سبب أي فارغ)
+    this.lastPull = { at: 0, rows: 0, ok: null, err: null };
+    this.lastPacketError = null;
+
     // Support Turso environment variables configured in Render Dashboard
     const cleanEnv = (value) => String(value || '').trim().replace(/^['"]|['"]$/g, '');
     const url = cleanEnv(
@@ -77,6 +81,51 @@ class TursoSync {
       // Add columns safely if table already existed
       try { await this.client.execute("ALTER TABLE users ADD COLUMN bank_balance INTEGER DEFAULT 0;"); } catch (e) {}
       try { await this.client.execute("ALTER TABLE users ADD COLUMN last_work INTEGER DEFAULT 0;"); } catch (e) {}
+      try { await this.client.execute("ALTER TABLE users ADD COLUMN reputation INTEGER DEFAULT 0;"); } catch (e) {}
+      try { await this.client.execute("ALTER TABLE users ADD COLUMN last_message_xp INTEGER DEFAULT 0;"); } catch (e) {}
+      try { await this.client.execute("ALTER TABLE users ADD COLUMN streak INTEGER DEFAULT 0;"); } catch (e) {}
+      try { await this.client.execute("ALTER TABLE users ADD COLUMN wallpaper TEXT DEFAULT 'default';"); } catch (e) {}
+
+      // 🧬 فحص مخطط users عن بُعد: لو الجدول قديم بلا PRIMARY KEY(user_id, guild_id)
+      // فإن كل upsert (queueUserSync / pull) يفشل بصمت والمزامنة تموت — نصلحه تلقائياً
+      try {
+        const sch = await this.client.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'");
+        const schSql = String(sch?.rows?.[0]?.sql || sch?.rows?.[0]?.Sql || '');
+        if (schSql && !/PRIMARY\s+KEY\s*\(\s*user_id\s*,\s*guild_id\s*\)/i.test(schSql)) {
+          console.error('[TURSO] ⚠️ users table in Turso has an OLD schema without PRIMARY KEY(user_id, guild_id) — migrating automatically...');
+          await this.client.execute(`
+            CREATE TABLE users_fixed_sync (
+              user_id TEXT NOT NULL,
+              guild_id TEXT NOT NULL,
+              xp INTEGER DEFAULT 0,
+              level INTEGER DEFAULT 1,
+              coins INTEGER DEFAULT 0,
+              bank_balance INTEGER DEFAULT 0,
+              reputation INTEGER DEFAULT 0,
+              last_daily INTEGER DEFAULT 0,
+              last_work INTEGER DEFAULT 0,
+              last_message_xp INTEGER DEFAULT 0,
+              wallpaper TEXT DEFAULT 'default',
+              warnings INTEGER DEFAULT 0,
+              streak INTEGER DEFAULT 0,
+              PRIMARY KEY (user_id, guild_id)
+            );
+          `);
+          try {
+            await this.client.execute(`INSERT OR IGNORE INTO users_fixed_sync
+              (user_id, guild_id, xp, level, coins, bank_balance, reputation, last_daily, last_work, last_message_xp, wallpaper, warnings, streak)
+              SELECT user_id, guild_id, COALESCE(xp,0), COALESCE(level,1), COALESCE(coins,0), COALESCE(bank_balance,0), COALESCE(reputation,0), COALESCE(last_daily,0), COALESCE(last_work,0), COALESCE(last_message_xp,0), COALESCE(wallpaper,'default'), COALESCE(warnings,0), COALESCE(streak,0) FROM users`);
+          } catch (copyErr) {
+            await this.client.execute(`INSERT OR IGNORE INTO users_fixed_sync (user_id, guild_id, xp, level, coins)
+              SELECT user_id, guild_id, COALESCE(xp,0), COALESCE(level,1), COALESCE(coins,0) FROM users`);
+          }
+          await this.client.execute('DROP TABLE users');
+          await this.client.execute('ALTER TABLE users_fixed_sync RENAME TO users');
+          console.log('[TURSO] ✅ users table schema fixed and data preserved.');
+        }
+      } catch (pkErr) {
+        console.error('[TURSO] PK schema check/fix error:', pkErr.message);
+      }
 
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS guild_settings (
@@ -637,6 +686,7 @@ class TursoSync {
           }
         });
         tx(res.rows);
+        this._lastPullRows = res.rows.length;
       }
 
       // أيضا سحب user_profiles
@@ -666,8 +716,10 @@ class TursoSync {
         });
         profTx(profRes.rows);
       }
+      this.lastPull = { at: Date.now(), rows: this._lastPullRows || 0, ok: true, err: null };
     } catch (e) {
-      // ignore transient pull errors
+      this.lastPull = { at: Date.now(), rows: 0, ok: false, err: e.message };
+      console.error('[TURSO] ⚠️ Pull from Turso failed:', e.message);
     }
   }
 
@@ -1059,7 +1111,9 @@ class TursoSync {
       const batch = this.syncQueue.splice(0, 20); // Process up to 20 statements in a batch
       try {
         await this.client.batch(batch, 'write');
+        this.lastPacketError = null;
       } catch (err) {
+        this.lastPacketError = err.message;
         console.error('[TURSO] Sync batch failed:', err.message);
       }
     }
