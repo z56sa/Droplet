@@ -2739,10 +2739,23 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
     function isEn(name) { return !disabledCmds[name]; }
 
     function _t(txt) {
-        if (!txt) return '';
-        if (typeof window._dropletIsEn === 'function' && window._dropletIsEn() && typeof window._dropletT === 'function') {
-            return window._dropletT(txt);
-        }
+        if (!txt) return txt;
+        try {
+            if (typeof window._dropletIsEn === 'function' && window._dropletIsEn()) {
+                // Fast O(1) direct lookup — avoid the heavy translateStringWithDash regex loop
+                var trimmed = txt.trim();
+                var d1 = window.DropletDashDict;
+                var d2 = window.DropletDashDict2;
+                var base = (window.DropletI18n && window.DropletI18n.dictionary) || {};
+                if (d1 && d1[trimmed]) return txt.replace(trimmed, d1[trimmed]);
+                if (d2 && d2[trimmed]) return txt.replace(trimmed, d2[trimmed]);
+                if (base[trimmed]) return txt.replace(trimmed, base[trimmed]);
+                // Fallback to full translation only for short strings (not inside loops)
+                if (txt.length < 80 && typeof window._dropletT === 'function') {
+                    return window._dropletT(txt);
+                }
+            }
+        } catch(e) {}
         return txt;
     }
 
@@ -2789,7 +2802,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     '<div class="w-9 h-9 rounded-xl bg-[#070d1d] border border-blue-500/20 flex items-center justify-center text-sm shadow-inner">' + (item.icon || '&#9881;') + '</div>' +
                   '</div>' +
                 '</div>' +
-                '<div class="cmd-accordion border-t border-blue-500/20 bg-[#070d1d] rounded-b-2xl text-right" data-cmd="' + escH(item.name) + '" style="display:none;"></div>' +
+                '<div class="cmd-accordion border-t border-blue-500/20 bg-[#070d1d] rounded-b-2xl text-right" data-cmd="' + escH(item.name) + '" data-no-i18n style="display:none;"></div>' +
             '</div>';
         }
         container.innerHTML = html;
