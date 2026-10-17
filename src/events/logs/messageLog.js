@@ -210,68 +210,7 @@ module.exports = [
       });
     }
   },
-  {
-    name: 'messageReactionAdd',
-    async execute(reaction, user) {
-      try {
-        if (user.bot) return;
-        if (reaction.partial) await reaction.fetch().catch(() => {});
-        const message = reaction.message;
-        if (!message?.guild) return;
-        // تجاهل تفاعلات دخول السحوبات لتقليل الضجيج
-        try {
-          const gw = db.getGiveaway ? db.getGiveaway(message.id) : null;
-          if (gw && gw.status === 'active' && (gw.entry_mode || 'button') === 'reaction') return;
-        } catch {}
-        await sendServerLog(message.guild, 'msg_reaction_add', 'messages', {
-          title: 'إضافة تفاعل',
-          desc: `تفاعل ${reaction.emoji} على رسالة في <#${message.channelId}>`,
-          fields: [
-            { name: '👤 العضو', value: `<@${user.id}> (${user.tag})`, inline: true },
-            { name: '📌 القناة', value: `<#${message.channelId}>`, inline: true },
-            { name: '🔗 الرابط', value: `[اضغط هنا](${message.url})`, inline: true }
-          ]
-        });
-      } catch {}
-    }
-  },
-  {
-    name: 'messageReactionRemove',
-    async execute(reaction, user) {
-      try {
-        if (user.bot) return;
-        if (reaction.partial) await reaction.fetch().catch(() => {});
-        const message = reaction.message;
-        if (!message?.guild) return;
-        await sendServerLog(message.guild, 'msg_reaction_remove', 'messages', {
-          title: 'إزالة تفاعل',
-          desc: `إزالة تفاعل ${reaction.emoji} من رسالة في <#${message.channelId}>`,
-          fields: [
-            { name: '👤 العضو', value: `<@${user.id}> (${user.tag})`, inline: true },
-            { name: '📌 القناة', value: `<#${message.channelId}>`, inline: true },
-            { name: '🔗 الرابط', value: `[اضغط هنا](${message.url})`, inline: true }
-          ]
-        });
-      } catch {}
-    }
-  },
-  {
-    name: 'messageReactionRemoveAll',
-    async execute(message) {
-      try {
-        if (message.partial) await message.fetch().catch(() => {});
-        if (!message?.guild) return;
-        await sendServerLog(message.guild, 'msg_reaction_remove_all', 'messages', {
-          title: 'مسح جميع التفاعلات',
-          desc: `تم مسح كل التفاعلات من رسالة في <#${message.channelId}>`,
-          fields: [
-            { name: '📌 القناة', value: `<#${message.channelId}>`, inline: true },
-            { name: '🔗 الرابط', value: `[اضغط هنا](${message.url})`, inline: true }
-          ]
-        });
-      } catch {}
-    }
-  },
+
   {
     name: 'channelPinsUpdate',
     async execute(channel, time) {

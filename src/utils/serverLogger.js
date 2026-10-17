@@ -10,7 +10,7 @@ const ALLOWED_LOG_EVENTS = new Set([
   'role_give_member', 'role_remove_member', 'role_create', 'role_update', 'role_delete',
 
   // الرسائل
-  'msg_delete', 'msg_purge', 'msg_update', 'msg_reaction_add', 'msg_reaction_remove', 'msg_reaction_remove_all', 'msg_pin', 'msg_unpin',
+  'msg_delete', 'msg_purge', 'msg_update', 'msg_pin', 'msg_unpin',
 
   // القنوات والثريدات
   'channel_create', 'channel_update', 'channel_delete', 'thread_create', 'thread_update', 'thread_delete', 'channel_perms_update',
