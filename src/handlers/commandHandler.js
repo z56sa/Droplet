@@ -19,7 +19,14 @@ module.exports = async (client) => {
     const commandFiles = fs.readdirSync(categoryPath).filter(file => file.endsWith('.js'));
     for (const file of commandFiles) {
       const filePath = path.join(categoryPath, file);
-      const command = require(filePath);
+      // ✅ حماية: ملف كمانجر واحد خراب ما يسقط تحميل باقي الأوامر
+      let command;
+      try {
+        command = require(filePath);
+      } catch (e) {
+        console.error(`[CommandHandler] فشل تحميل الأمر: ${category}/${file} — ${e.message}`);
+        continue;
+      }
 
       if (command.data && command.data.name) {
         command.category = category;

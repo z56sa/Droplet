@@ -20,8 +20,9 @@ module.exports = {
     const serverTracker = require('../../utils/serverTracker');
     await serverTracker.init(client).catch(() => {});
 
-    // تسجيل وتحديث أوامر السلاش لدى ديسكورد فوراً
-    if (typeof client.registerSlashCommands === 'function') {
+    // تسجيل وتحديث أوامر السلاش لدى ديسكورد فوراً (مرة واحدة فقط — الحارس يمنع التكرار مع index.js)
+    if (typeof client.registerSlashCommands === 'function' && !client._slashRegistered) {
+      client._slashRegistered = true;
       client.registerSlashCommands().catch(() => {});
     }
 

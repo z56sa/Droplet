@@ -73,7 +73,13 @@ module.exports = {
     );
 
     const sentMessage = await channel.send({ embeds: [embed], components: [row] });
-    db.addReactionRole(interaction.guild.id, sentMessage.id, role.id, customId, buttonLabel, '🎭');
+    // ✅ التوقيع الصحيح: setReactionRole(customId, guildId, roleId, messageId, channelId)
+    try {
+      if (db.setReactionRole) db.setReactionRole(customId, interaction.guild.id, role.id, sentMessage.id, channel.id);
+      else console.error('[reaction-role] db.setReactionRole غير متوفر — الزر لن يعمل');
+    } catch (e) {
+      console.error('[reaction-role] failed to save button role:', e.message);
+    }
 
     await interaction.reply({ content: t(lang, 'admin.reactionrole.created', { channel: channel.id }), flags: 64 });
   }

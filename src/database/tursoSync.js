@@ -22,8 +22,7 @@ class TursoSync {
     const url = cleanEnv(
       process.env.TURSO_DATABASE_URL ||
       process.env.TURSO_URL ||
-      process.env.LIBSQL_URL ||
-      process.env.TURSO_DATABASE_UR
+      process.env.LIBSQL_URL
     );
     const authToken = cleanEnv(
       process.env.TURSO_AUTH_TOKEN ||

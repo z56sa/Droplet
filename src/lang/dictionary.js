@@ -181,6 +181,9 @@ module.exports = {
     'general.roles.empty': 'No roles.',
 
     // ===== general.come =====
+    'general.come.no_perm': '❌ You need the **Move Members** permission to use this command.',
+    'general.come.need_voice': '❌ You must be in a voice channel first.',
+    'general.come.dm_fail': '⚠️ Could not DM that member (DMs closed).',
     'general.come.dm': '📢 Staff requests you in <#{channel}> on {guild}',
     'general.come.sent': '✅ Summon request sent!',
 
@@ -428,6 +431,9 @@ module.exports = {
     'general.roles.empty': 'لا توجد رتب.',
 
     // ===== general.come =====
+    'general.come.no_perm': '❌ تحتاج صلاحية **نقل الأعضاء** لاستخدام هذا الأمر.',
+    'general.come.need_voice': '❌ يجب أن تكون في روم صوتي أولاً.',
+    'general.come.dm_fail': '⚠️ تعذر إرسال الخاص (الرسائل الخاصة مغلقة).',
     'general.come.dm': '📢 طلب المشرف حضورك إلى: <#{channel}> في سيرفر {guild}',
     'general.come.sent': '✅ تم إرسال طلب الحضور بنجاح!',
 

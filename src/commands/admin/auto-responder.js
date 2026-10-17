@@ -74,9 +74,13 @@ module.exports = {
       await interaction.reply({ embeds: [embed] });
     } else if (sub === 'delete') {
       const id = interaction.options.getInteger('id');
-      const result = db.deleteAutoResponder(id, guildId);
 
-      if (result.changes > 0) {
+      // ✅ الترتيب الصحيح: (guildId, idOrTrigger)
+      let result = null;
+      try { result = db.deleteAutoResponder(guildId, id); } catch (e) { result = null; }
+      const changes = Number(result && result.changes) || 0;
+
+      if (changes > 0) {
         await interaction.reply({ content: t(lang, 'admin.autoresponder.deleted', { id }) });
       } else {
         await interaction.reply({ content: t(lang, 'admin.autoresponder.not_found', { id }), flags: 64 });

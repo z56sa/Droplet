@@ -115,12 +115,40 @@ client.once('ready', async () => {
       }
     } catch (e) { console.error('[StaffShiftService] start failed:', e.message); }
 
-    // Register slash commands to Discord globally
-    if (client.registerSlashCommands) {
+    // Register slash commands to Discord globally (مرة واحدة فقط — الحارس يمنع النداءات المكررة من ready.js)
+    if (client.registerSlashCommands && !client._slashRegistered) {
+        client._slashRegistered = true;
         client.registerSlashCommands().catch(err => {
             console.error('[Dashboard Discord] Error registering slash commands:', err);
         });
     }
+
+    // ✅ بدء خدمة القيف اواي (تراقب السحوبات المنتهية — تستعيد القيف اواي حتى بعد إعادة التشغيل)
+    try {
+        const GiveawayService = require('./services/giveawayService');
+        if (!global._dropletGiveawaySvc) {
+            global._dropletGiveawaySvc = new GiveawayService(client);
+            global._dropletGiveawaySvc.start();
+        }
+    } catch (e) { console.error('[GiveawayService] start failed:', e.message); }
+
+    // ✅ بدء خدمة قنوات الإحصائيات (تحديث دوري كل 10 دقائق بدلاً من تحديث لحظة الحفظ فقط)
+    try {
+        const StatChannelsService = require('./services/statChannels');
+        if (!global._dropletStatSvc) {
+            global._dropletStatSvc = new StatChannelsService(client);
+            global._dropletStatSvc.start();
+        }
+    } catch (e) { console.error('[StatChannels] start failed:', e.message); }
+
+    // ✅ ربط الحارس الأمني (فحص المرفقات/المفاتيح المكشوفة في الرسائل + مراقب الصحة)
+    try {
+        const { SecurityGuardian } = require('./services/securityGuardian');
+        if (!client.securityGuardian) {
+            client.securityGuardian = new SecurityGuardian(client);
+            client.securityGuardian.startHealthMonitor();
+        }
+    } catch (e) { console.error('[SecurityGuardian] init failed:', e.message); }
 
     // استعادة صورة البوت الأصلية من App Icon في Developer Portal
     try {

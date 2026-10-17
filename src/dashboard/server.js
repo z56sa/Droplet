@@ -100,7 +100,10 @@ module.exports = function (app, client) {
     // Helper: Discord OAuth2 config
     const getOAuthConfig = (req) => {
         const clientId = process.env.CLIENT_ID || process.env.DISCORD_CLIENT_ID || client?.user?.id || config.clientId;
-        const clientSecret = process.env.CLIENT_SECRET || process.env.DISCORD_CLIENT_SECRET || 'MNeCz9uTvXRzXeEUp8lUckSQeviU-cRY';
+        const clientSecret = process.env.CLIENT_SECRET || process.env.DISCORD_CLIENT_SECRET || config.clientSecret || '';
+        if (!clientSecret) {
+            console.warn('[SECURITY] ⚠️ CLIENT_SECRET غير مضبوط — تسجيل دخول Discord OAuth2 لن يعمل. أضفه في متغيرات البيئة.');
+        }
         // Dynamically deduce current active URL from request headers (works seamlessly regardless of Render custom domain or service rename)
         const forwardedProto = req ? (req.headers['x-forwarded-proto'] || req.protocol) : 'https';
         const host = req ? (req.headers['x-forwarded-host'] || req.get('host')) : null;
@@ -2657,7 +2660,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             { name: '/game', desc: 'ألعاب التحدي الجماعية (لعبة عشوائية) 🎲', badge: '', icon: '🎲' },
             { name: '/game-capitals', desc: 'لعبة عواصم ودول (Capitals) 🌍', badge: '', icon: '🌍' },
             { name: '/game-words', desc: 'لعبة تفكيك وتركيب الكلمات (Words) 🧩', badge: '', icon: '🧩' },
-            { name: '/game-fast', desc: 'لعبة أسرع واحد يكتب (Fast Typing) ⚡', badge: '', icon: '⚡' }
+            { name: '/game-fast', desc: 'لعبة أسرع واحد يكتب (Fast Typing) ⚡', badge: '', icon: '⚡' },
+            { name: '/game-gartic', desc: 'لعبة غارتيك: رسمة مشوشة يرسمها البوت وأول إجابة صحيحة تفوز (Gartic) 🎨', badge: '', icon: '🎨' },
+            { name: '/mafia', desc: 'لعبة المافيا الجماعية: أدوار سرية بالخاص ونقاش وتصويت (Mafia) 🔪', badge: '', icon: '🔪' }
         ]},
         invites: { title: 'Invite Tracker', desc: '\u0645\u062a\u062a\u0628\u0639 \u062f\u0639\u0648\u0627\u062a \u0627\u0644\u0623\u0639\u0636\u0627\u0621 \u0648\u0625\u062d\u0635\u0627\u0626\u064a\u0627\u062a \u0627\u0644\u062f\u0639\u0648\u0627\u062a', icon: '\ud83d\udd17', items: [
             { name: '/invites', desc: '\u0623\u0648\u0627\u0645\u0631 \u0646\u0638\u0627\u0645 \u0645\u062a\u062a\u0628\u0639 \u0627\u0644\u062f\u0639\u0648\u0627\u062a (Invite Tracker)', badge: '', icon: '\ud83d\udd17' }
@@ -11622,6 +11627,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 const capitalsReward = settings.game_reward_capitals || 75;
                 const wordsReward = settings.game_reward_words || 60;
                 const fastReward = settings.game_reward_fast || 85;
+                const garticReward = settings.game_reward_gartic || 90;
+                const mafiaReward = settings.game_reward_mafia || 120;
                 const gamesChannel = settings.games_channel || '';
 
                 formFieldsHtml = `
@@ -11656,11 +11663,34 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">حالة نظام الألعاب</label>
                                     <div class="bg-[#070d1d] border border-blue-500/20 rounded-xl px-4 py-3 flex items-center justify-between">
-                                        <span class="text-xs text-gray-300">تفعيل الأمر <span class="font-mono text-blue-400">/game</span> للأعضاء</span>
+                                        <span class="text-xs text-gray-300">تفعيل ألعاب السلاش للأعضاء</span>
                                         <label class="toggle">
                                             <input type="checkbox" name="games_enabled" value="1" ${gamesEnabled ? 'checked' : ''}>
                                             <span class="slider"></span>
                                         </label>
+                                    </div>
+                                    <label class="block text-xs font-bold text-gray-300 mb-2 mt-3">🎁 مكافآت الفوز (عملات 🪙)</label>
+                                    <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                        <div>
+                                            <label class="block text-[10px] text-gray-400 mb-1 text-center">🌍 عواصم</label>
+                                            <input type="number" min="0" max="100000" name="game_reward_capitals" value="${capitalsReward}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-2 py-2 text-xs text-white outline-none text-center font-mono">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] text-gray-400 mb-1 text-center">🧩 كلمات</label>
+                                            <input type="number" min="0" max="100000" name="game_reward_words" value="${wordsReward}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-2 py-2 text-xs text-white outline-none text-center font-mono">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] text-gray-400 mb-1 text-center">⚡ سرعة</label>
+                                            <input type="number" min="0" max="100000" name="game_reward_fast" value="${fastReward}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-2 py-2 text-xs text-white outline-none text-center font-mono">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] text-gray-400 mb-1 text-center">🎨 غارتيك</label>
+                                            <input type="number" min="0" max="100000" name="game_reward_gartic" value="${garticReward}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-2 py-2 text-xs text-white outline-none text-center font-mono">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] text-gray-400 mb-1 text-center">🔪 مافيا (فائز)</label>
+                                            <input type="number" min="0" max="100000" name="game_reward_mafia" value="${mafiaReward}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-2 py-2 text-xs text-white outline-none text-center font-mono">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -11683,6 +11713,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl text-xs space-y-1">
                                     <span class="font-bold text-amber-400 block">⚡ أسرع كتابة (Fast Typing)</span>
                                     <p class="text-gray-400 text-[11px]">عرض أمثال وجمل شهيرة، وأسرع من يكتب الجملة بالكامل بدون أخطاء يفوز.</p>
+                                </div>
+                                <div class="p-3 bg-[#070d1d] border border-amber-500/20 rounded-xl text-xs space-y-1">
+                                    <span class="font-bold text-amber-400 block">🎨 غارتيك — الرسم والتخمين</span>
+                                    <p class="text-gray-400 text-[11px]">البوت يرسم لوحة بخطوط يد "متهدجة" لكلمة سرية، وأول عضو يكتب الإجابة الصحيحة يفوز. تلميح بعد 20 ثانية. عبر <code class="text-blue-400 font-mono">/game-gartic</code>.</p>
+                                </div>
+                                <div class="p-3 bg-[#070d1d] border border-red-500/20 rounded-xl text-xs space-y-1">
+                                    <span class="font-bold text-red-400 block">🔪 المافيا (Mafia) الجماعية</span>
+                                    <p class="text-gray-400 text-[11px]">5–25 لاعباً: أدوار سرية بالخاص (مافيا/محقق/طبيب/مواطن)، ليل سرية ونهار بتصويت عام حتى ينتصر طرف. عبر <code class="text-blue-400 font-mono">/mafia</code>.</p>
                                 </div>
                             </div>
                         </div>

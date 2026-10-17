@@ -96,6 +96,7 @@ module.exports = {
 
     // ===== admin.autoreplyadd =====
     'admin.autoreplyadd.added': '✅ Auto-reply added successfully for the word: {word}',
+    'admin.autoreplyadd.missing': '❌ Missing the word or the reply. Usage: `autoreply-add <word> <reply>`',
 
     // ===== admin.autoreplylist =====
     'admin.autoreplylist.empty': '❌ No auto-replies added.',
@@ -103,6 +104,7 @@ module.exports = {
 
     // ===== admin.autoreplyremove =====
     'admin.autoreplyremove.removed': '✅ Auto-reply #{id} deleted successfully.',
+    'admin.autoreplyremove.not_found': '❌ No auto-reply found with id #{id}.',
 
     // ===== admin.dmmode =====
     'admin.dmmode.enabled': '✅ DM notifications enabled.',
@@ -515,6 +517,7 @@ module.exports = {
 
     // ===== admin.autoreplyadd =====
     'admin.autoreplyadd.added': '✅ تم إضافة الرد التلقائي بنجاح على كلمة: {word}',
+    'admin.autoreplyadd.missing': '❌ الكلمة أو الرد ناقص. الاستخدام: `autoreply-add <كلمة> <رد>`',
 
     // ===== admin.autoreplylist =====
     'admin.autoreplylist.empty': '❌ لا توجد ردود تلقائية مضافة.',
@@ -522,6 +525,7 @@ module.exports = {
 
     // ===== admin.autoreplyremove =====
     'admin.autoreplyremove.removed': '✅ تم حذف الرد التلقائي رقم #{id} بنجاح.',
+    'admin.autoreplyremove.not_found': '❌ لا يوجد رد تلقائي بهذا الرقم #{id}.',
 
     // ===== admin.dmmode =====
     'admin.dmmode.enabled': '✅ تم تفعيل إشعارات الخاص.',

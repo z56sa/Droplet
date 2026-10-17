@@ -1,3 +1,4 @@
+const { PermissionFlagsBits } = require('discord.js');
 const { EmbedBuilder } = require('discord.js');
 const db = require('../../database');
 const { getGuildLang, t } = require('../../utils/lang');

@@ -2089,15 +2089,19 @@ function getAutoResponders(guildId) {
 }
 
 function deleteAutoResponder(guildId, idOrTrigger) {
+  let changes = 0;
   if (typeof idOrTrigger === 'number' || !isNaN(idOrTrigger)) {
-    db.prepare('DELETE FROM auto_responders WHERE guild_id = ? AND id = ?').run(guildId, Number(idOrTrigger));
+    const r1 = db.prepare('DELETE FROM auto_responders WHERE guild_id = ? AND id = ?').run(guildId, Number(idOrTrigger));
     syncRowDelete('auto_responders', 'id', Number(idOrTrigger));
+    changes = Number(r1.changes) || 0;
   } else {
     let _ids = [];
     try { _ids = db.prepare('SELECT id FROM auto_responders WHERE guild_id = ? AND trigger_word = ?').all(guildId, String(idOrTrigger).trim()).map(r => r.id); } catch (e) {}
-    db.prepare('DELETE FROM auto_responders WHERE guild_id = ? AND trigger_word = ?').run(guildId, String(idOrTrigger).trim());
+    const r2 = db.prepare('DELETE FROM auto_responders WHERE guild_id = ? AND trigger_word = ?').run(guildId, String(idOrTrigger).trim());
+    changes = Number(r2.changes) || 0;
     try { for (const _id of _ids) syncRowDelete('auto_responders', 'id', _id); } catch (e) {}
   }
+  return { changes };
 }
 
 function incrementAutoResponderUse(id) {
@@ -2620,14 +2624,7 @@ function setStaffPoints(guildId, userId, points) {
   }
 }
 
-function addStaffPoints(guildId, userId, points) {
-  try {
-    getStaffMember(guildId, userId);
-    return db.prepare("UPDATE staff_activity SET points = points + ? WHERE guild_id = ? AND user_id = ?").run(points, guildId, userId);
-  } catch (e) {
-    return null;
-  }
-}
+// ملاحظة: addStaffPoints الكاملة معرّفة أعلاه (مع تسجيل الإجراء) — لا تع重新 تعريفها هنا
 
 // ==========================================
 // 🛡️ Whitelist & Anti Mod Helpers
@@ -2803,6 +2800,7 @@ module.exports = {
   addAutoResponder,
   getAutoResponders,
   deleteAutoResponder,
+  incrementAutoResponderUse,
   addLevelReward,
   getLevelRewards,
   removeLevelReward,

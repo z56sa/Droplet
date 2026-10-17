@@ -49,7 +49,12 @@ module.exports = {
         rows[rows.length - 1].addComponents(btn);
       }
       await msg.edit({ components: rows });
-      if (db.addReactionRole) db.addReactionRole(customId, interaction.guild.id, role.id, msg.id, msg.channel.id);
+      // ✅ التسجيل عبر setReactionRole (كانت addReactionRole غير مُصدَّرة فلم يُحفظ الزر أبداً)
+      try {
+        if (db.setReactionRole) db.setReactionRole(customId, interaction.guild.id, role.id, msg.id, msg.channel.id);
+      } catch (e) {
+        console.error('[add-button] failed to save button role:', e.message);
+      }
       return interaction.reply({ content: t(lang, 'admin.addbutton.role_added', { role: role.name }) });
     } else if (sub === 'info') {
       const btn = new ButtonBuilder().setCustomId('info_' + Date.now()).setLabel(label).setStyle(ButtonStyle.Secondary);
