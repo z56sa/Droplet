@@ -1244,50 +1244,6 @@ module.exports = function (app, client) {
                 if (cIndex !== -1) userRankCoins = cIndex + 1;
             } catch (err) {}
 
-            // 🔍 تشخيص مصدر البيانات (يظهر كشريط صغير أعلى الصفحة — يساعد على تحديد المشكلة فوراً)
-            let _diag = { tursoEnabled: false, localUsers: 0, xpUsers: 0, boards: xpLeaderboard.length, lastPull: null, lastPacketError: null, lastPush: null };
-            try {
-                const tursoDiag = require('../database/tursoSync');
-                _diag.tursoEnabled = !!tursoDiag.enabled;
-                _diag.lastPull = tursoDiag.lastPull || null;
-                _diag.lastPacketError = tursoDiag.lastPacketError || null;
-                _diag.localUsers = rawDb.prepare('SELECT COUNT(*) as n FROM users').get()?.n || 0;
-                _diag.xpUsers = rawDb.prepare('SELECT COUNT(*) as n FROM users WHERE xp > 0').get()?.n || 0;
-                try {
-                    const bridgeDiag = require('../utils/dashboardBridge');
-                    _diag.bridgeRunning = !!(bridgeDiag.isRunning && bridgeDiag.isRunning());
-                    _diag.lastPush = bridgeDiag.getState ? bridgeDiag.getState() : null;
-                } catch (e) {}
-            } catch (e) {}
-            const _diagTursoHtml = _diag.tursoEnabled
-                ? `<span class="text-emerald-400 font-bold">Turso ✅ مفعّل</span>`
-                : `<span class="text-rose-400 font-bold">Turso ❌ غير مفعّل</span> <span class="text-gray-400">— أضف TURSO_DATABASE_URL و TURSO_AUTH_TOKEN بمتغيرات خدمة droplet-dashboard بـ Render</span>`;
-            const _diagPullHtml = _diag.tursoEnabled
-                ? (_diag.lastPull && _diag.lastPull.at
-                    ? `<span class="text-gray-500">${_diag.lastPull.ok ? 'آخر سحب' : '<span class="text-amber-400">فشل السحب</span>'}: <span class="font-mono text-gray-400">${_diag.lastPull.rows}</span> صف • منذ ${Math.floor((Date.now() - _diag.lastPull.at) / 1000)}ث${_diag.lastPull.err ? ` • <span class="text-amber-400 font-mono">${String(_diag.lastPull.err).slice(0, 90)}</span>` : ''}</span>`
-                    : '<span class="text-gray-500">لم يحدث سحب من Turso بعد</span>')
-                : '';
-            const _diagBridgeHtml = (() => {
-                try {
-                    if (!_diag.bridgeRunning) return ''; // الجسر مو مفعّل بهذي الخدمة — لا نعرض شي يلخبط
-                    const push = _diag.lastPush;
-                    if (!push || !push.at) return '<span class="text-gray-500">جسر البوت: أول دفعة خلال دقائق من الإقلاع…</span>';
-                    const pushOk = push.ok ? `<span class="text-emerald-400 font-bold">جسر البوت ✅</span>` : `<span class="text-amber-400 font-bold">جسر البوت ⚠️ فشل</span>`;
-                    const errHtml = push.err ? ` • <span class="text-amber-400 font-mono">${String(push.err).slice(0, 80)}</span>` : '';
-                    return `<span class="text-gray-500">${pushOk} — آخر دفع: <span class="font-mono text-gray-400">${push.rows}</span> صف • منذ ${Math.floor((Date.now() - push.at) / 1000)}ث${errHtml}</span>`;
-                } catch (e) { return ''; }
-            })();
-            const _diagHtml = `
-                <div class="mx-6 mb-4 bg-[#0b1020]/80 border border-blue-500/10 rounded-2xl px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] leading-relaxed">
-                    <span class="text-blue-300 font-bold">🔧 حالة البيانات:</span>
-                    <span class="text-gray-300">المستخدمون المحليون: <span class="font-mono text-white">${_diag.localUsers}</span></span>
-                    <span class="text-gray-300">منهم XP: <span class="font-mono text-white">${_diag.xpUsers}</span></span>
-                    <span>${_diagTursoHtml}</span>
-                    ${_diagPullHtml}
-                    ${_diagBridgeHtml}
-                    <button type="button" onclick="window.tursoSyncNow(this)" class="ml-auto px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition cursor-pointer disabled:opacity-40">⟳ مزامنة الآن</button>
-                </div>`;
-
             const now = Date.now();
             const canClaimDaily = (now - userLastDaily) >= 24 * 60 * 60 * 1000;
             const nextDailyIn = Math.max(0, 24 * 60 * 60 * 1000 - (now - userLastDaily));
@@ -1532,23 +1488,6 @@ module.exports = function (app, client) {
         // (كانت تمسح كل DOM لتطبيق الترجمات — 77KB script على صفحة ضخمة)
     };
 
-    window.tursoSyncNow = async function(btn) {
-        try {
-            if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري المزامنة…'; }
-            const res = await fetch('/api/turso/sync-now', { method: 'POST' });
-            const json = await res.json().catch(() => ({}));
-            if (json.success) {
-                window.location.reload();
-            } else {
-                alert(json.error || 'تعذّرت المزامنة — افتح لوج Render وشوف سطر [TURSO]');
-                if (btn) { btn.disabled = false; btn.textContent = '⟳ مزامنة الآن'; }
-            }
-        } catch (e) {
-            alert('فشل الاتصال بالسيرفر');
-            if (btn) { btn.disabled = false; btn.textContent = '⟳ مزامنة الآن'; }
-        }
-    };
-
     window.claimDailyReward = async function() {
         const btn = document.getElementById('claimDailyBtn');
         if (btn) {
@@ -1707,8 +1646,6 @@ module.exports = function (app, client) {
                     <!-- Main Content (Left in RTL - Novax User Dashboard Style) -->
                     <main class="flex-1 p-8 overflow-y-auto custom-scrollbar space-y-6">
                         
-                        ${_diagHtml}
-
                         <!-- Tab 1: نظرة عامة والملف الشخصي (Novax Exact Style) -->
                         <div id="tabOverview" class="tab-content space-y-6">
                             

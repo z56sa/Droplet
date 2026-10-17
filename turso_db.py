@@ -13,12 +13,15 @@ class TursoDatabase:
         self.url = (
             os.environ.get("TURSO_DATABASE_URL")
             or os.environ.get("TURSO_URL")
+            or os.environ.get("TURSO_DB_URL")
             or os.environ.get("LIBSQL_URL")
+            or os.environ.get("DATABASE_URL")
             or ""
         ).strip()
         self.token = (
             os.environ.get("TURSO_AUTH_TOKEN")
             or os.environ.get("TURSO_TOKEN")
+            or os.environ.get("TURSO_DATABASE_TOKEN")
             or os.environ.get("LIBSQL_AUTH_TOKEN")
             or os.environ.get("LIBSQL_TOKEN")
             or ""
