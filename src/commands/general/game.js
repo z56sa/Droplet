@@ -73,6 +73,9 @@ function normalizeArabicText(text) {
 }
 
 module.exports = {
+  name: 'game',
+  description: 'ألعاب التحدي والذكاء الجماعية في الشات 🎮',
+  aliases: ['لعبة', 'العاب', 'ألعاب', 'games', 'play'],
   data: new SlashCommandBuilder()
     .setName('game')
     .setDescription('ألعاب التحدي والذكاء الجماعية في الشات 🎮')
@@ -107,6 +110,48 @@ module.exports = {
     const chosenType = interaction.options.getString('type') || 'random';
     await interaction.deferReply();
     await this.startGame(interaction.channel, interaction.user, interaction.guild.id, chosenType, (opts) => interaction.editReply(opts), settings);
+  },
+
+  async executePrefix(message, args) {
+    const channelId = message.channel.id;
+    if (activeGames.has(channelId)) {
+      return message.reply('⚠️ هناك لعبة جارية بالفعل في هذه القناة! انتظر حتى تنتهي.').catch(() => {});
+    }
+
+    const settings = db.getGuildSettings ? (db.getGuildSettings(message.guild.id) || {}) : {};
+    if (settings.games_enabled === 0 || settings.games_enabled === '0' || settings.games_enabled === false) {
+      return message.reply('🔒 نظام الألعاب معطل حالياً في هذا السيرفر من لوحة التحكم.').catch(() => {});
+    }
+
+    if (settings.games_channel && settings.games_channel !== channelId) {
+      return message.reply(`⚠️ تم تخصيص الألعاب لتعمل فقط في روم: <#${settings.games_channel}>!`).catch(() => {});
+    }
+
+    let chosenType = 'random';
+    const arg = (args && args[0] ? args[0].toLowerCase() : '');
+    if (arg === 'capitals' || arg === 'عواصم' || arg === 'عاصمة') {
+      chosenType = 'capitals';
+    } else if (arg === 'words' || arg === 'كلمات' || arg === 'تفكيك' || arg === 'تركيب') {
+      chosenType = 'words';
+    } else if (arg === 'fast' || arg === 'سرعة' || arg === 'اسرع' || arg === 'أسرع') {
+      chosenType = 'fast';
+    } else if (arg === 'random' || arg === 'عشوائي' || arg === 'عشوائية') {
+      chosenType = 'random';
+    }
+
+    let initialMsg = null;
+    try {
+      initialMsg = await message.channel.send('🎮 جارٍ بدء اللعبة...');
+    } catch {}
+
+    const replyMethod = async (opts) => {
+      if (initialMsg) {
+        return initialMsg.edit(opts).catch(() => message.channel.send(opts));
+      }
+      return message.channel.send(opts);
+    };
+
+    await this.startGame(message.channel, message.author, message.guild.id, chosenType, replyMethod, settings);
   },
 
   async startGame(channel, starter, guildId, type, replyMethod, settings = {}) {
