@@ -1125,34 +1125,6 @@ module.exports = function (app, client) {
                     } catch (e) {}
                 }
 
-                // 🔍 تشخيص مصدر البيانات (يظهر كشريط صغير أعلى الصفحة — يساعد على تحديد المشكلة فوراً)
-                let _diag = { tursoEnabled: false, localUsers: 0, xpUsers: 0, boards: xpLeaderboard.length, lastPull: null, lastPacketError: null };
-                try {
-                    const tursoDiag = require('../database/tursoSync');
-                    _diag.tursoEnabled = !!tursoDiag.enabled;
-                    _diag.lastPull = tursoDiag.lastPull || null;
-                    _diag.lastPacketError = tursoDiag.lastPacketError || null;
-                    _diag.localUsers = rawDb.prepare('SELECT COUNT(*) as n FROM users').get()?.n || 0;
-                    _diag.xpUsers = rawDb.prepare('SELECT COUNT(*) as n FROM users WHERE xp > 0').get()?.n || 0;
-                } catch (e) {}
-                const _diagTursoHtml = _diag.tursoEnabled
-                    ? `<span class="text-emerald-400 font-bold">Turso ✅ مفعّل</span>`
-                    : `<span class="text-rose-400 font-bold">Turso ❌ غير مفعّل</span> <span class="text-gray-400">— أضف TURSO_DATABASE_URL و TURSO_AUTH_TOKEN بمتغيرات خدمة droplet-dashboard بـ Render</span>`;
-                const _diagPullHtml = _diag.tursoEnabled
-                    ? (_diag.lastPull && _diag.lastPull.at
-                        ? `<span class="text-gray-500">${_diag.lastPull.ok ? 'آخر سحب' : '<span class="text-amber-400">فشل السحب</span>'}: <span class="font-mono text-gray-400">${_diag.lastPull.rows}</span> صف • منذ ${Math.floor((Date.now() - _diag.lastPull.at) / 1000)}ث${_diag.lastPull.err ? ` • <span class="text-amber-400 font-mono">${String(_diag.lastPull.err).slice(0, 90)}</span>` : ''}</span>`
-                        : '<span class="text-gray-500">لم يحدث سحب من Turso بعد</span>')
-                    : '';
-                const _diagHtml = `
-                <div class="mx-6 mb-4 bg-[#0b1020]/80 border border-blue-500/10 rounded-2xl px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] leading-relaxed">
-                    <span class="text-blue-300 font-bold">🔧 حالة البيانات:</span>
-                    <span class="text-gray-300">المستخدمون المحليون: <span class="font-mono text-white">${_diag.localUsers}</span></span>
-                    <span class="text-gray-300">منهم XP: <span class="font-mono text-white">${_diag.xpUsers}</span></span>
-                    <span>${_diagTursoHtml}</span>
-                    ${_diagPullHtml}
-                    <button type="button" onclick="window.tursoSyncNow(this)" class="ml-auto px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition cursor-pointer disabled:opacity-40">⟳ مزامنة الآن</button>
-                </div>`;
-
                 // تعبئة بيانات المستخدمين من الكاش فقط (بدون طلبات Discord API لتجنب التجميد)
                 const fillFromCache = (list) => {
                     for (const item of list) {
@@ -1181,6 +1153,34 @@ module.exports = function (app, client) {
                 const cIndex = coinsLeaderboard.findIndex(r => r.user_id === user.id);
                 if (cIndex !== -1) userRankCoins = cIndex + 1;
             } catch (err) {}
+
+            // 🔍 تشخيص مصدر البيانات (يظهر كشريط صغير أعلى الصفحة — يساعد على تحديد المشكلة فوراً)
+            let _diag = { tursoEnabled: false, localUsers: 0, xpUsers: 0, boards: xpLeaderboard.length, lastPull: null, lastPacketError: null };
+            try {
+                const tursoDiag = require('../database/tursoSync');
+                _diag.tursoEnabled = !!tursoDiag.enabled;
+                _diag.lastPull = tursoDiag.lastPull || null;
+                _diag.lastPacketError = tursoDiag.lastPacketError || null;
+                _diag.localUsers = rawDb.prepare('SELECT COUNT(*) as n FROM users').get()?.n || 0;
+                _diag.xpUsers = rawDb.prepare('SELECT COUNT(*) as n FROM users WHERE xp > 0').get()?.n || 0;
+            } catch (e) {}
+            const _diagTursoHtml = _diag.tursoEnabled
+                ? `<span class="text-emerald-400 font-bold">Turso ✅ مفعّل</span>`
+                : `<span class="text-rose-400 font-bold">Turso ❌ غير مفعّل</span> <span class="text-gray-400">— أضف TURSO_DATABASE_URL و TURSO_AUTH_TOKEN بمتغيرات خدمة droplet-dashboard بـ Render</span>`;
+            const _diagPullHtml = _diag.tursoEnabled
+                ? (_diag.lastPull && _diag.lastPull.at
+                    ? `<span class="text-gray-500">${_diag.lastPull.ok ? 'آخر سحب' : '<span class="text-amber-400">فشل السحب</span>'}: <span class="font-mono text-gray-400">${_diag.lastPull.rows}</span> صف • منذ ${Math.floor((Date.now() - _diag.lastPull.at) / 1000)}ث${_diag.lastPull.err ? ` • <span class="text-amber-400 font-mono">${String(_diag.lastPull.err).slice(0, 90)}</span>` : ''}</span>`
+                    : '<span class="text-gray-500">لم يحدث سحب من Turso بعد</span>')
+                : '';
+            const _diagHtml = `
+                <div class="mx-6 mb-4 bg-[#0b1020]/80 border border-blue-500/10 rounded-2xl px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] leading-relaxed">
+                    <span class="text-blue-300 font-bold">🔧 حالة البيانات:</span>
+                    <span class="text-gray-300">المستخدمون المحليون: <span class="font-mono text-white">${_diag.localUsers}</span></span>
+                    <span class="text-gray-300">منهم XP: <span class="font-mono text-white">${_diag.xpUsers}</span></span>
+                    <span>${_diagTursoHtml}</span>
+                    ${_diagPullHtml}
+                    <button type="button" onclick="window.tursoSyncNow(this)" class="ml-auto px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition cursor-pointer disabled:opacity-40">⟳ مزامنة الآن</button>
+                </div>`;
 
             const now = Date.now();
             const canClaimDaily = (now - userLastDaily) >= 24 * 60 * 60 * 1000;
