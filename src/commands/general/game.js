@@ -72,76 +72,54 @@ function normalizeArabicText(text) {
     .replace(/\s+/g, ' ');
 }
 
+// 🧩 دوال مشتركة لأوامر الألعاب الجديدة (game-capitals / game-words / game-fast)
+function getGamesSettings(guildId) {
+  return db.getGuildSettings ? (db.getGuildSettings(guildId) || {}) : {};
+}
+
+// يرجع نص رسالة الحجب أو null إذا كله تمام
+function preflightGamesError(channelId, guildId, settings = {}, opts = {}) {
+  if (!opts.skipActive && activeGames.has(channelId)) {
+    return '⚠️ هناك لعبة جارية بالفعل في هذه القناة! انتظر حتى تنتهي.';
+  }
+  if (settings.games_enabled === 0 || settings.games_enabled === '0' || settings.games_enabled === false) {
+    return '🔒 نظام الألعاب معطل حالياً في هذا السيرفر من لوحة التحكم.';
+  }
+  if (settings.games_channel && settings.games_channel !== channelId) {
+    return `⚠️ تم تخصيص الألعاب لتعمل فقط في روم: <#${settings.games_channel}>!`;
+  }
+  return null;
+}
+
 module.exports = {
   name: 'game',
   description: 'ألعاب التحدي والذكاء الجماعية في الشات 🎮',
   aliases: ['لعبة', 'العاب', 'ألعاب', 'games', 'play'],
   data: new SlashCommandBuilder()
     .setName('game')
-    .setDescription('ألعاب التحدي والذكاء الجماعية في الشات 🎮')
-    .addStringOption(opt =>
-      opt.setName('type')
-        .setDescription('اختر اللعبة')
-        .setRequired(false)
-        .addChoices(
-          { name: '🌍 عواصم ودول (Capitals)', value: 'capitals' },
-          { name: '🧩 تفكيك وتركيب الكلمات (Words)', value: 'words' },
-          { name: '⚡ أسرع واحد يكتب (Fast Typing)', value: 'fast' },
-          { name: '🎲 لعبة عشوائية (Random Game)', value: 'random' }
-        )
-    ),
+    .setDescription('🎲 لعبة عشوائية: عواصم أو كلمات أو سرعة — أول إجابة صحيحة تفوز!'),
 
   async execute(interaction) {
-    const channelId = interaction.channelId;
-    if (activeGames.has(channelId)) {
-      return interaction.reply({ content: '⚠️ هناك لعبة جارية بالفعل في هذه القناة! انتظر حتى تنتهي.', ephemeral: true });
-    }
+    const settings = getGamesSettings(interaction.guild.id);
+    const err = preflightGamesError(interaction.channelId, interaction.guild.id, settings);
+    if (err) return interaction.reply({ content: err, ephemeral: true });
 
-    // فحص إعدادات الداشبورد
-    const settings = db.getGuildSettings ? (db.getGuildSettings(interaction.guildId) || {}) : {};
-    if (settings.games_enabled === 0 || settings.games_enabled === '0' || settings.games_enabled === false) {
-      return interaction.reply({ content: '🔒 نظام الألعاب معطل حالياً في هذا السيرفر من لوحة التحكم.', ephemeral: true });
-    }
-
-    if (settings.games_channel && settings.games_channel !== channelId) {
-      return interaction.reply({ content: `⚠️ تم تخصيص الألعاب لتعمل فقط في روم: <#${settings.games_channel}>!`, ephemeral: true });
-    }
-
-    const chosenType = interaction.options.getString('type') || 'random';
     await interaction.deferReply();
-    await this.startGame(interaction.channel, interaction.user, interaction.guild.id, chosenType, (opts) => interaction.editReply(opts), settings);
+    await this.startGame(interaction.channel, interaction.user, interaction.guild.id, 'random', (opts) => interaction.editReply(opts), settings);
   },
 
   async executePrefix(message, args) {
-    const channelId = message.channel.id;
-    if (activeGames.has(channelId)) {
+    const settings = getGamesSettings(message.guild.id);
+    // البريفكس: /game لعبة عشوائية فقط — تحديد النوع متاح عبر الأوامر المنفصلة (#عواصم #كلمات #سرعة)
+    if (activeGames.has(message.channel.id)) {
       return message.reply('⚠️ هناك لعبة جارية بالفعل في هذه القناة! انتظر حتى تنتهي.').catch(() => {});
     }
-
-    const settings = db.getGuildSettings ? (db.getGuildSettings(message.guild.id) || {}) : {};
-    if (settings.games_enabled === 0 || settings.games_enabled === '0' || settings.games_enabled === false) {
-      return message.reply('🔒 نظام الألعاب معطل حالياً في هذا السيرفر من لوحة التحكم.').catch(() => {});
-    }
-
-    if (settings.games_channel && settings.games_channel !== channelId) {
-      return message.reply(`⚠️ تم تخصيص الألعاب لتعمل فقط في روم: <#${settings.games_channel}>!`).catch(() => {});
-    }
-
-    let chosenType = 'random';
-    const arg = (args && args[0] ? args[0].toLowerCase() : '');
-    if (arg === 'capitals' || arg === 'عواصم' || arg === 'عاصمة') {
-      chosenType = 'capitals';
-    } else if (arg === 'words' || arg === 'كلمات' || arg === 'تفكيك' || arg === 'تركيب') {
-      chosenType = 'words';
-    } else if (arg === 'fast' || arg === 'سرعة' || arg === 'اسرع' || arg === 'أسرع') {
-      chosenType = 'fast';
-    } else if (arg === 'random' || arg === 'عشوائي' || arg === 'عشوائية') {
-      chosenType = 'random';
-    }
+    const err = preflightGamesError(message.channel.id, message.guild.id, settings, { skipActive: true });
+    if (err) return message.reply(err).catch(() => {});
 
     let initialMsg = null;
     try {
-      initialMsg = await message.channel.send('🎮 جارٍ بدء اللعبة...');
+      initialMsg = await message.channel.send('🎮 جارٍ بدء اللعبة العشوائية...');
     } catch {}
 
     const replyMethod = async (opts) => {
@@ -151,7 +129,7 @@ module.exports = {
       return message.channel.send(opts);
     };
 
-    await this.startGame(message.channel, message.author, message.guild.id, chosenType, replyMethod, settings);
+    await this.startGame(message.channel, message.author, message.guild.id, 'random', replyMethod, settings);
   },
 
   async startGame(channel, starter, guildId, type, replyMethod, settings = {}) {
@@ -357,3 +335,9 @@ module.exports = {
     });
   }
 };
+
+// 🧩 تصدير مشترك: الأوامر المنفصلة (game-capitals / game-words / game-fast) تستخدم هذه
+module.exports.getGamesSettings = getGamesSettings;
+module.exports.preflightGamesError = preflightGamesError;
+module.exports.normalizeArabicText = normalizeArabicText;
+module.exports.activeGames = activeGames;

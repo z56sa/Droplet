@@ -11642,7 +11642,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <h3 class="text-lg font-black text-white">نظام الألعاب والتحديات التفاعلية</h3>
                                     </div>
                                     <p class="text-xs text-gray-400 leading-relaxed">
-                                        ألعاب ذكاء وتحديات تفاعلية في الشات (عواصم ودول، تفكيك/تركيب الكلمات، وأسرع واحد يكتب) مع مكافآت رصيد فورية للفائزين عبر أمر السلاش <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game</code> أو عبر تخصيص اختصار لكل لعبة من قائمة الأوامر.
+                                        ألعاب ذكاء وتحديات تفاعلية في الشات: <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game</code> لعبة عشوائية، وكل لعبة لها أمر مستقل — <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-capitals</code> عواصم، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-words</code> تفكيك وتركيب، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-fast</code> أسرع كتابة، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-gartic</code> رسم وتخمين، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/mafia</code> المافيا الجماعية — مع مكافآت رصيد فورية للفائزين وتخصيص اختصار لكل منها من قائمة الأوامر.
                                     </p>
                                 </div>
                                 <div class="text-4xl text-blue-400/20 select-none">🕹️</div>
@@ -11704,15 +11704,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <div class="p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl text-xs space-y-1">
                                     <span class="font-bold text-blue-400 block">🌍 عواصم الدول (24+ دولة)</span>
-                                    <p class="text-gray-400 text-[11px]">يسأل البوت عن عاصمة دولة عربية أو عالمية مع مؤقت 20 ثانية وفحص مرن للهمزات.</p>
+                                    <p class="text-gray-400 text-[11px]">يسأل البوت عن عاصمة دولة عربية أو عالمية مع مؤقت 20 ثانية وفحص مرن للهمزات. أمر مستقل: <code class="text-blue-400 font-mono">/game-capitals</code></p>
                                 </div>
                                 <div class="p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl text-xs space-y-1">
                                     <span class="font-bold text-purple-400 block">🧩 تفكيك وتركيب الكلمات</span>
-                                    <p class="text-gray-400 text-[11px]">يعرض البوت حروفاً مبعثرة للتركيب، أو كلمة لتفكيكها مع مراعاة المسافات.</p>
+                                    <p class="text-gray-400 text-[11px]">يعرض البوت حروفاً مبعثرة للتركيب، أو كلمة لتفكيكها مع مراعاة المسافات. أمر مستقل: <code class="text-purple-400 font-mono">/game-words</code></p>
                                 </div>
                                 <div class="p-3 bg-[#070d1d] border border-blue-500/20 rounded-xl text-xs space-y-1">
                                     <span class="font-bold text-amber-400 block">⚡ أسرع كتابة (Fast Typing)</span>
-                                    <p class="text-gray-400 text-[11px]">عرض أمثال وجمل شهيرة، وأسرع من يكتب الجملة بالكامل بدون أخطاء يفوز.</p>
+                                    <p class="text-gray-400 text-[11px]">عرض أمثال وجمل شهيرة وأسرع من يكتبها يفوز. أمر مستقل: <code class="text-amber-400 font-mono">/game-fast</code></p>
                                 </div>
                                 <div class="p-3 bg-[#070d1d] border border-amber-500/20 rounded-xl text-xs space-y-1">
                                     <span class="font-bold text-amber-400 block">🎨 غارتيك — الرسم والتخمين</span>

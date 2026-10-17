@@ -27,13 +27,26 @@ for (const folder of commandFolders) {
         const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
         for (const file of commandFiles) {
             const filePath = path.join(commandsPath, file);
-            const command = require(filePath);
+            // ✅ حماية: ملف واحد خراب ما يكسر رفع كل الأوامر
+            let command;
+            try {
+                command = require(filePath);
+            } catch (e) {
+                console.error(`⚠️ تعذر تحميل ${folder}/${file}: ${e.message}`);
+                continue;
+            }
             if ('data' in command && 'execute' in command) {
                 commands.push(command.data.toJSON());
             }
         }
     } else if (commandsPath.endsWith('.js')) {
-        const command = require(commandsPath);
+        let command;
+        try {
+            command = require(commandsPath);
+        } catch (e) {
+            console.error(`⚠️ تعذر تحميل ${commandFolders}/${path.basename(commandsPath)}: ${e.message}`);
+            return;
+        }
         if ('data' in command && 'execute' in command) {
             commands.push(command.data.toJSON());
         }

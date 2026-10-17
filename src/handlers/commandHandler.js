@@ -62,23 +62,20 @@ module.exports = async (client) => {
     const rest = new REST({ version: '10' }).setToken(tokenToUse);
     try {
       logger.info(`جاري تسجيل ${slashCommandsArray.length} أمر سلاش للبوت (${client.user.id})...`);
-      
-      // 1. تسجيل أوامر السيرفرات فورياً (Guild Commands) لتظهر في ديسكورد فوراً وبدون انتظار كاش الـ 1 ساعة
+
+      // 1. ✅ تنظيف الأوامر المسجلة قديماً لكل سيرفر ( كانت سبب ظهور الأوامر مكررة في ديسكورد: guild + global بنفس الاسم )
       if (client.guilds?.cache?.size > 0) {
         for (const [guildId, guild] of client.guilds.cache) {
           try {
-            await rest.put(
-              Routes.applicationGuildCommands(client.user.id, guildId),
-              { body: slashCommandsArray }
-            );
-            logger.info(`[GUILD SLASH] ✅ تم تسجيل أوامر السلاش فورياً لسيرفر: ${guild.name} (${guildId})`);
-          } catch(e) {
-            logger.warn(`[GUILD SLASH] تعذر التسجيل لسيرفر ${guildId}: ${e.message}`);
+            await rest.put(Routes.applicationGuildCommands(client.user.id, guildId), { body: [] });
+          } catch (e) {
+            logger.warn(`[GUILD SLASH] تعذر تفريغ الأوامر القديمة لسيرفر ${guildId}: ${e.message}`);
           }
         }
+        logger.info(`[GUILD SLASH] 🧹 تم تفريغ أوامر السيرفرات القديمة (${client.guilds.cache.size} سيرفر) لمنع التكرار.`);
       }
 
-      // 2. تسجيل الأوامر العامة الرسمية الموحدة (Global Commands)
+      // 2. ✅ التسجيل العالمي الرسمي الموحد (Global) — المصدر الوحيد للأوامر، بلا تكرار
       const registered = await rest.put(
         Routes.applicationCommands(client.user.id),
         { body: slashCommandsArray }
@@ -89,7 +86,7 @@ module.exports = async (client) => {
           client.slashCommandIds.set(cmd.name, cmd.id);
         }
       }
-      logger.info(`[SUCCESS] ✅ تم تسجيل ${registered?.length || slashCommandsArray.length} أمر سلاش عام بنجاح.`);
+      logger.info(`[SUCCESS] ✅ تم تسجيل ${registered?.length || slashCommandsArray.length} أمر سلاش عام بنجاح (بدون تكرار).`);
     } catch (err) {
       logger.error(`حدث خطأ أثناء تسجيل أوامر السلاش: ${err.message}`);
     }

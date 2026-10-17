@@ -6,6 +6,8 @@
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const { createCanvas } = require('@napi-rs/canvas');
 const db = require('../../database');
+// 🔗 حارس الجولات مشترك مع game.js حتى لا تتداخل /game مع /game-gartic في نفس الروم
+const game = require('./game');
 
 // ─── رسّام السكتش: خطوط مرتجفة + هزات عشوائية (يخلي الرسمة "غير واضحة") ───
 class SketchPainter {
@@ -137,8 +139,8 @@ const GARTIC_WORDS = [
   { word: 'كتاب', hint: 'له غلاف وصفحات… تقرأ فيه.', draw: (d) => { d.rect(230, 240, 90, 180); d.rect(410, 240, 90, 180); d.line(410, 240, 360, 260); d.line(410, 420, 360, 440); d.line(360, 260, 360, 440); d.line(230, 240, 280, 260); d.line(230, 420, 280, 440); d.line(280, 260, 280, 440); d.line(500, 240, 500, 420); } },
 ];
 
-// منع تداخل الجولات في نفس القناة
-const activeGartic = new Set();
+// منع تداخل الجولات في نفس القناة — نفس حارس game.js المشترك (يجمع /game والأوامر المنفصلة وغارتيك)
+const activeGartic = game.activeGames;
 
 // تنظيف نصوص المقارنة (همزات، تاء مربوطة، تشكيل، مسافات) — نفس منطق game.js
 function normalizeArabicText(text) {
