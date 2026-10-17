@@ -12,6 +12,8 @@ const SecretManager = require('../utils/secretManager');
 const identityWallpapers = require('../data/identityWallpapers.json');
 const config = require('../../config.json');
 const { askAI } = require('../utils/ai');
+const crypto = require('crypto');
+const { PermissionFlagsBits } = require('discord.js');
 
 // Language detection helper
 function getReqCookies(req) {
@@ -61,15 +63,28 @@ const {
     aiChatSchema
 } = require('./validators/apiSchemas');
 
+// ✅ Escape لعرض نصوص قادمة من مستخدمين/Discord داخل HTML
+function escHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 module.exports = function (app, client) {
     const sessionStore = new SqliteStore({ client: rawDb });
     let sessionSecret = '';
     try {
         const secrets = SecretManager.getMultipleSecrets(['SESSION_SECRET']);
-        sessionSecret = secrets['SESSION_SECRET'] || 'Droplet_DEFAULT_SUPER_SAFE_FALLBACK';
-        console.log('[SECURITY] ✅ Dashboard: Session secret retrieved successfully.');
+        sessionSecret = secrets['SESSION_SECRET'] || '';
+        if (sessionSecret) {
+            console.log('[SECURITY] ✅ Dashboard: Session secret retrieved successfully.');
+        }
     } catch (e) {
-        sessionSecret = 'Droplet_TICKETS_SUPER_SECRET';
+        sessionSecret = '';
+    }
+    if (!sessionSecret) {
+        // 🔒 لا يوجد سر افتراضي معروف — نولّد سراً عشوائياً لكل إقلاع
+        // (الجلسات تصفّر عند كل restart حتى يضيف المستخدم SESSION_SECRET في Render)
+        sessionSecret = crypto.randomBytes(32).toString('hex');
+        console.warn('[SECURITY] ⚠️ SESSION_SECRET غير مضبوط في متغيرات البيئة! تم توليد سر مؤقت — أضف SESSION_SECRET في Render حتى لا يُسجَّل خروج الجميع عند كل إعادة تشغيل.');
     }
 
     const requireGuildPermission = createGuildAuthMiddleware(client);
@@ -89,7 +104,7 @@ module.exports = function (app, client) {
         cookie: {
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: 'auto', // secure تلقائياً على HTTPS (يعمل مع trust proxy في index.js، ويعمل محلياً على http)
             sameSite: 'lax'
         }
     }));
@@ -162,6 +177,8 @@ module.exports = function (app, client) {
     // 🌐 Interactive Web Transcript Viewer
     // ==========================================
     app.get('/transcript/:channelId', async (req, res) => {
+        // 🔒 يمكن للمسجلين فقط دخول السجلات (تٍذاكر خاصة)
+        if (!req.session?.user) return res.redirect('/auth/discord');
         const { channelId } = req.params;
         const transcript = database.getTranscript ? database.getTranscript(channelId) : null;
         if (!transcript || !transcript.html_content) {
@@ -200,14 +217,11 @@ module.exports = function (app, client) {
 
 
     // ─── Staff Auto-Promotion Ranks API ───
-    app.post('/api/staff/ranks', express.json(), (req, res) => {
-        if (!req.session?.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    app.post('/api/staff/ranks', express.json(), requireGuildPermission, (req, res) => {
         const { guildId, roleId, points, name } = req.body;
         if (!guildId || !roleId || !points) {
             return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
         }
-        const allowed = (req.session.guilds || []).some(g => g.id === guildId);
-        if (!allowed) return res.status(403).json({ success: false, message: 'Forbidden' });
         if (!/^\d{15,22}$/.test(String(roleId)) || isNaN(Number(points))) {
             return res.status(400).json({ success: false, message: 'بيانات غير صالحة' });
         }
@@ -215,14 +229,11 @@ module.exports = function (app, client) {
         return res.json({ success: true });
     });
 
-    app.post('/api/staff/ranks/delete', express.json(), (req, res) => {
-        if (!req.session?.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    app.post('/api/staff/ranks/delete', express.json(), requireGuildPermission, (req, res) => {
         const { guildId, roleId } = req.body;
         if (!guildId || !roleId) {
             return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
         }
-        const allowed = (req.session.guilds || []).some(g => g.id === guildId);
-        if (!allowed) return res.status(403).json({ success: false, message: 'Forbidden' });
         database.removeStaffRank(guildId, roleId);
         return res.json({ success: true });
     });
@@ -232,7 +243,10 @@ module.exports = function (app, client) {
     // 2. Real Discord OAuth2 Authentication Routes
     app.get('/auth/discord', (req, res) => {
         const { clientId, redirectUri } = getOAuthConfig(req);
-        const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=identify+guilds`;
+        // 🔒 state param يمنع Login-CSRF
+        const oauthState = crypto.randomBytes(16).toString('hex');
+        req.session.oauthState = oauthState;
+        const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=identify+guilds&state=${oauthState}`;
         res.redirect(discordAuthUrl);
     });
 
@@ -240,6 +254,14 @@ module.exports = function (app, client) {
         const code = req.query.code;
         if (!code) {
             return res.redirect('/auth/discord');
+        }
+
+        // 🔒 التحقق من state (مكافحة Login-CSRF)
+        const oauthState = req.query.state;
+        const expectedState = req.session?.oauthState;
+        req.session.oauthState = null;
+        if (!oauthState || !expectedState || oauthState !== expectedState) {
+            return res.status(400).send('فشل التحقق من صلاحية طلب تسجيل الدخول (state). أعد المحاولة من زر الدخول.');
         }
 
         const { clientId, clientSecret, redirectUri } = getOAuthConfig(req);
@@ -274,7 +296,7 @@ module.exports = function (app, client) {
                 return res.status(400).send(`
                     <div style="background:#070d1d;color:#ffffff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
                         <h2 style="color:#ef4444;">تعذر إكمال تسجيل الدخول عبر Discord</h2>
-                        <p style="color:#aaa;max-width:500px;margin-top:10px;">رسالة الخطأ من Discord: <code>${errText}</code></p>
+                        <p style="color:#aaa;max-width:500px;margin-top:10px;">رسالة الخطأ من Discord: <code>${escHtml(errText)}</code></p>
                         <p style="color:#888;font-size:13px;margin-top:5px;">تأكد من صحة Client Secret في إعدادات البوت.</p>
                         <a href="/" style="color:#93c5fd;margin-top:20px;text-decoration:none;font-weight:bold;">العودة للصفحة الرئيسية</a>
                     </div>
@@ -407,6 +429,7 @@ module.exports = function (app, client) {
     // 🔍 فحص وإظهار جميع السيرفرات المتواجد فيها البوت وأصحابها
     app.get('/api/admin/my-guilds', async (req, res) => {
         try {
+            if (!req.session?.user) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
             if (!client?.guilds?.cache) return res.json({ guilds: [] });
             const list = [];
             for (const [id, g] of client.guilds.cache) {
@@ -429,7 +452,7 @@ module.exports = function (app, client) {
     });
 
     // 🚪 أمر خروج البوت من سيرفر معين غريب
-    app.post('/api/admin/leave-guild', async (req, res) => {
+    app.post('/api/admin/leave-guild', express.json(), requireGuildPermission, async (req, res) => {
         try {
             const { guildId } = req.body;
             if (!guildId) return res.status(400).json({ error: 'guildId required' });
@@ -491,7 +514,7 @@ module.exports = function (app, client) {
                 userRow = _userCache.data;
             } else {
                 userRow = rawDb.prepare('SELECT SUM(coins) as coins, MAX(level) as level, SUM(reputation) as rep, SUM(xp) as xp, MAX(last_daily) as last_daily, MAX(wallpaper) as wallpaper FROM users WHERE user_id = ?').get(user.id);
-                if (_pageCache) _pageCache.set('_user_' + user.id, { data: userRow, ts: Date.now() });
+                if (_pageCache) _pageCacheSet('_user_' + user.id, { data: userRow, ts: Date.now() });
             }
 
             const now = Date.now();
@@ -594,7 +617,7 @@ module.exports = function (app, client) {
     // ========================================================
     
     // 1. Get Guild Economy Leaderboard
-    app.get('/api/guilds/:guildId/economy/leaderboard', (req, res) => {
+    app.get('/api/guilds/:guildId/economy/leaderboard', requireAuth, (req, res) => {
         try {
             const { guildId } = req.params;
             const limit = Math.min(parseInt(req.query.limit) || 10, 100);
@@ -606,7 +629,7 @@ module.exports = function (app, client) {
     });
 
     // 2. Get User Balance
-    app.get('/api/guilds/:guildId/economy/users/:userId', (req, res) => {
+    app.get('/api/guilds/:guildId/economy/users/:userId', requireAuth, (req, res) => {
         try {
             const { guildId, userId } = req.params;
             const user = db.getUser(userId, guildId);
@@ -627,12 +650,8 @@ module.exports = function (app, client) {
     });
 
     // 3. Admin Manage User Balance (Add / Remove / Set) with instant persistent write
-    app.post('/api/guilds/:guildId/economy/manage', (req, res) => {
+    app.post('/api/guilds/:guildId/economy/manage', requireGuildPermission, (req, res) => {
         try {
-            if (!req.session?.user) {
-                return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
-            }
-
             const { guildId } = req.params;
             const { targetUserId, action, amount } = req.body;
             const val = parseInt(amount, 10);
@@ -667,6 +686,7 @@ module.exports = function (app, client) {
     // API: حفظ إعدادات السجلات
     app.post('/api/logs/save', (req, res) => {
         try {
+            if (!req.session?.user) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
             const { settings } = req.body;
             // يمكنك هنا إضافة الكود الخاص بـ database.updateLogsSettings(settings)
             console.log('Received log settings:', settings);
@@ -754,6 +774,9 @@ module.exports = function (app, client) {
             // جلب العنصر
             const item = rawDb.prepare(`SELECT * FROM store_items WHERE id = ? AND guild_id = ? AND is_active = 1`).get(itemId, guildId);
             if (!item) return res.status(404).json({ success: false, error: 'العنصر غير موجود أو غير متاح' });
+
+            // 🔒 منع الأسعار السالبة (شراء بسعر سالب = زيادة رصيد بدل الخصم)
+            if (Number(item.price) < 0) return res.status(400).json({ success: false, error: 'سعر هذا العنصر غير صالح للشراء' });
 
             // تحقق من المخزون
             if (item.stock === 0) return res.status(400).json({ success: false, error: 'نفد المخزون لهذا العنصر' });
@@ -863,18 +886,14 @@ module.exports = function (app, client) {
     // === Admin Store Endpoints ===
 
     // POST /api/guild/:guildId/store/admin/items — إضافة عنصر
-    app.post('/api/guild/:guildId/store/admin/items', (req, res) => {
+    app.post('/api/guild/:guildId/store/admin/items', requireGuildPermission, (req, res) => {
         try {
             const { guildId } = req.params;
-            const userId = req.session?.user?.id;
-            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
-            const userGuilds = req.session?.guilds || [];
-            const guild = userGuilds.find(g => g.id === guildId);
-            if (!guild || (BigInt(guild.permissions || 0) & BigInt(0x20)) === BigInt(0)) {
-                return res.status(403).json({ success: false, error: 'ليس لديك صلاحية إدارة المتجر' });
-            }
             const { name, description, item_type, icon, image_url, price, original_price, stock, role_id, booster_multiplier, booster_duration, cooldown_seconds, is_featured, badge_label } = req.body;
             if (!name || !price) return res.status(400).json({ success: false, error: 'الاسم والسعر مطلوبان' });
+            // 🔒 السعر لازم يكون رقم 0 أو أكثر (منع الأسعار السالبة)
+            const _newPrice = Number(price);
+            if (!Number.isFinite(_newPrice) || _newPrice < 0) return res.status(400).json({ success: false, error: 'السعر يجب أن يكون رقماً 0 أو أكثر' });
             const result = rawDb.prepare(`
                 INSERT INTO store_items (guild_id, name, description, item_type, icon, image_url, price, original_price, stock, role_id, booster_multiplier, booster_duration, cooldown_seconds, is_featured, badge_label)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -886,17 +905,15 @@ module.exports = function (app, client) {
     });
 
     // PUT /api/guild/:guildId/store/admin/items/:itemId — تعديل عنصر
-    app.put('/api/guild/:guildId/store/admin/items/:itemId', (req, res) => {
+    app.put('/api/guild/:guildId/store/admin/items/:itemId', requireGuildPermission, (req, res) => {
         try {
             const { guildId, itemId } = req.params;
-            const userId = req.session?.user?.id;
-            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
-            const userGuilds = req.session?.guilds || [];
-            const guild = userGuilds.find(g => g.id === guildId);
-            if (!guild || (BigInt(guild.permissions || 0) & BigInt(0x20)) === BigInt(0)) {
-                return res.status(403).json({ success: false, error: 'ليس لديك صلاحية' });
-            }
             const fields = req.body;
+            // 🔒 منع سعر سالب عند التعديل
+            if (fields && fields.price !== undefined) {
+                const _upPrice = Number(fields.price);
+                if (!Number.isFinite(_upPrice) || _upPrice < 0) return res.status(400).json({ success: false, error: 'السعر يجب أن يكون رقماً 0 أو أكثر' });
+            }
             const allowed = ['name','description','item_type','icon','image_url','price','original_price','stock','role_id','booster_multiplier','booster_duration','cooldown_seconds','is_featured','is_active','badge_label'];
             const sets = allowed.filter(k => fields[k] !== undefined).map(k => `${k} = @${k}`).join(', ');
             if (!sets) return res.status(400).json({ success: false, error: 'لا توجد بيانات للتعديل' });
@@ -911,16 +928,10 @@ module.exports = function (app, client) {
     });
 
     // DELETE /api/guild/:guildId/store/admin/items/:itemId — حذف عنصر
-    app.delete('/api/guild/:guildId/store/admin/items/:itemId', (req, res) => {
+    app.delete('/api/guild/:guildId/store/admin/items/:itemId', requireGuildPermission, (req, res) => {
         try {
             const { guildId, itemId } = req.params;
-            const userId = req.session?.user?.id;
-            if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
-            const userGuilds = req.session?.guilds || [];
-            const guild = userGuilds.find(g => g.id === guildId);
-            if (!guild || (BigInt(guild.permissions || 0) & BigInt(0x20)) === BigInt(0)) {
-                return res.status(403).json({ success: false, error: 'ليس لديك صلاحية' });
-            }
+            if (!guildId || !itemId) return res.status(400).json({ success: false, error: 'بيانات ناقصة' });
             rawDb.prepare(`UPDATE store_items SET is_active = 0 WHERE id = ? AND guild_id = ?`).run(itemId, guildId);
             res.json({ success: true });
         } catch (e) {
@@ -984,6 +995,16 @@ module.exports = function (app, client) {
     // ✅ Page cache للداشبورد - يمنع إعادة بناء HTML في كل request
     const _pageCache = new Map();
     const _PAGE_TTL = 30 * 1000; // 30 ثانية
+    // 🔒 حد أقصى لعناصر الكاش حتى لا تنمو الذاكرة بلا حدود (نطرد الأقدم أولاً)
+    const _PC_MAX_ENTRIES = 50;
+    const _pageCacheSet = (key, value) => {
+        while (_pageCache.size >= _PC_MAX_ENTRIES) {
+            const _oldest = _pageCache.keys().next().value;
+            if (_oldest === undefined) break;
+            _pageCache.delete(_oldest);
+        }
+        _pageCache.set(key, value);
+    };
 
     // مسح cache عند تغيير الإعدادات
     global._dropletDashboardClearCaches = () => {
@@ -1035,7 +1056,7 @@ module.exports = function (app, client) {
                 } else {
                     const _tSQL = Date.now();
                     userRow = rawDb.prepare('SELECT SUM(coins) as coins, MAX(level) as level, SUM(reputation) as rep, SUM(xp) as xp, MAX(last_daily) as last_daily, MAX(wallpaper) as wallpaper FROM users WHERE user_id = ?').get(user.id);
-                    _pageCache.set('_user_' + user.id, { data: userRow, ts: Date.now() });
+                    _pageCacheSet('_user_' + user.id, { data: userRow, ts: Date.now() });
                     console.log(`[DASH] user SQL MISS — ${Date.now()-_tSQL}ms`);
                 }
                 userCoins = userRow?.coins || 0;
@@ -1922,7 +1943,7 @@ module.exports = function (app, client) {
             </html>
             `;
             // ✅ حفظ الصفحة في cache وإرسالها
-            _pageCache.set(user.id, { html: _pageHtml, ts: Date.now() });
+            _pageCacheSet(user.id, { html: _pageHtml, ts: Date.now() });
             console.log(`[DASH] ✅ RENDER DONE for ${user.id} — TOTAL: ${Date.now()-_t0}ms`);
             res.send(_pageHtml);
         } catch (e) {
@@ -1964,9 +1985,24 @@ module.exports = function (app, client) {
                 `);
             }
 
-            // التحقق من امتلاك المستخدم لصلاحية إدارة في هذا السيرفر
+            // التحقق من امتلاك المستخدم لصلاحية إدارة في هذا السيرفر (فحص حي وليس snapshot الجلسة)
             const sessionGuilds = req.session?.guilds || [];
-            const userCanManage = sessionGuilds.some(g => g.id === guildId);
+            let userCanManage = botGuild.ownerId === user.id;
+            let _livePermCheckDone = userCanManage;
+            if (!_livePermCheckDone) {
+                try {
+                    let _member = botGuild.members.cache.get(user.id);
+                    if (!_member) _member = await botGuild.members.fetch(user.id).catch(() => null);
+                    if (_member) {
+                        userCanManage = _member.permissions.has(PermissionFlagsBits.Administrator) || _member.permissions.has(PermissionFlagsBits.ManageGuild);
+                        _livePermCheckDone = true;
+                    }
+                } catch (e) {}
+            }
+            // fallback: نرجع لـ snapshot الجلسة فقط إذا فشل جلب العضو من ديسكورد (إعدادات خصوصية)
+            if (!_livePermCheckDone) {
+                userCanManage = sessionGuilds.some(g => g.id === guildId);
+            }
             if (!userCanManage) {
                 return res.status(403).send(`
                     <div style="background:#070d1d;color:#ffffff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
