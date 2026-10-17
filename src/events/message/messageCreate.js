@@ -128,7 +128,19 @@ function matchCustomAlias(trimmedContent, cmdConfigs, prefix, client, ctx) {
 
     if (!matched) continue;
 
-    const rawName = cmdKey.replace(/^\//, '');
+    let rawName = cmdKey.replace(/^\//, '');
+    let extraArgs = [];
+    if (rawName === 'game-capitals') {
+      rawName = 'game';
+      extraArgs = ['capitals'];
+    } else if (rawName === 'game-words') {
+      rawName = 'game';
+      extraArgs = ['words'];
+    } else if (rawName === 'game-fast') {
+      rawName = 'game';
+      extraArgs = ['fast'];
+    }
+
     const command = resolveCommand(client, rawName);
     console.log(`[ALIAS] MATCHED cmdKey="${cmdKey}" rawName="${rawName}" commandFound=${!!command}`);
     if (!command) {
@@ -136,7 +148,7 @@ function matchCustomAlias(trimmedContent, cmdConfigs, prefix, client, ctx) {
       console.log(`[ALIAS] client.commands keys: ${[...( client.commands?.keys() || [])].slice(0,20).join(',')}`);
       continue;
     }
-    return { command, commandName: rawName, matchedCmdKey: cmdKey, args: messageParts.slice(1) };
+    return { command, commandName: rawName, matchedCmdKey: cmdKey, args: extraArgs.concat(messageParts.slice(1)) };
   }
   return null;
 }
