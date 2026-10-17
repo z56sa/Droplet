@@ -43,7 +43,7 @@ class TursoSync {
         console.error('[TURSO] ⚠️ Failed to initialize Turso client on Render:', err.message);
       }
     } else {
-      console.log('[TURSO] ℹ️ Turso credentials not detected on Render. Add TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in Render Environment Variables.');
+      console.log('[TURSO] ℹ️ Turso credentials not detected. Add TURSO_DATABASE_URL and TURSO_AUTH_TOKEN to BOTH Render services (droplet-bot AND droplet-dashboard).');
     }
   }
 
@@ -258,6 +258,7 @@ class TursoSync {
 
 
       // 2. Restore users data from Turso to local SQLite (Restoring coins/streak/XP after container restart)
+      try {
       const usersResult = await this.client.execute('SELECT * FROM users');
       if (usersResult.rows && usersResult.rows.length > 0) {
         console.log(`[TURSO] 🔄 Restoring ${usersResult.rows.length} users from Turso into local SQLite...`);
@@ -300,6 +301,9 @@ class TursoSync {
         // If Turso is currently empty, push existing local users to Turso
         console.log('[TURSO] ℹ️ Turso is currently empty. Initializing remote database with local data...');
         this.backupAllLocalUsers(localDb);
+      }
+      } catch (usersErr) {
+        console.error('[TURSO] ⚠️ Error restoring users table:', usersErr.message);
       }
 
       // 3. Restore user_profiles from Turso into local SQLite
@@ -555,16 +559,44 @@ class TursoSync {
         }, 1000);
       }
 
-      // 🔄 جدولة مزامنة دورية خفيفة لسحب أحدث الرصيد والبروفايلات من Turso كل دقيقتين
-      if (!this._periodicSyncStarted) {
-        this._periodicSyncStarted = true;
-        setInterval(() => {
-          this.pullLatestFromTurso(localDb).catch(e => console.error('[TURSO] Periodic pull error:', e.message));
-        }, 2 * 60 * 1000);
-      }
-
     } catch (err) {
       console.error('[TURSO] ⚠️ Error during initAndRestore:', err.message);
+    } finally {
+      // ⏱️ المزامنة الدورية تبدأ دائماً حتى لو فشلت خطوة من خطوات الاستعادة
+      try { this._startPeriodicPull(localDb); } catch (e) {}
+    }
+  }
+
+  /**
+   * 🔄 جدولة مزامنة دورية خفيفة لسحب أحدث الرصيد والبروفايلات من Turso كل دقيقتين
+   */
+  _startPeriodicPull(localDb) {
+    if (!this.enabled || !this.client) return;
+    if (this._periodicSyncStarted) return;
+    this._periodicSyncStarted = true;
+    setInterval(() => {
+      this.pullLatestFromTurso(localDb).catch(e => console.error('[TURSO] Periodic pull error:', e.message));
+    }, 2 * 60 * 1000);
+    console.log('[TURSO] ⏱️ Periodic pull from Turso scheduled (every 2 minutes).');
+  }
+
+  /**
+   * 🩹 Self-heal: سحب فوري من Turso عند حاجة الداشبورد (مخنوق — مرّة بالدقيقة كحد أقصى)
+   * يعيد true إذا نفّذ سحبة فعلية.
+   */
+  async ensureFreshPull(localDb, minIntervalMs = 60000) {
+    if (!this.enabled || !this.client || !localDb || !localDb.prepare) return false;
+    const now = Date.now();
+    if (this._lastTursoPull && (now - this._lastTursoPull) < minIntervalMs) return false;
+    this._lastTursoPull = now;
+    try {
+      const before = localDb.prepare('SELECT COUNT(*) as n FROM users').get()?.n || 0;
+      await this.pullLatestFromTurso(localDb);
+      const after = localDb.prepare('SELECT COUNT(*) as n FROM users').get()?.n || 0;
+      if (after > before) console.log(`[TURSO] 🩹 Self-heal pull: +${after - before} users pulled into local DB.`);
+      return true;
+    } catch (e) {
+      return false;
     }
   }
 
@@ -574,16 +606,17 @@ class TursoSync {
   async pullLatestFromTurso(localDb) {
     if (!this.enabled || !this.client) return;
     try {
-      const res = await this.client.execute('SELECT user_id, guild_id, coins, bank_balance, xp, level, streak, last_daily, wallpaper FROM users');
+      const res = await this.client.execute('SELECT user_id, guild_id, coins, bank_balance, xp, level, reputation, streak, last_daily, wallpaper FROM users');
       if (res?.rows?.length > 0) {
         const updateStmt = localDb.prepare(`
-          INSERT INTO users (user_id, guild_id, xp, level, coins, bank_balance, last_daily, wallpaper, streak)
-          VALUES (@user_id, @guild_id, @xp, @level, @coins, @bank_balance, @last_daily, @wallpaper, @streak)
+          INSERT INTO users (user_id, guild_id, xp, level, coins, bank_balance, reputation, last_daily, wallpaper, streak)
+          VALUES (@user_id, @guild_id, @xp, @level, @coins, @bank_balance, @reputation, @last_daily, @wallpaper, @streak)
           ON CONFLICT(user_id, guild_id) DO UPDATE SET
             coins = excluded.coins,
             bank_balance = excluded.bank_balance,
             xp = MAX(users.xp, excluded.xp),
             level = MAX(users.level, excluded.level),
+            reputation = MAX(users.reputation, excluded.reputation),
             last_daily = MAX(users.last_daily, excluded.last_daily),
             streak = MAX(users.streak, excluded.streak);
         `);
@@ -596,6 +629,7 @@ class TursoSync {
               level: Number(row.level || 1),
               coins: Number(row.coins || 0),
               bank_balance: Number(row.bank_balance || 0),
+              reputation: Number(row.reputation || 0),
               last_daily: Number(row.last_daily || 0),
               wallpaper: String(row.wallpaper || 'default'),
               streak: Number(row.streak || 0)

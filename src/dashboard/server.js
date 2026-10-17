@@ -567,11 +567,8 @@ module.exports = function (app, client) {
                 });
             }
 
-            // Determine active guild
-            let targetGuildId = 'global';
-            if (client?.guilds?.cache?.size > 0) {
-                targetGuildId = client.guilds.cache.first().id;
-            }
+            // Determine active guild — ثابت من جلسة المستخدم (كان يُختار عشوائياً من cache فيتغير بين restarts!)
+            let targetGuildId = (req.session?.guilds || [])[0]?.id || 'global';
 
             const userData = database.getUser(userId, targetGuildId);
             let streak = userData.streak || 0;
@@ -590,6 +587,13 @@ module.exports = function (app, client) {
 
             database.addCoins(userId, targetGuildId, reward);
             database.setLastDaily(userId, targetGuildId, now, streak);
+
+            // ✅ مزامنة فورية مع Turso حتى ما يردّها الـ periodic pull للرصيد القديم
+            try {
+                const tursoWriteSync = require('../database/tursoSync');
+                const freshRow = database.getUser(userId, targetGuildId);
+                if (freshRow) tursoWriteSync.queueUserSync(freshRow);
+            } catch (e) {}
 
             const updatedUser = database.getUser(userId, targetGuildId);
             const newBalance = updatedUser.coins || updatedUser.credits || 0;
@@ -621,7 +625,14 @@ module.exports = function (app, client) {
         try {
             const { guildId } = req.params;
             const limit = Math.min(parseInt(req.query.limit) || 10, 100);
-            const leaderboard = db.getCoinsLeaderboard(guildId, limit);
+            let leaderboard = database.getCoinsLeaderboard(guildId, limit);
+            if (!Array.isArray(leaderboard) || leaderboard.length === 0) {
+                // 🩹 Self-heal: اسحب من Turso بالخلفية عشان الطلب الجاي يلقى بيانات
+                try {
+                    const tursoApiHeal = require('../database/tursoSync');
+                    if (tursoApiHeal.ensureFreshPull) tursoApiHeal.ensureFreshPull(rawDb).catch(() => {});
+                } catch (e) {}
+            }
             res.json({ success: true, leaderboard });
         } catch (err) {
             res.status(500).json({ success: false, error: err.message });
@@ -632,7 +643,7 @@ module.exports = function (app, client) {
     app.get('/api/guilds/:guildId/economy/users/:userId', requireAuth, (req, res) => {
         try {
             const { guildId, userId } = req.params;
-            const user = db.getUser(userId, guildId);
+            const user = database.getUser(userId, guildId);
             res.json({
                 success: true,
                 user: {
@@ -662,14 +673,21 @@ module.exports = function (app, client) {
 
             let newBalance = 0;
             if (action === 'set') {
-                newBalance = db.setCoins(targetUserId, guildId, val);
+                newBalance = database.setCoins(targetUserId, guildId, val);
             } else if (action === 'add') {
-                newBalance = db.addCoins(targetUserId, guildId, val);
+                newBalance = database.addCoins(targetUserId, guildId, val);
             } else if (action === 'remove') {
-                newBalance = db.removeCoins(targetUserId, guildId, val);
+                newBalance = database.removeCoins(targetUserId, guildId, val);
             } else {
                 return res.status(400).json({ success: false, error: 'إجراء غير معروف' });
             }
+
+            // ✅ مزامنة فورية مع Turso (بلاها الـ pull الدوري يرد الرصيد القديم)
+            try {
+                const tursoManageSync = require('../database/tursoSync');
+                const freshRow = database.getUser(targetUserId, guildId);
+                if (freshRow) tursoManageSync.queueUserSync(freshRow);
+            } catch (e) {}
 
             res.json({
                 success: true,
@@ -1072,6 +1090,21 @@ module.exports = function (app, client) {
                 xpLeaderboard = lb.xpLeaderboard;
                 coinsLeaderboard = lb.coinsLeaderboard;
                 console.log(`[DASH] leaderboard ready — ${Date.now()-_tLB}ms (total ${Date.now()-_t0}ms)`);
+
+                // 🩹 Self-heal: لو مافي بيانات بالمحلي — اسحبها من Turso حالاً (مخنوق مرّة بالدقيقة) واقرأ ثاني
+                if (!xpLeaderboard.length) {
+                    try {
+                        const tursoSelfHeal = require('../database/tursoSync');
+                        const _healed = await tursoSelfHeal.ensureFreshPull ? await tursoSelfHeal.ensureFreshPull(rawDb) : false;
+                        if (_healed) {
+                            _lbCache.ts = 0;
+                            const lb2 = getLeaderboardCached();
+                            xpLeaderboard = lb2.xpLeaderboard;
+                            coinsLeaderboard = lb2.coinsLeaderboard;
+                            console.log('[DASH] 🔄 self-heal pull completed — leaderboard re-read.');
+                        }
+                    } catch (e) {}
+                }
 
                 // تعبئة بيانات المستخدمين من الكاش فقط (بدون طلبات Discord API لتجنب التجميد)
                 const fillFromCache = (list) => {
@@ -14144,35 +14177,6 @@ ${embedScriptHtml}
 
 
     // User Economy API
-    app.post('/api/user/daily', (req, res) => {
-        try {
-            if (!req.session?.user) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
-            const userId = req.session.user.id;
-            const now = Date.now();
-            
-            const userRow = rawDb.prepare('SELECT SUM(coins) as coins, MAX(last_daily) as last_daily FROM users WHERE user_id = ?').get(userId);
-            const lastDaily = userRow?.last_daily || 0;
-            
-            if ((now - lastDaily) < 24 * 60 * 60 * 1000) {
-                const remaining = Math.ceil((24 * 60 * 60 * 1000 - (now - lastDaily)) / (1000 * 60));
-                return res.status(400).json({ success: false, error: 'لقد استلمت راتبك بالفعل، يرجى المحاولة لاحقاً بعد ' + remaining + ' دقيقة' });
-            }
-
-            // Random reward between 500 and 1000 Gold
-            const reward = Math.floor(Math.random() * (1000 - 500 + 1)) + 500;
-            const guilds = req.session.guilds || [];
-            const primaryGuildId = guilds.length > 0 ? guilds[0].id : 'global';
-
-            rawDb.prepare('INSERT OR IGNORE INTO users (user_id, guild_id, coins, last_daily) VALUES (?, ?, 0, 0)').run(userId, primaryGuildId);
-            rawDb.prepare('UPDATE users SET coins = coins + ?, last_daily = ? WHERE user_id = ? AND guild_id = ?').run(reward, now, userId, primaryGuildId);
-
-            const updatedRow = rawDb.prepare('SELECT SUM(coins) as coins FROM users WHERE user_id = ?').get(userId);
-            res.json({ success: true, amount: reward, newBalance: updatedRow?.coins || reward });
-        } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
-        }
-    });
-
     app.post('/api/user/buy', express.json(), (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
@@ -14192,7 +14196,14 @@ ${embedScriptHtml}
             rawDb.prepare('INSERT OR IGNORE INTO users (user_id, guild_id, coins) VALUES (?, ?, 0)').run(userId, primaryGuildId);
             rawDb.prepare('UPDATE users SET coins = MAX(0, coins - ?) WHERE user_id = ? AND guild_id = ?').run(price, userId, primaryGuildId);
             rawDb.prepare('UPDATE users SET wallpaper = ? WHERE user_id = ?').run(name, userId);
-            
+
+            // ✅ مزامنة فورية مع Turso (ما يرد الرصيد القديم)
+            try {
+                const tursoBuySync = require('../database/tursoSync');
+                const freshRow = database.getUser(userId, primaryGuildId);
+                if (freshRow) tursoBuySync.queueUserSync(freshRow);
+            } catch (e) {}
+
             const afterBuy = rawDb.prepare('SELECT SUM(coins) as coins FROM users WHERE user_id = ?').get(userId);
             res.json({ success: true, newBalance: afterBuy?.coins || 0 });
         } catch(e) {
