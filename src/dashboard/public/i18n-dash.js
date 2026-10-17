@@ -1425,7 +1425,26 @@ window.DropletDashDict = {
   "إضافة سؤال": "Add question",
   "لا توجد أسئلة مضافة. اضغط على": "No questions added. Click",
   "المشرف:": "Moderator:",
-  "سبب حظرك من السيرفر *": "Why you were banned from the server *",
   "🎫 نظام التذاكر": "🎫 Ticket system",
-  "👑 الرتب الخاصة النشطة": "👑 Active private roles"
+  "👑 الرتب الخاصة النشطة": "👑 Active private roles",
+  "الألعاب والتحديات": "Games & Challenges",
+  "نظام الألعاب والتحديات التنافسية": "Competitive Games & Challenges System",
+  "نظام الألعاب والتحديات التفاعلية": "Interactive Games & Challenges System",
+  "ألعاب التحدي والذكاء الجماعية في الشات": "Multiplayer challenge and trivia games in chat",
+  "ألعاب التحدي الجماعية (لعبة عشوائية)": "Multiplayer challenges (Random Game)",
+  "لعبة عواصم ودول (Capitals)": "Countries & Capitals Trivia (Capitals)",
+  "لعبة تفكيك وتركيب الكلمات (Words)": "Word Scramble & Unscramble (Words)",
+  "لعبة أسرع واحد يكتب (Fast Typing)": "Fast Typing Challenge (Fast Typing)",
+  "اختصار مخصص للأمر (Custom Alias)": "Custom Command Alias",
+  "الرتب المسموح لها فقط بتشغيل الأمر (Allowed Roles)": "Allowed Roles to run this command",
+  "القنوات المسموح فيها فقط بتشغيل الأمر (Allowed Channels)": "Allowed Channels to run this command",
+  "حفظ تفاصيل الأمر": "Save Command Details",
+  "إعادة ضبط": "Reset",
+  "H أو b أو !help": "H or b or !help",
+  "لا توجد رتب في السيرفر": "No roles found in server",
+  "لا توجد قنوات في السيرفر": "No channels found in server",
+  "رتبة إضافية": "extra role",
+  "قناة إضافية": "extra channel",
+  "حدث خطأ أثناء تحميل تفاصيل الأمر": "Error loading command details"
 };
+

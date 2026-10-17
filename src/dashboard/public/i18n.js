@@ -1169,8 +1169,9 @@
     }
 
     window._dropletT = function(text) {
-        return translateRuntimeText(text);
+        return (typeof translateStringWithDash === 'function') ? translateStringWithDash(text) : translateRuntimeText(text);
     };
+    window.translateStringWithDash = translateStringWithDash;
     window._dropletIsEn = function() {
         return detectLang() === 'en';
     };
