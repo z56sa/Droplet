@@ -30,6 +30,8 @@ services:
         sync: false
       - key: TURSO_AUTH_TOKEN
         sync: false
+      - key: DASHBOARD_SYNC_URL
+        value: https://droplet-mqwb.onrender.com
 
   - type: web
     name: droplet-dashboard

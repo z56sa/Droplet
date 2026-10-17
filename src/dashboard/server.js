@@ -635,6 +635,96 @@ module.exports = function (app, client) {
         }
     });
 
+    // 0.6 🌉 استقبال دفعات البيانات من البوت (جسر المزامنة) — مصادقة عبر هيدر x-sync-token = BOT_TOKEN
+    app.post('/internal/sync/users', (req, res) => {
+        try {
+            const token = String(req.headers['x-sync-token'] || '');
+            if (!process.env.BOT_TOKEN || token !== process.env.BOT_TOKEN) {
+                return res.status(403).json({ success: false, error: 'invalid sync token' });
+            }
+            const rows = Array.isArray(req.body?.users) ? req.body.users.slice(0, 3000) : [];
+            const profiles = Array.isArray(req.body?.profiles) ? req.body.profiles.slice(0, 2000) : [];
+
+            let uCount = 0;
+            if (rows.length) {
+                const userStmt = rawDb.prepare(`
+                    INSERT INTO users (user_id, guild_id, xp, level, coins, bank_balance, reputation, last_daily, last_work, last_message_xp, wallpaper, warnings, streak)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(user_id, guild_id) DO UPDATE SET
+                        xp = MAX(users.xp, excluded.xp),
+                        level = MAX(users.level, excluded.level),
+                        coins = MAX(users.coins, excluded.coins),
+                        bank_balance = MAX(users.bank_balance, excluded.bank_balance),
+                        reputation = MAX(users.reputation, excluded.reputation),
+                        last_daily = MAX(users.last_daily, excluded.last_daily),
+                        last_work = MAX(users.last_work, excluded.last_work),
+                        last_message_xp = MAX(users.last_message_xp, excluded.last_message_xp),
+                        warnings = MAX(users.warnings, excluded.warnings),
+                        streak = MAX(users.streak, excluded.streak),
+                        wallpaper = excluded.wallpaper
+                `);
+                const userTx = rawDb.transaction((list) => {
+                    for (const r of list) {
+                        try {
+                            if (!r || !r.user_id) continue;
+                            userStmt.run(
+                                String(r.user_id), String(r.guild_id || 'global'),
+                                Number(r.xp || 0), Number(r.level || 1), Number(r.coins || 0),
+                                Number(r.bank_balance || 0), Number(r.reputation || 0),
+                                Number(r.last_daily || 0), Number(r.last_work || 0), Number(r.last_message_xp || 0),
+                                String(r.wallpaper || 'default'), Number(r.warnings || 0), Number(r.streak || 0)
+                            );
+                            uCount++;
+                        } catch (e) {}
+                    }
+                });
+                userTx(rows);
+            }
+
+            let pCount = 0;
+            if (profiles.length) {
+                const profStmt = rawDb.prepare(`
+                    INSERT INTO user_profiles (user_id, username, display_name, avatar, avatar_url, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        username = COALESCE(excluded.username, user_profiles.username),
+                        display_name = COALESCE(excluded.display_name, user_profiles.display_name),
+                        avatar = COALESCE(excluded.avatar, user_profiles.avatar),
+                        avatar_url = COALESCE(excluded.avatar_url, user_profiles.avatar_url),
+                        updated_at = MAX(user_profiles.updated_at, excluded.updated_at)
+                `);
+                const profTx = rawDb.transaction((list) => {
+                    for (const p of list) {
+                        try {
+                            if (!p || !p.user_id) continue;
+                            profStmt.run(
+                                String(p.user_id),
+                                p.username ? String(p.username) : null,
+                                p.display_name ? String(p.display_name) : null,
+                                p.avatar ? String(p.avatar) : null,
+                                p.avatar_url ? String(p.avatar_url) : null,
+                                Number(p.updated_at || 0)
+                            );
+                            pCount++;
+                        } catch (e) {}
+                    }
+                });
+                profTx(profiles);
+            }
+
+            if (uCount > 0 || pCount > 0) {
+                _lbCache.ts = 0; // نقلب الكاش عشان القوائم تقرأ البيانات الثانية
+                try { _pageCache.clear(); } catch (e) {}
+                console.log(`[BRIDGE] 📥 Received ${uCount} users + ${pCount} profiles from bot.`);
+            }
+
+            const localUsers = rawDb.prepare('SELECT COUNT(*) as n FROM users').get()?.n || 0;
+            return res.json({ success: true, inserted: uCount, localUsers });
+        } catch (e) {
+            return res.status(500).json({ success: false, error: e.message });
+        }
+    });
+
     // ========================================================
     // 💡 ECONOMY API ENDPOINTS (Live Persistent Dashboard API)
     // ========================================================
@@ -1155,7 +1245,7 @@ module.exports = function (app, client) {
             } catch (err) {}
 
             // 🔍 تشخيص مصدر البيانات (يظهر كشريط صغير أعلى الصفحة — يساعد على تحديد المشكلة فوراً)
-            let _diag = { tursoEnabled: false, localUsers: 0, xpUsers: 0, boards: xpLeaderboard.length, lastPull: null, lastPacketError: null };
+            let _diag = { tursoEnabled: false, localUsers: 0, xpUsers: 0, boards: xpLeaderboard.length, lastPull: null, lastPacketError: null, lastPush: null };
             try {
                 const tursoDiag = require('../database/tursoSync');
                 _diag.tursoEnabled = !!tursoDiag.enabled;
@@ -1163,6 +1253,10 @@ module.exports = function (app, client) {
                 _diag.lastPacketError = tursoDiag.lastPacketError || null;
                 _diag.localUsers = rawDb.prepare('SELECT COUNT(*) as n FROM users').get()?.n || 0;
                 _diag.xpUsers = rawDb.prepare('SELECT COUNT(*) as n FROM users WHERE xp > 0').get()?.n || 0;
+                try {
+                    const bridgeDiag = require('../utils/dashboardBridge');
+                    _diag.lastPush = bridgeDiag.getState ? bridgeDiag.getState() : null;
+                } catch (e) {}
             } catch (e) {}
             const _diagTursoHtml = _diag.tursoEnabled
                 ? `<span class="text-emerald-400 font-bold">Turso ✅ مفعّل</span>`
@@ -1172,6 +1266,15 @@ module.exports = function (app, client) {
                     ? `<span class="text-gray-500">${_diag.lastPull.ok ? 'آخر سحب' : '<span class="text-amber-400">فشل السحب</span>'}: <span class="font-mono text-gray-400">${_diag.lastPull.rows}</span> صف • منذ ${Math.floor((Date.now() - _diag.lastPull.at) / 1000)}ث${_diag.lastPull.err ? ` • <span class="text-amber-400 font-mono">${String(_diag.lastPull.err).slice(0, 90)}</span>` : ''}</span>`
                     : '<span class="text-gray-500">لم يحدث سحب من Turso بعد</span>')
                 : '';
+            const _diagBridgeHtml = (() => {
+                try {
+                    const push = _diag.lastPush;
+                    if (!push || !push.at) return '<span class="text-gray-500">الجسر من البوت: لن يبدأ بعد (أول دفعة خلال دقائق من إقلاع خدمة البوت)</span>';
+                    const pushOk = push.ok ? `<span class="text-emerald-400 font-bold">جسر البوت ✅</span>` : `<span class="text-amber-400 font-bold">جسر البوت ⚠️ فشل</span>`;
+                    const errHtml = push.err ? ` • <span class="text-amber-400 font-mono">${String(push.err).slice(0, 80)}</span>` : '';
+                    return `<span class="text-gray-500">${pushOk} — آخر دفع: <span class="font-mono text-gray-400">${push.rows}</span> صف • منذ ${Math.floor((Date.now() - push.at) / 1000)}ث${errHtml}</span>`;
+                } catch (e) { return ''; }
+            })();
             const _diagHtml = `
                 <div class="mx-6 mb-4 bg-[#0b1020]/80 border border-blue-500/10 rounded-2xl px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] leading-relaxed">
                     <span class="text-blue-300 font-bold">🔧 حالة البيانات:</span>
@@ -1179,6 +1282,7 @@ module.exports = function (app, client) {
                     <span class="text-gray-300">منهم XP: <span class="font-mono text-white">${_diag.xpUsers}</span></span>
                     <span>${_diagTursoHtml}</span>
                     ${_diagPullHtml}
+                    ${_diagBridgeHtml}
                     <button type="button" onclick="window.tursoSyncNow(this)" class="ml-auto px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition cursor-pointer disabled:opacity-40">⟳ مزامنة الآن</button>
                 </div>`;
 

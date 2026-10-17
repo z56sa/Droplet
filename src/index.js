@@ -174,6 +174,15 @@ client.on('error', (error) => {
 global._dropletBootTime = Date.now();
 dashboardServer(app, client);
 
+// 🌉 جسر مزامنة البيانات: يدفع مستخدمي البوت إلى صف الداشبورد عبر HTTP
+// (يشتغل فقط إذا DASHBOARD_SYNC_URL مضبوط — موجودة برندر على خدمة البوت)
+try {
+    const dashboardBridge = require('./utils/dashboardBridge');
+    dashboardBridge.start(() => require('./database').db);
+} catch (e) {
+    console.error('[BRIDGE] Failed to start dashboard bridge:', e.message);
+}
+
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('[Dashboard] Listening on 0.0.0.0:' + PORT);
 });
