@@ -11600,6 +11600,13 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 const fastReward = settings.game_reward_fast || 85;
                 const gamesChannel = settings.games_channel || '';
 
+                const gameAlias = (settings.game_alias || (function(){
+                    try {
+                        const parsed = typeof settings.command_configs === 'string' ? JSON.parse(settings.command_configs) : settings.command_configs;
+                        return (parsed && parsed['/game'] && parsed['/game'].alias) || '';
+                    } catch(e) { return ''; }
+                })() || '').replace(/^[/#!.]+/, '');
+
                 formFieldsHtml = `
                     <div class="space-y-6 text-right" dir="rtl">
                         <!-- Hero Card -->
@@ -11611,17 +11618,17 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <h3 class="text-lg font-black text-white">نظام الألعاب والتحديات التفاعلية</h3>
                                     </div>
                                     <p class="text-xs text-gray-400 leading-relaxed">
-                                        ألعاب ذكاء وتحديات تفاعلية في الشات (عواصم ودول، تفكيك/تركيب الكلمات، وأسرع واحد يكتب) مع مكافآت رصيد فورية للفائزين عبر أمر السلاش <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game</code>.
+                                        ألعاب ذكاء وتحديات تفاعلية في الشات (عواصم ودول، تفكيك/تركيب الكلمات، وأسرع واحد يكتب) مع مكافآت رصيد فورية للفائزين عبر أمر السلاش <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game</code> أو عبر الاختصار المخصص في الشات.
                                     </p>
                                 </div>
                                 <div class="text-4xl text-blue-400/20 select-none">🕹️</div>
                             </div>
                         </div>
 
-                        <!-- إعدادات القناة والتحكم -->
+                        <!-- إعدادات القناة والتحكم والاختصار -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-2xl shadow-lg space-y-4">
                             <h4 class="text-sm font-bold text-white flex items-center gap-2">
-                                <span>⚙️</span> إعدادات القناة والتشغيل
+                                <span>⚙️</span> إعدادات القناة والتشغيل والاختصار
                             </h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -11639,6 +11646,20 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         </label>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- حقل اختصار مخصص للألعاب (Custom Alias) -->
+                            <div class="pt-3 border-t border-blue-500/20">
+                                <label class="block text-xs font-bold text-white mb-1.5 flex items-center gap-1.5">
+                                    <span>⌨️</span>
+                                    <span>اختصار مخصص للألعاب (Custom Alias)</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="text" name="game_alias" value="${gameAlias}" placeholder="مثال: لعبة أو العاب أو g أو play" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right placeholder-gray-600 transition">
+                                </div>
+                                <p class="text-[11px] text-gray-400 mt-1.5">
+                                    اكتب الكلمة أو الحرف الذي تريده لبدء اللعبة في الشات (مثال لو وضعت <code class="text-blue-400 font-mono bg-blue-500/10 px-1 py-0.5 rounded">لعبة</code> سيعمل الأمر فوراً بمجرد كتابة <code class="text-blue-400 font-mono bg-blue-500/10 px-1 py-0.5 rounded">لعبة</code> أو <code class="text-blue-400 font-mono bg-blue-500/10 px-1 py-0.5 rounded">${settings.prefix || '#'}لعبة</code>).
+                                </p>
                             </div>
                         </div>
 
@@ -13026,6 +13047,25 @@ ${embedScriptHtml}
                         settings[k] = null;
                     }
                 }
+            }
+            // ✅ تزامن اختصار الألعاب المخصص game_alias مع command_configs
+            if (settings && settings.game_alias !== undefined) {
+                const cleanGameAlias = String(settings.game_alias || '').trim().replace(/^[/#!.]+/, '');
+                settings.game_alias = cleanGameAlias;
+                try {
+                    let curConfigs = {};
+                    const curRow = database.getGuildSettings ? database.getGuildSettings(guildId) : null;
+                    if (curRow && curRow.command_configs) {
+                        curConfigs = typeof curRow.command_configs === 'string' ? JSON.parse(curRow.command_configs) : curRow.command_configs;
+                    }
+                    if (settings.command_configs) {
+                        const incoming = typeof settings.command_configs === 'string' ? JSON.parse(settings.command_configs) : settings.command_configs;
+                        curConfigs = { ...curConfigs, ...incoming };
+                    }
+                    if (!curConfigs['/game']) curConfigs['/game'] = {};
+                    curConfigs['/game'].alias = cleanGameAlias;
+                    settings.command_configs = JSON.stringify(curConfigs);
+                } catch (e) {}
             }
             if (database.updateGuildSettings) {
                 database.updateGuildSettings(guildId, settings);
