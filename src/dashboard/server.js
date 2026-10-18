@@ -1244,6 +1244,8 @@ module.exports = function (app, client) {
             const botAvatarUrl = client?.user?.avatar ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
             let userCoins = 0, userLevel = 1, userStars = 0, userXp = 0, userLastDaily = 0, userWallpaper = 'default';
+            let userStreak = 0;
+            let userInvites = 0;
             let xpLeaderboard = [];
             let coinsLeaderboard = [];
             let userRankXp = 1;
@@ -1267,10 +1269,9 @@ module.exports = function (app, client) {
                 userStars = userRow?.rep || 0;
                 userXp = userRow?.xp || 0;
                 userLastDaily = userRow?.last_daily || 0;
-                const userStreak = userRow?.streak || 0;
+                userStreak = userRow?.streak || 0;
                 userWallpaper = userRow?.wallpaper || 'default';
 
-                let userInvites = 0;
                 try {
                     const invRow = rawDb.prepare('SELECT SUM(uses) as total FROM invites WHERE inviter_id = ?').get(user.id);
                     userInvites = invRow?.total || 0;
