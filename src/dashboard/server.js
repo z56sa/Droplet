@@ -544,8 +544,10 @@ module.exports = function (app, client) {
         }
     });
 
-    // Endpoint for claiming daily reward from web dashboard
+    // ✅ حارس ذاكرة للراتب اليومي — يمنع الاستلام المتكرر حتى لو قاعدة البيانات المحلية انبنيت من جديد
+    const _dailyMemoryGuard = new Map();
 
+    // Endpoint for claiming daily reward from web dashboard
     app.post('/api/user/daily', (req, res) => {
         try {
             // Use real Discord user ID if logged in, else use stable session ID
@@ -557,8 +559,10 @@ module.exports = function (app, client) {
             const cooldown = 24 * 60 * 60 * 1000;
 
             const lastDaily = database.getLastDaily(userId);
-            if (now - lastDaily < cooldown) {
-                const remaining = cooldown - (now - lastDaily);
+            const memLast = _dailyMemoryGuard.get(String(userId)) || 0;
+            const effectiveLast = Math.max(lastDaily || 0, memLast);
+            if (now - effectiveLast < cooldown) {
+                const remaining = cooldown - (now - effectiveLast);
                 const h = Math.floor(remaining / 3600000);
                 const m = Math.floor((remaining % 3600000) / 60000);
                 return res.status(400).json({
@@ -573,7 +577,7 @@ module.exports = function (app, client) {
             const userData = database.getUser(userId, targetGuildId);
             let streak = userData.streak || 0;
             const twoDaysMs = 48 * 60 * 60 * 1000;
-            if (now - lastDaily <= twoDaysMs && lastDaily > 0) {
+            if ((now - Math.max(lastDaily, memLast)) <= twoDaysMs && (lastDaily > 0 || memLast > 0)) {
                 streak += 1;
             } else {
                 streak = 1;
@@ -587,6 +591,9 @@ module.exports = function (app, client) {
 
             database.addCoins(userId, targetGuildId, reward);
             database.setLastDaily(userId, targetGuildId, now, streak);
+            _dailyMemoryGuard.set(String(userId), now);
+            // 🔍 لوج واضح بلوج Render لتشخيص فوري
+            try { console.log(`[DAILY] ✅ ${userId} @ ${targetGuildId} claimed ${reward} — balance=${database.getCoins(userId, targetGuildId)}`); } catch (e) {}
 
             // ✅ مزامنة فورية مع Turso حتى ما يردّها الـ periodic pull للرصيد القديم
             try {
@@ -611,6 +618,32 @@ module.exports = function (app, client) {
         } catch (err) {
             console.error('Error claiming web daily:', err);
             return res.status(500).json({ success: false, error: 'حدث خطأ أثناء معالجة الراتب اليومي: ' + err.message });
+        }
+    });
+
+    // 🔍 نقطة تشخيص واحدة بصفحة JSON — تفضح حالة DB + Turso بدون أي واجهة
+    app.get('/api/db-state', (req, res) => {
+        try {
+            const userId = req.session?.user?.id;
+            if (!userId) return res.status(401).json({ success: false, error: 'login first' });
+            const out = {
+                now: Date.now(),
+                uptimeSec: Math.floor(process.uptime()),
+                guildUsed: (req.session?.guilds || [])[0]?.id || 'global',
+                localUsers: rawDb.prepare('SELECT COUNT(*) as n FROM users').get()?.n || 0,
+                sessionUser: (() => { try { return rawDb.prepare('SELECT user_id, guild_id, coins, xp, level, last_daily, streak FROM users WHERE user_id = ? ORDER BY last_daily DESC LIMIT 1').get(String(userId)) || null; } catch (e) { return { error: e.message }; } })()
+            };
+            try {
+                const tursoDiag = require('../database/tursoSync');
+                out.turso = { enabled: !!tursoDiag.enabled, lastPull: tursoDiag.lastPull || null, lastPacketError: tursoDiag.lastPacketError || null };
+                if (out.turso.enabled) {
+                    tursoDiag.client.execute('SELECT COUNT(*) as n FROM users').then(r => { out.turso.remoteUsers = Number(r.rows?.[0]?.n ?? -1); res.json(out); }).catch(e => { out.turso.remoteError = e.message; res.json(out); });
+                    return;
+                }
+            } catch (e) { out.turso = { error: e.message }; }
+            return res.json(out);
+        } catch (err) {
+            return res.status(500).json({ success: false, error: err.message });
         }
     });
 

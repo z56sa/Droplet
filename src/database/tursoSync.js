@@ -664,14 +664,7 @@ class TursoSync {
         const updateStmt = localDb.prepare(`
           INSERT INTO users (user_id, guild_id, xp, level, coins, bank_balance, reputation, last_daily, wallpaper, streak)
           VALUES (@user_id, @guild_id, @xp, @level, @coins, @bank_balance, @reputation, @last_daily, @wallpaper, @streak)
-          ON CONFLICT(user_id, guild_id) DO UPDATE SET
-            coins = excluded.coins,
-            bank_balance = excluded.bank_balance,
-            xp = MAX(users.xp, excluded.xp),
-            level = MAX(users.level, excluded.level),
-            reputation = MAX(users.reputation, excluded.reputation),
-            last_daily = MAX(users.last_daily, excluded.last_daily),
-            streak = MAX(users.streak, excluded.streak);
+          ON CONFLICT(user_id, guild_id) DO NOTHING;
         `);
         const tx = localDb.transaction((rows) => {
           for (const row of rows) {
@@ -699,12 +692,7 @@ class TursoSync {
         const profStmt = localDb.prepare(`
           INSERT INTO user_profiles (user_id, username, display_name, avatar, avatar_url, updated_at)
           VALUES (@user_id, @username, @display_name, @avatar, @avatar_url, @updated_at)
-          ON CONFLICT(user_id) DO UPDATE SET
-            username = COALESCE(excluded.username, user_profiles.username),
-            display_name = COALESCE(excluded.display_name, user_profiles.display_name),
-            avatar = COALESCE(excluded.avatar, user_profiles.avatar),
-            avatar_url = COALESCE(excluded.avatar_url, user_profiles.avatar_url),
-            updated_at = excluded.updated_at
+          ON CONFLICT(user_id) DO NOTHING;
         `);
         const profTx = localDb.transaction((rows) => {
           for (const r of rows) {
