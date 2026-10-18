@@ -1139,9 +1139,19 @@ module.exports = function (app, client) {
     const _lbCache = { xp: null, coins: null, ts: 0 };
     const _LB_TTL = 60 * 1000; // 60 ثانية
 
-    function getLeaderboardCached() {
+    // ✅ ملاحظة سبب الفراغ داخل البورد نفسه — تظهر فقط عندما يكون التخزين الدائم غير مفعّل
+    function _boardStorageNote() {
+        try {
+            const t = require('../database/tursoSync');
+            if (t && t.enabled) return '';
+        } catch (e) {}
+        return ' <span class="text-rose-400/80 font-bold">⚠️ التخزين الدائم غير مفعّل</span>';
+    }
+
+
         const now = Date.now();
-        if (_lbCache.xp && _lbCache.coins && (now - _lbCache.ts) < _LB_TTL) {
+            // ✅ الكاش فارغ لا يُحتجز أكثر من 10 ثواني حتى لا "يلزق" بورد فاضي بعد البوث والاستعادة
+        if (_lbCache.xp && _lbCache.coins && (now - _lbCache.ts) < _LB_TTL && (_lbCache.xp.length > 0 || _lbCache.coins.length > 0 || (now - _lbCache.ts) < 10000)) {
             return { xpLeaderboard: _lbCache.xp, coinsLeaderboard: _lbCache.coins };
         }
         const xpLeaderboard = rawDb.prepare(`
@@ -1374,7 +1384,7 @@ module.exports = function (app, client) {
                         <span class="text-[10px] text-gray-600 block">XP</span>
                     </div>
                 </div>`;
-            }).join('') || '<p class="text-xs text-gray-500 text-center py-6">لا توجد بيانات بعد</p>';
+            }).join('') || `<p class="text-xs text-gray-500 text-center py-6">لا توجد بيانات بعد${_boardStorageNote()}</p>`;
 
 
             const coinsLeaderboardHtml = coinsLeaderboard.slice(0, 20).map((r, i) => {
@@ -1400,7 +1410,7 @@ module.exports = function (app, client) {
                         <span class="text-[10px] text-gray-600 block">Gold</span>
                     </div>
                 </div>`;
-            }).join('') || '<p class="text-xs text-gray-500 text-center py-6">لا توجد بيانات بعد</p>';
+            }).join('') || `<p class="text-xs text-gray-500 text-center py-6">لا توجد بيانات بعد${_boardStorageNote()}</p>`;
 
 
             const dailyActionBoxHtml = canClaimDaily ? `
