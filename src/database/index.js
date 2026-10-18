@@ -1082,7 +1082,7 @@ const MODULE_OFF_FLAGS = [
   'autoroles_enabled',
   'colors_enabled',
   'security_logs_enabled', 'mod_logs_enabled', 'logs_enabled',
-  'leveling_enabled', 'level_text_xp_enabled', 'level_voice_xp_enabled',
+  // ✅ XP/المستويات: ما تنقفل هنا — هي جوهر الاقتصاد (تبقى على قيمها 1 افتراضياً)
   'level_up_msg_enabled', 'level_dm_msg_enabled', 'level_stack_roles',
   'level_ignore_deafened', 'level_ignore_muted', 'level_ignore_afk',
   'temp_voice_enabled',
@@ -1151,10 +1151,31 @@ function applyDefaultOffMigration() {
   console.log(`[DB] ✅ Default-OFF migration applied to ${pending.length} guild(s).`);
 }
 
+// ✅ ترحيل XP-ON: سيرفرات كانت مقفلة غصب (zeroModuleFlags القديمة) — نعيد تشغيل آليات كسب XP مرة واحدة
+function applyXpDefaultOnMigration() {
+  try { db.exec("ALTER TABLE guild_settings ADD COLUMN xp_default_on_v2 INTEGER DEFAULT 0;"); } catch (e) {}
+  let pending = [];
+  try {
+    pending = db.prepare('SELECT guild_id FROM guild_settings WHERE COALESCE(xp_default_on_v2, 0) = 0').all().map(r => r.guild_id);
+  } catch (e) { return; }
+  if (!pending.length) return;
+  try {
+    db.prepare("UPDATE guild_settings SET leveling_enabled = 1, level_text_xp_enabled = 1, level_voice_xp_enabled = 1, xp_default_on_v2 = 1 WHERE COALESCE(xp_default_on_v2, 0) = 0").run();
+  } catch (e) { console.error('[DB] xp default-on migration failed:', e.message); return; }
+  try {
+    for (const gid of pending) {
+      const row = db.prepare('SELECT * FROM guild_settings WHERE guild_id = ?').get(gid);
+      if (row) tursoSync.queueGuildSettingsSync(gid, row);
+    }
+  } catch (e) {}
+  console.log(`[DB] ✅ XP default-ON migration applied to ${pending.length} guild(s).`);
+}
+
 Promise.resolve()
   .then(() => tursoSync.initAndRestore(db))
   .catch(e => console.error('[TURSO] Init error:', e.message))
   .then(() => { try { applyDefaultOffMigration(); } catch (e) { console.error('[DB] default-off error:', e.message); } })
+  .then(() => { try { applyXpDefaultOnMigration(); } catch (e) { console.error('[DB] xp default-on error:', e.message); } })
   .then(() => { try { applyLockRemoval(); } catch (e) { console.error('[DB] lock-removal error:', e.message); } })
   .then(() => { try { applyNullStringPurge(); } catch (e) { console.error('[DB] nullstr-purge error:', e.message); } })
   .then(() => { try { applyAutoresponderBackfill(); } catch (e) { console.error('[DB] ar-backfill error:', e.message); } });

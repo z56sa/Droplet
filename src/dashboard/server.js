@@ -598,11 +598,9 @@ module.exports = function (app, client) {
             const updatedUser = database.getUser(userId, targetGuildId);
             const newBalance = updatedUser.coins || updatedUser.credits || 0;
 
-            // ✅ إبطال cache المستخدم لكي تُحدَّث البيانات في التحميل التالي
-            if (_pageCache) {
-                _pageCache.delete(userId);
-                _pageCache.delete('_user_' + userId);
-            }
+            // ✅ إبطال cache المستخدم + كاش اللووحات للكل، لكي تُحدَّث البوردات في التحميل التالي فوراً
+            try { _lbCache.ts = 0; _lbCache.xp = null; _lbCache.coins = null; } catch (e) {}
+            try { if (_pageCache) _pageCache.clear(); } catch (e) {}
 
             return res.json({
                 success: true,
