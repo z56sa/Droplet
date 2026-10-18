@@ -1258,7 +1258,7 @@ module.exports = function (app, client) {
                     console.log(`[DASH] user cache HIT — ${Date.now()-_t0}ms`);
                 } else {
                     const _tSQL = Date.now();
-                    userRow = rawDb.prepare('SELECT SUM(coins) as coins, MAX(level) as level, SUM(reputation) as rep, SUM(xp) as xp, MAX(last_daily) as last_daily, MAX(wallpaper) as wallpaper FROM users WHERE user_id = ?').get(user.id);
+                    userRow = rawDb.prepare('SELECT SUM(coins) as coins, MAX(level) as level, SUM(reputation) as rep, SUM(xp) as xp, MAX(last_daily) as last_daily, MAX(streak) as streak, MAX(wallpaper) as wallpaper FROM users WHERE user_id = ?').get(user.id);
                     _pageCacheSet('_user_' + user.id, { data: userRow, ts: Date.now() });
                     console.log(`[DASH] user SQL MISS — ${Date.now()-_tSQL}ms`);
                 }
@@ -1267,7 +1267,14 @@ module.exports = function (app, client) {
                 userStars = userRow?.rep || 0;
                 userXp = userRow?.xp || 0;
                 userLastDaily = userRow?.last_daily || 0;
+                const userStreak = userRow?.streak || 0;
                 userWallpaper = userRow?.wallpaper || 'default';
+
+                let userInvites = 0;
+                try {
+                    const invRow = rawDb.prepare('SELECT SUM(uses) as total FROM invites WHERE inviter_id = ?').get(user.id);
+                    userInvites = invRow?.total || 0;
+                } catch (e) {}
 
                 // ✅ استخدام cache بدلاً من GROUP BY ثقيل في كل request
                 const _tLB = Date.now();
@@ -1583,6 +1590,9 @@ module.exports = function (app, client) {
                 // تحديث رصيد الذهب في كل مكان يظهر فيه
                 var coinsDisplay = document.getElementById('userCoinsDisplay');
                 if (coinsDisplay) coinsDisplay.textContent = data.newBalance.toLocaleString();
+                document.querySelectorAll('.user-coins-val').forEach(function(el) {
+                    el.textContent = data.newBalance.toLocaleString();
+                });
                 // تحديث رصيد الذهب في الهيدر
                 document.querySelectorAll('.text-yellow-400.font-mono').forEach(function(el) {
                     el.textContent = '🪙 ' + data.newBalance.toLocaleString() + ' Gold';
@@ -1661,6 +1671,9 @@ module.exports = function (app, client) {
                 if (data.newBalance !== undefined) {
                     var coinsDisplay = document.getElementById('userCoinsDisplay');
                     if (coinsDisplay) coinsDisplay.textContent = data.newBalance.toLocaleString();
+                    document.querySelectorAll('.user-coins-val').forEach(function(el) {
+                        el.textContent = data.newBalance.toLocaleString();
+                    });
                     document.querySelectorAll('.text-yellow-400.font-mono').forEach(function(el) {
                         el.textContent = '🪙 ' + data.newBalance.toLocaleString() + ' Gold';
                     });
@@ -1790,28 +1803,69 @@ module.exports = function (app, client) {
                                     <h3 class="text-sm font-black text-white flex items-center gap-2"><span>Last 5 Gold Transactions</span><span>🪙</span></h3>
                                 </div>
 
-                                <div class="overflow-x-auto">
-                                    <div class="bg-gradient-to-r from-emerald-950/30 via-[#151724] to-[#151724] border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg">
-                                        <div class="flex items-center gap-2 text-emerald-400 font-bold font-mono text-sm">
-                                            <span>↗️ ${userCoins.toLocaleString()}</span>
-                                            <span class="text-xs text-white font-normal">الرصيد</span>
-                                        </div>
-                                        <div class="text-emerald-400 font-mono font-bold text-sm">
-                                            +500
-                                            <span class="text-[10px] text-white block font-normal">المبلغ</span>
-                                        </div>
-                                        <div class="text-gray-300 text-xs text-center">
-                                            <span>اليوم</span>
-                                            <span class="text-[10px] text-white block">تاريخ</span>
-                                        </div>
-                                        <div class="flex items-center gap-2.5 text-right">
-                                            <div>
-                                                <h5 class="text-xs font-bold text-white leading-tight">المكافأة اليومية (Daily)</h5>
-                                                <span class="text-[10px] text-white font-mono">Droplet Bot System</span>
-                                            </div>
-                                            <div class="w-8 h-8 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-sm font-bold border border-blue-500/20">🎁</div>
-                                        </div>
-                                    </div>
+                                <div class="overflow-x-auto space-y-2">
+                                    ${(() => {
+                                        let txRows = [];
+                                        try {
+                                            txRows = rawDb.prepare(`SELECT item_name, price_paid as amount, created_at FROM store_transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 5`).all(user.id);
+                                        } catch (e) {}
+
+                                        if (txRows && txRows.length > 0) {
+                                            return txRows.map(t => {
+                                                const d = new Date(t.created_at * 1000);
+                                                const dStr = d.toLocaleDateString('ar-SA');
+                                                return `<div class="bg-gradient-to-r from-emerald-950/30 via-[#151724] to-[#151724] border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+                                                    <div class="flex items-center gap-2 text-emerald-400 font-bold font-mono text-sm">
+                                                        <span>🪙 ${userCoins.toLocaleString()}</span>
+                                                        <span class="text-xs text-white font-normal">الرصيد</span>
+                                                    </div>
+                                                    <div class="text-amber-400 font-mono font-bold text-sm">
+                                                        -${t.amount}
+                                                        <span class="text-[10px] text-white block font-normal">المبلغ</span>
+                                                    </div>
+                                                    <div class="text-gray-300 text-xs text-center">
+                                                        <span>${dStr}</span>
+                                                        <span class="text-[10px] text-white block">تاريخ</span>
+                                                    </div>
+                                                    <div class="flex items-center gap-2.5 text-right">
+                                                        <div>
+                                                            <h5 class="text-xs font-bold text-white leading-tight">${escHtml(t.item_name)}</h5>
+                                                            <span class="text-[10px] text-white font-mono">Store Purchase</span>
+                                                        </div>
+                                                        <div class="w-8 h-8 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-sm font-bold border border-blue-500/20">🛒</div>
+                                                    </div>
+                                                </div>`;
+                                            }).join('');
+                                        }
+
+                                        if (userLastDaily > 0) {
+                                            const d = new Date(userLastDaily);
+                                            const dStr = d.toLocaleDateString('ar-SA');
+                                            return `<div class="bg-gradient-to-r from-emerald-950/30 via-[#151724] to-[#151724] border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+                                                <div class="flex items-center gap-2 text-emerald-400 font-bold font-mono text-sm">
+                                                    <span>↗️ <span class="user-coins-val">${userCoins.toLocaleString()}</span></span>
+                                                    <span class="text-xs text-white font-normal">الرصيد</span>
+                                                </div>
+                                                <div class="text-emerald-400 font-mono font-bold text-sm">
+                                                    +500
+                                                    <span class="text-[10px] text-white block font-normal">المبلغ</span>
+                                                </div>
+                                                <div class="text-gray-300 text-xs text-center">
+                                                    <span>${dStr}</span>
+                                                    <span class="text-[10px] text-white block">تاريخ</span>
+                                                </div>
+                                                <div class="flex items-center gap-2.5 text-right">
+                                                    <div>
+                                                        <h5 class="text-xs font-bold text-white leading-tight">المكافأة اليومية (Daily)</h5>
+                                                        <span class="text-[10px] text-white font-mono">Droplet Bot System</span>
+                                                    </div>
+                                                    <div class="w-8 h-8 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-sm font-bold border border-blue-500/20">🎁</div>
+                                                </div>
+                                            </div>`;
+                                        }
+
+                                        return `<div class="py-6 text-center text-gray-500 text-xs">لا توجد معاملات سابقة بعد</div>`;
+                                    })()}
                                 </div>
                             </div>
 
@@ -1831,7 +1885,7 @@ module.exports = function (app, client) {
                                         <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-800 via-[#101a36] to-[#0a0f26] border border-blue-500/20 p-5 shadow-2xl space-y-4">
                                             <!-- Top Header in Card -->
                                             <div class="flex items-center justify-between">
-                                                <span class="px-2.5 py-1 bg-blue-700/60 border border-blue-500/20 text-gray-300 text-[10px] font-bold rounded-lg">+0 REP</span>
+                                                <span class="px-2.5 py-1 bg-blue-700/60 border border-blue-500/20 text-gray-300 text-[10px] font-bold rounded-lg">+${userStars} REP</span>
                                                 <div class="flex items-center gap-3">
                                                     <div class="text-right">
                                                         <h4 class="text-sm font-black text-white leading-tight">@${user.username}</h4>
@@ -1867,7 +1921,7 @@ module.exports = function (app, client) {
                                                 <div class="bg-black/30 border border-blue-500/20 rounded-xl p-3 space-y-2 text-right">
                                                     <span class="text-[9px] font-bold text-white block">GOLDS</span>
                                                     <div class="flex items-center justify-end gap-1.5 text-amber-400 font-black text-sm">
-                                                        <span>${userCoins.toLocaleString()}</span>
+                                                        <span class="user-coins-val">${userCoins.toLocaleString()}</span>
                                                         <span class="text-base">🪙</span>
                                                     </div>
                                                     <span class="text-[9px] font-bold text-white block pt-1">BADGES</span>
@@ -1889,7 +1943,7 @@ module.exports = function (app, client) {
                                         <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-950 via-[#0c1430] to-[#060b16] border border-indigo-500/30 p-5 shadow-2xl space-y-4">
                                             <div class="flex items-center justify-between">
                                                 <div class="text-left text-xs font-bold text-indigo-300 bg-indigo-950/60 border border-indigo-800/40 px-3 py-1 rounded-xl">
-                                                    <span>INVITES: 0</span>
+                                                    <span>INVITES: ${userInvites}</span>
                                                 </div>
                                                 <div class="flex items-center gap-3">
                                                     <div class="text-right">
@@ -1903,20 +1957,20 @@ module.exports = function (app, client) {
                                             <div class="grid grid-cols-2 gap-3 text-right">
                                                 <div class="bg-black/30 border border-blue-500/20 rounded-xl p-3 space-y-1">
                                                     <div class="flex items-center justify-between text-xs text-indigo-400 font-bold mb-1">
-                                                        <span>TOP #1</span>
+                                                        <span>TOP #${userRankXp}</span>
                                                         <span>💬 TEXT</span>
                                                     </div>
                                                     <div class="text-[10px] text-gray-300">TOTAL XP: <span class="font-mono text-white">${userXp}</span></div>
-                                                    <div class="text-[10px] text-gray-300">STREAK: <span class="font-mono text-emerald-400">Active</span></div>
+                                                    <div class="text-[10px] text-gray-300">STREAK: <span class="font-mono text-emerald-400">${userStreak > 0 ? `${userStreak} Days 🔥` : 'Active'}</span></div>
                                                 </div>
 
                                                 <div class="bg-black/30 border border-blue-500/20 rounded-xl p-3 space-y-1">
                                                     <div class="flex items-center justify-between text-xs text-blue-400 font-bold mb-1">
-                                                        <span>TOP #1</span>
+                                                        <span>TOP #${userRankCoins}</span>
                                                         <span>🎙️ VOICE</span>
                                                     </div>
                                                     <div class="text-[10px] text-gray-300">VOICE TIME: <span class="font-mono text-white">Online</span></div>
-                                                    <div class="text-[10px] text-gray-300">STREAK: <span class="font-mono text-emerald-400">Level ${userLevel}</span></div>
+                                                    <div class="text-[10px] text-gray-300">LEVEL: <span class="font-mono text-emerald-400">Level ${userLevel}</span></div>
                                                 </div>
                                             </div>
                                         </div>
