@@ -548,7 +548,7 @@ module.exports = function (app, client) {
     const _dailyMemoryGuard = new Map();
 
     // Endpoint for claiming daily reward from web dashboard
-    app.post('/api/user/daily', (req, res) => {
+    app.post('/api/user/daily', async (req, res) => {
         try {
             // Use real Discord user ID if logged in, else use stable session ID
             const userId = req.session?.user?.id || req.session?.id;
@@ -571,8 +571,12 @@ module.exports = function (app, client) {
                 });
             }
 
-            // Determine active guild — ثابت من جلسة المستخدم (كان يُختار عشوائياً من cache فيتغير بين restarts!)
-            let targetGuildId = (req.session?.guilds || [])[0]?.id || 'global';
+            // Priority: existing guild where user already has a row, or first manageable guild, or 'global'
+            let existingRow = null;
+            try {
+                existingRow = rawDb.prepare('SELECT guild_id FROM users WHERE user_id = ? ORDER BY coins DESC, xp DESC LIMIT 1').get(userId);
+            } catch (e) {}
+            let targetGuildId = existingRow?.guild_id || (req.session?.guilds || [])[0]?.id || 'global';
 
             const userData = database.getUser(userId, targetGuildId);
             let streak = userData.streak || 0;
@@ -592,18 +596,33 @@ module.exports = function (app, client) {
             database.addCoins(userId, targetGuildId, reward);
             database.setLastDaily(userId, targetGuildId, now, streak);
             _dailyMemoryGuard.set(String(userId), now);
-            // 🔍 لوج واضح بلوج Render لتشخيص فوري
-            try { console.log(`[DAILY] ✅ ${userId} @ ${targetGuildId} claimed ${reward} — balance=${database.getCoins(userId, targetGuildId)}`); } catch (e) {}
+
+            // حفظ بيانات المستخدم في user_profiles إن وجدت الجلسة
+            if (req.session?.user && database.trackUserProfile) {
+                try {
+                    database.trackUserProfile({
+                        userId: req.session.user.id,
+                        username: req.session.user.username,
+                        displayName: req.session.user.username,
+                        avatar: req.session.user.avatar,
+                        avatarUrl: req.session.user.avatar ? `https://cdn.discordapp.com/avatars/${req.session.user.id}/${req.session.user.avatar}.png` : null
+                    });
+                } catch (e) {}
+            }
 
             // ✅ مزامنة فورية مع Turso حتى ما يردّها الـ periodic pull للرصيد القديم
             try {
                 const tursoWriteSync = require('../database/tursoSync');
                 const freshRow = database.getUser(userId, targetGuildId);
-                if (freshRow) tursoWriteSync.queueUserSync(freshRow);
+                if (freshRow) {
+                    tursoWriteSync.queueUserSync(freshRow);
+                    await tursoWriteSync.flush(3000);
+                }
             } catch (e) {}
 
-            const updatedUser = database.getUser(userId, targetGuildId);
-            const newBalance = updatedUser.coins || updatedUser.credits || 0;
+            // حساب الرصيد الإجمالي الحقيقي للمستخدم عبر كافة السيرفرات
+            const totalCoinsRow = rawDb.prepare('SELECT SUM(coins) as coins FROM users WHERE user_id = ?').get(userId);
+            const newTotalBalance = totalCoinsRow?.coins || database.getCoins(userId, targetGuildId);
 
             // ✅ إبطال cache المستخدم + كاش اللووحات للكل، لكي تُحدَّث البوردات في التحميل التالي فوراً
             try { _lbCache.ts = 0; _lbCache.xp = null; _lbCache.coins = null; } catch (e) {}
@@ -613,7 +632,7 @@ module.exports = function (app, client) {
                 success: true,
                 amount: reward,
                 streak,
-                newBalance
+                newBalance: newTotalBalance
             });
         } catch (err) {
             console.error('Error claiming web daily:', err);
@@ -1402,7 +1421,7 @@ module.exports = function (app, client) {
                 const rowBg = i === 0 ? 'bg-amber-500/5 hover:bg-amber-500/10' : i === 1 ? 'bg-slate-500/5 hover:bg-slate-500/10' : i === 2 ? 'bg-orange-700/5 hover:bg-orange-700/10' : 'hover:bg-white/[0.02]';
                 const rankColor = i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-orange-400' : 'text-gray-500';
                 const isMe = r.user_id === user.id;
-                return `<div class="leaderboard-row px-4 py-3 flex items-center justify-between transition-all ${rowBg} ${isMe ? 'ring-1 ring-inset ring-amber-500/30' : ''}">
+                return `<div class="leaderboard-row px-4 py-3 flex items-center justify-between transition-all ${rowBg} ${isMe ? 'ring-1 ring-inset ring-amber-500/30' : ''}" ${isMe ? 'data-my-row="true"' : ''}>
                     <div class="lb-rank flex items-center gap-1.5 min-w-[50px]">
                         ${medal ? `<span class="text-xl">${medal}</span>` : `<span class="text-sm font-black font-mono ${rankColor} w-7 text-center">${i + 1}</span>`}
                     </div>
@@ -1414,7 +1433,7 @@ module.exports = function (app, client) {
                         </div>
                     </div>
                     <div class="lb-stat shrink-0 text-left">
-                        <span class="text-xs font-black font-mono text-amber-400">🪙 ${Number(r.total_coins || 0).toLocaleString()}</span>
+                        <span class="text-xs font-black font-mono text-amber-400 ${isMe ? 'my-coins-val' : ''}">🪙 ${Number(r.total_coins || 0).toLocaleString()}</span>
                         <span class="text-[10px] text-gray-600 block">Gold</span>
                     </div>
                 </div>`;
@@ -1589,15 +1608,22 @@ module.exports = function (app, client) {
                 }
                 // ✅ تحديث الأرقام مباشرة بدون إعادة تحميل الصفحة
                 // تحديث رصيد الذهب في كل مكان يظهر فيه
-                var coinsDisplay = document.getElementById('userCoinsDisplay');
-                if (coinsDisplay) coinsDisplay.textContent = data.newBalance.toLocaleString();
-                document.querySelectorAll('.user-coins-val').forEach(function(el) {
-                    el.textContent = data.newBalance.toLocaleString();
+                document.querySelectorAll('#userCoinsDisplay, .user-coins-val').forEach(function(el) {
+                    el.textContent = Number(data.newBalance).toLocaleString();
                 });
                 // تحديث رصيد الذهب في الهيدر
                 document.querySelectorAll('.text-yellow-400.font-mono').forEach(function(el) {
-                    el.textContent = '🪙 ' + data.newBalance.toLocaleString() + ' Gold';
+                    el.textContent = '🪙 ' + Number(data.newBalance).toLocaleString() + ' Gold';
                 });
+                // تحديث رصيد المستخدم في لوحة الصدارة - أغنى الأثرياء فوراً
+                document.querySelectorAll('.my-coins-val, [data-my-row="true"] .lb-stat .text-amber-400').forEach(function(el) {
+                    el.textContent = '🪙 ' + Number(data.newBalance).toLocaleString();
+                });
+                // تحديث الـ Streak في بطاقة الهوية
+                var streakEl = document.getElementById('userIdentityStreak');
+                if (streakEl && data.streak) {
+                    streakEl.textContent = data.streak + ' Days 🔥';
+                }
                 // تحديث صندوق زر الراتب - يحوله لعداد 24 ساعة
                 var box = document.getElementById('dailyActionBox');
                 if (box) {
@@ -1962,7 +1988,7 @@ module.exports = function (app, client) {
                                                         <span>💬 TEXT</span>
                                                     </div>
                                                     <div class="text-[10px] text-gray-300">TOTAL XP: <span class="font-mono text-white">${userXp}</span></div>
-                                                    <div class="text-[10px] text-gray-300">STREAK: <span class="font-mono text-emerald-400">${userStreak > 0 ? `${userStreak} Days 🔥` : 'Active'}</span></div>
+                                                    <div class="text-[10px] text-gray-300">STREAK: <span id="userIdentityStreak" class="font-mono text-emerald-400">${userStreak > 0 ? `${userStreak} Days 🔥` : 'Active'}</span></div>
                                                 </div>
 
                                                 <div class="bg-black/30 border border-blue-500/20 rounded-xl p-3 space-y-1">
