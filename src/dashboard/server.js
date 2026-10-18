@@ -1619,6 +1619,17 @@ module.exports = function (app, client) {
                 document.querySelectorAll('.my-coins-val, [data-my-row="true"] .lb-stat .text-amber-400').forEach(function(el) {
                     el.textContent = '🪙 ' + Number(data.newBalance).toLocaleString();
                 });
+                var coinsList = document.getElementById('coinsLeaderboardList');
+                if (coinsList && (coinsList.textContent.indexOf('لا توجد بيانات') !== -1 || coinsList.children.length === 0)) {
+                    coinsList.innerHTML = '<div class="leaderboard-row px-4 py-3 flex items-center justify-between transition-all bg-amber-500/5 ring-1 ring-inset ring-amber-500/30" data-my-row="true">'
+                        + '<div class="lb-rank flex items-center gap-1.5 min-w-[50px]"><span class="text-xl">🥇</span></div>'
+                        + '<div class="lb-user flex items-center gap-3 flex-1 min-w-0">'
+                        + '<img src="' + (${JSON.stringify(userAvatar)}) + '" class="w-8 h-8 rounded-xl object-cover shrink-0 ring-2 ring-amber-500">'
+                        + '<div class="min-w-0"><span class="text-xs text-white font-bold block truncate max-w-[150px] text-amber-300">' + (${JSON.stringify(user.username)}) + ' 👤</span><span class="text-[10px] text-gray-500 font-mono block">Lv.1</span></div>'
+                        + '</div>'
+                        + '<div class="lb-stat shrink-0 text-left"><span class="text-xs font-black font-mono text-amber-400 my-coins-val">🪙 ' + Number(data.newBalance).toLocaleString() + '</span><span class="text-[10px] text-gray-600 block">Gold</span></div>'
+                        + '</div>';
+                }
                 // تحديث الـ Streak في بطاقة الهوية
                 var streakEl = document.getElementById('userIdentityStreak');
                 if (streakEl && data.streak) {
@@ -2029,7 +2040,7 @@ module.exports = function (app, client) {
                             </div>
                             <!-- List -->
                             <div class="bg-[#091124] border border-blue-500/20 rounded-3xl overflow-hidden shadow-xl">
-                                <div class="space-y-0 max-h-[520px] overflow-y-auto divide-y divide-white/5">
+                                <div id="xpLeaderboardList" class="space-y-0 max-h-[520px] overflow-y-auto divide-y divide-white/5">
                                     ${xpLeaderboardHtml}
                                 </div>
                             </div>
@@ -2055,7 +2066,7 @@ module.exports = function (app, client) {
                             </div>
                             <!-- List -->
                             <div class="bg-[#091124] border border-blue-500/20 rounded-3xl overflow-hidden shadow-xl">
-                                <div class="space-y-0 max-h-[520px] overflow-y-auto divide-y divide-white/5">
+                                <div id="coinsLeaderboardList" class="space-y-0 max-h-[520px] overflow-y-auto divide-y divide-white/5">
                                     ${coinsLeaderboardHtml}
                                 </div>
                             </div>
