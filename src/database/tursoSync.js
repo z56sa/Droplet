@@ -25,6 +25,7 @@ class TursoSync {
     const cleanEnv = (value) => String(value || '').trim().replace(/^['"]|['"]$/g, '');
     const url = cleanEnv(
       process.env.TURSO_DATABASE_URL ||
+      process.env.TURSO_DATABASE_UR ||
       process.env.TURSO_URL ||
       process.env.TURSO_DB_URL ||
       process.env.LIBSQL_URL ||

@@ -12,6 +12,7 @@ class TursoDatabase:
     def __init__(self):
         self.url = (
             os.environ.get("TURSO_DATABASE_URL")
+            or os.environ.get("TURSO_DATABASE_UR")
             or os.environ.get("TURSO_URL")
             or os.environ.get("TURSO_DB_URL")
             or os.environ.get("LIBSQL_URL")
