@@ -1148,7 +1148,7 @@ module.exports = function (app, client) {
         return ' <span class="text-rose-400/80 font-bold">⚠️ التخزين الدائم غير مفعّل</span>';
     }
 
-
+    function getLeaderboardCached() {
         const now = Date.now();
             // ✅ الكاش فارغ لا يُحتجز أكثر من 10 ثواني حتى لا "يلزق" بورد فاضي بعد البوث والاستعادة
         if (_lbCache.xp && _lbCache.coins && (now - _lbCache.ts) < _LB_TTL && (_lbCache.xp.length > 0 || _lbCache.coins.length > 0 || (now - _lbCache.ts) < 10000)) {
