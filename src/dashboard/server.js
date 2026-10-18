@@ -621,26 +621,61 @@ module.exports = function (app, client) {
         }
     });
 
-    // 🔍 نقطة تشخيص واحدة بصفحة JSON — تفضح حالة DB + Turso بدون أي واجهة
-    app.get('/api/db-state', (req, res) => {
+    // 🔍 نقطة تشخيص/شفاء واحدة بصفحة JSON — صحة DB + Turso + إرفاع حي (?heal=1)
+    app.get('/api/db-state', async (req, res) => {
         try {
             const userId = req.session?.user?.id;
             if (!userId) return res.status(401).json({ success: false, error: 'login first' });
+            const heal = req.query.heal === '1';
             const out = {
                 now: Date.now(),
                 uptimeSec: Math.floor(process.uptime()),
                 guildUsed: (req.session?.guilds || [])[0]?.id || 'global',
                 localUsers: rawDb.prepare('SELECT COUNT(*) as n FROM users').get()?.n || 0,
+                localTop: (() => { try { return rawDb.prepare('SELECT user_id, guild_id, coins, xp, last_daily FROM users ORDER BY coins DESC LIMIT 3').all(); } catch (e) { return null; } })(),
                 sessionUser: (() => { try { return rawDb.prepare('SELECT user_id, guild_id, coins, xp, level, last_daily, streak FROM users WHERE user_id = ? ORDER BY last_daily DESC LIMIT 1').get(String(userId)) || null; } catch (e) { return { error: e.message }; } })()
             };
+            let turso;
+            try { turso = require('../database/tursoSync'); } catch (e) { turso = null; }
+            if (!turso) { out.turso = { error: 'module missing' }; return res.json(out); }
+            out.turso = {
+                enabled: !!turso.enabled,
+                lastPull: turso.lastPull || null,
+                lastPacketError: turso.lastPacketError || null,
+                queueLen: Array.isArray(turso.syncQueue) ? turso.syncQueue.length : -1
+            };
+            if (!out.turso.enabled) return res.json(out);
             try {
-                const tursoDiag = require('../database/tursoSync');
-                out.turso = { enabled: !!tursoDiag.enabled, lastPull: tursoDiag.lastPull || null, lastPacketError: tursoDiag.lastPacketError || null };
-                if (out.turso.enabled) {
-                    tursoDiag.client.execute('SELECT COUNT(*) as n FROM users').then(r => { out.turso.remoteUsers = Number(r.rows?.[0]?.n ?? -1); res.json(out); }).catch(e => { out.turso.remoteError = e.message; res.json(out); });
-                    return;
-                }
-            } catch (e) { out.turso = { error: e.message }; }
+                const mine = await turso.client.execute({ sql: 'SELECT user_id, guild_id, coins, xp, last_daily FROM users WHERE user_id = ? ORDER BY last_daily DESC LIMIT 1', args: [String(userId)] });
+                out.turso.remoteMine = mine?.rows?.[0] || null;
+            } catch (e) { out.turso.remoteMineError = e.message; }
+            if (heal) {
+                try {
+                    const localRow = rawDb.prepare('SELECT * FROM users WHERE user_id = ? ORDER BY last_daily DESC LIMIT 1').get(String(userId));
+                    if (localRow) {
+                        await turso.client.execute({
+                            sql: `INSERT INTO users (user_id, guild_id, xp, level, coins, bank_balance, reputation, last_daily, last_work, last_message_xp, wallpaper, warnings, streak)
+                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                  ON CONFLICT(user_id, guild_id) DO UPDATE SET
+                                    coins = excluded.coins, bank_balance = excluded.bank_balance, xp = excluded.xp, level = excluded.level,
+                                    last_daily = excluded.last_daily, last_work = excluded.last_work, streak = excluded.streak`,
+                            args: [
+                                String(localRow.user_id), String(localRow.guild_id),
+                                Number(localRow.xp || 0), Number(localRow.level || 1), Number(localRow.coins || 0),
+                                Number(localRow.bank_balance || 0), Number(localRow.reputation || 0),
+                                Number(localRow.last_daily || 0), Number(localRow.last_work || 0),
+                                Number(localRow.last_message_xp || 0), String(localRow.wallpaper || 'default'),
+                                Number(localRow.warnings || 0), Number(localRow.streak || 0)
+                            ]
+                        });
+                        out.healed = true;
+                        const back = await turso.client.execute({ sql: 'SELECT coins, last_daily FROM users WHERE user_id = ? AND guild_id = ?', args: [String(localRow.user_id), String(localRow.guild_id)] });
+                        out.turso.remoteAfterHeal = back?.rows?.[0] || null;
+                    } else {
+                        out.healError = 'no local row for session user';
+                    }
+                } catch (e) { out.healError = e.message; }
+            }
             return res.json(out);
         } catch (err) {
             return res.status(500).json({ success: false, error: err.message });
