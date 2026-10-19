@@ -22,6 +22,11 @@ module.exports = {
     const nick = interaction.options.getString('nick') || null;
     const member = await interaction.guild.members.fetch(user.id).catch(() => null);
     if (!member) return interaction.reply({ content: t(lang, 'moderation.nickname.not_found'), flags: 64 });
+    // 🔒 تدرج الرتب — لا تغيير لقب المالك أو من رتبته أعلى/مساوية للمنفذ (إلا المالك)
+    if (member.id === interaction.guild.ownerId)
+      return interaction.reply({ content: t(lang, 'moderation.nickname.higher'), flags: 64 });
+    if (member.roles.highest.position >= interaction.member.roles.highest.position && interaction.user.id !== interaction.guild.ownerId)
+      return interaction.reply({ content: t(lang, 'moderation.nickname.higher'), flags: 64 });
     await member.setNickname(nick);
     return interaction.reply({ content: t(lang, nick ? 'moderation.nickname.changed' : 'moderation.nickname.cleared') });
   }

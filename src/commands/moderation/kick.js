@@ -30,6 +30,10 @@ module.exports = {
     if (!member.kickable) return interaction.editReply({ content: t(lang, 'moderation.kick.not_kickable') });
     if (member.id === interaction.user.id) return interaction.editReply({ content: t(lang, 'moderation.kick.self') });
 
+    // 🔒 تدرج الرتب — لا طرد لمن رتبته أعلى أو مساوية لرتبة المنفذ (إلا المالك)
+    if (member.roles.highest.position >= interaction.member.roles.highest.position && interaction.user.id !== interaction.guild.ownerId)
+      return interaction.editReply({ content: t(lang, 'moderation.kick.higher') });
+
     // DM قبل الطرد
     const dmEmbed = new EmbedBuilder()
       .setColor(config.colors?.warning || '#f39c12')
@@ -82,6 +86,10 @@ module.exports = {
     const reason = args.slice(1).join(' ') || t(lang, 'moderation.kick.default_reason');
     const member = await message.guild.members.fetch(targetUser.id).catch(() => null);
     if (!member || !member.kickable) return message.reply(t(lang, 'moderation.kick.not_kickable'));
+
+    // 🔒 تدرج الرتب (بريفكس)
+    if (member.roles.highest.position >= message.member.roles.highest.position && message.author.id !== message.guild.ownerId)
+      return message.reply(t(lang, 'moderation.kick.higher'));
 
     await member.send(t(lang, 'moderation.kick.prefix_dm', { guild: message.guild.name, reason })).catch(() => {});
     try {

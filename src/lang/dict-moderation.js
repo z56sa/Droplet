@@ -12,6 +12,7 @@ module.exports = {
     'moderation.ban.no_perm': '❌ You do not have permission to ban members.',
     'moderation.ban.not_bannable': '❌ I cannot ban this member (their role is higher than mine).',
     'moderation.ban.self': '❌ You cannot ban yourself!',
+    'moderation.ban.higher': '❌ You cannot ban a member whose role is higher than or equal to yours.',
     'moderation.ban.default_reason': 'No reason provided',
     'moderation.ban.permanent': 'Permanent',
     'moderation.ban.dm_title': '🔨 You were banned from {guild}',
@@ -112,6 +113,7 @@ module.exports = {
     'moderation.kick.not_found': '❌ Member not found in this server.',
     'moderation.kick.not_kickable': '❌ I cannot kick this member.',
     'moderation.kick.self': '❌ You cannot kick yourself!',
+    'moderation.kick.higher': '❌ You cannot kick a member whose role is higher than or equal to yours.',
     'moderation.kick.dm_title': '👢 You were kicked from {guild}',
     'moderation.kick.field_reason': '📋 Reason',
     'moderation.kick.field_by': '👮 By',
@@ -154,6 +156,7 @@ module.exports = {
     'moderation.nickname.no_perm': '❌ You do not have permission to manage nicknames.',
     'moderation.nickname.not_found': '❌ Member not found.',
     'moderation.nickname.changed': '✅ Nickname changed successfully!',
+    'moderation.nickname.higher': '❌ You cannot change the nickname of a member whose role is higher than or equal to yours.',
     'moderation.nickname.cleared': '✅ Nickname cleared successfully!',
 
     // ===== moderation.role =====
@@ -272,6 +275,7 @@ module.exports = {
 
     // ===== moderation.warn =====
     'moderation.warn.no_perm': '❌ You do not have permission to manage violations.',
+    'moderation.warn.higher': '❌ You cannot warn a member whose role is higher than or equal to yours.',
     'moderation.warn.dm_title': '⚠️ You received a warning in {guild}',
     'moderation.warn.field_reason': '📋 Reason',
     'moderation.warn.field_total': '🔢 Your total warnings',
@@ -317,6 +321,7 @@ module.exports = {
     'moderation.ban.no_perm': '❌ ليس لديك صلاحية حظر الأعضاء.',
     'moderation.ban.not_bannable': '❌ لا أستطيع حظر هذا العضو (صلاحياته أعلى مني).',
     'moderation.ban.self': '❌ لا تستطيع حظر نفسك!',
+    'moderation.ban.higher': '❌ لا يمكنك حظر عضو رتبته أعلى منك أو مساوية لك.',
     'moderation.ban.default_reason': 'لم يُذكر سبب',
     'moderation.ban.permanent': 'دائم',
     'moderation.ban.dm_title': '🔨 تم حظرك من {guild}',
@@ -418,6 +423,7 @@ module.exports = {
     'moderation.kick.not_found': '❌ العضو غير موجود في السيرفر.',
     'moderation.kick.not_kickable': '❌ لا أستطيع طرد هذا العضو.',
     'moderation.kick.self': '❌ لا تستطيع طرد نفسك!',
+    'moderation.kick.higher': '❌ لا يمكنك طرد عضو رتبته أعلى منك أو مساوية لك.',
     'moderation.kick.dm_title': '👢 تم طردك من {guild}',
     'moderation.kick.field_reason': '📋 السبب',
     'moderation.kick.field_by': '👮 بواسطة',
@@ -460,6 +466,7 @@ module.exports = {
     'moderation.nickname.no_perm': '❌ لا تملك صلاحية إدارة الألقاب.',
     'moderation.nickname.not_found': '❌ العضو غير موجود.',
     'moderation.nickname.changed': '✅ تم تغيير اللقب بنجاح!',
+    'moderation.nickname.higher': '❌ لا يمكنك تغيير لقب عضو رتبته أعلى منك أو مساوية لك.',
     'moderation.nickname.cleared': '✅ تم مسح اللقب بنجاح!',
 
     // ===== moderation.role =====
@@ -579,6 +586,7 @@ module.exports = {
 
     // ===== moderation.warn =====
     'moderation.warn.no_perm': '❌ ليس لديك صلاحية إدارة المخالفات.',
+    'moderation.warn.higher': '❌ لا يمكنك تحذير عضو رتبته أعلى منك أو مساوية لك.',
     'moderation.warn.dm_title': '⚠️ تلقيت تحذيراً في {guild}',
     'moderation.warn.field_reason': '📋 السبب',
     'moderation.warn.field_total': '🔢 إجمالي تحذيراتك',

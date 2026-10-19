@@ -38,6 +38,10 @@ module.exports = {
     if (member && member.id === interaction.user.id)
       return interaction.editReply({ content: t(lang, 'moderation.ban.self') });
 
+    // 🔒 تدرج الرتب — لا حظر لمن رتبته أعلى أو مساوية لرتبة المنفذ (إلا المالك) — بنمط موحد مع timeout/mute
+    if (member && member.roles.highest.position >= interaction.member.roles.highest.position && interaction.user.id !== interaction.guild.ownerId)
+      return interaction.editReply({ content: t(lang, 'moderation.ban.higher') });
+
     // إرسال DM قبل الحظر مع رابط تقديم الاستئناف
     const durationMs = durationStr ? ms(durationStr) : null;
     const baseUrl = process.env.DASHBOARD_URL || config.dashboardUrl || 'https://zeno-dashboard.onrender.com';
@@ -126,6 +130,10 @@ module.exports = {
     const member = await message.guild.members.fetch(targetUser.id).catch(() => null);
 
     if (member && !member.bannable) return message.reply(t(lang, 'moderation.ban.prefix_not_bannable'));
+
+    // 🔒 تدرج الرتب (بريفكس)
+    if (member && member.roles.highest.position >= message.member.roles.highest.position && message.author.id !== message.guild.ownerId)
+      return message.reply(t(lang, 'moderation.ban.higher'));
 
     if (member) await member.send(t(lang, 'moderation.ban.prefix_dm', { guild: message.guild.name, reason })).catch(() => {});
 

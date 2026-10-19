@@ -35,6 +35,11 @@ module.exports = {
     if (sub === 'add') {
       await interaction.deferReply().catch(() => {});
       const reason = interaction.options.getString('reason');
+      // 🔒 تدرج الرتب قبل التسجيل والعقوبات التلقائية — حتى لا تتراكم تحذيرات على من رتبته أعلى من المنفذ (إلا المالك)
+      const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
+      if (member && member.roles.highest.position >= interaction.member.roles.highest.position && interaction.user.id !== interaction.guild.ownerId) {
+        return interaction.editReply({ content: t(lang, 'moderation.warn.higher') });
+      }
       const count = db.addWarning(interaction.guild.id, targetUser.id, interaction.user.id, reason);
 
       if (db.recordStaffAction) {
@@ -51,7 +56,6 @@ module.exports = {
           { name: t(lang, 'moderation.warn.field_mod'), value: interaction.user.tag }
         )
         .setTimestamp();
-      const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
       if (member) await member.send({ embeds: [dmEmbed] }).catch(() => {});
 
       // عقوبات متدرجة تلقائياً (Advanced Escalation Sanctions)
@@ -182,8 +186,11 @@ module.exports = {
     }
 
     const reason = args.slice(1).join(' ') || t(lang, 'moderation.warn.prefix_default_reason');
-    const count = db.addWarning(message.guild.id, target.id, message.author.id, reason);
     const member = await message.guild.members.fetch(target.id).catch(() => null);
+    // 🔒 تدرج الرتب (بريفكس)
+    if (member && member.roles.highest.position >= message.member.roles.highest.position && message.author.id !== message.guild.ownerId)
+      return message.reply(t(lang, 'moderation.warn.higher'));
+    const count = db.addWarning(message.guild.id, target.id, message.author.id, reason);
     if (member) await member.send(t(lang, 'moderation.warn.prefix_dm', { guild: message.guild.name, reason })).catch(() => {});
     const embed = new EmbedBuilder().setColor('#f39c12').setTitle(t(lang, 'moderation.warn.title_add'))
       .addFields(
