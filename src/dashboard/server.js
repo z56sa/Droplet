@@ -430,6 +430,11 @@ module.exports = function (app, client) {
     app.get('/api/admin/my-guilds', async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
+            // ✅ محصور على مالك البوت فقط — أي مسجّل دخول ما له حق لائحة كل سيرفرات البوت وأصحابها
+            const _botOwnerId = process.env.OWNER_ID || config.ownerId || '1178342841882267744';
+            if (String(req.session.user.id) !== String(_botOwnerId)) {
+                return res.status(403).json({ success: false, error: 'هذا الـ API لمالك البوت فقط' });
+            }
             if (!client?.guilds?.cache) return res.json({ guilds: [] });
             const list = [];
             for (const [id, g] of client.guilds.cache) {
@@ -550,10 +555,10 @@ module.exports = function (app, client) {
     // Endpoint for claiming daily reward from web dashboard
     app.post('/api/user/daily', async (req, res) => {
         try {
-            // Use real Discord user ID if logged in, else use stable session ID
-            const userId = req.session?.user?.id || req.session?.id;
+            // ✅ الراتب للمسجّلين فقط — الزائر برقم جلسة مجهولة ما ياخذ راتب (كان يلخبط بورد الأغنياء)
+            const userId = req.session?.user?.id;
             if (!userId) {
-                return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
+                return res.status(401).json({ success: false, error: 'سجّل دخولك بحساب ديسكورد أولاً لاستلام الراتب' });
             }
             const now = Date.now();
             const cooldown = 24 * 60 * 60 * 1000;
@@ -1247,7 +1252,6 @@ module.exports = function (app, client) {
             // تحقق من cache أولاً
             const cached = _pageCache.get(user.id);
             if (cached && (Date.now() - cached.ts) < _PAGE_TTL) {
-                console.log(`[DASH] cache HIT for ${user.id} — ${Date.now()-_t0}ms`);
                 return res.send(cached.html);
             }
 
@@ -1276,12 +1280,10 @@ module.exports = function (app, client) {
                 let userRow;
                 if (_userCache && (Date.now() - _userCache.ts) < _PAGE_TTL) {
                     userRow = _userCache.data;
-                    console.log(`[DASH] user cache HIT — ${Date.now()-_t0}ms`);
                 } else {
                     const _tSQL = Date.now();
                     userRow = rawDb.prepare('SELECT SUM(coins) as coins, MAX(level) as level, SUM(reputation) as rep, SUM(xp) as xp, MAX(last_daily) as last_daily, MAX(streak) as streak, MAX(wallpaper) as wallpaper FROM users WHERE user_id = ?').get(user.id);
                     _pageCacheSet('_user_' + user.id, { data: userRow, ts: Date.now() });
-                    console.log(`[DASH] user SQL MISS — ${Date.now()-_tSQL}ms`);
                 }
                 userCoins = userRow?.coins || 0;
                 userLevel = userRow?.level || 1;
@@ -1301,7 +1303,6 @@ module.exports = function (app, client) {
                 const lb = getLeaderboardCached();
                 xpLeaderboard = lb.xpLeaderboard;
                 coinsLeaderboard = lb.coinsLeaderboard;
-                console.log(`[DASH] leaderboard ready — ${Date.now()-_tLB}ms (total ${Date.now()-_t0}ms)`);
 
                 // 🩹 Self-heal: لو مافي بيانات بالمحلي — اسحبها من Turso حالاً (مخنوق مرّة بالدقيقة) واقرأ ثاني
                 if (!xpLeaderboard.length) {
@@ -1389,7 +1390,7 @@ module.exports = function (app, client) {
             `;
 
             const xpLeaderboardHtml = xpLeaderboard.slice(0, 20).map((r, i) => {
-                const uName = r.display_name || r.username || `عضو #${String(r.user_id).slice(-4)}`;
+                const uName = escHtml(r.display_name || r.username || `عضو #${String(r.user_id).slice(-4)}`);
                 const uAvatar = r.avatar_url || (r.avatar ? `https://cdn.discordapp.com/avatars/${r.user_id}/${r.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png');
                 const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : null;
                 const rowBg = i === 0 ? 'bg-amber-500/5 hover:bg-amber-500/10' : i === 1 ? 'bg-slate-500/5 hover:bg-slate-500/10' : i === 2 ? 'bg-orange-700/5 hover:bg-orange-700/10' : 'hover:bg-white/[0.02]';
@@ -1415,7 +1416,7 @@ module.exports = function (app, client) {
 
 
             const coinsLeaderboardHtml = coinsLeaderboard.slice(0, 20).map((r, i) => {
-                const uName = r.display_name || r.username || `عضو #${String(r.user_id).slice(-4)}`;
+                const uName = escHtml(r.display_name || r.username || `عضو #${String(r.user_id).slice(-4)}`);
                 const uAvatar = r.avatar_url || (r.avatar ? `https://cdn.discordapp.com/avatars/${r.user_id}/${r.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png');
                 const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : null;
                 const rowBg = i === 0 ? 'bg-amber-500/5 hover:bg-amber-500/10' : i === 1 ? 'bg-slate-500/5 hover:bg-slate-500/10' : i === 2 ? 'bg-orange-700/5 hover:bg-orange-700/10' : 'hover:bg-white/[0.02]';
@@ -2254,7 +2255,6 @@ module.exports = function (app, client) {
             `;
             // ✅ حفظ الصفحة في cache وإرسالها
             _pageCacheSet(user.id, { html: _pageHtml, ts: Date.now() });
-            console.log(`[DASH] ✅ RENDER DONE for ${user.id} — TOTAL: ${Date.now()-_t0}ms`);
             res.send(_pageHtml);
         } catch (e) {
             console.error("Dashboard render error:", e);
@@ -2461,7 +2461,7 @@ module.exports = function (app, client) {
                 return `
                     <select name="${inputName}" id="${inputName}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right cursor-pointer">
                         <option value="">...اختر القناة</option>
-                        ${guildTextChannels.map(c => `<option value="${c.id}" ${String(selectedId).includes(String(c.id)) ? 'selected' : ''}># ${c.name}</option>`).join('')}
+                        ${guildTextChannels.map(c => `<option value="${c.id}" ${String(selectedId).includes(String(c.id)) ? 'selected' : ''}># ${escHtml(c.name)}</option>`).join('')}
                     </select>
                 `;
             }
@@ -2470,7 +2470,7 @@ module.exports = function (app, client) {
                 return `
                     <select name="${inputName}" id="${inputName}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right cursor-pointer">
                         <option value="">...اختر الرتبة</option>
-                        ${guildRoles.map(r => `<option value="${r.id}" ${String(selectedId) === String(r.id) ? 'selected' : ''}>@ ${r.name}</option>`).join('')}
+                        ${guildRoles.map(r => `<option value="${r.id}" ${String(selectedId) === String(r.id) ? 'selected' : ''}>@ ${escHtml(r.name)}</option>`).join('')}
                     </select>
                 `;
             }
@@ -2696,8 +2696,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                             <div class="space-y-2">
                                 ${guildLeaderboardUsers.slice(0, 5).map((u, i) => {
-                                    const uName = u.display_name || u.username || `عضو #${String(u.user_id).slice(-4)}`;
-                                    const uTag = u.username && u.username !== uName ? `@${u.username}` : `ID: ${u.user_id}`;
+                                    const uNameRaw = u.display_name || u.username || `عضو #${String(u.user_id).slice(-4)}`;
+                                    const uName = escHtml(uNameRaw);
+                                    const uTag = escHtml(u.username && u.username !== uNameRaw ? `@${u.username}` : `ID: ${u.user_id}`);
                                     const uAvatar = u.avatar_url || (u.avatar ? `https://cdn.discordapp.com/avatars/${u.user_id}/${u.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png');
                                     const badgeClass = i === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
                                                        i === 1 ? 'bg-gray-400/20 text-blue-200 border border-gray-400/30' :
@@ -8111,10 +8112,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             '</div>' +
                                         '</div>' +
                                         '<div>' +
-                                            (s.title ? '<h5 class="text-sm font-bold text-white mb-1">' + s.title + '</h5>' : '') +
-                                            '<p class="text-xs text-gray-300 leading-relaxed">' + s.content + '</p>' +
+                                            (s.title ? '<h5 class="text-sm font-bold text-white mb-1">' + escHtml(s.title) + '</h5>' : '') +
+                                            '<p class="text-xs text-gray-300 leading-relaxed">' + escHtml(s.content) + '</p>' +
                                         '</div>' +
-                                        (s.status_reason ? '<div class="bg-[#0b1322] p-3 rounded-xl border border-blue-500/20 text-[11px] text-white"><span class="text-white font-bold">رد الإدارة: </span>' + s.status_reason + '</div>' : '') +
+                                        (s.status_reason ? '<div class="bg-[#0b1322] p-3 rounded-xl border border-blue-500/20 text-[11px] text-white"><span class="text-white font-bold">رد الإدارة: </span>' + escHtml(s.status_reason) + '</div>' : '') +
                                         '<div class="flex items-center justify-between text-[11px] text-gray-500 pt-2 border-t border-blue-500/20">' +
                                             '<div class="flex items-center gap-3">' +
                                                 '<span class="text-emerald-400 font-mono font-bold">👍 ' + upCount + '</span>' +
@@ -8123,7 +8124,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             '<div class="flex items-center gap-2">' +
                                                 '<span>صاحب الاقتراح: <span class="font-mono text-white">' + s.user_id + '</span></span>' +
                                                 '<span>•</span>' +
-                                                '<span>' + (s.category || 'عام') + '</span>' +
+                                                '<span>' + escHtml(s.category || 'عام') + '</span>' +
                                             '</div>' +
                                         '</div>' +
                                     '</div>';
@@ -10776,8 +10777,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                 const sMins = Math.floor((effectiveSeconds % 3600) / 60);
                                                 const memberObj = botGuild?.members?.cache?.get(st.user_id);
                                                 const staffAvatar = memberObj?.user?.displayAvatarURL?.({ size: 64 }) || st.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
-                                                const staffDisplayName = memberObj?.displayName || st.display_name || memberObj?.user?.username || st.username || `المشرف (${st.user_id.slice(-4)})`;
-                                                const staffHandle = memberObj?.user?.tag || (st.username ? `@${st.username}` : st.user_id);
+                                                const staffDisplayName = escHtml(memberObj?.displayName || st.display_name || memberObj?.user?.username || st.username || `المشرف (${st.user_id.slice(-4)})`);
+                                                const staffHandle = escHtml(memberObj?.user?.tag || (st.username ? `@${st.username}` : st.user_id));
                                                 const badge = i === 0 ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : i === 1 ? 'bg-gray-300/20 text-blue-200 border-gray-400/30' : i === 2 ? 'bg-orange-700/20 text-orange-400 border-orange-600/30' : 'bg-blue-400/20 text-blue-300 border-blue-500/20';
                                                 const isOnline = !!activeObj;
                                                 return `
@@ -14458,7 +14459,14 @@ ${embedScriptHtml}
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
             const userId = req.session.user.id;
-            const { type, name, price } = req.body;
+            const { type, name } = req.body;
+
+            // ✅ السعر يُحسم من الكتالوج على السيرفر — لا نثق بثمن العميل (إلا فكان شراء أي شي بـ1)
+            const item = identityWallpapers.find(w => w.url === name || w.name === name || String(w.id) === String(name));
+            if (!item) {
+                return res.status(400).json({ success: false, error: 'العنصر غير موجود في المتجر' });
+            }
+            const price = item.price;
 
             const userRow = rawDb.prepare('SELECT SUM(coins) as coins FROM users WHERE user_id = ?').get(userId);
             const coins = userRow?.coins || 0;
@@ -14472,7 +14480,7 @@ ${embedScriptHtml}
 
             rawDb.prepare('INSERT OR IGNORE INTO users (user_id, guild_id, coins) VALUES (?, ?, 0)').run(userId, primaryGuildId);
             rawDb.prepare('UPDATE users SET coins = MAX(0, coins - ?) WHERE user_id = ? AND guild_id = ?').run(price, userId, primaryGuildId);
-            rawDb.prepare('UPDATE users SET wallpaper = ? WHERE user_id = ?').run(name, userId);
+            rawDb.prepare('UPDATE users SET wallpaper = ? WHERE user_id = ?').run(item.url, userId);
 
             // ✅ مزامنة فورية مع Turso (ما يرد الرصيد القديم)
             try {

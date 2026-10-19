@@ -11,7 +11,6 @@ module.exports = [
   {
     name: 'messageDelete',
     async execute(message) {
-      try { console.log(`[MSGLOG-DBG] messageDelete fired guild=${message.guildId || message.guild?.id} ch=${message.channelId} bot=${message.author?.bot}`); } catch {}
       const guild = message.guild;
       if (!guild) return;
 
@@ -165,7 +164,6 @@ module.exports = [
   {
     name: 'messageUpdate',
     async execute(oldMessage, newMessage) {
-      try { console.log(`[MSGLOG-DBG] messageUpdate fired guild=${newMessage.guildId || newMessage.guild?.id}`); } catch {}
       if (!newMessage.guild || newMessage.author?.bot) return;
       try { if (oldMessage.partial) await oldMessage.fetch().catch(() => {}); } catch {}
       try { if (newMessage.partial) await newMessage.fetch().catch(() => {}); } catch {}
