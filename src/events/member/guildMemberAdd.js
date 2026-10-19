@@ -16,9 +16,10 @@ module.exports = {
 
     // 0. فحوصات الأمان (Security Checks)
     // --- 0.1 Anti-Bot: حماية شاملة من البوتات غير المصرح بها ---
+    // ✅ المنطق: أي بوت يدخل يُطرد إلا إذا كان البوت نفسه مصرّحاً مسبقاً (آيديه بالقائمة البيضاء أو عنده رتبة الاستثناء)
+    // — تصرف الشخص الذي أضافه (حتى الأونر) لا يعفيه، مطابق لنص الداشبورد "منع إضافة بوتات جديدة من غير تصريح مسبق"
     const _antiBotOn = isEnabled(settings.anti_bot, isEnabled(settings.anti_bot_add, false));
     if (member.user.bot) {
-      let isAllowed = false;
       let botAdder = null;
       try {
         const auditLogs = await guild.fetchAuditLogs({ limit: 1, type: AuditLogEvent.BotAdd }).catch(() => null);
@@ -28,19 +29,25 @@ module.exports = {
         }
       } catch {}
 
-      if (botAdder) {
-        if (
-          botAdder.id === guild.ownerId ||
-          botAdder.id === guild.client.user.id ||
-          (db.isUserWhitelisted && db.isUserWhitelisted(guild.id, botAdder.id, 'whitelist')) ||
-          (settings.antinuke_whitelist_role && guild.members.cache.get(botAdder.id)?.roles.cache.has(settings.antinuke_whitelist_role))
-        ) {
-          isAllowed = true;
-        }
-      }
+      let isAllowed = false;
+      try {
+        if (member.id === guild.client.user.id) isAllowed = true; // لا نطرد أنفسنا أبداً
+        else if (db.isUserWhitelisted && db.isUserWhitelisted(guild.id, member.id, 'whitelist')) isAllowed = true;
+        else if (settings.antinuke_whitelist_role && member.roles.cache.has(settings.antinuke_whitelist_role)) isAllowed = true;
+      } catch {}
 
       if (_antiBotOn && !isAllowed) {
         try {
+          // إشعار الشخص الذي أضاف البوت (إذا الإشعارات مفعّلة)
+          if (settings.antiraid_dm_notify && botAdder) {
+            await botAdder.send(
+              `🤖⚠️ **تم طرد البوت الذي أضفته**\n`
+              + `البوت: **${member.user.tag}** (\`${member.id}\`)\n`
+              + `السيرفر: **${guild.name}**\n`
+              + `السبب: حماية البوتات مفعّلة والبوت **غير مصرح مسبقاً**.\n`
+              + `للسماح به: أضف آيدي البوت للقائمة البيضاء من الداشبورد ثم أعد إضافته.`
+            ).catch(() => {});
+          }
           await member.kick('Anti-Bot Protection: بوت غير مصرح به');
           if (db.logSecurityEvent) {
             db.logSecurityEvent(guild.id, 'security', 'anti_bot_kick', botAdder ? botAdder.id : null, member.id, 'Unauthorized bot addition', member.user.tag);
