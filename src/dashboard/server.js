@@ -177,10 +177,31 @@ module.exports = function (app, client) {
     // 🌐 Interactive Web Transcript Viewer
     // ==========================================
     app.get('/transcript/:channelId', async (req, res) => {
-        // 🔒 يمكن للمسجلين فقط دخول السجلات (تٍذاكر خاصة)
-        if (!req.session?.user) return res.redirect('/auth/discord');
+        // 🔒 يمكن للمسجلين فقط دخول السجلات (تذاكر خاصة)
+        const _sessionUser = req.session?.user;
+        if (!_sessionUser) return res.redirect('/auth/discord');
         const { channelId } = req.params;
         const transcript = database.getTranscript ? database.getTranscript(channelId) : null;
+        // 🔒 بوابة الوصول: صاحب التذكرة أو مشرف السيرفر صاحب التذكرة فقط (سد IDOR)
+        if (transcript) {
+          const _tOwnerOk = String(transcript.user_id) === String(_sessionUser.id);
+          let _tAdminOk = false;
+          if (!_tOwnerOk) {
+            try {
+              const _tg = client?.guilds?.cache?.get(String(transcript.guild_id));
+              let _tm = _tg ? _tg.members.cache.get(_sessionUser.id) : null;
+              if (_tg && !_tm) _tm = await _tg.members.fetch(_sessionUser.id).catch(() => null);
+              _tAdminOk = !!_tm && (_tg.ownerId === _sessionUser.id || _tm.permissions.has(PermissionFlagsBits.ManageGuild));
+            } catch {}
+            if (!_tAdminOk) {
+              // fallback: snapshot سيرفرات يديرها المستخدم عند تسجيل الدخول
+              _tAdminOk = (req.session?.guilds || []).some(g => String(g.id) === String(transcript.guild_id));
+            }
+          }
+          if (!_tOwnerOk && !_tAdminOk) {
+            return res.status(403).send(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>غير مصرح | Droplet</title></head><body style="background:#0b1526;color:#dbeafe;font-family:'Segoe UI',Tahoma,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="background:#122036;padding:40px;border-radius:16px;border:1px solid #23405f;text-align:center;max-width:450px;"><h1 style="color:#ef4444;font-size:24px;margin-bottom:12px;">🔒 غير مصرح</h1><p style="color:#94a3b8;font-size:14px;">هذا السجل متاح لصاحب التذكرة أو مشرفي السيرفر فقط.</p><a href="/dashboard" style="color:#93c5fd;">العودة للوحة التحكم ←</a></div></body></html>`);
+          }
+        }
         if (!transcript || !transcript.html_content) {
             return res.status(404).send(`
                 <!DOCTYPE html>
@@ -923,6 +944,7 @@ module.exports = function (app, client) {
     // GET /api/guild/:guildId/store/items — جلب عناصر المتجر
     app.get('/api/guild/:guildId/store/items', (req, res) => {
         try {
+            if (!req.session?.user) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
             const { guildId } = req.params;
             const items = rawDb.prepare(`
                 SELECT * FROM store_items

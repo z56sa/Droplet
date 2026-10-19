@@ -859,8 +859,24 @@ module.exports = {
           return interaction.reply({ content: t(interaction.guildId, 'events.ticket.action_not_ticket'), flags: 64 });
         }
 
-        // A. Close with Reason
+        // 🔒 بوابة الصلاحيات: الطاقم الإداري أو صاحب التذكرة
+        // ⚠️ الإغلاق الذاتي لصاحب التذكرة مسموح — إضافة عضو/تذكير/نسخة السجل للطاقم فقط
+        let _tStaff = interaction.member.permissions.has(PermissionFlagsBits.ManageChannels) ||
+          interaction.member.permissions.has(PermissionFlagsBits.Administrator);
+        try {
+          if (!_tStaff) {
+            const _ts = db.getGuildSettings(interaction.guild.id) || {};
+            const _tid = _ts.support_role || _ts.ticket_role || _ts.staff_role;
+            if (_tid && interaction.member.roles.cache.has(String(_tid))) _tStaff = true;
+          }
+        } catch {}
+        const _tOwner = ticketData.user_id === interaction.user.id;
+
+        // A. Close with Reason — الطاقم أو صاحب التذكرة فقط
         if (action === 'action_close_reason') {
+          if (!_tStaff && !_tOwner) {
+            return interaction.reply({ content: '🔒 هذا الإجراء للطاقم الإداري أو صاحب التذكرة فقط.', flags: 64 });
+          }
           const modal = new ModalBuilder()
             .setCustomId('modal_close_ticket_reason')
             .setTitle('Close Ticket with Reason');
@@ -877,8 +893,11 @@ module.exports = {
           return interaction.showModal(modal);
         }
 
-        // B. Add User to Ticket
+        // B. Add User to Ticket — الطاقم فقط
         if (action === 'action_add_user') {
+          if (!_tStaff) {
+            return interaction.reply({ content: '🔒 إضافة أعضاء إلى التذكرة متاحة للطاقم الإداري فقط.', flags: 64 });
+          }
           const userSelect = new UserSelectMenuBuilder()
             .setCustomId('ticket_user_add_select')
             .setPlaceholder(t(interaction.guildId, 'events.ticket.add_user_ph'))
@@ -892,8 +911,11 @@ module.exports = {
           });
         }
 
-        // C. Member PM Reminder
+        // C. Member PM Reminder — الطاقم فقط
         if (action === 'action_pm_reminder') {
+          if (!_tStaff) {
+            return interaction.reply({ content: '🔒 تذكير صاحب التذكرة متاح للطاقم الإداري فقط.', flags: 64 });
+          }
           await interaction.deferReply({ flags: 64 });
           try {
             const ticketOwner = await client.users.fetch(ticketData.user_id).catch(() => null);
@@ -915,8 +937,11 @@ module.exports = {
           }
         }
 
-        // D. Request Ticket Copy (Transcript directly to user)
+        // D. Request Ticket Copy (Transcript directly to user) — الطاقم فقط (ملف السجل خاص)
         if (action === 'action_request_copy') {
+          if (!_tStaff) {
+            return interaction.reply({ content: '🔒 طلب نسخة السجل متاح للطاقم الإداري فقط.', flags: 64 });
+          }
           await interaction.deferReply({ flags: 64 });
           try {
             const { generateHtmlTranscript } = require('../../utils/transcript');
@@ -938,6 +963,19 @@ module.exports = {
 
       // 4.2 إضافة مستخدم بعد اختياره من UserSelect
       if (interaction.isUserSelectMenu() && interaction.customId === 'ticket_user_add_select') {
+        // 🔒 الطاقم فقط — دفاع ثانٍ حتى لو جيء قائمة الاختيار من مصدر مزيف
+        try {
+          const _tsS = db.getGuildSettings(interaction.guild.id) || {};
+          const _tsR = _tsS.support_role || _tsS.ticket_role || _tsS.staff_role;
+          const _tsOk = interaction.member.permissions.has(PermissionFlagsBits.ManageChannels) ||
+            interaction.member.permissions.has(PermissionFlagsBits.Administrator) ||
+            (_tsR && interaction.member.roles.cache.has(String(_tsR)));
+          if (!_tsOk) {
+            return interaction.reply({ content: '🔒 إضافة أعضاء إلى التذكرة متاحة للطاقم الإداري فقط.', flags: 64 });
+          }
+        } catch (e) {
+          return interaction.reply({ content: '🔒 تعذر التحقق من صلاحياتك.', flags: 64 });
+        }
         const targetUserId = interaction.values[0];
         await interaction.deferReply({ flags: 64 });
 
@@ -1171,16 +1209,27 @@ module.exports = {
       // 6. إغلاق التذكرة واللوق الاحترافي (Close with Reason & Log Embed - Image 1)
       // ==========================================
       if (interaction.isModalSubmit() && interaction.customId === 'modal_close_ticket_reason') {
-        await interaction.deferReply().catch(() => {});
         const reason = interaction.fields.getTextInputValue('ticket_close_reason_input') || t(interaction.guildId, 'events.ticket.close_no_reason');
         const ticketData = db.getTicket(interaction.channel.id);
-        const settings = db.getGuildSettings(interaction.guild.id);
+        const settings = db.getGuildSettings(interaction.guild.id) || {};
         const staffClaimerId = ticketData?.claimed_by || null;
+
+        // 🔒 الطاقم أو صاحب التذكرة فقط — دفاع ثانٍ حتى لو جاء المودال من مصدر مزيف
+        const _cRole = settings.support_role || settings.ticket_role || settings.staff_role;
+        const _closerStaff = interaction.member.permissions.has(PermissionFlagsBits.ManageChannels) ||
+          interaction.member.permissions.has(PermissionFlagsBits.Administrator) ||
+          (_cRole && interaction.member.roles.cache.has(String(_cRole)));
+        const _closerOwner = ticketData && ticketData.user_id === interaction.user.id;
+        if (!_closerStaff && !_closerOwner) {
+          return interaction.reply({ content: '🔒 هذا الإجراء للطاقم الإداري أو صاحب التذكرة فقط.', flags: 64 });
+        }
+
+        await interaction.deferReply().catch(() => {});
 
         db.closeTicket(interaction.channel.id, interaction.user.id, reason);
 
-        // تسجيل نشاط الإدارة
-        if (db.recordStaffAction) {
+        // تسجيل نشاط الإدارة — فقط عند الإغلاق بيد الطاقم الفعلي (إغلاق صاحب التذكرة ما يعتبر نشاط ستاف)
+        if (_closerStaff && db.recordStaffAction) {
           db.recordStaffAction(interaction.guild.id, interaction.user.id, 'ticket_close', ticketData ? ticketData.user_id : null, reason);
         }
 
