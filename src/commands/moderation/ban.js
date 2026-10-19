@@ -44,7 +44,7 @@ module.exports = {
 
     // إرسال DM قبل الحظر مع رابط تقديم الاستئناف
     const durationMs = durationStr ? ms(durationStr) : null;
-    const baseUrl = process.env.DASHBOARD_URL || config.dashboardUrl || 'https://zeno-dashboard.onrender.com';
+    const baseUrl = process.env.DASHBOARD_URL || config.dashboardUrl || 'https://droplet-mqwb.onrender.com';
     const appealUrl = `${baseUrl}/appeal`;
 
     const dmEmbed = new EmbedBuilder()

@@ -13,7 +13,7 @@ const identityWallpapers = require('../data/identityWallpapers.json');
 const config = require('../../config.json');
 const { askAI } = require('../utils/ai');
 const crypto = require('crypto');
-const { PermissionFlagsBits } = require('discord.js');
+const { PermissionFlagsBits, EmbedBuilder } = require('discord.js');
 
 // Language detection helper
 function getReqCookies(req) {
@@ -46,7 +46,7 @@ function dashDateLocale(req, arLocale) {
 }
 
 const { requireAuth, createGuildAuthMiddleware } = require('./middleware/auth');
-const { apiLimiter, sensitiveActionLimiter, aiLimiter } = require('./middleware/rateLimiter');
+const { apiLimiter, sensitiveActionLimiter, aiLimiter, appealLimiter } = require('./middleware/rateLimiter');
 const { errorHandler } = require('./middleware/errorHandler');
 const {
     validate,
@@ -2281,6 +2281,251 @@ module.exports = function (app, client) {
         } catch (e) {
             console.error("Dashboard render error:", e);
             res.status(500).send("Internal error: " + e.message);
+        }
+    });
+
+    // ==========================================
+    // 3.5 ⚖️ نظام الاستئناف العام (Public Unban Appeal)
+    // ==========================================
+    const _appealShell = (title, inner) => `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escHtml(title)} | Droplet</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+body { background: linear-gradient(160deg, #070d1d 0%, #0b1024 55%, #160b2c 100%); min-height: 100vh; color: #e2e8f0; display: flex; align-items: center; justify-content: center; padding: 28px 14px; }
+.card { background: rgba(13, 18, 36, .94); border: 1px solid rgba(99, 102, 241, .28); border-radius: 18px; max-width: 600px; width: 100%; padding: 34px 30px; box-shadow: 0 18px 50px rgba(0,0,0,.55); }
+h1 { font-size: 21px; margin-bottom: 8px; color: #c7d2fe; }
+p.sub { color: #94a3b8; font-size: 13px; margin-bottom: 20px; line-height: 1.8; }
+label { display: block; font-size: 12.5px; color: #a5b4fc; margin: 14px 0 6px; font-weight: 700; }
+input, textarea { width: 100%; background: #0b1121; border: 1px solid #2b3a5c; color: #e2e8f0; border-radius: 10px; padding: 11px 12px; font-size: 14px; outline: none; }
+input:focus, textarea:focus { border-color: #6366f1; }
+textarea { min-height: 96px; resize: vertical; }
+.hint { color: #64748b; font-size: 11px; margin-top: 4px; line-height: 1.7; }
+button { margin-top: 24px; width: 100%; background: linear-gradient(135deg, #6d28d9, #2563eb); color: #fff; border: none; padding: 13px; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; }
+button:hover { filter: brightness(1.12); }
+.err { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.4); color: #fca5a5; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-top: 14px; display: none; }
+.msg { border-radius: 12px; padding: 16px 18px; font-size: 14px; line-height: 1.9; }
+a.lnk { color: #93c5fd; }
+</style>
+</head>
+<body>
+<div class="card">
+${inner}
+</div>
+</body>
+</html>`;
+
+    app.get('/appeal', (req, res) => {
+        const _gid = String(req.query.guild || '').replace(/[^\d]/g, '').slice(0, 20);
+        const _uid = String(String(req.query.uid || '') || (req.session?.user?.id || '')).replace(/[^\d]/g, '').slice(0, 20);
+        const _isAr = detectLanguage(req) !== 'en';
+        const inner = `
+<h1>${_isAr ? '⚖️ تقديم طلب فك حظر' : '⚖️ Unban Appeal'}</h1>
+<p class="sub">${_isAr ? 'إذا تم حظرك من أحد السيرفرات التي يديرها البوت، املأ النموذج التالي وسيصل طلبك مباشرة إلى طاقم الإدارة في ذلك السيرفر للتقييم. إرسال طلبات متكررة ومزعجة قد يوجّه المراجعين لرفضك دون قراءة.' : 'If you were banned from a server managed by this bot, fill in the form below and your request goes straight to the staff desk of that server.'}</p>
+<div id="err" class="err"></div>
+<form method="POST" action="/appeal" onsubmit="return vReq();">
+<label>${_isAr ? 'أيدي السيرفر' : 'Server ID'}</label>
+<input name="guildId" required maxlength="20" inputmode="numeric" value="${_gid ? escHtml(_gid) : ''}" placeholder="1234567890123456789">
+<div class="hint">${_isAr ? 'رابط الاستئناف يأخذ أيدي السيرفر تلقائياً بصيغة /appeal?guild=الأيدي — أو اطلبه من أي إداري.' : 'The appeal link auto-fills the server ID as /appeal?guild=ID — or ask any staff member.'}</div>
+<label>${_isAr ? 'أيديك الشخصي' : 'Your Discord ID'}</label>
+<input name="userId" required maxlength="20" inputmode="numeric" value="${_uid ? escHtml(_uid) : ''}" placeholder="1234567890123456789">
+<div class="hint">${_isAr ? 'ديسكورد: إعدادات المستخدم ← Advanced ← فعّل Developer Mode ← كلك يمين على اسمك ← Copy User ID.' : 'Discord settings → Advanced → enable Developer Mode → right-click your name → Copy User ID.'}</div>
+<label>${_isAr ? 'سبب الحظر (كما ورد في رسالة الحظر) — اختياري' : 'Ban reason (from your ban DM) — optional'}</label>
+<input name="banReason" maxlength="300">
+<label>${_isAr ? 'ليش تستحق فك الحظر؟ يجب كتابة 10 أحرف على الأقل' : 'Why should your ban be lifted? (min 10 chars)'}</label>
+<textarea name="appealReason" required minlength="10" maxlength="1500"></textarea>
+<label>${_isAr ? 'وعد بعدم التكرار — اختياري' : 'Promise not to repeat — optional'}</label>
+<textarea name="promise" maxlength="800"></textarea>
+<button type="submit">${_isAr ? '📨 إرسال الطلب' : '📨 Submit Appeal'}</button>
+</form>
+<script>
+function vReq() {
+  var g = document.querySelector('input[name=guildId]').value.replace(/\\D/g, '');
+  var u = document.querySelector('input[name=userId]').value.replace(/\\D/g, '');
+  if (g.length < 16 || g.length > 20 || u.length < 16 || u.length > 20) {
+    var e = document.getElementById('err');
+    e.style.display = 'block';
+    e.textContent = ${_isAr ? "'أيدي غير صحيح — السيرفر والمستخدم يحتاجان 16-20 رقم.'" : "'Invalid IDs — both server and user IDs need 16-20 digits.'"};
+    return false;
+  }
+  document.querySelector('input[name=guildId]').value = g;
+  document.querySelector('input[name=userId]').value = u;
+  return true;
+}
+</script>`;
+        return res.send(_appealShell('تقديم طلب فك حظر', inner));
+    });
+
+    app.post('/appeal', express.urlencoded({ extended: false }), appealLimiter, async (req, res) => {
+        try {
+            const _b = req.body || {};
+            const guildId = String(_b.guildId || '').replace(/[^\d]/g, '');
+            const userId = String(_b.userId || '').replace(/[^\d]/g, '');
+            const banReason = String(_b.banReason || '').slice(0, 300).trim();
+            const appealReason = String(_b.appealReason || '').slice(0, 1500).trim();
+            const promise = String(_b.promise || '').slice(0, 800).trim();
+            const _errPage = (msg) => res.status(400).send(_appealShell('خطأ في الاستئناف', `<h1>⚠️ تعذر الإرسال</h1><p class="sub" style="color:#fca5a5;">${escHtml(msg)}</p><a class="lnk" href="/appeal">${escHtml('← رجوع للنموذج')}</a>`));
+
+            if (!/^\d{16,20}$/.test(guildId) || !/^\d{16,20}$/.test(userId)) {
+                return _errPage('الأيدي يجب أن يكون أرقاماً فقط (16-20 خانة).');
+            }
+            if (userId === String(client?.user?.id || '')) {
+                return _errPage('أيدي البوت غير صالح.');
+            }
+            if (appealReason.length < 10) {
+                return _errPage('سبب الاستئناف مطلوب — اكتب 10 أحرف على الأقل.');
+            }
+            let botGuild = client?.guilds?.cache?.get(guildId) || null;
+            if (!botGuild) {
+                return res.status(404).send(_appealShell('سيرفر غير موجود', `<h1>⚠️ البوت غير موجود بالسيرفر المطلوب</h1><p class="sub" style="color:#fca5a5;">تأكد من أيدي السيرفر، أو البوت قد يكون أُخرج من السيرفر.</p><a class="lnk" href="/appeal">${escHtml('← رجوع للنموذج')}</a>`));
+            }
+            if (database.getUserAppeal && database.updateAppealStatus) {
+                const _prior = database.getUserAppeal(guildId, userId);
+                if (_prior && String(_prior.status) === 'pending') {
+                    return res.status(409).send(_appealShell('طلب معلق', `<h1>⏳ لديك طلب استئناف معلق بالفعل</h1><p class="sub" style="color:#fbbf24;">بانتظار مراجعة الإدارة — يُمنع إرسال طلب جديد حتى يتم البت في الطلب الحالي.</p><a class="lnk" href="/appeal">${escHtml('← رجوع للنموذج')}</a>`));
+                }
+                if (_prior && String(_prior.status) === 'rejected') {
+                    const _since = Number(_prior.updated_at) ? (Date.now() / 1000 - Number(_prior.updated_at)) / 3600 : 999;
+                    if (_since < 72) {
+                        return res.status(429).send(_appealShell('طلب مرفوض حديثاً', `<h1>🚫 آخر طلب للمرفوضين</h1><p class="sub" style="color:#fca5a5;">طلبك الأخير قُيّم بالرفض — انتظر ${Math.ceil(72 - _since)} ساعة قبل إعادة التقديم.</p><a class="lnk" href="/appeal">${escHtml('← رجوع للنموذج')}</a>`));
+                    }
+                }
+            }
+            let _username = '';
+            try {
+                const _u = await client.users.fetch(userId).catch(() => null);
+                if (_u) _username = _u.username;
+            } catch {}
+            let _appealId = null;
+            try {
+                const _info = database.addUnbanAppeal(guildId, userId, _username || 'Unknown', banReason || '—', appealReason, promise);
+                _appealId = _info && _info.lastInsertRowid ? Number(_info.lastInsertRowid) : null;
+            } catch {}
+            if (!_appealId) {
+                return res.status(500).send(_appealShell('خطأ داخلي', '<h1>⚠️ تعذر حفظ الاستئناف</h1><p class="sub" style="color:#fca5a5;">حاول مجدداً بعد قليل.</p>'));
+            }
+            // إبلاغ الستاف في روم السجلات مع رابط المراجعة
+            try {
+                const _st = database.getGuildSettings ? (database.getGuildSettings(guildId) || {}) : {};
+                const _chId = _st.appeal_review_channel || _st.staff_log_channel || _st.log_channel || _st.antiraid_alert_channel;
+                const _ch = _chId ? (botGuild.channels.cache.get(_chId) || await botGuild.channels.fetch(_chId).catch(() => null)) : null;
+                if (_ch && _ch.isTextBased()) {
+                    const _userObj = client.users.cache.get(userId) || null;
+                    const _reviewUrl = `${req.protocol}://${req.get('host')}/dashboard/${guildId}/appeals`;
+                    await _ch.send({ embeds: [new EmbedBuilder()
+                        .setColor('#f59e0b')
+                        .setAuthor({ name: `${_username || 'مستخدم'} — طلب فك حظر`, iconURL: _userObj ? _userObj.displayAvatarURL({ size: 64 }) : undefined })
+                        .addFields(
+                            { name: '👤 المستخدم', value: `<@${userId}> \`${userId}\``, inline: true },
+                            { name: '🏠 العضوية', value: _userObj ? 'معروفة' : 'خارج السيرفر', inline: true },
+                            { name: '⚖️ رقم الطلب', value: `#${_appealId}`, inline: true },
+                            { name: '📋 سبب الحظر (حسب كلام المستخدم)', value: (banReason || '—').slice(0, 300), inline: false },
+                            { name: '💬 مبرر الاستئناف', value: appealReason.slice(0, 1000), inline: false },
+                            { name: '🤝 الوعد', value: (promise || '—').slice(0, 500), inline: false },
+                            { name: '🔗 مراجعة', value: `[فتح صفحة المراجعة](${_reviewUrl})`, inline: false }
+                        )
+                        .setFooter({ text: '⚖️ نظام الاستئناف — Droplet' })
+                        .setTimestamp()] }).catch(() => {});
+                }
+            } catch {}
+            return res.status(201).send(_appealShell('تم الإرسال', `<h1>✅ تم إرسال استئنافك بنجاح</h1><p class="sub" style="color:#86efac;">توصل بالنتيجة على الخاص مباشرة إذا تم البت في طلبك — راقب رسائلك.</p><a class="lnk" href="/appeal">${escHtml('← الرجوع للنموذج')}</a>`));
+        } catch (e) {
+            console.error('[APPEAL] submit error:', e.message);
+            return res.status(500).send(_appealShell('خطأ', '<h1>⚠️ خطأ غير متوقع</h1><p class="sub" style="color:#fca5a5;">حاول مجدداً بعد قليل.</p>'));
+        }
+    });
+
+    // 3.6 ⚖️ لوحة مراجعة الاستئنافات — صفحة إدارية محمية بفحص صلاحيات حي (مصفوفة أدمين فقط)
+    app.get('/dashboard/:guildId/appeals', async (req, res) => {
+        try {
+            const user = req.session?.user;
+            if (!user) return res.redirect('/auth/discord');
+            const guildId = req.params.guildId;
+            let botGuild = client?.guilds?.cache?.get(guildId) || await client?.guilds?.fetch(guildId).catch(() => null);
+            if (!botGuild) {
+                return res.status(404).send('<div style="background:#070d1d;color:#ffffff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;"><h2>Bot not in this server</h2><a href="/dashboard/manage" style="color:#93c5fd;margin-top:10px;">Back to Dashboard</a></div>');
+            }
+            let userCanManage = botGuild.ownerId === user.id;
+            try {
+                if (!userCanManage) {
+                    let _m = botGuild.members.cache.get(user.id);
+                    if (!_m) _m = await botGuild.members.fetch(user.id).catch(() => null);
+                    userCanManage = !!_m && (_m.permissions.has(PermissionFlagsBits.Administrator) || _m.permissions.has(PermissionFlagsBits.ManageGuild));
+                }
+            } catch (e) {}
+            if (!userCanManage) {
+                return res.status(403).send('<div style="background:#070d1d;color:#ffffff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;"><h2>🔒 غير مصرح</h2><p style="color:#94a3b8;">مراجعة الاستئنافات متاحة لمالك السيرفر أو المشرفين فقط.</p><a href="/dashboard/manage" style="color:#93c5fd;">Back to Dashboard</a></div>');
+            }
+            let appeals = [];
+            try { appeals = database.getGuildAppeals ? (database.getGuildAppeals(guildId, 'all') || []) : []; } catch (e) {}
+            appeals = appeals.slice(0, 200);
+            const _doneMsg = req.query.done || req.query.already || null;
+            let _banInfos = {};
+            try {
+                const _bans = await botGuild.bans.fetch().catch(() => null);
+                if (_bans) for (const [, bi] of _bans) _banInfos[String(bi.user.id)] = bi;
+            } catch (e) {}
+            const _stBadge = (st) => {
+                const m = { pending: ['⏳ بالانتظار', '#f59e0b'], accepted: ['✅ مقبول', '#22c55e'], rejected: ['❌ مرفوض', '#ef4444'] };
+                const [txt, col] = (m[st] || m.pending);
+                return `<span style="background:${col}22;color:${col};border:1px solid ${col}55;border-radius:8px;padding:3px 10px;font-size:11px;font-weight:700;">${txt}</span>`;
+            };
+            const _cards = appeals.map((a) => {
+                const st = String(a.status || 'pending');
+                const stillBanned = _banInfos[String(a.user_id)];
+                const _banNote = stillBanned ? ` · <span style="color:#fca5a5">ما زال محظوراً${stillBanned.reason ? ' · سبب ديسكورد: ' + escHtml(String(stillBanned.reason)).slice(0, 200) : ''}</span>` : '';
+                let _act = '';
+                if (st === 'pending') {
+                    _act = `<form method="POST" action="/api/guild/${guildId}/appeals/decide" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+<input type="hidden" name="appealId" value="${Number(a.id)}">
+<input name="note" maxlength="300" placeholder="ملاحظة المراجعة (اختياري)" style="flex:1;min-width:200px;background:#0b1121;border:1px solid #2b3a5c;color:#e2e8f0;border-radius:8px;padding:8px 10px;font-size:12px;">
+<button name="status" value="accepted" style="margin-top:0;width:auto;background:#166534;border:1px solid #22c55e;color:#dcfce7;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;">✅ قبول وفك الحظر</button>
+<button name="status" value="rejected" style="margin-top:0;width:auto;background:#7f1d1d;border:1px solid #ef4444;color:#fecaca;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;">❌ رفض</button>
+</form>`;
+                }
+                return `<div style="background:#0d1225;border:1px solid #23405f;border-radius:14px;padding:16px 18px;margin-bottom:14px;">
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;">
+<b style="color:#e2e8f0;">${escHtml(String(a.user_id))}</b>
+<span style="color:#94a3b8;font-size:12px;">${escHtml(String(a.username || ''))}</span>
+${_stBadge(st)}${_banNote}
+</div>
+<div style="font-size:12.5px;color:#93c5fd;line-height:1.9;">
+<b>📋 سبب الحظر:</b> ${escHtml(String(a.ban_reason || '—')).slice(0, 260)}<br>
+<b>💬 الاستئناف:</b> ${escHtml(String(a.appeal_reason || '')).slice(0, 800)}<br>
+<b>🤝 الوعد:</b> ${escHtml(String(a.promise || '—')).slice(0, 300)}
+</div>
+<div style="font-size:11px;color:#64748b;margin-top:10px;line-height:1.9;">🕐 ${Number(a.created_at) ? escHtml(new Date(Number(a.created_at) * 1000).toLocaleString('ar')) : ''}${a.reviewed_by ? escHtml(' · مراجع: ' + String(a.reviewed_by)) : ''}${a.review_note ? escHtml(' · ملاحظة: ' + String(a.review_note)) : ''}</div>
+${_act}
+</div>`;
+            }).join('');
+            const _banner = _doneMsg ? `<div style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);color:#86efac;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:16px;">${escHtml(String(_doneMsg) === 'accepted' ? '✅ تم قبول الاستئناف وأُلغي الحظر' : String(_doneMsg) === 'rejected' ? '❌ تم رفض الاستئناف وإبلاغ العضو' : 'ℹ️ هذا الاستئناف سبق معالجته')}.</div>` : '';
+            const _pendingCount = appeals.filter(a => String(a.status) === 'pending').length;
+            res.send(`<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚖️ مراجعة الاستئنافات | ${escHtml(botGuild.name)}</title>
+<style>
+body { background: #070d1d; color: #e2e8f0; font-family: 'Segoe UI', Tahoma, sans-serif; padding: 30px 16px; }
+.wrap { max-width: 820px; margin: 0 auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1 style="font-size:20px;color:#c7d2fe;margin-bottom:6px;">⚖️ مراجعة طلبات فك الحظر — ${escHtml(botGuild.name)}</h1>
+<p style="color:#94a3b8;font-size:13px;margin-bottom:18px;">إجمالي الطلبات: ${appeals.length} · المعلقة: ${_pendingCount} · <a href="/dashboard/manage" style="color:#93c5fd;">← الرجوع</a></p>
+${_banner}
+${_cards || '<p style="color:#64748b;text-align:center;padding:34px;">لا توجد استئنافات بعد.</p>'}
+</div>
+</body>
+</html>`);
+        } catch (e) {
+            console.error('[APPEAL] review page error:', e.message);
+            return res.status(500).send('Internal error: ' + escHtml(String(e.message)));
         }
     });
 
@@ -13150,6 +13395,70 @@ ${embedScriptHtml}
 
     // 5. REST APIs - Protected by Real-Time Guild Permission Check
     app.use('/api/guild/:guildId', requireGuildPermission);
+
+    // ⚖️ قرار الاستئناف (قبول = فك الحظر الفعلي + إبلاغ العضو) — محمي بالحارس أعلاه
+    app.post('/api/guild/:guildId/appeals/decide', express.urlencoded({ extended: false }), async (req, res) => {
+        try {
+            const guildId = req.params.guildId;
+            const appealId = parseInt(String((req.body || {}).appealId || ''), 10);
+            const status = String((req.body || {}).status || '');
+            const note = String((req.body || {}).note || '').slice(0, 300).trim();
+            if (!Number.isInteger(appealId) || (status !== 'accepted' && status !== 'rejected')) {
+                return res.status(400).json({ success: false, error: 'بيانات غير صالحة' });
+            }
+            if (!database.updateAppealStatus) return res.status(500).json({ success: false, error: 'نظام الاستئناف غير متاح' });
+            let _all = [];
+            try { _all = database.getGuildAppeals ? (database.getGuildAppeals(guildId, 'all') || []) : []; } catch {}
+            const _row = _all.find(a => Number(a.id) === appealId);
+            if (!_row) return res.status(404).json({ success: false, error: 'الاستئناف غير موجود في هذا السيرفر' });
+            if (String(_row.status) !== 'pending') return res.redirect(`/dashboard/${guildId}/appeals?already=1`);
+
+            database.updateAppealStatus(appealId, status, req.session?.user?.id || 'unknown', note);
+
+            const _gName = (client?.guilds?.cache?.get(guildId))?.name || guildId;
+            if (status === 'accepted') {
+                try {
+                    const _g = client?.guilds?.cache?.get(guildId);
+                    if (_g) {
+                        await _g.bans.remove(String(_row.user_id), `Unban appeal approved by ${req.session?.user?.username || 'staff'}`).catch(() => {});
+                    }
+                    const _u = await client.users.fetch(String(_row.user_id)).catch(() => null);
+                    if (_u) {
+                        await _u.send(`✅ تم قبول طلب فك حظرك من سيرفر **${_gName}** وأُلغي الحظر.${note ? '\n📝 ملاحظة الإدارة: ' + note : ''}`).catch(() => {});
+                    }
+                } catch {}
+            } else {
+                try {
+                    const _u = await client.users.fetch(String(_row.user_id)).catch(() => null);
+                    if (_u) {
+                        await _u.send(`❌ للأسف تم رفض طلب فك الحظر من سيرفر **${_gName}**.${note ? '\n📝 ملاحظة الإدارة: ' + note : ''}`).catch(() => {});
+                    }
+                } catch {}
+            }
+            // سجل القرار في روم اللوق إن وجد
+            try {
+                const _st = database.getGuildSettings ? (database.getGuildSettings(guildId) || {}) : {};
+                const _chId = _st.log_channel || _st.staff_log_channel;
+                const _g = client?.guilds?.cache?.get(guildId);
+                const _ch = _chId && _g ? (_g.channels.cache.get(_chId) || await _g.channels.fetch(_chId).catch(() => null)) : null;
+                if (_ch && _ch.isTextBased()) {
+                    await _ch.send({ embeds: [new EmbedBuilder()
+                        .setColor(status === 'accepted' ? '#22c55e' : '#ef4444')
+                        .setTitle('⚖️ قرار استئناف')
+                        .addFields(
+                            { name: 'الحالة', value: status === 'accepted' ? '✅ قبول وفك الحظر' : '❌ رفض', inline: true },
+                            { name: 'العضو', value: `<@${String(_row.user_id)}> \`${String(_row.user_id)}\``, inline: true },
+                            { name: 'المراجع', value: `<@${String(req.session?.user?.id || 'unknown')}>`, inline: true },
+                            { name: 'الملاحظة', value: note ? note.slice(0, 300) : '—', inline: false }
+                        ).setTimestamp()] }).catch(() => {});
+                }
+            } catch {}
+            return res.redirect(`/dashboard/${guildId}/appeals?done=${status}`);
+        } catch (e) {
+            console.error('[APPEAL] decide error:', e.message);
+            return res.status(500).json({ success: false, error: e.message });
+        }
+    });
 
     app.post('/api/guild/:guildId/upload-image', express.json({ limit: '20mb' }), async (req, res) => {
         try {

@@ -32,6 +32,8 @@ services:
         sync: false
       - key: DASHBOARD_SYNC_URL
         value: https://droplet-mqwb.onrender.com
+      - key: DASHBOARD_URL
+        value: https://droplet-mqwb.onrender.com
 
   - type: web
     name: droplet-dashboard

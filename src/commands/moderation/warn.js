@@ -61,7 +61,7 @@ module.exports = {
       // عقوبات متدرجة تلقائياً (Advanced Escalation Sanctions)
       let autoPunishment = '';
       if (member) {
-        const baseUrl = process.env.DASHBOARD_URL || config.dashboardUrl || 'https://zeno-dashboard.onrender.com';
+        const baseUrl = process.env.DASHBOARD_URL || config.dashboardUrl || 'https://droplet-mqwb.onrender.com';
         const appealUrl = `${baseUrl}/appeal`;
 
         if (count >= 6) {

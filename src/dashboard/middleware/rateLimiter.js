@@ -45,8 +45,23 @@ const aiLimiter = rateLimit({
     }
 });
 
+// ==========================================
+// Appeal Form Limiter
+// 3 submissions per 10 minutes per IP — prevents appeal spam
+// ==========================================
+const appealLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 3,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).type('html').send('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>مهلة | Droplet</title></head><body style="background:#070d1d;color:#e2e8f0;font-family:\'Segoe UI\',Tahoma,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;"><h1 style="color:#f59e0b;">⏳ طلبات كثيرة</h1><p style="color:#94a3b8;">حاول تقديم استئنافك بعد 10 دقائق.</p></div></body></html>');
+    }
+});
+
 module.exports = {
     apiLimiter,
     sensitiveActionLimiter,
-    aiLimiter
+    aiLimiter,
+    appealLimiter
 };
