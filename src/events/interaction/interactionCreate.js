@@ -9,6 +9,18 @@ const config = require('../../config.json');
 // قفل لحظي ضد الضغط المزدوج: يمنع إنشاء تذكرتين بنفس اللحظة لنفس العضو
 const _ticketCreating = new Set();
 
+// 🔒 جلسات الكابتشا بالذاكرة — الجواب لا يُخبز في customId (كان يمكن كسره من أدوات المطوّر)
+const captchaSessions = new Map(); // token -> { userId, guildId, type, answer, expires }
+const crypto = require('crypto');
+
+// تنظيف الجلسات المنتهية
+function _pruneCaptchaSessions() {
+  const now = Date.now();
+  for (const [k, v] of captchaSessions) {
+    if (!v || v.expires < now) captchaSessions.delete(k);
+  }
+}
+
 module.exports = {
   name: 'interactionCreate',
   async execute(interaction, client) {
@@ -319,8 +331,12 @@ module.exports = {
           const num1 = Math.floor(Math.random() * 9) + 1;
           const num2 = Math.floor(Math.random() * 9) + 1;
           const answer = num1 + num2;
+          // 🔒 الجواب بالذاكرة والتوكن فقط في customId — صالح لاستخدام واحد ولمدة 5 دقائق
+          const _tok = crypto.randomBytes(8).toString('hex');
+          captchaSessions.set(_tok, { userId: interaction.user.id, guildId: interaction.guild.id, type: 'captcha', answer: String(answer), expires: Date.now() + 5 * 60 * 1000 });
+          _pruneCaptchaSessions();
           const modal = new ModalBuilder()
-            .setCustomId(`captcha_verify_${answer}`)
+            .setCustomId(`captcha_verify_${_tok}`)
             .setTitle(t(interaction.guildId, 'events.verify.captcha_title'));
           const captchaInput = new TextInputBuilder()
             .setCustomId('captcha_answer')
@@ -337,8 +353,11 @@ module.exports = {
           let code = '';
           for (let i = 0; i < 5; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
 
+          const _tok = crypto.randomBytes(8).toString('hex');
+          captchaSessions.set(_tok, { userId: interaction.user.id, guildId: interaction.guild.id, type: 'code', answer: String(code), expires: Date.now() + 5 * 60 * 1000 });
+          _pruneCaptchaSessions();
           const modal = new ModalBuilder()
-            .setCustomId(`code_verify_${code}`)
+            .setCustomId(`code_verify_${_tok}`)
             .setTitle(t(interaction.guildId, 'events.verify.code_title'));
           const codeInput = new TextInputBuilder()
             .setCustomId('code_answer')
@@ -392,14 +411,20 @@ module.exports = {
       // معالجة إجابة الكابتشا الحسابية والنصية (Captcha & Code Modal Submit)
       if (interaction.isModalSubmit() && (interaction.customId.startsWith('captcha_verify_') || interaction.customId.startsWith('code_verify_'))) {
         await interaction.deferReply({ flags: 64 }).catch(() => { });
-        const isCode = interaction.customId.startsWith('code_verify_');
-        const correctVal = interaction.customId.split('_')[2];
+        // 🔒 التحقق عبر جلسة الذاكرة (توكن) — يُحذف بعد أول استخدام والمنتهية الصلاحية ترفض
+        const _tok = interaction.customId.split('_')[2] || '';
+        const _sess = captchaSessions.get(_tok);
+        captchaSessions.delete(_tok);
+        const settings = db.getGuildSettings(interaction.guild.id);
+        if (!_sess || _sess.userId !== interaction.user.id || _sess.guildId !== interaction.guild.id || _sess.expires < Date.now()) {
+          return interaction.editReply({ content: '⏳ انتهت صلاحية الكابتشا أو صارت غير صالحة — اضغط زر التحقق من جديد.' });
+        }
+        const isCode = _sess.type === 'code';
         const userVal = isCode
           ? interaction.fields.getTextInputValue('code_answer').trim().toUpperCase()
           : parseInt(interaction.fields.getTextInputValue('captcha_answer'));
 
-        const isMatch = isCode ? (userVal === correctVal) : (userVal === parseInt(correctVal));
-        const settings = db.getGuildSettings(interaction.guild.id);
+        const isMatch = isCode ? (userVal === String(_sess.answer).toUpperCase()) : (userVal === parseInt(_sess.answer, 10));
 
         if (isMatch) {
           const _vRoleId = settings.verification_role || settings.verify_role;
@@ -1346,6 +1371,25 @@ module.exports = {
       if (interaction.isButton() && interaction.customId.startsWith('view_transcript_')) {
         const ticketChannelId = interaction.customId.replace('view_transcript_', '');
         const trans = db.getTranscript(ticketChannelId);
+        // 🔒 بوابة مثل الداشبورد: صاحب التذكرة أو الطاقم الإداري فقط
+        if (trans) {
+          const _vtOwner = String(trans.user_id || '') === String(interaction.user.id);
+          let _vtStaff = false;
+          try {
+            _vtStaff = interaction.member && (
+              interaction.member.permissions?.has(PermissionFlagsBits.ManageChannels) ||
+              interaction.member.permissions?.has(PermissionFlagsBits.Administrator)
+            );
+            if (!_vtStaff && interaction.member?.roles?.cache) {
+              const _vts = db.getGuildSettings(interaction.guildId || trans.guild_id) || {};
+              const _vtRid = _vts.support_role || _vts.ticket_role || _vts.staff_role;
+              _vtStaff = !!(_vtRid && interaction.member.roles.cache.has(String(_vtRid)));
+            }
+          } catch {}
+          if (!_vtOwner && !_vtStaff) {
+            return interaction.reply({ content: '🔒 هذا السجل متاح لصاحب التذكرة أو الطاقم الإداري فقط.', flags: 64 });
+          }
+        }
         if (trans && trans.html_content) {
           const buffer = Buffer.from(trans.html_content, 'utf-8');
           const attachment = new AttachmentBuilder(buffer, { name: `transcript-${ticketChannelId}.html` });
