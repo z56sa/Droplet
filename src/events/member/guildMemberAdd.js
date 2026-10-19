@@ -31,9 +31,12 @@ module.exports = {
 
       let isAllowed = false;
       try {
+        // 🛡️ التصريح للبوت: آيديه بالقائمة البيضاء أو يلبس إحدى رتب الاستثناء
+        const _botWr = String(settings.antiraid_whitelist_roles || '').split(/[,;\s]+/).filter(Boolean);
         if (member.id === guild.client.user.id) isAllowed = true; // لا نطرد أنفسنا أبداً
         else if (db.isUserWhitelisted && db.isUserWhitelisted(guild.id, member.id, 'whitelist')) isAllowed = true;
         else if (settings.antinuke_whitelist_role && member.roles.cache.has(settings.antinuke_whitelist_role)) isAllowed = true;
+        else if (_botWr.some(rid => member.roles?.cache?.has(rid))) isAllowed = true;
       } catch {}
 
       if (_antiBotOn && !isAllowed) {
@@ -97,8 +100,20 @@ module.exports = {
       } catch {}
     }
 
+    // --- 0.15 🛡️ بوابة الاستثناء الموحدة (القائمة البيضاء بالآيدي + رتبة الاستثناء + الأونر) ---
+    // تُحترم في Anti-Alt وAnti-Raid — البوتات تديرها بوابة التصريح أعلاه
+    const _secExempt = (() => {
+      try {
+        if (member.id === guild.ownerId) return true;
+        if (db.isUserWhitelisted && db.isUserWhitelisted(guild.id, member.id, 'whitelist')) return true;
+        const _wr = String(settings.antiraid_whitelist_roles || '').split(/[,;\s]+/).filter(Boolean);
+        if (_wr.some(rid => member.roles?.cache?.has(rid))) return true;
+      } catch {}
+      return false;
+    })();
+
     // --- 0.2 Anti-Alt: طرد الحسابات الجديدة (Alt Accounts) ---
-    if (settings.anti_alt_days && settings.anti_alt_days > 0) {
+    if (settings.anti_alt_days && settings.anti_alt_days > 0 && !member.user.bot && !_secExempt) {
       const accountAgeDays = (Date.now() - member.user.createdTimestamp) / (1000 * 60 * 60 * 24);
       if (accountAgeDays < settings.anti_alt_days) {
         try {
@@ -112,8 +127,9 @@ module.exports = {
             db.logSecurityEvent(guild.id, 'security', 'anti_alt_kick', null, member.id, 'Alt Account Blocked', `Age: ${Math.floor(accountAgeDays)}d < Limit: ${settings.anti_alt_days}d`);
           }
 
-          if (settings.log_channel) {
-            const logCh = guild.channels.cache.get(settings.log_channel);
+          const _altLogId = settings.antiraid_log_channel || settings.log_channel;
+          if (_altLogId) {
+            const logCh = guild.channels.cache.get(_altLogId);
             if (logCh) {
               logCh.send({
                 embeds: [new EmbedBuilder()
@@ -140,7 +156,7 @@ module.exports = {
     // --- 0.3 Anti-Raid: كشف الريد (يدعم antiraid_enabled + raid_threshold + antiraid_action) ---
     const _raidOn = isEnabled(settings.antiraid_enabled, isEnabled(settings.anti_raid, isEnabled(settings.anti_raid_fast, false)));
     if (_raidOn) {
-      const _threshold = Math.max(2, Math.min(20, parseInt(settings.raid_threshold) || 5));
+      const _threshold = Math.max(2, Math.min(30, parseInt(settings.raid_threshold) || 5));
       const _action = String(settings.antiraid_action || 'kick').toLowerCase();
       const now = Date.now();
       const guildJoins = raidMap.get(guild.id) || [];
@@ -148,8 +164,8 @@ module.exports = {
       recentJoins.push(now);
       raidMap.set(guild.id, recentJoins);
 
-      if (recentJoins.length >= _threshold) {
-        // كشف ريد! أرسل تنبيه للوق وعطّل الانضمام بكيك العضو
+      if (recentJoins.length >= _threshold && !_secExempt) {
+        // كشف ريد! أرسل تنبيه للوق وعطّل الانضمام بكيك العضو (المستثنون لا يُطردون)
         try {
           if (_action === 'ban') await member.ban({ reason: 'Anti-Raid Protection: تم اكتشاف هجوم ريد' }).catch(() => {});
           else await member.kick('Anti-Raid Protection: تم اكتشاف هجوم ريد');

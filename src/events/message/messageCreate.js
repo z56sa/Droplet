@@ -461,8 +461,8 @@ module.exports = {
       message.mentionedUserIds = [...message.mentions.users.keys()];
     }
 
-    // Anti-Spam
-    if (settings.anti_spam) {
+    // Anti-Spam ✅ يحترم القائمة البيضاء مثل بقية الفلاتر (المشرفون/المستثنون لا يُسكّتون)
+    if (settings.anti_spam && !isAutoModWhitelisted) {
       const now = Date.now();
       const userSpam = spamMap.get(userId) || { count: 0, lastMessage: now, messages: [] };
       if (now - userSpam.lastMessage < 2500) {
