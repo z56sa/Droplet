@@ -9,6 +9,7 @@ module.exports = {
     'tickets.common.not_in_ticket': '❌ This command only works inside tickets.',
     'tickets.common.not_in_ticket_channel': '❌ This command only works inside ticket channels.',
     'tickets.common.no_admin': '❌ You do not have Administrator permission.',
+    'tickets.common.owner_or_staff': '❌ Only the ticket owner or support staff can do that.',
 
     // ===== tickets.addticketbutton =====
     'tickets.addticketbutton.button_label': '📩 Open Ticket',
@@ -94,6 +95,7 @@ module.exports = {
     'tickets.common.not_in_ticket': '❌ هذا الأمر يعمل فقط داخل التذاكر.',
     'tickets.common.not_in_ticket_channel': '❌ هذا الأمر يعمل فقط داخل قنوات التذاكر.',
     'tickets.common.no_admin': '❌ لا تملك صلاحية الأدمن.',
+    'tickets.common.owner_or_staff': '❌ هذا الخيار متاح لصاحب التذكرة أو طاقم الدعم الفني فقط.',
 
     // ===== tickets.addticketbutton =====
     'tickets.addticketbutton.button_label': '📩 فتح تذكرة',

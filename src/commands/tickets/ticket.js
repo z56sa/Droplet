@@ -71,6 +71,10 @@ module.exports = {
       (supportRoleId && interaction.member.roles.cache.has(supportRoleId));
 
     if (sub === 'close') {
+      // 🔒 بوابة: صاحب التذكرة أو طاقم الدعم فقط (نفس قواعد زر الإغلاق)
+      if (!isStaff && String(ticket.user_id) !== String(interaction.user.id)) {
+        return interaction.reply({ content: t(lang, 'tickets.common.owner_or_staff'), flags: 64 });
+      }
       const reason = interaction.options.getString('reason') || t(lang, 'tickets.ticket.default_reason');
       await interaction.deferReply().catch(() => {});
 
@@ -199,6 +203,8 @@ module.exports = {
       });
 
     } else if (sub === 'add') {
+      // 🔒 بوابة: طاقم الدعم فقط
+      if (!isStaff) return interaction.reply({ content: t(lang, 'tickets.ticket.staff_only'), flags: 64 });
       await interaction.deferReply({ flags: 64 }).catch(() => { });
       const user = interaction.options.getUser('user');
       await interaction.channel.permissionOverwrites.edit(user.id, {
@@ -209,6 +215,8 @@ module.exports = {
       });
       await interaction.editReply(t(lang, 'tickets.ticket.added', { user }));
     } else if (sub === 'remove') {
+      // 🔒 بوابة: طاقم الدعم فقط
+      if (!isStaff) return interaction.reply({ content: t(lang, 'tickets.ticket.staff_only'), flags: 64 });
       await interaction.deferReply({ flags: 64 }).catch(() => { });
       const user = interaction.options.getUser('user');
       await interaction.channel.permissionOverwrites.delete(user.id);
@@ -231,6 +239,10 @@ module.exports = {
       (supportRoleId && message.member.roles.cache.has(supportRoleId));
 
     if (action === 'close') {
+      // 🔒 بوابة: صاحب التذكرة أو طاقم الدعم فقط
+      if (!isStaff && String(ticket.user_id) !== String(message.author.id)) {
+        return message.reply(t(lang, 'tickets.common.owner_or_staff'));
+      }
       const reason = args.slice(1).join(' ') || t(lang, 'tickets.ticket.prefix_default_reason');
       await message.reply(t(lang, 'tickets.ticket.prefix_close_notice', { reason }));
       db.closeTicket(message.channel.id, message.author.id, reason);
@@ -289,6 +301,8 @@ module.exports = {
       }
 
     } else if (action === 'add') {
+      // 🔒 بوابة: طاقم الدعم فقط
+      if (!isStaff) return message.reply(t(lang, 'tickets.ticket.prefix_staff_only'));
       const user = message.mentions.users.first();
       if (!user) return message.reply(t(lang, 'tickets.ticket.prefix_need_member_mention'));
       await message.channel.permissionOverwrites.edit(user.id, {
@@ -299,6 +313,8 @@ module.exports = {
       });
       await message.channel.send(t(lang, 'tickets.ticket.added', { user }));
     } else if (action === 'remove') {
+      // 🔒 بوابة: طاقم الدعم فقط
+      if (!isStaff) return message.reply(t(lang, 'tickets.ticket.prefix_staff_only'));
       const user = message.mentions.users.first();
       if (!user) return message.reply(t(lang, 'tickets.ticket.prefix_need_member_mention'));
       await message.channel.permissionOverwrites.delete(user.id);

@@ -22,6 +22,12 @@ const app = express();
 // Trust the first proxy so express-session can correctly set secure cookies.
 app.set('trust proxy', 1);
 
+// 🛡️ Security headers (CSP مغلقة لأن صفحات الداشبورد تعتمد styles/scripts داخلية — نفس تموضع helmet في index مرة واحدة)
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false // ضروري: صور أفتار/أيقونات من cdn.discordapp.com بدون CORP headers
+}));
+
 const PORT = Number(process.env.PORT || 3000);
 
 // Render health/port endpoint.
