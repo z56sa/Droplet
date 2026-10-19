@@ -3,8 +3,6 @@ const db = require('../../database');
 const config = require('../../config.json');
 const { getGuildLang, t } = require('../../utils/lang');
 
-const COOLDOWNS = new Map();
-
 module.exports = {
   name: 'daily',
   description: 'احصل على مكافأتك اليومية مع نظام الـ Streak',
