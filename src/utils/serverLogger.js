@@ -110,6 +110,15 @@ async function sendServerLog(guild, eventId, catKey, embedData = {}, opts = {}) 
         const targetChannel = guild.channels.cache.get(targetChannelId) || await guild.channels.fetch(targetChannelId).catch(() => null);
         if (!targetChannel || !targetChannel.isTextBased()) return;
 
+        // ✅ حقل الفاعل (المنفّذ) — يُدرج أولاً إذا الحدث مرّر actor
+        try {
+            const { actorField } = require('./auditActor');
+            if (embedData && embedData.actor) {
+                embedData.fields = [actorField(embedData.actor), ...(embedData.fields || [])];
+                delete embedData.actor;
+            }
+        } catch (e) {}
+
         const defaultColors = {
             members: '#5865F2',
             roles: '#9333ea',

@@ -1,5 +1,6 @@
 const { sendServerLog } = require('../../utils/serverLogger');
 const { AuditLogEvent } = require('discord.js');
+const { getAuditActor } = require('../../utils/auditActor');
 
 module.exports = {
   name: 'guildMemberUpdate',
@@ -7,11 +8,14 @@ module.exports = {
     const guild = newMember.guild;
     const user = newMember.user;
 
-    // تغيير الاسم المستعار (Nickname)
+    // تغيير الاسم المستعار (Nickname) — الفاعل: هو نفسه أو مشرف عبر سجل التدقيق
     if (oldMember.nickname !== newMember.nickname) {
+      const auditActor = await getAuditActor(guild, AuditLogEvent.MemberUpdate, user.id);
+      const actor = (auditActor && auditActor.id !== user.id) ? auditActor : { id: user.id, tag: user.tag, reason: null };
       await sendServerLog(guild, 'member_nick_change', 'members', {
         title: '✏️ تغيير الاسم المستعار',
         desc: `**${user.tag}** قام بتغيير اسمه المستعار`,
+        actor,
         fields: [
           { name: '👤 العضو', value: `<@${user.id}> (${user.tag})`, inline: true },
           { name: '📝 الاسم القديم', value: oldMember.nickname || 'لا يوجد', inline: true },
@@ -27,9 +31,11 @@ module.exports = {
     const removedRoles = oldMember.roles.cache.filter(r => !newMember.roles.cache.has(r.id) && r.id !== guild.id);
 
     if (addedRoles.size > 0) {
+      const actor = await getAuditActor(guild, AuditLogEvent.MemberRoleUpdate, user.id);
       await sendServerLog(guild, 'role_give_member', 'roles', {
         title: '🎁 إضافة رتبة لعضو',
         desc: `تم إعطاء رتبة لـ **${user.tag}**`,
+        actor,
         fields: [
           { name: '👤 العضو', value: `<@${user.id}>`, inline: true },
           { name: '🎖️ الرتبة المضافة', value: addedRoles.map(r => `<@&${r.id}>`).join(', '), inline: true },
@@ -40,9 +46,11 @@ module.exports = {
     }
 
     if (removedRoles.size > 0) {
+      const actor = await getAuditActor(guild, AuditLogEvent.MemberRoleUpdate, user.id);
       await sendServerLog(guild, 'role_remove_member', 'roles', {
         title: '❌ إزالة رتبة من عضو',
         desc: `تم إزالة رتبة من **${user.tag}**`,
+        actor,
         fields: [
           { name: '👤 العضو', value: `<@${user.id}>`, inline: true },
           { name: '🎖️ الرتبة المزالة', value: removedRoles.map(r => `<@&${r.id}>`).join(', '), inline: true },

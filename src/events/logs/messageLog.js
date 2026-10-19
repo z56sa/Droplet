@@ -2,6 +2,7 @@ const { sendServerLog } = require('../../utils/serverLogger');
 const db = require('../../database');
 const { AuditLogEvent } = require('discord.js');
 const { cacheMessage, getCachedMessage } = require('../../utils/messageCache');
+const { getAuditActor } = require('../../utils/auditActor');
 
 // تتبع آخر تثبيت لكل قناة للتمييز بين التثبيت وإلغائه
 const lastPinMap = new Map(); // channelId -> ms timestamp
@@ -200,9 +201,18 @@ module.exports = [
     name: 'messageDeleteBulk',
     async execute(messages, channel) {
       if (!channel.guild) return;
+      // الفاعل: من نفّذ الحذف الجماعي من سجل التدقيق
+      let actor = null;
+      try {
+        await new Promise(r => setTimeout(r, 1200));
+        const logs = await channel.guild.fetchAuditLogs({ limit: 5, type: AuditLogEvent.MessageBulkDelete }).catch(() => null);
+        const entry = logs?.entries?.find(e => (e.target?.id === channel.id || e.extra?.channel?.id === channel.id) && (Date.now() - e.createdTimestamp) < 20000);
+        if (entry?.executor) actor = { id: entry.executor.id, tag: entry.executor.tag || entry.executor.username, reason: entry.reason || null };
+      } catch {}
       await sendServerLog(channel.guild, 'msg_purge', 'messages', {
         title: 'ℹ️ حذف رسائل جماعي',
         desc: `تم حذف **${messages.size}** رسالة دفعة واحدة`,
+        actor,
         fields: [
           { name: '📌 القناة', value: `<#${channel.id}>`, inline: true },
           { name: '🔢 عدد الرسائل المحذوفة', value: `${messages.size}`, inline: true }
@@ -220,9 +230,11 @@ module.exports = [
         const cur = time ? time.getTime() : 0;
         lastPinMap.set(channel.id, cur);
         const isPin = cur > prev;
+        const actor = await getAuditActor(channel.guild, isPin ? AuditLogEvent.MessagePin : AuditLogEvent.MessageUnpin, channel.id);
         await sendServerLog(channel.guild, isPin ? 'msg_pin' : 'msg_unpin', 'messages', {
           title: isPin ? 'تثبيت رسالة' : 'إلغاء تثبيت رسالة',
           desc: `${isPin ? 'تم تثبيت رسالة' : 'تم إلغاء تثبيت رسالة'} في <#${channel.id}>`,
+          actor,
           fields: [{ name: '📌 القناة', value: `<#${channel.id}>`, inline: true }]
         });
       } catch {}

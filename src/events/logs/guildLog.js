@@ -1,4 +1,6 @@
 const { sendServerLog } = require('../../utils/serverLogger');
+const { AuditLogEvent } = require('discord.js');
+const { getAuditActor } = require('../../utils/auditActor');
 
 module.exports = [
   {
@@ -24,9 +26,11 @@ module.exports = [
       }
       if (!changes.length) return;
 
+      const actor = await getAuditActor(newGuild, AuditLogEvent.GuildUpdate, null);
       await sendServerLog(newGuild, 'server_update', 'server', {
         title: '✏️ تعديل السيرفر',
         desc: `تم تعديل إعدادات السيرفر **${newGuild.name}**`,
+        actor,
         fields: [
           { name: '📝 التغييرات', value: changes.join('\n'), inline: false }
         ],
@@ -54,9 +58,12 @@ module.exports = [
     name: 'inviteDelete',
     async execute(invite) {
       if (!invite.guild) return;
+      // الفاعل = من حذف الدعوة (سجل التدقيق) — المنشئ يبقى معروضاً
+      const actor = await getAuditActor(invite.guild, AuditLogEvent.InviteDelete, invite.code);
       await sendServerLog(invite.guild, 'invite_delete', 'invites', {
         title: '🗑️ حذف دعوة',
         desc: `تم حذف رابط دعوة`,
+        actor,
         fields: [
           { name: '🔗 الرمز', value: `\`${invite.code}\``, inline: true },
           { name: '👤 المنشئ', value: invite.inviter ? `<@${invite.inviter.id}>` : 'غير معروف', inline: true }
