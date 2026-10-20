@@ -38,7 +38,8 @@ const GOAL_TEXT = {
 };
 
 // ✅ القفل وصّل بباقي عائلة الألعاب (كويز/روفيت/غارتيك/الأغلفة) — لعبة وحدة بالقناة عبر كل الألعاب
-const { activeGames } = require('./game');
+const { activeGames, preflightGamesError } = require('./game');
+const db = require('../../database');
 
 function chunkButtons(buttons, perRow = 5) {
   const rows = [];
@@ -99,6 +100,14 @@ module.exports = {
       return channel.send(warn).catch(() => {});
     }
 
+    // ✅ المافيا تدخل بوابة العايلة نفسها: games_enabled + games_channel (كانت تجاهلها — ألعاب مقفلة وما هي محكوبة)
+    const settings = db.getGuildSettings ? (db.getGuildSettings(channel.guild?.id || null) || {}) : {};
+    const gateErr = preflightGamesError(channel.id, channel.guild?.id || null, settings, { skipActive: true });
+    if (gateErr) {
+      if (interaction) return ephReply(interaction, { content: gateErr });
+      return channel.send(gateErr).catch(() => {});
+    }
+
     const gid = Math.random().toString(36).slice(2, 8);
     const game = {
       id: gid, client, channelId: channel.id, guildId: channel.guild?.id || null, hostId: host.id,
@@ -153,6 +162,8 @@ module.exports = {
       }
     } catch (e) {
       activeGames.delete(channel.id);
+      // ✅ فشل إرسال التجنيد → رد سرّي واضح بدل «التطبيق ما رد» (لو التوكين لسا حي)
+      if (interaction) await ephReply(interaction, { content: '⚠️ تعذر فتح تجنيد المافيا الآن (تأخير بالشبكة) — جرّب مرة ثانية!' });
       return;
     }
 
@@ -749,7 +760,6 @@ module.exports = {
     let rewardsNote = '';
     if (winner) {
       try {
-        const db = require('../../database');
         const settings = db.getGuildSettings ? (db.getGuildSettings(game.guildId) || {}) : {};
         const rewardCoins = Number(settings.game_reward_mafia) || 120;
         const winningTeam = winner === 'mafia' ? 'mafia' : null;
