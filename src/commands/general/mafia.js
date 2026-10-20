@@ -749,6 +749,7 @@ module.exports = {
     if (!channel) return;
 
     // 🪙 توزيع المكافأة على اللاعبين الناجين من الفريق الفائز (تعادل = لا مكافأة)
+    // ✅ كل فائز يمر على بوابة المكافأة اليومية المشتركة (مرة وحدة باليوم بكل الألعاب) — وفلسفة fail-closed نفسها
     let rewardsNote = '';
     if (winner) {
       try {
@@ -757,14 +758,30 @@ module.exports = {
         const rewardCoins = Number(settings.game_reward_mafia) || 120;
         const winningTeam = winner === 'mafia' ? 'mafia' : null;
         let rewarded = 0;
+        let skippedDaily = 0;
         if (winningTeam && game.guildId) {
-          for (const p of game.players.values()) {
-            if (p.alive && p.role === winningTeam) {
-              try { db.addCoins(p.id, game.guildId, rewardCoins); rewarded++; } catch (e) {}
+          if (rewardCoins <= 0) {
+            rewardsNote = '\n\n🏆 فوز بلا عملات (الجوائز مقفلة من الإدارة)';
+          } else {
+            for (const p of game.players.values()) {
+              if (p.alive && p.role === winningTeam) {
+                let claim = { paid: true };
+                try {
+                  if (db.claimGameReward) claim = db.claimGameReward(p.id, game.guildId, rewardCoins);
+                  else if (db.addCoins) db.addCoins(p.id, game.guildId, rewardCoins);
+                } catch (e) { claim = { paid: false, failed: true }; }
+                if (claim.paid) rewarded++;
+                else if (!claim.failed) skippedDaily++; // الكول-داون اليومي (بدون failed)
+              }
             }
-          }
-          if (rewarded > 0) {
-            rewardsNote = `\n\n🪙 **مكافأة الفوز:** كل فائز حي حصل على **+${rewardCoins} 🪙** عملة!`;
+            if (rewarded > 0 && skippedDaily > 0) {
+              rewardsNote = `\n\n🪙 **مكافأة الفوز:** ${rewarded} من الفائزين حصلوا على **+${rewardCoins} 🪙** — و${skippedDaily} صرفوا مكافأتهم اليومية بلعبة ثانية ⏳`;
+            } else if (rewarded > 0) {
+              rewardsNote = `\n\n🪙 **مكافأة الفوز:** كل فائز حي حصل على **+${rewardCoins} 🪙** عملة!`;
+            } else if (skippedDaily > 0) {
+              rewardsNote = '\n\n⏳ **مكافأة الفوز اليوم خلصت:** الفائزون صرفوا مكافأتهم اليومية بلعبة ثانية — **الألعاب تدفع مرة وحدة باليوم** 🎮 رجعوا بكره!';
+            }
+            // كلهم فشل تقني → بدون أي وعد مكافأة (نفس فلسفة باقي الألعاب)
           }
         }
       } catch (e) {}
