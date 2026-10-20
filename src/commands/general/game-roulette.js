@@ -237,14 +237,22 @@ module.exports = {
           await channel.send(`💀 **${nameById.get(current.id)}** قبض على الفرصة — طلّع **${nameById.get(victim)}** برا الجولة! الباقي **${aliveIds.size}** 😱`).catch(() => {});
         }
 
+        // 🏆 آخر ناجٍ يمثل الفائز
         const winnerId = [...aliveIds][0];
-        const winner = order.find(p => p.id === winnerId);
+
         // 🎮 جائزة مرة وحدة باليوم عبر كل الألعاب
         let claim = { paid: true };
         try {
           if (db.claimGameReward) claim = db.claimGameReward(winnerId, guildId, rewardCoins);
           else if (db.addCoins) db.addCoins(winnerId, guildId, rewardCoins);
-        } catch (e) { claim = { paid: true }; }
+        } catch (e) { claim = { paid: false, failed: true }; }
+
+        // 🧾 نص المكافأة الواضح: صرف فعلي / استُنزفت اليومية / جرح تقني / جوائز مقفلة (0)
+        const rewardLine =
+          rewardCoins <= 0 ? '🏆 صدارة بلا عملات (الجوائز مقفلة من الإدارة)' :
+          claim.paid ? `الجائزة **+${rewardCoins} 🪙** عملة!` :
+          claim.failed ? '⚠️ خلل تقني بالصرف — بلا مكافأة هالمرة 🛠️' :
+          'تصدّرت آخر الصمود! 🏆 (جائزتك اليوم صرفت — **الألعاب تدفع مرة وحدة باليوم** 🎮)';
 
         activeGames.delete(channel.id);
         await roundMsg.edit({ components: [] }).catch(() => {});
@@ -254,7 +262,7 @@ module.exports = {
             .setTitle('🏆 انتهت الجولة — آخر الصمود!')
             .setDescription(
               `العجلة دارت وكلّم المطرود وبرا — و**${nameById.get(winnerId) || 'الناجّي'}** آخر ناجٍ شاشة:\n\n` +
-              `🎉 مبروك <@${winnerId}> — ${claim.paid ? `الجائزة **+${rewardCoins} 🪙** عملة!` : `تصدّرت آخر الصمود! 🏆 (جائزتك اليوم صرفت — **الألعاب تدفع مرة وحدة باليوم** 🎮)`}` +
+              `🎉 مبروك <@${winnerId}> — ${rewardLine}` +
               `\n\n⚡ الجولة الجاي عمّدون أشد القيادة 🔥`
             )
             .setTimestamp()]

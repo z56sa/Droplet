@@ -187,12 +187,19 @@ module.exports = {
         try {
           if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins);
           else if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
-        } catch (e) { claim = { paid: true }; }
+        } catch (e) { claim = { paid: false, failed: true }; }
+
+        // 🧾 نص المكافأة الواضح: صرف فعلي / استُنزفت اليومية / جرح تقني / جوائز مقفلة (0)
+        const rewardLine =
+          rewardCoins <= 0 ? '🏆 فوز بلا عملات (الجوائز مقفلة من الإدارة)' :
+          claim.paid ? `💰 حصلت على **+${rewardCoins} 🪙** عملة!` :
+          claim.failed ? '⚠️ صار خلل تقني بالصرف — هالجولة بلا مكافأة 🛠️' :
+          '🎁 جائزتك اليوم صرفت… **الألعاب تدفع مرة وحدة باليوم** 🎮 رجع بكره!';
 
         const winEmbed = new EmbedBuilder()
           .setColor('#2ecc71')
           .setTitle('🎉 إجابة صحيحة!')
-          .setDescription(`كفو يا بطل ${msg.author}! 🏆\nعاصمة **${item.country}** هي بالفعل **${item.capital}**.\n\n${claim.paid ? `💰 حصلت على **+${rewardCoins} 🪙** عملة!` : `🎁 جائزتك اليوم صرفت… **الألعاب تدفع مرة وحدة باليوم** 🎮 رجع بكره!`}`)
+          .setDescription(`كفو يا بطل ${msg.author}! 🏆\nعاصمة **${item.country}** هي بالفعل **${item.capital}**.\n\n${rewardLine}`)
           .setTimestamp();
 
         return msg.reply({ embeds: [winEmbed] });
@@ -259,12 +266,19 @@ module.exports = {
         try {
           if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins);
           else if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
-        } catch (e) { claim = { paid: true }; }
+        } catch (e) { claim = { paid: false, failed: true }; }
+
+        // 🧾 نص المكافأة الواضح: صرف فعلي / استُنزفت اليومية / جرح تقني / جوائز مقفلة (0)
+        const rewardLine =
+          rewardCoins <= 0 ? '🏆 فوز بلا عملات (الجوائز مقفلة من الإدارة)' :
+          claim.paid ? `💰 تمت إضافة **+${rewardCoins} 🪙** إلى رصيدك!` :
+          claim.failed ? '⚠️ صار خلل تقني بالصرف — هالجولة بلا مكافأة 🛠️' :
+          '🎁 جائزتك اليوم صرفت… **الألعاب تدفع مرة وحدة باليوم** 🎮 رجع بكره!';
 
         const winEmbed = new EmbedBuilder()
           .setColor('#2ecc71')
           .setTitle('🎉 إجابة عبقرية وسريعة!')
-          .setDescription(`مبروك ${msg.author}! 👏\nالجواب الصحيح هو: **${word}**\n\n${claim.paid ? `💰 تمت إضافة **+${rewardCoins} 🪙** إلى رصيدك!` : `🎁 جائزتك اليوم صرفت… **الألعاب تدفع مرة وحدة باليوم** 🎮 رجع بكره!`}`)
+          .setDescription(`مبروك ${msg.author}! 👏\nالجواب الصحيح هو: **${word}**\n\n${rewardLine}`)
           .setTimestamp();
 
         return msg.reply({ embeds: [winEmbed] });
@@ -318,12 +332,19 @@ module.exports = {
         try {
           if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins);
           else if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
-        } catch (e) { claim = { paid: true }; }
+        } catch (e) { claim = { paid: false, failed: true }; }
+
+        // 🧾 نص المكافأة الواضح: صرف فعلي / استُنزفت اليومية / جرح تقني / جوائز مقفلة (0)
+        const rewardLine =
+          rewardCoins <= 0 ? '🏆 فوز بلا عملات (الجوائز مقفلة من الإدارة)' :
+          claim.paid ? `💰 جائزتك: **+${rewardCoins} 🪙** عملة!` :
+          claim.failed ? '⚠️ صار خلل تقني بالصرف — هالجولة بلا مكافأة 🛠️' :
+          '🎁 جائزتك اليوم صرفت… **الألعاب تدفع مرة وحدة باليوم** 🎮 رجع بكره!';
 
         const winEmbed = new EmbedBuilder()
           .setColor('#2ecc71')
           .setTitle('🚀 سرعة خارقة!')
-          .setDescription(`ما شاء الله ${msg.author}! ⚡\nأنهيت الكتابة في زمن قدره: **${elapsedSec} ثانية** فقط!\n\n${claim.paid ? `💰 جائزتك: **+${rewardCoins} 🪙** عملة!` : `🎁 جائزتك اليوم صرفت… **الألعاب تدفع مرة وحدة باليوم** 🎮 رجع بكره!`}`)
+          .setDescription(`ما شاء الله ${msg.author}! ⚡\nأنهيت الكتابة في زمن قدره: **${elapsedSec} ثانية** فقط!\n\n${rewardLine}`)
           .setTimestamp();
 
         return msg.reply({ embeds: [winEmbed] });

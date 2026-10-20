@@ -328,8 +328,6 @@ module.exports = {
     const avoid = new Set(recents.slice(-Math.min(25, Math.floor(pool * 0.25))));
     let idx;
     do { idx = Math.floor(Math.random() * pool); } while (avoid.has(idx));
-    recents.push(idx);
-    recentByChannel.set(channel.id, recents.slice(-25));
 
     const item = GARTIC_ITEMS[idx];
     // بدائل مقبولة: الكلمة الأساسية + بدائلها الاختيارية (مع/بدون مسافات)
@@ -344,6 +342,9 @@ module.exports = {
       console.error('[Gartic] sketch render failed:', e);
       return replyMethod({ content: '❌ تعذر توليد الرسمة (خطأ داخلي). جرب مرة أخرى!' });
     }
+    // ✅ سجل الرسمة بسجل التكرار فقط بعد نجاح التوليد — الفشل ما يحرق فرصة الرسمة
+    recents.push(idx);
+    recentByChannel.set(channel.id, recents.slice(-25));
 
     activeGartic.add(channel.id);
     let answered = false;
@@ -387,12 +388,19 @@ module.exports = {
           try {
             if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins);
             else if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
-          } catch (e) { claim = { paid: true }; }
+          } catch (e) { claim = { paid: false, failed: true }; }
+
+          // 🧾 نص المكافأة الواضح: صرف فعلي / استُنزفت اليومية / جرح تقني / جوائز مقفلة (0)
+          const rewardLine =
+            rewardCoins <= 0 ? '🏆 فوز بلا عملات (الجوائز مقفلة من الإدارة)' :
+            claim.paid ? `💰 حصلت على **+${rewardCoins} 🪙** عملة!` :
+            claim.failed ? '⚠️ صار خلل تقني بالصرف — هالجولة بلا مكافأة 🛠️' :
+            '🎁 جائزتك اليوم صرفت… **الألعاب تدفع مرة وحدة باليوم** 🎮 رجع بكره!';
 
           const winEmbed = new EmbedBuilder()
             .setColor('#2ecc71')
             .setTitle('🎉 إجابة صحيحة!')
-            .setDescription(`عين صقر 🎯 مبروك يا ${msg.author}!\nالرسمة كانت: **${item.word}**\n\n${claim.paid ? `💰 حصلت على **+${rewardCoins} 🪙** عملة!` : `🎁 جائزتك اليوم صرفت… **الألعاب تدفع مرة وحدة باليوم** 🎮 رجع بكره!`}`)
+            .setDescription(`عين صقر 🎯 مبروك يا ${msg.author}!\nالرسمة كانت: **${item.word}**\n\n${rewardLine}`)
             .setTimestamp();
 
           return msg.reply({ embeds: [winEmbed] }).catch(() => {});
