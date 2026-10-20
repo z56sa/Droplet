@@ -1,6 +1,7 @@
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const fs = require('fs');
 const path = require('path');
+const { isSafeExternalUrl } = require('./safeUrl');
 
 // تسجيل الخطوط لضمان وضوح النصوص في ديسكورد وCanvas
 try {
@@ -319,7 +320,11 @@ const canvasUtil = {
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
-    const wallpaperUrl = userData.wallpaper_url || 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=960&q=80';
+    // دفاع-في-العمق: حتى لو جاء الرابط من صف قديم قبل صفّ أوامر setwallpaper — الرابط غير الآمن يسقط للـ fallback
+    const rawWallpaper = userData.wallpaper_url || '';
+    const wallpaperUrl = isSafeExternalUrl(rawWallpaper)
+      ? rawWallpaper
+      : 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=960&q=80';
 
     // 1. قص الكرت بزوايا دائرية فاخرة (Card Outer Clip)
     const cardRadius = 26;

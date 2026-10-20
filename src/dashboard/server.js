@@ -46,7 +46,7 @@ function dashDateLocale(req, arLocale) {
 }
 
 const { requireAuth, createGuildAuthMiddleware } = require('./middleware/auth');
-const { apiLimiter, sensitiveActionLimiter, aiLimiter, appealLimiter } = require('./middleware/rateLimiter');
+const { apiLimiter, sensitiveActionLimiter, aiLimiter, appealLimiter, syncLimiter } = require('./middleware/rateLimiter');
 const { errorHandler } = require('./middleware/errorHandler');
 const {
     validate,
@@ -747,7 +747,7 @@ module.exports = function (app, client) {
     });
 
     // 0.6 🌉 استقبال دفعات البيانات من البوت (جسر المزامنة) — مصادقة عبر هيدر x-sync-token = BOT_TOKEN
-    app.post('/internal/sync/users', (req, res) => {
+    app.post('/internal/sync/users', syncLimiter, (req, res) => {
         try {
             const token = String(req.headers['x-sync-token'] || '');
             if (!process.env.BOT_TOKEN || token !== process.env.BOT_TOKEN) {

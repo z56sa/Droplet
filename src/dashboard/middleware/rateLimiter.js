@@ -59,9 +59,26 @@ const appealLimiter = rateLimit({
     }
 });
 
+/**
+ * Internal Sync Limiter
+ * 30 requests per minute on /internal/sync/users — the bot pushes once per 3 min,
+ * this only exists to blunt credential-guessing / payload flooding attempts.
+ */
+const syncLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        error: 'Too Many Requests: sync rate limit exceeded.'
+    }
+});
+
 module.exports = {
     apiLimiter,
     sensitiveActionLimiter,
     aiLimiter,
-    appealLimiter
+    appealLimiter,
+    syncLimiter
 };
