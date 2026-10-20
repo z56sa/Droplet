@@ -110,6 +110,7 @@ module.exports = {
       await interaction.deferReply();
     } catch (e) {
       activeGames.delete(interaction.channel.id);
+      try { await interaction.reply({ content: '⚠️ تعذر بدء اللعبة الآن (تأخير بالشبكة) — جرّب مرة ثانية!', ephemeral: true }); } catch {}
       return;
     }
     await this.startGame(interaction.channel, interaction.user, interaction.guild.id, 'random', (opts) => interaction.editReply(opts), settings);
@@ -160,7 +161,7 @@ module.exports = {
       }
     } catch (err) {
       console.error('Game error:', err);
-      channel.send('❌ حدث خطأ غير متوقع أثناء تشغيل اللعبة.');
+      channel.send('❌ حدث خطأ غير متوقع أثناء تشغيل اللعبة.').catch(() => {});
     } finally {
       activeGames.delete(channel.id);
     }

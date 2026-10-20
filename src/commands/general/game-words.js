@@ -27,6 +27,7 @@ module.exports = {
       await interaction.deferReply();
     } catch (e) {
       game.activeGames.delete(interaction.channelId);
+      try { await interaction.reply({ content: '⚠️ تعذر بدء اللعبة الآن (تأخير بالشبكة) — جرّب مرة ثانية!', ephemeral: true }); } catch {}
       return;
     }
     await game.startGame(interaction.channel, interaction.user, interaction.guild.id, 'words', (opts) => interaction.editReply(opts), settings);

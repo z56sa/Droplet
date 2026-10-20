@@ -91,6 +91,7 @@ module.exports = {
       await interaction.deferReply();
     } catch (e) {
       activeGames.delete(interaction.channel.id);
+      try { await interaction.reply({ content: '⚠️ تعذر بدء اللعبة الآن (تأخير بالشبكة) — جرّب مرة ثانية!', ephemeral: true }); } catch {}
       return;
     }
     return this.startRoulette(interaction.channel, interaction.user, interaction.guild.id, (opts) => interaction.editReply(opts));

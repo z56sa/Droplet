@@ -37,9 +37,8 @@ const GOAL_TEXT = {
   town:  '👤 **هدفك:** انتبه للحديث والسلوك؛ اتصوّت ضد المشتبهين واقضوا على المافيا بالنهار!'
 };
 
-// حماية من تشغيل لعبتين بنفس القناة
-const activeMafiaChannels = new Set();
-const gamesById = new Map();
+// ✅ القفل وصّل بباقي عائلة الألعاب (كويز/روفيت/غارتيك/الأغلفة) — لعبة وحدة بالقناة عبر كل الألعاب
+const { activeGames } = require('./game');
 
 function chunkButtons(buttons, perRow = 5) {
   const rows = [];
@@ -94,8 +93,8 @@ module.exports = {
   },
 
   async startLobby(interaction, channel, host, client) {
-    if (activeMafiaChannels.has(channel.id)) {
-      const warn = '⚠️ هناك لعبة مافيا جارية في هذه القناة! انتظر حتى تنتهي.';
+    if (activeGames.has(channel.id)) {
+      const warn = '⚠️ هناك لعبة جارية بالفعل في هذه القناة! انتظر حتى تنتهي.';
       if (interaction) return ephReply(interaction, { content: warn });
       return channel.send(warn).catch(() => {});
     }
@@ -109,8 +108,7 @@ module.exports = {
       timers: [], phaseMsg: null, lobbyMsg: null, revealMsg: null, nightMsg: null,
       lobbyCollector: null, interCollector: null
     };
-    gamesById.set(gid, game);
-    activeMafiaChannels.add(channel.id);
+    activeGames.add(channel.id);
     game.players.set(host.id, { id: host.id, name: host.username, role: null, alive: true });
 
     const refreshDescription = () => {
@@ -154,8 +152,7 @@ module.exports = {
         game.lobbyMsg = await channel.send(payload);
       }
     } catch (e) {
-      activeMafiaChannels.delete(channel.id);
-      gamesById.delete(gid);
+      activeGames.delete(channel.id);
       return;
     }
 
@@ -742,8 +739,7 @@ module.exports = {
     game.timers = [];
     try { game.lobbyCollector?.stop('ended'); } catch (e) {}
     try { game.interCollector?.stop('ended'); } catch (e) {}
-    gamesById.delete(game.id);
-    activeMafiaChannels.delete(game.channelId);
+    activeGames.delete(game.channelId);
 
     const channel = this._channel(game);
     if (!channel) return;
