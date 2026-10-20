@@ -81,11 +81,18 @@ module.exports = {
     .setDescription('🎡 الروليت الدوارة: انطّت عليك العجلة؟ اختر من تطرده — آخر ناجٍ يكسب!'),
 
   async execute(interaction) {
-    // ✅ الحجب قبل الـ defer — الرد الظوري يعمل قبل ما تتحول الرسالة لغير مؤقتة (editReply مع flags يجيب 400)
+    // ✅ الحجب قبل الـ defer — الرد الظوري يعمل قبل ما تتحول الرسالة لغير مؤقّتة (editReply مع flags يجيب 400)
+    // ✅ إغلاق سباق البدء: القفل يفتح ملاصقاً للفحص قبل أي await — نافذة defer ما تسمح بلقطة مزدوجة
     const settings = db.getGuildSettings ? (db.getGuildSettings(interaction.guild.id) || {}) : {};
     const err = preflightGamesError(interaction.channelId, interaction.guild.id, settings);
     if (err) return interaction.reply({ content: err, ephemeral: true });
-    await interaction.deferReply();
+    activeGames.add(interaction.channel.id);
+    try {
+      await interaction.deferReply();
+    } catch (e) {
+      activeGames.delete(interaction.channel.id);
+      return;
+    }
     return this.startRoulette(interaction.channel, interaction.user, interaction.guild.id, (opts) => interaction.editReply(opts));
   },
 

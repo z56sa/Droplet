@@ -104,7 +104,14 @@ module.exports = {
     const err = preflightGamesError(interaction.channelId, interaction.guild.id, settings);
     if (err) return interaction.reply({ content: err, ephemeral: true });
 
-    await interaction.deferReply();
+    // ✅ إغلاق سباق البدء: القفل يفتح ملاصقاً للفحص قبل أي await — نافذة defer ما تسمح بلقطة مزدوجة
+    activeGames.add(interaction.channel.id);
+    try {
+      await interaction.deferReply();
+    } catch (e) {
+      activeGames.delete(interaction.channel.id);
+      return;
+    }
     await this.startGame(interaction.channel, interaction.user, interaction.guild.id, 'random', (opts) => interaction.editReply(opts), settings);
   },
 
@@ -116,6 +123,9 @@ module.exports = {
     }
     const err = preflightGamesError(message.channel.id, message.guild.id, settings, { skipActive: true });
     if (err) return message.reply(err).catch(() => {});
+
+    // ✅ القفل هنا أيضاً — قبل أول await (إرسال رسالة البدء)
+    activeGames.add(message.channel.id);
 
     let initialMsg = null;
     try {

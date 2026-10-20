@@ -300,11 +300,18 @@ module.exports = {
     .setDescription('🎨 لعبة غارتيك: رسمة مشوشة يرسمها البوت وأول إجابة صحيحة تفوز!'),
 
   async execute(interaction) {
-    // ✅ الحجب قبل الـ defer — الخدمة الظورية أثبت في التيجيب (قبل ما تكتب الرسالة بغير المؤن المرفوعة)
+    // ✅ الحجب قبل الـ defer — الرد الظوري يعمل قبل ما تتحول الرسالة لغير مؤقّتة
+    // ✅ إغلاق سباق البدء: القفل يفتح ملاصقاً للفحص قبل أي await — نافذة defer ما تسمح بلقطة مزدوجة
     const settings = db.getGuildSettings ? (db.getGuildSettings(interaction.guild.id) || {}) : {};
     const err = preflightGamesError(interaction.channelId, interaction.guild.id, settings);
     if (err) return interaction.reply({ content: err, ephemeral: true });
-    await interaction.deferReply();
+    activeGartic.add(interaction.channel.id);
+    try {
+      await interaction.deferReply();
+    } catch (e) {
+      activeGartic.delete(interaction.channel.id);
+      return;
+    }
     return this.startGarticRound(interaction.channel, interaction.user, interaction.guild.id, (opts) => interaction.editReply(opts));
   },
 
@@ -340,6 +347,8 @@ module.exports = {
       buffer = renderSketch(item);
     } catch (e) {
       console.error('[Gartic] sketch render failed:', e);
+      // ✅ فكّ القفل المسبق (السلقة يضيفه قبل defer) — مشوار فشل التوليد ما يخلي القناة مغلقة
+      activeGartic.delete(channel.id);
       return replyMethod({ content: '❌ تعذر توليد الرسمة (خطأ داخلي). جرب مرة أخرى!' });
     }
     // ✅ سجل الرسمة بسجل التكرار فقط بعد نجاح التوليد — الفشل ما يحرق فرصة الرسمة
