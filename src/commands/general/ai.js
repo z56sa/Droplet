@@ -125,7 +125,12 @@ function tryRunCodeSnippet(codeText) {
 
     const code = jsMatch[1].trim();
     // حماية أمنية لمنع الوصول لنظام الملفات أو الشبكة داخل الـ sandbox
-    const forbidden = ['require', 'process', 'global', 'import', 'child_process', 'fs', 'net', 'http'];
+    const forbidden = ['require', 'process', 'global', 'import', 'child_process', 'fs', 'net', 'http',
+        // vm ليست حماية أمنية حسب توثيق Node — سلسلة الاختراق الكلاسيكية:
+        // JSON.parse.constructor('return process')() — كل كائن مُمرَّر من الـ host يكشف Function الأصلي.
+        // نمنع 'constructor' لتقطيع السلسلة، ونمنع أدوات بناء النصوص التي تهرب من فحص السلاسل الحرفي:
+        'constructor', 'prototype', '__proto__', 'Function', 'eval',
+        'fromCharCode', 'fromCodePoint', 'unescape', 'atob', 'Proxy', 'Buffer'];
     if (forbidden.some(f => code.includes(f))) {
         return '⚠️ تشغيل الكود مقيد لحماية الأمان (تم اكتشاف دوال نظام).';
     }
