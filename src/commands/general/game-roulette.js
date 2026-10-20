@@ -1,14 +1,16 @@
 /**
- * 🔫 لعبة الروليت الروسية الجماعية (Russian Roulette)
- * البوت يحضّر مسدس 6 خانات فيه حبة وحدة، الأعضاء يسجلون بالزر،
- * ثم ترتيب عشوائي وكل واحد يسحب الزناد بدوره:
- * كلّك فاضي = عايش — والحبة = فقد الجولة.
- * كل ناجٍ بآخر الجولة ياخذ المكافأة كاملة (إعداد game_reward_roulette من الداشبورد).
+ * 🎡 لعبة الروليت الدوارة (بالأدوار)
+ * العجلة تنزل بالتناوب على كل عضو — اللي تنط عليه ياخذ صلاح الطرد:
+ * يختار عضو من الأحياء ويطرده برا الجولة، وهكذا حتى يبقى ناجٍ واحد
+ * ياخذ الجائزة كاملة. اللي يتأخر بالاختيار — العجلة تختار بداله!
+ * الجائزة من إعداد game_reward_roulette بالداشبورد.
  */
 const {
   SlashCommandBuilder,
   EmbedBuilder,
   ActionRowBuilder,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
   ButtonBuilder,
   ButtonStyle,
   ComponentType
@@ -18,42 +20,64 @@ const db = require('../../database');
 const game = require('./game');
 const activeGames = game.activeGames;
 
-const CHAMBERS = 6;        // عدد خانات المسدس
-const MAX_PLAYERS = 15;    // حد أقصى للجريئين (يمنع سبام الرسائل)
-const JOIN_SECONDS = 25;   // مدة فتح باب التسجيل
-const TURN_DELAY = 1300;   // فاصل تشويقي بين كل سحب زناد
+const MIN_PLAYERS = 3;    // تحت هذا العدد اللعبة تلغي (2 = القرار جاهز مسبقاً)
+const MAX_PLAYERS = 15;   // حد أقصى (تنبيه: قائمة الاختيار تسع 25)
+const JOIN_SECONDS = 30;  // مدة فتح باب التسجيل
+const CHOICE_SECONDS = 40; // مدة انتظار اختيار المطرود — بعدها العجلة تقرر
+const SPIN_DELAY = 1500;  // مهلة تشويق بين الدورات
 
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
-// 🧾 إيمبد التسجيل المباشر (يحدث مع كل مشترك جديد)
+// 🧾 إيمبد التسجيل المباشر (يتحدث مع كل مشترك جديد)
 function joinEmbed(players, rewardCoins, starter) {
   const list = players.length
     ? players.map((p, i) => `\`${i + 1}.\` <@${p.id}>`).join('\n')
-    : '_(بعد أحد… كون أول جريء 🫵)_';
+    : '_(بعد أحد… كون أول من يركب العجلة 🎡)_';
   return new EmbedBuilder()
-    .setColor('#c0392b')
-    .setTitle('🔫 الروليت الروسية — من يجرؤ؟')
+    .setColor('#e67e22')
+    .setTitle('🎡 الروليت — من تطرده العجلة؟')
     .setDescription(
-      `حضّرنا مسدساً به **${CHAMBERS} خانات** وحبة واحدة مكانها عشوائي.\n` +
-      `سجّل بالزر تحت، وبعدها ترتيب عشوائي: كل واحد يسحب الزناد بدوره.\n` +
-      `**كل ناجٍ بآخر الجولة ياخذ +${rewardCoins} 🪙**!\n\n` +
-      `⏱️ معك **${JOIN_SECONDS} ثانية** للتسجيل — الحد الأقصى **${MAX_PLAYERS} جريء**.`
+      `العجلة ستنزل **بالتناوب** على كل عضو — اللي تنط عليه ياخذ صلاح الطرد:\n` +
+      `يختار عضو من الأحياء ويطرده برا الجولة 💀\n` +
+      `و**اللي يتأخر بالاختيار — العجلة تختار بداله!** 🎲\n\n` +
+      `🏆 آخر ناجٍ ياخذ **+${rewardCoins} 🪙** كاملة!\n` +
+      `⏱️ معك **${JOIN_SECONDS} ثانية** للتسجيل — الحد الأقصى **${MAX_PLAYERS} لاعب**.`
     )
     .addFields({
-      name: `⚔️ المشتركون (${players.length}/${MAX_PLAYERS}) — العدد الأدنى 2`,
+      name: `👥 المشتركون (${players.length}/${MAX_PLAYERS}) — الأدنى ${MIN_PLAYERS}`,
       value: list
     })
-    .setFooter({ text: `بدأها: ${starter.username} | جائزة كل ناجٍ: ${rewardCoins} 🪙` })
+    .setFooter({ text: `بدأها: ${starter.username} | جائزة الفائز: ${rewardCoins} 🪙` })
     .setTimestamp();
+}
+
+// 🎯 إيمبد دورة (يحدّث كل جولة)
+function spinEmbed(order, aliveIds, kickedLog, current, turnNo) {
+  const aliveList = order.filter(p => aliveIds.has(p.id)).map(p => `<@${p.id}>`).join(' ');
+  const kickedList = kickedLog.slice(-5).reverse().join('\n');
+  const embed = new EmbedBuilder()
+    .setColor('#f39c12')
+    .setTitle(`🎡 الدورة ${turnNo} — العجلة انطّت!`)
+    .setDescription(
+      `العجلة وقفت عند **<@${current.id}>** — الحكم بيده الآن:\n` +
+      `يختار من قائمة الأحياء ويطرده برا الجولة 💀 (لو تأخر، العجلة تختار بداله 🎲)`
+    )
+    .addFields(
+      { name: `⚔️ الأحياء (${aliveIds.size})`, value: aliveList || '—' },
+      { name: '💀 المطرودون (آخر 5)', value: kickedList ? kickedList : '_(بعد أحد — أمان كامل 🆓)_' }
+    )
+    .setFooter({ text: `الجولة تكمل حتى الصمود الأخير 🏆` })
+    .setTimestamp();
+  return embed;
 }
 
 module.exports = {
   name: 'game-roulette',
-  description: 'لعبة الروليت الروسية الجماعية: من يجرؤ؟ 🔫',
-  aliases: ['روليت', 'روسي', 'roulette'],
+  description: 'لعبة الروليت الدوارة: العجلة تنط على الأعضاء بالتبادل واللي تنط عليه يطرد عضو 💀',
+  aliases: ['روليت', 'الدولاب', 'roulette'],
   data: new SlashCommandBuilder()
     .setName('game-roulette')
-    .setDescription('🔫 الروليت الروسية: سجّل بالجولة وجرّب حظك — كل ناجٍ يكسب!'),
+    .setDescription('🎡 الروليت الدوارة: انطّت عليك العجلة؟ اختر من تطرده — آخر ناجٍ يكسب!'),
 
   async execute(interaction) {
     await interaction.deferReply();
@@ -87,9 +111,9 @@ module.exports = {
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(roundId)
-        .setLabel('سجّل بالجولة')
-        .setEmoji('🔫')
-        .setStyle(ButtonStyle.Danger)
+        .setLabel('اركب العجلة')
+        .setEmoji('🎡')
+        .setStyle(ButtonStyle.Primary)
     );
 
     const players = [];
@@ -114,26 +138,26 @@ module.exports = {
     joinCollector.on('collect', async (btn) => {
       if (btn.customId !== roundId) return;
       if (players.some(p => p.id === btn.user.id)) {
-        return btn.reply({ content: '✋ انت مسجّل بالجولة من قبل!', flags: 64 }).catch(() => {});
+        return btn.reply({ content: '✋ انت مشترك بالجولة من قبل!', flags: 64 }).catch(() => {});
       }
       if (players.length >= MAX_PLAYERS) {
-        return btn.reply({ content: `🚫 المكتمل (${MAX_PLAYERS} جريء) — تكفّل بالمشاهدة!`, flags: 64 }).catch(() => {});
+        return btn.reply({ content: `🚫 المكتمل (${MAX_PLAYERS} لاعب) — تعال شاهد فقط!`, flags: 64 }).catch(() => {});
       }
       players.push({ id: btn.user.id, name: btn.user.username });
       await btn.deferUpdate().catch(() => {});
       await roundMsg.edit({ embeds: [joinEmbed(players, rewardCoins, starter)] }).catch(() => {});
     });
 
+    // ⏳ انتهاء التسجيل — انطلاق الدورات
     joinCollector.on('end', async () => {
       try {
-        // 🚫 انسحاب الجولة لو المشاركين أقل من اثنين
-        if (players.length < 2) {
+        if (players.length < MIN_PLAYERS) {
           activeGames.delete(channel.id);
           await roundMsg.edit({
             embeds: [new EmbedBuilder()
               .setColor('#95a5a6')
               .setTitle('🚫 أُلغيت الجولة')
-              .setDescription('لازم **عضوين على الأقل** يجرؤون… حاولوا مرة ثانية! 🎯')
+              .setDescription(`لازم **${MIN_PLAYERS} لاعب على الأقل** — بالعدد الأقل ما ينفع للطرد أي مبهم… جرّبوا مرة أخرى! 🎡`)
               .setTimestamp()],
             components: []
           }).catch(() => {});
@@ -141,60 +165,105 @@ module.exports = {
         }
         await roundMsg.edit({ components: [] }).catch(() => {});
 
-        // 🎲 خلط رتبة السحب + خانة الحبة العشوائية
+        // 🎲 خلط ترتيب العجلة
         const order = players.slice();
         for (let i = order.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [order[i], order[j]] = [order[j], order[i]];
         }
-        const bulletSlot = 1 + Math.floor(Math.random() * CHAMBERS);
+        const nameById = new Map(order.map(p => [p.id, p.name]));
+        const aliveIds = new Set(order.map(p => p.id));
+        const kickedLog = [];
+        let cursor = -1;
 
-        await roundMsg.edit({
-          embeds: [new EmbedBuilder()
-            .setColor('#e67e22')
-            .setTitle('🔁 بدأ التدوير!')
-            .setDescription(`**${order.length}** جريئ بترتيب عشوائي — المسدس ${CHAMBERS} خانات… السحب يبدأ الآن، بالتوفيق للجميع 💀`)
-            .setTimestamp()]
-        }).catch(() => {});
-
-        const survivors = [];
-        let chamber = 0;
-        for (const p of order) {
-          chamber++;
-          await wait(TURN_DELAY);
-          if (chamber === bulletSlot) {
-            // 💥 صاحب الدور وقفت عنده الحبة
-            await channel.send(`💥 **${p.name}** سحب الزناد… **طقّطط!** الرصاصة ضربت — فقد الجولة 💀 (الخانة ${chamber}/${CHAMBERS})`).catch(() => {});
-            break;
+        // جِب التالي الحيّ بالدورة الدائرية
+        const nextAlive = () => {
+          for (let s = 1; s <= order.length; s++) {
+            const idx = (cursor + s) % order.length;
+            if (aliveIds.has(order[idx].id)) { cursor = idx; return order[idx]; }
           }
-          survivors.push(p);
-          await channel.send(`🔫 **${p.name}** سحب الزناد… *كلّك* — خانة فاضية ✅ (${chamber}/${CHAMBERS})`).catch(() => {});
+          return null;
+        };
+
+        // 📥 انتظار اختيار المطرود — أو العجلة تقرر
+        const waitForPick = (menuId, currentId) => new Promise((resolve) => {
+          let done = false;
+          const col = roundMsg.createMessageComponentCollector({
+            componentType: ComponentType.StringSelect,
+            time: CHOICE_SECONDS * 1000
+          });
+          col.on('collect', async (sel) => {
+            if (sel.customId !== menuId) return;
+            if (sel.user.id !== currentId) {
+              return sel.reply({ content: '🏷️ هذي دورة غيرك — استنى صاحبها يقرر!', flags: 64 }).catch(() => {});
+            }
+            done = true;
+            const victimId = sel.values[0];
+            await sel.deferUpdate().catch(() => {});
+            col.stop('picked');
+            resolve(victimId);
+          });
+          col.on('end', () => { if (!done) resolve(null); });
+        });
+
+        let turnNo = 0;
+        while (aliveIds.size > 1) {
+          turnNo++;
+          const current = nextAlive();
+          if (!current) break; // أمان نظري — ما يوصل هنا
+         const others = order.filter(p => aliveIds.has(p.id) && p.id !== current.id);
+
+          // قائمة الاختيار (سطر واحد بحد أقصى 14 لاعباً غيره)
+          const menuId = `rk_${roundId}_${turnNo}`;
+          const menuRow = new ActionRowBuilder().addComponents(
+            new StringSelectMenuBuilder()
+              .setCustomId(menuId)
+              .setPlaceholder(`${current.name} — من تطرده برا الجولة؟ 💀`)
+              .addOptions(others.map(p =>
+                new StringSelectMenuOptionBuilder()
+                  .setLabel(String(p.name).slice(0, 30) || 'لاعب')
+                  .setValue(p.id)
+                  .setDescription('أطرده برا الجولة 💀')
+              ))
+          );
+
+          await roundMsg.edit({ embeds: [spinEmbed(order, aliveIds, kickedLog, current, turnNo)], components: [menuRow] }).catch(() => {});
+          await wait(SPIN_DELAY);
+
+          const victimId = await waitForPick(menuId, current.id);
+          let victim = victimId;
+          if (!victim) {
+            victim = others[Math.floor(Math.random() * others.length)].id;
+            await channel.send(`⌛ **${current.name}** تأخر بالقرار… فالعجلة خذت الحكم بالبيدها واختارت بداله! 🎲`).catch(() => {});
+          }
+
+          aliveIds.delete(victim);
+          kickedLog.push(`<@${current.id}> → <@${victim}>`);
+          await roundMsg.edit({ components: [] }).catch(() => {});
+          await channel.send(`💀 **${nameById.get(current.id)}** قبض على الفرصة — طلّع **${nameById.get(victim)}** برا الجولة! الباقي **${aliveIds.size}** 😱`).catch(() => {});
         }
 
-        // 🏆 الصرف النهائي لكل الناجين
-        for (const p of survivors) {
-          try { if (db.addCoins) db.addCoins(p.id, guildId, rewardCoins); } catch (e) {}
-        }
-
-        const survivorList = survivors.map(p => `<@${p.id}>`).join(' ');
-        const resultEmbed = new EmbedBuilder()
-          .setColor(bulletSlot > order.length ? '#2ecc71' : '#e74c3c')
-          .setTitle(bulletSlot > order.length ? '🍀 ليلة المعجزة — الكل نجا!' : '💀 انتهت الجولة — عُدنا لصوب الحبة')
-          .setDescription(
-            (bulletSlot > order.length
-              ? `الحبة كانت بالخانة الأخيرة (${bulletSlot}/${CHAMBERS}) وما وصلها أحد — **كل المشتركين ناجون!**`
-              : `الحبة ضربت **${order.find(x => !survivors.includes(x))?.name || 'الجريء الأخير'}** بالخانة ${bulletSlot}/${CHAMBERS}.\n\nالنجاة شرفت **${survivors.length}** من الجريئين:`) +
-            `\n${survivorList}` +
-            `\n\n💰 كل ناجٍ حصل على **+${rewardCoins} 🪙** عملة!` +
-            `\n🎯 الجولة الجاية — العمّد الأكثر جرأة يتفوقون 🔥`
-          )
-          .setTimestamp();
+        const winnerId = [...aliveIds][0];
+        const winner = order.find(p => p.id === winnerId);
+        try { if (db.addCoins) db.addCoins(winnerId, guildId, rewardCoins); } catch (e) {}
 
         activeGames.delete(channel.id);
-        await roundMsg.edit({ embeds: [resultEmbed] }).catch(() => {});
+        await roundMsg.edit({ components: [] }).catch(() => {});
+        await roundMsg.edit({
+          embeds: [new EmbedBuilder()
+            .setColor('#2ecc71')
+            .setTitle('🏆 انتهت الجولة — آخر الصمود!')
+            .setDescription(
+              `العجلة دارت وكلّم المطرود وبرا — و**${nameById.get(winnerId) || 'الناجّي'}** آخر ناجٍ شاشة:\n\n` +
+              `🎉 مبروك <@${winnerId}> — الجائزة **+${rewardCoins} 🪙** عملة!` +
+              `\n\n⚡ الجولة الجاي عمّدون أشد القيادة 🔥`
+            )
+            .setTimestamp()]
+        }).catch(() => {});
       } catch (e) {
         console.error('[Roulette] round error:', e);
         activeGames.delete(channel.id);
+        await roundMsg.edit({ components: [] }).catch(() => {});
       }
     });
   }

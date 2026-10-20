@@ -3276,7 +3276,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             { name: '/game-words', desc: 'لعبة تفكيك وتركيب الكلمات (Words) 🧩', badge: '', icon: '🧩' },
             { name: '/game-fast', desc: 'لعبة أسرع واحد يكتب (Fast Typing) ⚡', badge: '', icon: '⚡' },
             { name: '/game-gartic', desc: 'لعبة غارتيك: رسمة مشوشة يرسمها البوت وأول إجابة صحيحة تفوز (Gartic) 🎨', badge: '', icon: '🎨' },
-            { name: '/game-roulette', desc: 'لعبة الروليت الروسية: تسجيل جماعي بالزر وسحب زناد بالترتيب حتى تطلع الحبة (Roulette) 🔫', badge: '', icon: '🔫' },
+            { name: '/game-roulette', desc: 'لعبة الروليت الدوارة: العجلة تنتقل بين الأعضاء واللي تنط عليه يختار من يطرده — آخر ناجٍ يفوز 🎡', badge: '', icon: '🎡' },
             { name: '/mafia', desc: 'لعبة المافيا الجماعية: أدوار سرية بالخاص ونقاش وتصويت (Mafia) 🔪', badge: '', icon: '🔪' }
         ]},
         invites: { title: 'Invite Tracker', desc: '\u0645\u062a\u062a\u0628\u0639 \u062f\u0639\u0648\u0627\u062a \u0627\u0644\u0623\u0639\u0636\u0627\u0621 \u0648\u0625\u062d\u0635\u0627\u0626\u064a\u0627\u062a \u0627\u0644\u062f\u0639\u0648\u0627\u062a', icon: '\ud83d\udd17', items: [
@@ -12258,7 +12258,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <h3 class="text-lg font-black text-white">نظام الألعاب والتحديات التفاعلية</h3>
                                     </div>
                                     <p class="text-xs text-gray-400 leading-relaxed">
-                                        ألعاب ذكاء وتحديات تفاعلية في الشات: <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game</code> لعبة عشوائية، وكل لعبة لها أمر مستقل — <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-capitals</code> عواصم، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-words</code> تفكيك وتركيب، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-fast</code> أسرع كتابة، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-gartic</code> رسم وتخمين، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-roulette</code> الروليت الروسية، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/mafia</code> المافيا الجماعية — مع مكافآت رصيد فورية للفائزين وتخصيص اختصار لكل منها من قائمة الأوامر.
+                                        ألعاب ذكاء وتحديات تفاعلية في الشات: <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game</code> لعبة عشوائية، وكل لعبة لها أمر مستقل — <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-capitals</code> عواصم، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-words</code> تفكيك وتركيب، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-fast</code> أسرع كتابة، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-gartic</code> رسم وتخمين، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/game-roulette</code> الروليت الدوارة، <code class="text-blue-400 font-mono bg-blue-500/10 px-1.5 py-0.5 rounded">/mafia</code> المافيا الجماعية — مع مكافآت رصيد فورية للفائزين وتخصيص اختصار لكل منها من قائمة الأوامر.
                                     </p>
                                 </div>
                                 <div class="text-4xl text-blue-400/20 select-none">🕹️</div>
@@ -12308,7 +12308,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                             <input type="number" min="0" max="100000" name="game_reward_mafia" value="${mafiaReward}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-2 py-2 text-xs text-white outline-none text-center font-mono">
                                         </div>
                                         <div>
-                                            <label class="block text-[10px] text-gray-400 mb-1 text-center">🔫 روليت (ناجٍ)</label>
+                                            <label class="block text-[10px] text-gray-400 mb-1 text-center">🎡 روليت (فائز)</label>
                                             <input type="number" min="0" max="100000" name="game_reward_roulette" value="${rouletteReward}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-2 py-2 text-xs text-white outline-none text-center font-mono">
                                         </div>
                                     </div>
@@ -12343,8 +12343,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <p class="text-gray-400 text-[11px]">5–25 لاعباً: أدوار سرية بالخاص (مافيا/محقق/طبيب/مواطن)، ليل سرية ونهار بتصويت عام حتى ينتصر طرف. عبر <code class="text-blue-400 font-mono">/mafia</code>.</p>
                                 </div>
                                 <div class="p-3 bg-[#070d1d] border border-red-500/20 rounded-xl text-xs space-y-1">
-                                    <span class="font-bold text-red-400 block">🔫 الروليت الروسية (جماعية)</span>
-                                    <p class="text-gray-400 text-[11px]">مسدس 6 خانات وحبة واحدة: 25 ثانية تسجيل بالزر (2–15 لاعباً)، ترتيب عشوائي وكل واحد يسحب الزناد — كل ناجٍ يكسب الجائزة كاملة. عبر <code class="text-blue-400 font-mono">/game-roulette</code>.</p>
+                                    <span class="font-bold text-red-400 block">🎡 الروليت الدوارة (جماعية)</span>
+                                    <p class="text-gray-400 text-[11px]">العجلة تنزل بالتبادل على كل عضو — اللي تنط عليه يختار من يطرده برا الجولة (ومن يتأخر، العجلة تختار بداله)، وآخر ناجٍ ياخذ الجائزة كاملة. عبر <code class="text-blue-400 font-mono">/game-roulette</code>.</p>
                                 </div>
                             </div>
                         </div>
