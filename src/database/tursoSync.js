@@ -75,6 +75,7 @@ class TursoSync {
           reputation INTEGER DEFAULT 0,
           last_daily INTEGER DEFAULT 0,
           last_work INTEGER DEFAULT 0,
+          last_game_reward INTEGER DEFAULT 0,
           last_message_xp INTEGER DEFAULT 0,
           wallpaper TEXT DEFAULT 'default',
           warnings INTEGER DEFAULT 0,
@@ -86,6 +87,7 @@ class TursoSync {
       // Add columns safely if table already existed
       try { await this.client.execute("ALTER TABLE users ADD COLUMN bank_balance INTEGER DEFAULT 0;"); } catch (e) {}
       try { await this.client.execute("ALTER TABLE users ADD COLUMN last_work INTEGER DEFAULT 0;"); } catch (e) {}
+      try { await this.client.execute("ALTER TABLE users ADD COLUMN last_game_reward INTEGER DEFAULT 0;"); } catch (e) {}
       try { await this.client.execute("ALTER TABLE users ADD COLUMN reputation INTEGER DEFAULT 0;"); } catch (e) {}
       try { await this.client.execute("ALTER TABLE users ADD COLUMN last_message_xp INTEGER DEFAULT 0;"); } catch (e) {}
       try { await this.client.execute("ALTER TABLE users ADD COLUMN streak INTEGER DEFAULT 0;"); } catch (e) {}
@@ -109,6 +111,7 @@ class TursoSync {
               reputation INTEGER DEFAULT 0,
               last_daily INTEGER DEFAULT 0,
               last_work INTEGER DEFAULT 0,
+              last_game_reward INTEGER DEFAULT 0,
               last_message_xp INTEGER DEFAULT 0,
               wallpaper TEXT DEFAULT 'default',
               warnings INTEGER DEFAULT 0,
@@ -118,8 +121,8 @@ class TursoSync {
           `);
           try {
             await this.client.execute(`INSERT OR IGNORE INTO users_fixed_sync
-              (user_id, guild_id, xp, level, coins, bank_balance, reputation, last_daily, last_work, last_message_xp, wallpaper, warnings, streak)
-              SELECT user_id, guild_id, COALESCE(xp,0), COALESCE(level,1), COALESCE(coins,0), COALESCE(bank_balance,0), COALESCE(reputation,0), COALESCE(last_daily,0), COALESCE(last_work,0), COALESCE(last_message_xp,0), COALESCE(wallpaper,'default'), COALESCE(warnings,0), COALESCE(streak,0) FROM users`);
+              (user_id, guild_id, xp, level, coins, bank_balance, reputation, last_daily, last_work, last_game_reward, last_message_xp, wallpaper, warnings, streak)
+              SELECT user_id, guild_id, COALESCE(xp,0), COALESCE(level,1), COALESCE(coins,0), COALESCE(bank_balance,0), COALESCE(reputation,0), COALESCE(last_daily,0), COALESCE(last_work,0), COALESCE(last_game_reward,0), COALESCE(last_message_xp,0), COALESCE(wallpaper,'default'), COALESCE(warnings,0), COALESCE(streak,0) FROM users`);
           } catch (copyErr) {
             await this.client.execute(`INSERT OR IGNORE INTO users_fixed_sync (user_id, guild_id, xp, level, coins)
               SELECT user_id, guild_id, COALESCE(xp,0), COALESCE(level,1), COALESCE(coins,0) FROM users`);
@@ -317,8 +320,8 @@ class TursoSync {
       if (usersResult.rows && usersResult.rows.length > 0) {
         console.log(`[TURSO] 🔄 Restoring ${usersResult.rows.length} users from Turso into local SQLite...`);
         const insertOrReplace = localDb.prepare(`
-          INSERT INTO users (user_id, guild_id, xp, level, coins, bank_balance, reputation, last_daily, last_work, last_message_xp, wallpaper, warnings, streak)
-          VALUES (@user_id, @guild_id, @xp, @level, @coins, @bank_balance, @reputation, @last_daily, @last_work, @last_message_xp, @wallpaper, @warnings, @streak)
+          INSERT INTO users (user_id, guild_id, xp, level, coins, bank_balance, reputation, last_daily, last_work, last_game_reward, last_message_xp, wallpaper, warnings, streak)
+          VALUES (@user_id, @guild_id, @xp, @level, @coins, @bank_balance, @reputation, @last_daily, @last_work, @last_game_reward, @last_message_xp, @wallpaper, @warnings, @streak)
           ON CONFLICT(user_id, guild_id) DO UPDATE SET
             coins = MAX(users.coins, excluded.coins),
             bank_balance = MAX(users.bank_balance, excluded.bank_balance),
@@ -326,6 +329,7 @@ class TursoSync {
             level = MAX(users.level, excluded.level),
             last_daily = MAX(users.last_daily, excluded.last_daily),
             last_work = MAX(users.last_work, excluded.last_work),
+            last_game_reward = MAX(users.last_game_reward, excluded.last_game_reward),
             streak = MAX(users.streak, excluded.streak);
         `);
 
@@ -341,6 +345,7 @@ class TursoSync {
               reputation: Number(row.reputation || 0),
               last_daily: Number(row.last_daily || 0),
               last_work: Number(row.last_work || 0),
+              last_game_reward: Number(row.last_game_reward || 0),
               last_message_xp: Number(row.last_message_xp || 0),
               wallpaper: String(row.wallpaper || 'default'),
               warnings: Number(row.warnings || 0),
@@ -736,8 +741,8 @@ class TursoSync {
     if (!this.enabled || !this.client || !userData || !userData.user_id) return;
 
     const sql = `
-      INSERT INTO users (user_id, guild_id, xp, level, coins, bank_balance, reputation, last_daily, last_work, last_message_xp, wallpaper, warnings, streak)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (user_id, guild_id, xp, level, coins, bank_balance, reputation, last_daily, last_work, last_game_reward, last_message_xp, wallpaper, warnings, streak)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id, guild_id) DO UPDATE SET
         coins = excluded.coins,
         bank_balance = excluded.bank_balance,
@@ -745,6 +750,7 @@ class TursoSync {
         level = excluded.level,
         last_daily = excluded.last_daily,
         last_work = excluded.last_work,
+        last_game_reward = excluded.last_game_reward,
         streak = excluded.streak,
         reputation = excluded.reputation,
         wallpaper = excluded.wallpaper,
@@ -760,6 +766,7 @@ class TursoSync {
       Number(userData.reputation || 0),
       Number(userData.last_daily || 0),
       Number(userData.last_work || 0),
+      Number(userData.last_game_reward || 0),
       Number(userData.last_message_xp || 0),
       String(userData.wallpaper || 'default'),
       Number(userData.warnings || 0),

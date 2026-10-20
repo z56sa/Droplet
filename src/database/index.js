@@ -529,6 +529,7 @@ try { db.exec("ALTER TABLE users ADD COLUMN streak INTEGER DEFAULT 0;"); } catch
 try { db.exec("ALTER TABLE users ADD COLUMN bank_balance INTEGER DEFAULT 0;"); } catch(e) {}
 
 try { db.exec("ALTER TABLE users ADD COLUMN last_work INTEGER DEFAULT 0;"); } catch(e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN last_game_reward INTEGER DEFAULT 0;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN boost_enabled INTEGER DEFAULT 1;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN boost_channel TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN boost_message TEXT;"); } catch(e) {}
@@ -1432,6 +1433,27 @@ function addCoins(userId, guildId, amount) {
   const u = getUser(userId, guildId);
   tursoSync.queueUserSync(u);
   return u.coins || 0;
+}
+
+// 🎮 بوابة جائزة الألعاب اليومية: مرة وحدة باليوم (24 ساعة — مثل #daily) عبر كل الألعاب
+// عملية صرف ذرّية: العلامة تتحدث بنفس UPDATE اللي دفع العملات — بدون سباق/دبل صرف
+const GAME_REWARD_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+function claimGameReward(userId, guildId, amount) {
+  const amt = Number(amount) || 0;
+  if (amt <= 0) return { paid: true, skipped: true }; // جائزة صفر — ما تفقع شي
+  const now = Date.now();
+  getUser(userId, guildId);
+  const res = db.prepare(`
+    UPDATE users SET coins = coins + ?, last_game_reward = ?
+    WHERE user_id = ? AND guild_id = ? AND (? - COALESCE(last_game_reward, 0)) >= ?
+  `).run(Math.max(1, Math.round(amt)), now, userId, guildId, now, GAME_REWARD_COOLDOWN_MS);
+  const u = getUser(userId, guildId);
+  if (!res || res.changes === 0) {
+    return { paid: false, lastAt: Number(u.last_game_reward || 0), nextInMs: GAME_REWARD_COOLDOWN_MS - (now - Number(u.last_game_reward || 0)) };
+  }
+  tursoSync.queueUserSync(u);
+  return { paid: true, coins: u.coins || 0 };
 }
 
 function removeCoins(userId, guildId, amount) {
@@ -3028,6 +3050,7 @@ module.exports = {
   withdrawBank,
   setLastWork,
   addCoins,
+  claimGameReward,
   removeCoins,
   setCoins,
   transferCoins,

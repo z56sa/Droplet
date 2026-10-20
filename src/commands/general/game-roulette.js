@@ -19,6 +19,7 @@ const db = require('../../database');
 // 🔗 حارس الجولات مشترك مع باقي الألعاب حتى لا تتداخل في نفس الروم
 const game = require('./game');
 const activeGames = game.activeGames;
+const preflightGamesError = game.preflightGamesError;
 
 const MIN_PLAYERS = 3;    // تحت هذا العدد اللعبة تلغي (2 = القرار جاهز مسبقاً)
 const MAX_PLAYERS = 15;   // حد أقصى (تنبيه: قائمة الاختيار تسع 25)
@@ -80,60 +81,53 @@ module.exports = {
     .setDescription('🎡 الروليت الدوارة: انطّت عليك العجلة؟ اختر من تطرده — آخر ناجٍ يكسب!'),
 
   async execute(interaction) {
+    // ✅ الحجب قبل الـ defer — الرد الظوري يعمل قبل ما تتحول الرسالة لغير مؤقتة (editReply مع flags يجيب 400)
+    const settings = db.getGuildSettings ? (db.getGuildSettings(interaction.guild.id) || {}) : {};
+    const err = preflightGamesError(interaction.channelId, interaction.guild.id, settings);
+    if (err) return interaction.reply({ content: err, ephemeral: true });
     await interaction.deferReply();
     return this.startRoulette(interaction.channel, interaction.user, interaction.guild.id, (opts) => interaction.editReply(opts));
   },
 
   async executePrefix(message) {
+    const settings = db.getGuildSettings ? (db.getGuildSettings(message.guild.id) || {}) : {};
+    const err = preflightGamesError(message.channel.id, message.guild.id, settings);
+    if (err) return message.reply({ content: err }).catch(() => {});
     return this.startRoulette(message.channel, message.author, message.guild.id, async (opts) => {
       return message.reply(opts).catch(() => message.channel.send(opts));
     });
   },
 
   async startRoulette(channel, starter, guildId, replyMethod) {
-    if (activeGames.has(channel.id)) {
-      return replyMethod({ content: '⚠️ هناك لعبة جارية بالفعل في هذه القناة! انتظر حتى تنتهي.', flags: 64 });
-    }
-
+    // 🔒 الحجب (اللعبة الفعالة/تعطيل/الروم المخصص) مرّ مسبقاً في execute/executePrefix — preflightGamesError
     const settings = db.getGuildSettings ? (db.getGuildSettings(guildId) || {}) : {};
-    if (settings.games_enabled === 0 || settings.games_enabled === '0' || settings.games_enabled === false) {
-      return replyMethod({ content: '🔒 نظام الألعاب معطل حالياً في هذا السيرفر من لوحة التحكم.', flags: 64 });
-    }
-    if (settings.games_channel && settings.games_channel !== channel.id) {
-      return replyMethod({ content: `⚠️ تم تخصيص الألعاب لتعمل فقط في روم: <#${settings.games_channel}>!`, flags: 64 });
-    }
-
     const rewardCoins = Number(settings.game_reward_roulette) || 100;
 
     activeGames.add(channel.id);
 
-    const roundId = `roulette_${Date.now()}_${channel.id}`;
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(roundId)
-        .setLabel('اركب العجلة')
-        .setEmoji('🎡')
-        .setStyle(ButtonStyle.Primary)
-    );
-
-    const players = [];
-    let roundMsg = null;
+    // 🛡️ حماية القفل: أي خطأ أثناء تجهيز الجولة يحرر القناة فوراً — ما تبقى مغلقة إلى رست البوت
     try {
-      roundMsg = await replyMethod({
+      const roundId = `roulette_${Date.now()}_${channel.id}`;
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(roundId)
+          .setLabel('اركب العجلة')
+          .setEmoji('🎡')
+          .setStyle(ButtonStyle.Primary)
+      );
+
+      const players = [];
+      const roundMsg = await replyMethod({
         embeds: [joinEmbed(players, rewardCoins, starter)],
         components: [row]
       });
-    } catch (e) {
-      activeGames.delete(channel.id);
-      return;
-    }
-    if (!roundMsg) { activeGames.delete(channel.id); return; }
+      if (!roundMsg) throw new Error('reply returned no message');
 
-    // 🕐 مرحلة التسجيل
-    const joinCollector = roundMsg.createMessageComponentCollector({
-      componentType: ComponentType.Button,
-      time: JOIN_SECONDS * 1000
-    });
+      // 🕐 مرحلة التسجيل
+      const joinCollector = roundMsg.createMessageComponentCollector({
+        componentType: ComponentType.Button,
+        time: JOIN_SECONDS * 1000
+      });
 
     joinCollector.on('collect', async (btn) => {
       if (btn.customId !== roundId) return;
@@ -221,7 +215,7 @@ module.exports = {
               .setPlaceholder(`${current.name} — من تطرده برا الجولة؟ 💀`)
               .addOptions(others.map(p =>
                 new StringSelectMenuOptionBuilder()
-                  .setLabel(String(p.name).slice(0, 30) || 'لاعب')
+                  .setLabel(String(p.name).slice(0, 25) || 'لاعب')
                   .setValue(p.id)
                   .setDescription('أطرده برا الجولة 💀')
               ))
@@ -245,7 +239,12 @@ module.exports = {
 
         const winnerId = [...aliveIds][0];
         const winner = order.find(p => p.id === winnerId);
-        try { if (db.addCoins) db.addCoins(winnerId, guildId, rewardCoins); } catch (e) {}
+        // 🎮 جائزة مرة وحدة باليوم عبر كل الألعاب
+        let claim = { paid: true };
+        try {
+          if (db.claimGameReward) claim = db.claimGameReward(winnerId, guildId, rewardCoins);
+          else if (db.addCoins) db.addCoins(winnerId, guildId, rewardCoins);
+        } catch (e) { claim = { paid: true }; }
 
         activeGames.delete(channel.id);
         await roundMsg.edit({ components: [] }).catch(() => {});
@@ -255,7 +254,7 @@ module.exports = {
             .setTitle('🏆 انتهت الجولة — آخر الصمود!')
             .setDescription(
               `العجلة دارت وكلّم المطرود وبرا — و**${nameById.get(winnerId) || 'الناجّي'}** آخر ناجٍ شاشة:\n\n` +
-              `🎉 مبروك <@${winnerId}> — الجائزة **+${rewardCoins} 🪙** عملة!` +
+              `🎉 مبروك <@${winnerId}> — ${claim.paid ? `الجائزة **+${rewardCoins} 🪙** عملة!` : `تصدّرت آخر الصمود! 🏆 (جائزتك اليوم صرفت — **الألعاب تدفع مرة وحدة باليوم** 🎮)`}` +
               `\n\n⚡ الجولة الجاي عمّدون أشد القيادة 🔥`
             )
             .setTimestamp()]
@@ -266,5 +265,9 @@ module.exports = {
         await roundMsg.edit({ components: [] }).catch(() => {});
       }
     });
+    } catch (setupErr) {
+      console.error('[Roulette] setup failed:', setupErr);
+      activeGames.delete(channel.id);
+    }
   }
 };

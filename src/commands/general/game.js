@@ -182,15 +182,17 @@ module.exports = {
         answered = true;
         collector.stop('answered');
 
-        // مكافأة الفائز
+        // 🎮 مكافأة الفائز — مرة وحدة باليوم عبر كل الألعاب
+        let claim = { paid: true };
         try {
-          if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
-        } catch (e) {}
+          if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins);
+          else if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
+        } catch (e) { claim = { paid: true }; }
 
         const winEmbed = new EmbedBuilder()
           .setColor('#2ecc71')
           .setTitle('🎉 إجابة صحيحة!')
-          .setDescription(`كفو يا بطل ${msg.author}! 🏆\nعاصمة **${item.country}** هي بالفعل **${item.capital}**.\n\n💰 حصلت على **+${rewardCoins} 🪙** عملة!`)
+          .setDescription(`كفو يا بطل ${msg.author}! 🏆\nعاصمة **${item.country}** هي بالفعل **${item.capital}**.\n\n${claim.paid ? `💰 حصلت على **+${rewardCoins} 🪙** عملة!` : `🎁 جائزتك اليوم صرفت… **الألعاب تدفع مرة وحدة باليوم** 🎮 رجع بكره!`}`)
           .setTimestamp();
 
         return msg.reply({ embeds: [winEmbed] });
@@ -252,14 +254,17 @@ module.exports = {
         answered = true;
         collector.stop('answered');
 
+        // 🎮 جائزة مرة وحدة باليوم
+        let claim = { paid: true };
         try {
-          if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
-        } catch (e) {}
+          if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins);
+          else if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
+        } catch (e) { claim = { paid: true }; }
 
         const winEmbed = new EmbedBuilder()
           .setColor('#2ecc71')
           .setTitle('🎉 إجابة عبقرية وسريعة!')
-          .setDescription(`مبروك ${msg.author}! 👏\nالجواب الصحيح هو: **${word}**\n\n💰 تمت إضافة **+${rewardCoins} 🪙** إلى رصيدك!`)
+          .setDescription(`مبروك ${msg.author}! 👏\nالجواب الصحيح هو: **${word}**\n\n${claim.paid ? `💰 تمت إضافة **+${rewardCoins} 🪙** إلى رصيدك!` : `🎁 جائزتك اليوم صرفت… **الألعاب تدفع مرة وحدة باليوم** 🎮 رجع بكره!`}`)
           .setTimestamp();
 
         return msg.reply({ embeds: [winEmbed] });
@@ -308,14 +313,17 @@ module.exports = {
 
         const elapsedSec = ((Date.now() - startTime) / 1000).toFixed(2);
 
+        // 🎮 جائزة مرة وحدة باليوم
+        let claim = { paid: true };
         try {
-          if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
-        } catch (e) {}
+          if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins);
+          else if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
+        } catch (e) { claim = { paid: true }; }
 
         const winEmbed = new EmbedBuilder()
           .setColor('#2ecc71')
           .setTitle('🚀 سرعة خارقة!')
-          .setDescription(`ما شاء الله ${msg.author}! ⚡\nأنهيت الكتابة في زمن قدره: **${elapsedSec} ثانية** فقط!\n\n💰 جائزتك: **+${rewardCoins} 🪙** عملة!`)
+          .setDescription(`ما شاء الله ${msg.author}! ⚡\nأنهيت الكتابة في زمن قدره: **${elapsedSec} ثانية** فقط!\n\n${claim.paid ? `💰 جائزتك: **+${rewardCoins} 🪙** عملة!` : `🎁 جائزتك اليوم صرفت… **الألعاب تدفع مرة وحدة باليوم** 🎮 رجع بكره!`}`)
           .setTimestamp();
 
         return msg.reply({ embeds: [winEmbed] });

@@ -228,6 +228,7 @@ const GARTIC_ITEMS = [
 
 // منع تداخل الجولات في نفس القناة — نفس حارس game.js المشترك (يجمع /game والأوامر المنفصلة وغارتيك)
 const activeGartic = game.activeGames;
+const preflightGamesError = game.preflightGamesError;
 
 // سجل التكرار القريب لكل قناة — النص يقفل آخر 25 رسمة معروضة بالقناة حتى لا تتكرر
 const recentByChannel = new Map();
@@ -299,28 +300,26 @@ module.exports = {
     .setDescription('🎨 لعبة غارتيك: رسمة مشوشة يرسمها البوت وأول إجابة صحيحة تفوز!'),
 
   async execute(interaction) {
+    // ✅ الحجب قبل الـ defer — الخدمة الظورية أثبت في التيجيب (قبل ما تكتب الرسالة بغير المؤن المرفوعة)
+    const settings = db.getGuildSettings ? (db.getGuildSettings(interaction.guild.id) || {}) : {};
+    const err = preflightGamesError(interaction.channelId, interaction.guild.id, settings);
+    if (err) return interaction.reply({ content: err, ephemeral: true });
     await interaction.deferReply();
     return this.startGarticRound(interaction.channel, interaction.user, interaction.guild.id, (opts) => interaction.editReply(opts));
   },
 
   async executePrefix(message, args, client) {
+    const settings = db.getGuildSettings ? (db.getGuildSettings(message.guild.id) || {}) : {};
+    const err = preflightGamesError(message.channel.id, message.guild.id, settings);
+    if (err) return message.reply({ content: err }).catch(() => {});
     return this.startGarticRound(message.channel, message.author, message.guild.id, async (opts) => {
       return message.reply(opts).catch(() => message.channel.send(opts));
     });
   },
 
   async startGarticRound(channel, starter, guildId, replyMethod) {
-    if (activeGartic.has(channel.id)) {
-      return replyMethod({ content: '⚠️ هناك لعبة جارية بالفعل في هذه القناة! انتظر حتى تنتهي.', flags: 64 });
-    }
-
+    // 🔒 الحجب (اللعبة الفعالة/تعطيل/الروم المخصص) مرت مسبقاً في execute/executePrefix — preflightGamesError
     const settings = db.getGuildSettings ? (db.getGuildSettings(guildId) || {}) : {};
-    if (settings.games_enabled === 0 || settings.games_enabled === '0' || settings.games_enabled === false) {
-      return replyMethod({ content: '🔒 نظام الألعاب معطل حالياً في هذا السيرفر من لوحة التحكم.', flags: 64 });
-    }
-    if (settings.games_channel && settings.games_channel !== channel.id) {
-      return replyMethod({ content: `⚠️ تم تخصيص الألعاب لتعمل فقط في روم: <#${settings.games_channel}>!`, flags: 64 });
-    }
 
     // اختيار عشوائي مع تجنّب التكرار القريب — آخر 25 رسمة معروضة بهذه القناة تُستبعد
     const pool = GARTIC_ITEMS.length;
@@ -343,74 +342,80 @@ module.exports = {
       buffer = renderSketch(item);
     } catch (e) {
       console.error('[Gartic] sketch render failed:', e);
-      return replyMethod({ content: '❌ تعذر توليد الرسمة (خطأ داخلي). جرب مرة أخرى!', flags: 64 });
+      return replyMethod({ content: '❌ تعذر توليد الرسمة (خطأ داخلي). جرب مرة أخرى!' });
     }
 
     activeGartic.add(channel.id);
     let answered = false;
     let hintSent = false;
+    let hintTimer = null;
 
-    const attachment = new AttachmentBuilder(buffer, { name: 'gartic.png' });
-    const embed = new EmbedBuilder()
-      .setColor('#e67e22')
-      .setTitle('🎨 لعبة غارتيك — خمّن الرسمة!')
-      .setDescription('**البوت رسم لوحة مشوشة لكلمة سرية…**\nشنو هذه الرسمة؟ اكتب الإجابة في الشات!\n\n⏱️ معك **30 ثانية فقط** — أول إجابة صحيحة تفوز.\n💡 تلميح بعد الـ 18 ثانية.')
-      .setImage('attachment://gartic.png')
-      .setFooter({ text: `الجائزة: ${rewardCoins} 🪙 | بدأها: ${starter.username}` })
-      .setTimestamp();
-
+    // 🛡️ حماية القفل: أي خطأ أثناء تجهيز الجولة يحرر القناة فوراً — ما تبقى مغلقة إلى رست البوت
     try {
+      const attachment = new AttachmentBuilder(buffer, { name: 'gartic.png' });
+      const embed = new EmbedBuilder()
+        .setColor('#e67e22')
+        .setTitle('🎨 لعبة غارتيك — خمّن الرسمة!')
+        .setDescription('**البوت رسم لوحة مشوشة لكلمة سرية…**\nشنو هذه الرسمة؟ اكتب الإجابة في الشات!\n\n⏱️ معك **30 ثانية فقط** — أول إجابة صحيحة تفوز.\n💡 تلميح بعد الـ 18 ثانية.')
+        .setImage('attachment://gartic.png')
+        .setFooter({ text: `الجائزة: ${rewardCoins} 🪙 | بدأها: ${starter.username}` })
+        .setTimestamp();
+
       await replyMethod({ embeds: [embed], files: [attachment] });
-    } catch (e) {
-      activeGartic.delete(channel.id);
-      return;
-    }
 
-    const filter = m => !m.author.bot;
-    const collector = channel.createMessageCollector({ filter, time: 30000 });
+      const filter = m => !m.author.bot;
+      const collector = channel.createMessageCollector({ filter, time: 30000 });
 
-    // تلميح بعد 18 ثانية (عدد الحروف بهمزات المسافات المستبعدة)
-    const hintTimer = setTimeout(() => {
-      if (answered || hintSent) return;
-      hintSent = true;
-      const letters = item.word.replace(/\s+/g, '').length;
-      channel.send(`💡 **تلميح:** ${item.hint}\n📝 الكلمة تتكون من **${letters} حروف**`).catch(() => {});
-    }, 18000);
-
-    collector.on('collect', async msg => {
-      const guess = normalizeArabicText(msg.content);
-      if (answers.includes(guess) || answersTight.includes(guess.replace(/\s+/g, ''))) {
-        answered = true;
+      // تلميح بعد 18 ثانية (عدد الحروف بهمزات المسافات المستبعدة)
+      hintTimer = setTimeout(() => {
+        if (answered || hintSent) return;
         hintSent = true;
-        collector.stop('answered');
+        const letters = item.word.replace(/\s+/g, '').length;
+        channel.send(`💡 **تلميح:** ${item.hint}\n📝 الكلمة تتكون من **${letters} حروف**`).catch(() => {});
+      }, 18000);
+
+      collector.on('collect', async msg => {
+        const guess = normalizeArabicText(msg.content);
+        if (answers.includes(guess) || answersTight.includes(guess.replace(/\s+/g, ''))) {
+          answered = true;
+          hintSent = true;
+          collector.stop('answered');
+          clearTimeout(hintTimer);
+
+          // 🎮 جائزة مرة وحدة باليوم عبر كل الألعاب
+          let claim = { paid: true };
+          try {
+            if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins);
+            else if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
+          } catch (e) { claim = { paid: true }; }
+
+          const winEmbed = new EmbedBuilder()
+            .setColor('#2ecc71')
+            .setTitle('🎉 إجابة صحيحة!')
+            .setDescription(`عين صقر 🎯 مبروك يا ${msg.author}!\nالرسمة كانت: **${item.word}**\n\n${claim.paid ? `💰 حصلت على **+${rewardCoins} 🪙** عملة!` : `🎁 جائزتك اليوم صرفت… **الألعاب تدفع مرة وحدة باليوم** 🎮 رجع بكره!`}`)
+            .setTimestamp();
+
+          return msg.reply({ embeds: [winEmbed] }).catch(() => {});
+        }
+      });
+
+      collector.on('end', (_collected, reason) => {
         clearTimeout(hintTimer);
+        activeGartic.delete(channel.id);
+        if (!answered && reason !== 'answered') {
+          const timeoutEmbed = new EmbedBuilder()
+            .setColor('#e74c3c')
+            .setTitle('⌛ انتهى الوقت!')
+            .setDescription(`لم يخمّن أحد الرسمة بالوقت المحدد!\nالإجابة كانت: **${item.word}** ✨\nجربوا مرة ثانية 🎮`)
+            .setTimestamp();
 
-        try {
-          if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
-        } catch (e) {}
-
-        const winEmbed = new EmbedBuilder()
-          .setColor('#2ecc71')
-          .setTitle('🎉 إجابة صحيحة!')
-          .setDescription(`عين صقر 🎯 مبروك يا ${msg.author}!\nالرسمة كانت: **${item.word}**\n\n💰 حصلت على **+${rewardCoins} 🪙** عملة!`)
-          .setTimestamp();
-
-        return msg.reply({ embeds: [winEmbed] }).catch(() => {});
-      }
-    });
-
-    collector.on('end', (_collected, reason) => {
-      clearTimeout(hintTimer);
+          channel.send({ embeds: [timeoutEmbed] }).catch(() => {});
+        }
+      });
+    } catch (setupErr) {
+      console.error('[Gartic] round setup failed:', setupErr);
       activeGartic.delete(channel.id);
-      if (!answered && reason !== 'answered') {
-        const timeoutEmbed = new EmbedBuilder()
-          .setColor('#e74c3c')
-          .setTitle('⌛ انتهى الوقت!')
-          .setDescription(`لم يخمّن أحد الرسمة بالوقت المحدد!\nالإجابة كانت: **${item.word}** ✨\nجربوا مرة ثانية 🎮`)
-          .setTimestamp();
-
-        channel.send({ embeds: [timeoutEmbed] }).catch(() => {});
-      }
-    });
+      if (hintTimer) clearTimeout(hintTimer);
+    }
   }
 };
