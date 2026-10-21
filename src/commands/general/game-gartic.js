@@ -396,7 +396,7 @@ module.exports = {
           // 🎮 جائزة مرة وحدة باليوم عبر كل الألعاب
           let claim = { paid: true };
           try {
-            if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins);
+            if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins, 'game:gartic');
             else if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
           } catch (e) { claim = { paid: false, failed: true }; }
 

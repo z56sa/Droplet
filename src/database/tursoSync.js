@@ -171,6 +171,73 @@ class TursoSync {
         );
       `);
 
+      // 🪙 1.5b سجل حركات العملات الموحّد + جداول المتجر — تنشأ بTurso بعدّه حتى النسخة الجديدة تعمل بطبق
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS coin_transactions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id TEXT NOT NULL,
+          guild_id TEXT NOT NULL,
+          source TEXT NOT NULL DEFAULT 'unknown',
+          amount INTEGER NOT NULL DEFAULT 0,
+          balance_after INTEGER DEFAULT 0,
+          note TEXT,
+          created_at INTEGER DEFAULT (strftime('%s','now'))
+        );
+      `);
+      try { await this.client.execute(`CREATE INDEX IF NOT EXISTS idx_coin_tx_user ON coin_transactions (user_id, created_at);`); } catch (e) {}
+
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS store_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          guild_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT,
+          item_type TEXT DEFAULT 'role',
+          icon TEXT DEFAULT '🎁',
+          image_url TEXT,
+          price INTEGER DEFAULT 0,
+          original_price INTEGER DEFAULT 0,
+          stock INTEGER DEFAULT -1,
+          role_id TEXT,
+          booster_multiplier REAL DEFAULT 1,
+          booster_duration INTEGER DEFAULT 0,
+          cooldown_seconds INTEGER DEFAULT 0,
+          is_featured INTEGER DEFAULT 0,
+          badge_label TEXT,
+          is_active INTEGER DEFAULT 1,
+          total_sold INTEGER DEFAULT 0,
+          updated_at INTEGER DEFAULT (strftime('%s','now')),
+          created_at INTEGER DEFAULT (strftime('%s','now'))
+        );
+      `);
+
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS store_transactions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          guild_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          item_id INTEGER NOT NULL,
+          item_name TEXT NOT NULL,
+          amount INTEGER DEFAULT 1,
+          price_paid INTEGER DEFAULT 0,
+          status TEXT DEFAULT 'success',
+          created_at INTEGER DEFAULT (strftime('%s','now'))
+        );
+      `);
+
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS user_inventory (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id TEXT NOT NULL,
+          guild_id TEXT NOT NULL,
+          item_id INTEGER NOT NULL,
+          quantity INTEGER DEFAULT 1,
+          is_active INTEGER DEFAULT 1,
+          expires_at INTEGER DEFAULT 0,
+          created_at INTEGER DEFAULT (strftime('%s','now'))
+        );
+      `);
+
       // 1.6 Create auto_responders table in Turso
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS auto_responders (
@@ -450,12 +517,20 @@ class TursoSync {
           try { await this.restoreTable(localDb, 'tickets', 'id'); } catch (e) {}
           try { await this.restoreTable(localDb, 'ticket_ratings', 'id'); } catch (e) {}
           try { await this.restoreTable(localDb, 'ticket_transcripts', 'id'); } catch (e) {}
+          try { await this.restoreTable(localDb, 'coin_transactions', 'id'); } catch (e) {}
+          try { await this.restoreTable(localDb, 'store_items', 'id'); } catch (e) {}
+          try { await this.restoreTable(localDb, 'store_transactions', 'id'); } catch (e) {}
+          try { await this.restoreTable(localDb, 'user_inventory', 'id'); } catch (e) {}
           // ✅ Push back any local-only rows (created before sync existed) so nothing is lost
           try { await this.backupTable(localDb, 'auto_responders', 'id'); } catch (e) {}
           try { await this.backupTable(localDb, 'ticket_panels', 'panel_id'); } catch (e) {}
           try { await this.backupTable(localDb, 'tickets', 'id'); } catch (e) {}
           try { await this.backupTable(localDb, 'ticket_ratings', 'id'); } catch (e) {}
           try { await this.backupTable(localDb, 'ticket_transcripts', 'id'); } catch (e) {}
+          try { await this.backupTable(localDb, 'coin_transactions', 'id'); } catch (e) {}
+          try { await this.backupTable(localDb, 'store_items', 'id'); } catch (e) {}
+          try { await this.backupTable(localDb, 'store_transactions', 'id'); } catch (e) {}
+          try { await this.backupTable(localDb, 'user_inventory', 'id'); } catch (e) {}
         } else {
           // Turso has no guild settings yet — push local ones to Turso
           console.log('[TURSO] ℹ️ No guild settings in Turso yet. Pushing local guild settings to Turso...');

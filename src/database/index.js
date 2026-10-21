@@ -530,6 +530,70 @@ try { db.exec("ALTER TABLE users ADD COLUMN bank_balance INTEGER DEFAULT 0;"); }
 
 try { db.exec("ALTER TABLE users ADD COLUMN last_work INTEGER DEFAULT 0;"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN last_game_reward INTEGER DEFAULT 0;"); } catch(e) {}
+
+// 🪙 سجل حركات العملات الموحّد — كل تغيير رصيد يكتب سطراً هنا ويظهر بلوحة «Last 5 Gold Transactions»
+// + جداول المتجر (كانت تُنشأ يدوياً خارج الكود — الآن النشر الجديد ينشئها لوحده)
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS coin_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      guild_id TEXT NOT NULL,
+      source TEXT NOT NULL DEFAULT 'unknown',
+      amount INTEGER NOT NULL DEFAULT 0,
+      balance_after INTEGER DEFAULT 0,
+      note TEXT,
+      created_at INTEGER DEFAULT (strftime('%s','now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_coin_tx_user ON coin_transactions (user_id, created_at);
+
+    CREATE TABLE IF NOT EXISTS store_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      item_type TEXT DEFAULT 'role',
+      icon TEXT DEFAULT '🎁',
+      image_url TEXT,
+      price INTEGER DEFAULT 0,
+      original_price INTEGER DEFAULT 0,
+      stock INTEGER DEFAULT -1,
+      role_id TEXT,
+      booster_multiplier REAL DEFAULT 1,
+      booster_duration INTEGER DEFAULT 0,
+      cooldown_seconds INTEGER DEFAULT 0,
+      is_featured INTEGER DEFAULT 0,
+      badge_label TEXT,
+      is_active INTEGER DEFAULT 1,
+      total_sold INTEGER DEFAULT 0,
+      updated_at INTEGER DEFAULT (strftime('%s','now')),
+      created_at INTEGER DEFAULT (strftime('%s','now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS store_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      item_id INTEGER NOT NULL,
+      item_name TEXT NOT NULL,
+      amount INTEGER DEFAULT 1,
+      price_paid INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'success',
+      created_at INTEGER DEFAULT (strftime('%s','now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS user_inventory (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      guild_id TEXT NOT NULL,
+      item_id INTEGER NOT NULL,
+      quantity INTEGER DEFAULT 1,
+      is_active INTEGER DEFAULT 1,
+      expires_at INTEGER DEFAULT 0,
+      created_at INTEGER DEFAULT (strftime('%s','now'))
+    );
+  `);
+} catch(e) { console.error('[DB] ledger/store tables create error:', e.message); }
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN boost_enabled INTEGER DEFAULT 1;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN boost_channel TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN boost_message TEXT;"); } catch(e) {}
@@ -1427,11 +1491,34 @@ function withdrawBank(userId, guildId, amount) {
   return { wallet: u.coins || 0, bank: u.bank_balance || 0 };
 }
 
-function addCoins(userId, guildId, amount) {
+// 🪙 عنصر السجل الموحّد — كل تغيير عملات يُكتب هنا (تفشل بدون إخلال: دماً لا يغلق أي شيء)
+function recordCoinTransaction(userId, guildId, source, amount, balanceAfter, note) {
+  try {
+    const info = db.prepare(`
+      INSERT INTO coin_transactions (user_id, guild_id, source, amount, balance_after, note)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(String(userId), String(guildId || 'global'), String(source || 'unknown'), Math.round(Number(amount) || 0), Math.max(0, Number(balanceAfter) || 0), note ? String(note).slice(0, 190) : null);
+    // مزامنة السطر إلى Turso عبر المساعد الجاهز (صف على صف)
+    try {
+      const row = db.prepare('SELECT * FROM coin_transactions WHERE id = ?').get(info.lastInsertRowid);
+      if (row && tursoSync.queueTableRowSync) tursoSync.queueTableRowSync('coin_transactions', 'id', row);
+    } catch (e) {}
+  } catch (e) {}
+}
+
+// فك كاش اللوحة بعد أي فعل مالي — رقم الذهب بالصفحة يحدث لحظياً بدون انتظار
+function invalidateDashboardCaches() {
+  try {
+    if (typeof global !== 'undefined' && typeof global._dropletDashboardClearCaches === 'function') global._dropletDashboardClearCaches();
+  } catch (e) {}
+}
+
+function addCoins(userId, guildId, amount, source) {
   getUser(userId, guildId);
   db.prepare('UPDATE users SET coins = coins + ? WHERE user_id = ? AND guild_id = ?').run(amount, userId, guildId);
   const u = getUser(userId, guildId);
   tursoSync.queueUserSync(u);
+  recordCoinTransaction(userId, guildId, source || 'coins:add', amount, u.coins || 0);
   return u.coins || 0;
 }
 
@@ -1439,7 +1526,7 @@ function addCoins(userId, guildId, amount) {
 // عملية صرف ذرّية: العلامة تتحدث بنفس UPDATE اللي دفع العملات — بدون سباق/دبل صرف
 const GAME_REWARD_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
-function claimGameReward(userId, guildId, amount) {
+function claimGameReward(userId, guildId, amount, source) {
   const amt = Number(amount) || 0;
   if (amt <= 0) return { paid: true, skipped: true }; // جائزة صفر — ما تفقع شي
   const now = Date.now();
@@ -1453,22 +1540,28 @@ function claimGameReward(userId, guildId, amount) {
     return { paid: false, lastAt: Number(u.last_game_reward || 0), nextInMs: GAME_REWARD_COOLDOWN_MS - (now - Number(u.last_game_reward || 0)) };
   }
   tursoSync.queueUserSync(u);
+  recordCoinTransaction(userId, guildId, source || 'game', amt, u.coins || 0);
+  invalidateDashboardCaches();
   return { paid: true, coins: u.coins || 0 };
 }
 
 function removeCoins(userId, guildId, amount) {
-  getUser(userId, guildId);
+  const user = getUser(userId, guildId);
+  const before = user.coins || 0;
   db.prepare('UPDATE users SET coins = MAX(0, coins - ?) WHERE user_id = ? AND guild_id = ?').run(amount, userId, guildId);
   const u = getUser(userId, guildId);
   tursoSync.queueUserSync(u);
+  recordCoinTransaction(userId, guildId, 'admin:remove', (u.coins || 0) - before, u.coins || 0);
   return u.coins || 0;
 }
 
 function setCoins(userId, guildId, amount) {
-  getUser(userId, guildId);
+  const user = getUser(userId, guildId);
+  const before = user.coins || 0;
   db.prepare('UPDATE users SET coins = ? WHERE user_id = ? AND guild_id = ?').run(Math.max(0, amount), userId, guildId);
   const u = getUser(userId, guildId);
   tursoSync.queueUserSync(u);
+  recordCoinTransaction(userId, guildId, 'admin:set', (u.coins || 0) - before, u.coins || 0);
   return u.coins || 0;
 }
 
@@ -1481,13 +1574,15 @@ const transferCoins = db.transaction((guildId, senderId, receiverId, amount, tax
   }
 
   db.prepare('UPDATE users SET coins = coins - ? WHERE user_id = ? AND guild_id = ?').run(totalDeduction, senderId, guildId);
-  getUser(receiverId, guildId);
+  const receiverBefore = getUser(receiverId, guildId);
   db.prepare('UPDATE users SET coins = coins + ? WHERE user_id = ? AND guild_id = ?').run(amount, receiverId, guildId);
 
   const newSender = getUser(senderId, guildId);
   const newReceiver = getUser(receiverId, guildId);
   tursoSync.queueUserSync(newSender);
   tursoSync.queueUserSync(newReceiver);
+  recordCoinTransaction(senderId, guildId, 'transfer:out', (newSender.coins || 0) - currentCoins, newSender.coins || 0);
+  recordCoinTransaction(receiverId, guildId, 'transfer:in', (newReceiver.coins || 0) - (receiverBefore.coins || 0), newReceiver.coins || 0);
   return {
     senderBalance: newSender.coins || 0,
     receiverBalance: newReceiver.coins || 0

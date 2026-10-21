@@ -53,7 +53,7 @@ module.exports = {
       bonusText = t(lang, 'economy.work.bonus');
     }
 
-    db.addCoins(user.id, guildId, reward);
+    db.addCoins(user.id, guildId, reward, 'work');
     db.setLastWork(user.id, guildId, now);
 
     const newUserData = db.getUser(user.id, guildId);

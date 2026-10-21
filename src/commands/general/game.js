@@ -196,7 +196,7 @@ module.exports = {
         // 🎮 مكافأة الفائز — مرة وحدة باليوم عبر كل الألعاب
         let claim = { paid: true };
         try {
-          if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins);
+          if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins, 'game:capitals');
           else if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
         } catch (e) { claim = { paid: false, failed: true }; }
 
@@ -275,7 +275,7 @@ module.exports = {
         // 🎮 جائزة مرة وحدة باليوم
         let claim = { paid: true };
         try {
-          if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins);
+          if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins, 'game:words');
           else if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
         } catch (e) { claim = { paid: false, failed: true }; }
 
@@ -341,7 +341,7 @@ module.exports = {
         // 🎮 جائزة مرة وحدة باليوم
         let claim = { paid: true };
         try {
-          if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins);
+          if (db.claimGameReward) claim = db.claimGameReward(msg.author.id, guildId, rewardCoins, 'game:fast');
           else if (db.addCoins) db.addCoins(msg.author.id, guildId, rewardCoins);
         } catch (e) { claim = { paid: false, failed: true }; }
 

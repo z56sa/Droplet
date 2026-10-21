@@ -251,7 +251,7 @@ module.exports = {
         // 🎮 جائزة مرة وحدة باليوم عبر كل الألعاب
         let claim = { paid: true };
         try {
-          if (db.claimGameReward) claim = db.claimGameReward(winnerId, guildId, rewardCoins);
+          if (db.claimGameReward) claim = db.claimGameReward(winnerId, guildId, rewardCoins, 'game:roulette');
           else if (db.addCoins) db.addCoins(winnerId, guildId, rewardCoins);
         } catch (e) { claim = { paid: false, failed: true }; }
 

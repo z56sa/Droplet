@@ -62,7 +62,7 @@ module.exports = {
     else if (streak >= 3) { reward = Math.round(300 * _scale); bonusText = t(lang, 'economy.daily.bonus_3'); }
 
     // تحديث قاعدة البيانات
-    db.addCoins(user.id, guildId, reward);
+    db.addCoins(user.id, guildId, reward, 'daily');
     db.setLastDaily(user.id, guildId, now, streak);
 
     const newUserData = db.getUser(user.id, guildId);

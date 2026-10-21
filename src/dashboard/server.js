@@ -619,7 +619,7 @@ module.exports = function (app, client) {
             else if (streak >= 7) reward = 750;
             else if (streak >= 3) reward = 600;
 
-            database.addCoins(userId, targetGuildId, reward);
+            database.addCoins(userId, targetGuildId, reward, 'daily');
             database.setLastDaily(userId, targetGuildId, now, streak);
             _dailyMemoryGuard.set(String(userId), now);
 
@@ -895,7 +895,7 @@ module.exports = function (app, client) {
             if (action === 'set') {
                 newBalance = database.setCoins(targetUserId, guildId, val);
             } else if (action === 'add') {
-                newBalance = database.addCoins(targetUserId, guildId, val);
+                newBalance = database.addCoins(targetUserId, guildId, val, 'admin:add');
             } else if (action === 'remove') {
                 newBalance = database.removeCoins(targetUserId, guildId, val);
             } else {
@@ -1260,7 +1260,7 @@ module.exports = function (app, client) {
         _pageCache.clear();
         _lbCache.xp = null;
         _lbCache.coins = null;
-        console.log('[DASH] 🔄 Dashboard caches cleared after Turso restore.');
+        console.log('[DASH] 🔄 Dashboard caches cleared (coin activity / restore).');
     };
 
     app.get('/dashboard/manage', async (req, res) => {
@@ -1866,22 +1866,56 @@ module.exports = function (app, client) {
 
                                 <div class="overflow-x-auto space-y-2">
                                     ${(() => {
+                                        // ✅ سجل فعلي موحّد: صفوف المتجر (خصم) + سجل حركات العملات (دفع/خصم بأسماء المصادر)
+                                        const SRC_LABELS = {
+                                            'game:capitals': ['🌍', 'لعبة العواصم'],
+                                            'game:words': ['🧩', 'لعبة الكلمات'],
+                                            'game:fast': ['⚡', 'لعبة السرعة'],
+                                            'game:gartic': ['🎨', 'لعبة غارتيك'],
+                                            'game:roulette': ['🎡', 'الروليت'],
+                                            'game:mafia': ['🔪', 'لعبة المافيا'],
+                                            'game': ['🎮', 'لعبة'],
+                                            'daily': ['🎁', 'المكافأة اليومية'],
+                                            'work': ['💼', 'أمر العمل'],
+                                            'coins:add': ['🪙', 'إضافة عملات'],
+                                            'admin:add': ['🛠️', 'تعديل إداري (إضافة)'],
+                                            'admin:set': ['🛠️', 'تعديل إداري (تعيين)'],
+                                            'admin:remove': ['🛠️', 'تعديل إداري (خصم)'],
+                                            'transfer:out': ['📤', 'تحويل صادر'],
+                                            'transfer:in': ['📥', 'تحويل وارد'],
+                                            'unknown': ['🪙', 'عملات']
+                                        };
                                         let txRows = [];
                                         try {
-                                            txRows = rawDb.prepare(`SELECT item_name, price_paid as amount, created_at FROM store_transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 5`).all(user.id);
+                                            const storeRows = rawDb.prepare(`SELECT item_name as label, price_paid as amount, 'store' as kind, created_at FROM store_transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 8`).all(user.id);
+                                            let coinRows = [];
+                                            try {
+                                                coinRows = rawDb.prepare(`SELECT source as label, amount as amount, 'coin' as kind, created_at FROM coin_transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 8`).all(user.id);
+                                            } catch (e) {}
+                                            txRows = [...storeRows, ...coinRows].sort((a, b) => (b.created_at || 0) - (a.created_at || 0)).slice(0, 5);
                                         } catch (e) {}
 
                                         if (txRows && txRows.length > 0) {
                                             return txRows.map(t => {
+                                                const isCoin = t.kind === 'coin';
                                                 const d = new Date(t.created_at * 1000);
                                                 const dStr = d.toLocaleDateString('ar-SA');
+                                                const srcMeta = isCoin ? (SRC_LABELS[String(t.label || '')] || ['🪙', 'عملات']) : null;
+                                                const title = isCoin ? srcMeta[1] : escHtml(String(t.label || ''));
+                                                const sub = isCoin ? 'Droplet Bot System' : 'Store Purchase';
+                                                const icon = isCoin ? srcMeta[0] : '🛒';
+                                                const amountText = isCoin ? (t.amount >= 0 ? `+${t.amount}` : `${t.amount}`) : `-${t.amount}`;
+                                                const amountCls = isCoin ? 'text-emerald-400' : 'text-amber-400';
+                                                const balanceView = isCoin
+                                                    ? `↗️ <span class="user-coins-val">${userCoins.toLocaleString()}</span>`
+                                                    : `🪙 ${userCoins.toLocaleString()}`;
                                                 return `<div class="bg-gradient-to-r from-emerald-950/30 via-[#151724] to-[#151724] border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg">
                                                     <div class="flex items-center gap-2 text-emerald-400 font-bold font-mono text-sm">
-                                                        <span>🪙 ${userCoins.toLocaleString()}</span>
+                                                        <span>${balanceView}</span>
                                                         <span class="text-xs text-white font-normal">الرصيد</span>
                                                     </div>
-                                                    <div class="text-amber-400 font-mono font-bold text-sm">
-                                                        -${t.amount}
+                                                    <div class="${amountCls} font-mono font-bold text-sm">
+                                                        ${amountText}
                                                         <span class="text-[10px] text-white block font-normal">المبلغ</span>
                                                     </div>
                                                     <div class="text-gray-300 text-xs text-center">
@@ -1890,39 +1924,13 @@ module.exports = function (app, client) {
                                                     </div>
                                                     <div class="flex items-center gap-2.5 text-right">
                                                         <div>
-                                                            <h5 class="text-xs font-bold text-white leading-tight">${escHtml(t.item_name)}</h5>
-                                                            <span class="text-[10px] text-white font-mono">Store Purchase</span>
+                                                            <h5 class="text-xs font-bold text-white leading-tight">${title}</h5>
+                                                            <span class="text-[10px] text-white font-mono">${sub}</span>
                                                         </div>
-                                                        <div class="w-8 h-8 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-sm font-bold border border-blue-500/20">🛒</div>
+                                                        <div class="w-8 h-8 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-sm font-bold border border-blue-500/20">${icon}</div>
                                                     </div>
                                                 </div>`;
                                             }).join('');
-                                        }
-
-                                        if (userLastDaily > 0) {
-                                            const d = new Date(userLastDaily);
-                                            const dStr = d.toLocaleDateString('ar-SA');
-                                            return `<div class="bg-gradient-to-r from-emerald-950/30 via-[#151724] to-[#151724] border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg">
-                                                <div class="flex items-center gap-2 text-emerald-400 font-bold font-mono text-sm">
-                                                    <span>↗️ <span class="user-coins-val">${userCoins.toLocaleString()}</span></span>
-                                                    <span class="text-xs text-white font-normal">الرصيد</span>
-                                                </div>
-                                                <div class="text-emerald-400 font-mono font-bold text-sm">
-                                                    +500
-                                                    <span class="text-[10px] text-white block font-normal">المبلغ</span>
-                                                </div>
-                                                <div class="text-gray-300 text-xs text-center">
-                                                    <span>${dStr}</span>
-                                                    <span class="text-[10px] text-white block">تاريخ</span>
-                                                </div>
-                                                <div class="flex items-center gap-2.5 text-right">
-                                                    <div>
-                                                        <h5 class="text-xs font-bold text-white leading-tight">المكافأة اليومية (Daily)</h5>
-                                                        <span class="text-[10px] text-white font-mono">Droplet Bot System</span>
-                                                    </div>
-                                                    <div class="w-8 h-8 rounded-xl bg-blue-400/20 text-blue-400 flex items-center justify-center text-sm font-bold border border-blue-500/20">🎁</div>
-                                                </div>
-                                            </div>`;
                                         }
 
                                         return `<div class="py-6 text-center text-gray-500 text-xs">لا توجد معاملات سابقة بعد</div>`;

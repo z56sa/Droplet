@@ -773,7 +773,7 @@ module.exports = {
               if (p.alive && p.role === winningTeam) {
                 let claim = { paid: true };
                 try {
-                  if (db.claimGameReward) claim = db.claimGameReward(p.id, game.guildId, rewardCoins);
+                  if (db.claimGameReward) claim = db.claimGameReward(p.id, game.guildId, rewardCoins, 'game:mafia');
                   else if (db.addCoins) db.addCoins(p.id, game.guildId, rewardCoins);
                 } catch (e) { claim = { paid: false, failed: true }; }
                 if (claim.paid) rewarded++;
