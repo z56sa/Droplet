@@ -344,12 +344,12 @@ module.exports = {
             const _bu = (settings.welcome_banner_image && String(settings.welcome_banner_image).trim()) || '';
             if (_bu && _bu.toLowerCase() !== 'null') {
               let _bf = null;
-              // 1) bytes البانر المخزنة في القاعدة (الأضمن — ولا رسالة ديسكورد أبداً)
+              // (1) bytes البانر المخزنة في القاعدة (الأضمن — ولا رسالة ديسكورد أبداً)
               try {
                 const _gb = db.getGuildBanner ? db.getGuildBanner(guild.id) : null;
                 if (_gb && _gb.buffer && _gb.buffer.length > 0 && _gb.buffer.length <= 10 * 1024 * 1024) _bf = _gb.buffer;
               } catch {}
-              // 2) ملف uploads محلي؟ اقرأ من القرص مباشرة (أضمن من HTTP للذات)
+              // (2) ملف uploads محلي؟ اقرأ من القرص مباشرة (أضمن من HTTP للذات)
               try {
                 const _m = _bu.match(/\/uploads\/([^?#\/]+)$/);
                 if (_m && !_bu.includes('cdn.discordapp.com')) {
