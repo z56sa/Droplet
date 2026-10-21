@@ -1133,7 +1133,7 @@ module.exports = {
 
         const statusMap = { accept: 'accepted', reject: 'rejected', consider: 'considered' };
         const newStatus = statusMap[actionType];
-        db.updateSuggestionStatus(msgId, newStatus, reason, interaction.user.id);
+        db.updateSuggestionStatus(msgId, newStatus, reason, interaction.user.id, interaction.guild.id);
 
         if (db.recordStaffAction) {
           db.recordStaffAction(interaction.guild.id, interaction.user.id, `sugg_${newStatus}`, sugg.user_id, reason);

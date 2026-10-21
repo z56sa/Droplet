@@ -210,6 +210,18 @@ module.exports = {
     const member = await guild.members.fetch(targetUser.id).catch(() => null);
     if (!member) return message.reply(t(lang, 'moderation.mute.prefix_not_found'));
 
+    // 🔒 حراسة مطابقة لصيغة السلاش: لا اسكت نفسك/المالك/أعلى رتبة — وبوتك لازم يقدر يعدّل الرتب
+    if (member.id === message.author.id) return message.reply(t(lang, 'moderation.mute.self'));
+    if (member.id === guild.ownerId) return message.reply(t(lang, 'moderation.mute.owner'));
+    if (member.roles.highest.position >= message.member.roles.highest.position && message.author.id !== guild.ownerId) {
+      return message.reply(t(lang, 'moderation.mute.higher'));
+    }
+    const _botMember = guild.members.me || await guild.members.fetchMe().catch(() => null);
+    if (!_botMember || !_botMember.permissions.has(PermissionFlagsBits.ModerateMembers)) {
+      return message.reply(t(lang, 'moderation.mute.higher'));
+    }
+    if (!member.manageable || !member.moderatable) return message.reply(t(lang, 'moderation.mute.higher'));
+
     let durationStr = null;
     let reason = t(lang, 'moderation.mute.prefix_default_reason');
     let durationMs = null;

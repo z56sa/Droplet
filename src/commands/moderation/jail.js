@@ -269,6 +269,18 @@ module.exports = {
     const member = await guild.members.fetch(targetUser.id).catch(() => null);
     if (!member) return message.reply(t(lang, 'moderation.jail.prefix_not_found'));
 
+    // 🔒 حراسة مطابقة لصيغة السلاش: لا اسجن نفسك/المالك/أعلى رتبة — وبوتك لازم يقدر يعدّل الرتب
+    if (member.id === message.author.id) return message.reply(t(lang, 'moderation.jail.self'));
+    if (member.id === guild.ownerId) return message.reply(t(lang, 'moderation.jail.owner'));
+    if (member.roles.highest.position >= message.member.roles.highest.position && message.author.id !== guild.ownerId) {
+      return message.reply(t(lang, 'moderation.jail.higher'));
+    }
+    const _botMember = guild.members.me || await guild.members.fetchMe().catch(() => null);
+    if (!_botMember || !_botMember.permissions.has(PermissionFlagsBits.ManageRoles)) {
+      return message.reply(t(lang, 'moderation.jail.higher'));
+    }
+    if (!member.manageable) return message.reply(t(lang, 'moderation.jail.higher'));
+
     if (!jailRole) {
       return message.reply(t(lang, 'moderation.jail.prefix_no_role'));
     }

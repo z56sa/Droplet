@@ -53,8 +53,18 @@ module.exports = {
       bonusText = t(lang, 'economy.work.bonus');
     }
 
+    // 🔒 حسم ذري: علامة الشغل أولاً (تحديث شرطي بالكولداون) — السباق يفوز مرة واحدة والباقي كولداون
+    const _claimedWork = db.setLastWork(user.id, guildId, now, WORK_CD);
+    if (!_claimedWork) {
+      const remaining = Math.max(0, WORK_CD - (now - (db.getUser(user.id, guildId).last_work || 0)));
+      const h = Math.floor(remaining / 3600000);
+      const m = Math.floor((remaining % 3600000) / 60000);
+      return reply({ embeds: [new EmbedBuilder().setColor('#e74c3c')
+        .setTitle(t(lang, 'economy.work.cooldown_title'))
+        .setDescription(t(lang, 'economy.work.cooldown_desc', { h, m }))
+        .setTimestamp()] });
+    }
     db.addCoins(user.id, guildId, reward, 'work');
-    db.setLastWork(user.id, guildId, now);
 
     const newUserData = db.getUser(user.id, guildId);
     const embed = new EmbedBuilder()

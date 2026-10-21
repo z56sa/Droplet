@@ -486,6 +486,8 @@ class TursoSync {
                 localDb.prepare('INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)').run(String(row.guild_id));
                 // Apply each setting key
                 for (const [key, value] of Object.entries(settingsObj)) {
+                  // 🔒 حراسة: المفتاح لازم يكون معرّف SQLite صالح — بيانات بعيدة تالفة/مسروقة لا تلمس SQL أبداً
+                  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(String(key))) continue;
                   try {
                     localDb.prepare(`UPDATE guild_settings SET ${key} = ? WHERE guild_id = ?`).run(
                       typeof value === 'object' ? JSON.stringify(value) : value,

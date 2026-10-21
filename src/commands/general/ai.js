@@ -136,19 +136,18 @@ function tryRunCodeSnippet(codeText) {
     }
 
     try {
-        const logs = [];
-        const customConsole = {
-            log: (...args) => logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')),
-            error: (...args) => logs.push('[Error] ' + args.join(' ')),
-            warn: (...args) => logs.push('[Warn] ' + args.join(' '))
-        };
-
+        // 🔒 سياق خالص: لا نمرر أي كائن/dالة من الـ host — كل الجواهر (Math/JSON/Date...) تأتي من عالم الـ context نفسه.
+        // أي مرجع host (حتى console) يكشف Function الأصلي عبر constructor.constructor = RCE كامل خارج الـ sandbox.
         const vm = require('vm');
-        const context = vm.createContext({ console: customConsole, Math, Date, JSON, Array, Object, String, Number, Boolean, RegExp, parseInt, parseFloat });
+        const context = vm.createContext({});
+        vm.runInContext(`this.__out = []; this.console = { log: (...a) => this.__out.push(a.map(x => typeof x === 'object' ? JSON.stringify(x) : String(x)).join(' ')), error: (...a) => this.__out.push('[Error] ' + a.join(' ')), warn: (...a) => this.__out.push('[Warn] ' + a.join(' ')) };`, context, { timeout: 500 });
+
         const script = new vm.Script(code);
         const result = script.runInContext(context, { timeout: 1500 });
 
-        let output = logs.join('\n');
+        // قراءة المخرجات: Array.from داخل السياق تُرجع مصفوفة نصوص آمنة (لا مراجع host)
+        const _out = vm.runInContext('Array.from(this.__out || [])', context, { timeout: 500 });
+        let output = Array.isArray(_out) ? _out.join('\n') : '';
         if (result !== undefined) {
             output += (output ? '\n' : '') + `=> ${typeof result === 'object' ? JSON.stringify(result) : result}`;
         }

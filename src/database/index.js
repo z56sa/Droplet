@@ -1337,6 +1337,11 @@ function getGuildSettings(guildId) {
 }
 
 function setGuildSetting(guildId, key, value) {
+  // 🔒 حراسة SQLi: اسم المفتاح لازم يكون معرّف SQLite صالح — أي مفتاح غريب ينرفض هنا (سد ثغرة الحقن من أي مسار)
+  if (!key || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(String(key))) {
+    console.error('[DB] ⛔ Rejected invalid settings key:', typeof key === 'string' ? key.slice(0, 60) : typeof key);
+    return;
+  }
   // تأكد السجل موجود
   const _ins = db.prepare('INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)').run(guildId);
   // الصفوف الجديدة: كل مفاتيح التفعيل مطفية افتراضياً ثم يُطبق المفتاح المطلوب فقط
@@ -1462,14 +1467,24 @@ function getBank(userId, guildId) {
   return user.bank_balance || 0;
 }
 
-function setLastWork(userId, guildId, timestamp) {
+function setLastWork(userId, guildId, timestamp, minInterval = 0) {
   getUser(userId, guildId);
-  db.prepare('UPDATE users SET last_work = ? WHERE user_id = ? AND guild_id = ?').run(timestamp, userId, guildId);
+  // 🔒 حسم ذري (اختياري): بتمرير minInterval يصير التحديث شرطي — اللي يسبق يكتب والباقي changes=0 (بدون دبل صرف)
+  if (minInterval && minInterval > 0) {
+    const res = db.prepare('UPDATE users SET last_work = ? WHERE user_id = ? AND guild_id = ? AND (? - COALESCE(last_work, 0)) >= ?')
+      .run(timestamp, userId, guildId, timestamp, minInterval);
+    if (res.changes === 0) return false;
+  } else {
+    db.prepare('UPDATE users SET last_work = ? WHERE user_id = ? AND guild_id = ?').run(timestamp, userId, guildId);
+  }
   const u = getUser(userId, guildId);
   tursoSync.queueUserSync(u);
+  return true;
 }
 
 function depositBank(userId, guildId, amount) {
+  // 🔒 قيد: مبالغ صحيحة موجبة فقط — يمنع انعكاس الرصيد بمبلغ سالب من أي مستدعي
+  if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error('INVALID_AMOUNT');
   const user = getUser(userId, guildId);
   const coins = user.coins || 0;
   if (coins < amount) throw new Error('INSUFFICIENT_WALLET');
@@ -1481,6 +1496,8 @@ function depositBank(userId, guildId, amount) {
 }
 
 function withdrawBank(userId, guildId, amount) {
+  // 🔒 قيد: مبالغ صحيحة موجبة فقط — يمنع انعكاس الرصيد بمبلغ سالب من أي مستدعي
+  if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error('INVALID_AMOUNT');
   const user = getUser(userId, guildId);
   const bank = user.bank_balance || 0;
   if (bank < amount) throw new Error('INSUFFICIENT_BANK');
@@ -1598,15 +1615,29 @@ function getLastDaily(userId, guildId = null) {
   return row?.last_daily || 0;
 }
 
-function setLastDaily(userId, guildId, timestamp, streak = null) {
+function setLastDaily(userId, guildId, timestamp, streak = null, minInterval = 0) {
   getUser(userId, guildId);
-  if (streak !== null && streak !== undefined) {
-    db.prepare('UPDATE users SET last_daily = ?, streak = ? WHERE user_id = ? AND guild_id = ?').run(timestamp, streak, userId, guildId);
+  // 🔒 حسم ذري (اختياري): بتمرير minInterval يصير التحديث شرطي — اللي يسبق يكتب والباقي changes=0 (بدون دبل صرف)
+  if (minInterval && minInterval > 0) {
+    if (streak !== null && streak !== undefined) {
+      const res = db.prepare('UPDATE users SET last_daily = ?, streak = ? WHERE user_id = ? AND guild_id = ? AND (? - COALESCE(last_daily, 0)) >= ?')
+        .run(timestamp, streak, userId, guildId, timestamp, minInterval);
+      if (res.changes === 0) return false;
+    } else {
+      const res = db.prepare('UPDATE users SET last_daily = ? WHERE user_id = ? AND guild_id = ? AND (? - COALESCE(last_daily, 0)) >= ?')
+        .run(timestamp, userId, guildId, timestamp, minInterval);
+      if (res.changes === 0) return false;
+    }
   } else {
-    db.prepare('UPDATE users SET last_daily = ? WHERE user_id = ? AND guild_id = ?').run(timestamp, userId, guildId);
+    if (streak !== null && streak !== undefined) {
+      db.prepare('UPDATE users SET last_daily = ?, streak = ? WHERE user_id = ? AND guild_id = ?').run(timestamp, streak, userId, guildId);
+    } else {
+      db.prepare('UPDATE users SET last_daily = ? WHERE user_id = ? AND guild_id = ?').run(timestamp, userId, guildId);
+    }
   }
   const u = getUser(userId, guildId);
   tursoSync.queueUserSync(u);
+  return true;
 }
 
 function getWallpaper(userId) {
@@ -2097,25 +2128,37 @@ function createApplication(guildId, title, description, questions, logChannel, a
   return db.prepare('SELECT * FROM applications WHERE id = ?').get(result.lastInsertRowid);
 }
 
-function updateApplication(id, title, description, questions, logChannel, acceptedRole, reviewerRole = null, status = 'open', panelImage = null) {
+function updateApplication(id, title, description, questions, logChannel, acceptedRole, reviewerRole = null, status = 'open', panelImage = null, guildId = null) {
   const qStr = typeof questions === 'string' ? questions : JSON.stringify(questions);
-  db.prepare(`
-    UPDATE applications
-    SET title = ?, description = ?, questions = ?, log_channel = ?, accepted_role = ?, reviewer_role = ?, status = ?, panel_image = COALESCE(?, panel_image)
-    WHERE id = ?
-  `).run(title, description, qStr, logChannel, acceptedRole, reviewerRole, status, panelImage, id);
-  return db.prepare('SELECT * FROM applications WHERE id = ?').get(id);
+  // 🔒 عزل سيرفر: بتمرير guildId يُمنع تعديل نموذج سيرفر آخر بمعرّفه فقط (سد IDOR)
+  const _res = guildId
+    ? db.prepare(`
+        UPDATE applications
+        SET title = ?, description = ?, questions = ?, log_channel = ?, accepted_role = ?, reviewer_role = ?, status = ?, panel_image = COALESCE(?, panel_image)
+        WHERE id = ? AND guild_id = ?
+      `).run(title, description, qStr, logChannel, acceptedRole, reviewerRole, status, panelImage, id, guildId)
+    : db.prepare(`
+        UPDATE applications
+        SET title = ?, description = ?, questions = ?, log_channel = ?, accepted_role = ?, reviewer_role = ?, status = ?, panel_image = COALESCE(?, panel_image)
+        WHERE id = ?
+      `).run(title, description, qStr, logChannel, acceptedRole, reviewerRole, status, panelImage, id);
+  if (guildId && _res.changes === 0) return null;
+  return getApplication(id, guildId);
 }
 
 function getApplications(guildId) {
   return db.prepare('SELECT * FROM applications WHERE guild_id = ? ORDER BY id DESC').all(guildId);
 }
 
-function getApplication(id) {
+function getApplication(id, guildId = null) {
+  // 🔒 عزل سيرفر: بتمرير guildId يُمنع قراءة نموذج سيرفر آخر بمعرّفه فقط
+  if (guildId) return db.prepare('SELECT * FROM applications WHERE id = ? AND guild_id = ?').get(id, guildId) || null;
   return db.prepare('SELECT * FROM applications WHERE id = ?').get(id);
 }
 
-function deleteApplication(id) {
+function deleteApplication(id, guildId = null) {
+  // 🔒 عزل سيرفر: بتمرير guildId يُمنع حذف نموذج سيرفر آخر بمعرّفه فقط
+  if (guildId) return db.prepare('DELETE FROM applications WHERE id = ? AND guild_id = ?').run(id, guildId);
   return db.prepare('DELETE FROM applications WHERE id = ?').run(id);
 }
 
@@ -3022,7 +3065,16 @@ module.exports = {
     }
     return db.prepare('SELECT * FROM suggestions WHERE message_id = ?').get(String(idOrMsgId));
   },
-  updateSuggestionStatus: (id, status, statusReason = null, reviewerId = null) => {
+  updateSuggestionStatus: (id, status, statusReason = null, reviewerId = null, guildId = null) => {
+    // 🔒 عزل سيرفر: بتمرير guildId يُمنع تعديل اقتراحات سيرفر آخر بمعرّفه فقط (سد IDOR)
+    if (guildId) {
+      db.prepare(`
+        UPDATE suggestions
+        SET status = ?, status_reason = ?, reviewed_by = ?, reviewed_at = strftime('%s','now')
+        WHERE (id = ? OR message_id = ?) AND guild_id = ?
+      `).run(status, statusReason, reviewerId, id, id, guildId);
+      return db.prepare('SELECT * FROM suggestions WHERE guild_id = ? AND (id = ? OR message_id = ?)').get(guildId, id, id) || null;
+    }
     db.prepare(`
       UPDATE suggestions 
       SET status = ?, status_reason = ?, reviewed_by = ?, reviewed_at = strftime('%s','now')

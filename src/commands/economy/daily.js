@@ -61,9 +61,21 @@ module.exports = {
     else if (streak >= 7) { reward = Math.round(500 * _scale); bonusText = t(lang, 'economy.daily.bonus_7'); }
     else if (streak >= 3) { reward = Math.round(300 * _scale); bonusText = t(lang, 'economy.daily.bonus_3'); }
 
-    // تحديث قاعدة البيانات
+    // 🔒 حسم ذري: علامة اليوم أولاً (تحديث شرطي بالكولداون) — السباق يفوز مرة واحدة والباقي كولداون (بدون دبل صرف)
+    const _claimed = db.setLastDaily(user.id, guildId, now, streak, cooldown);
+    if (!_claimed) {
+      const remaining = Math.max(0, cooldown - (now - (db.getLastDaily(user.id, guildId) || 0)));
+      const h = Math.floor(remaining / 3600000);
+      const m = Math.floor((remaining % 3600000) / 60000);
+      const cdEmbed = new EmbedBuilder()
+        .setColor('#e74c3c')
+        .setTitle(t(lang, 'economy.daily.cooldown_title'))
+        .setDescription(t(lang, 'economy.daily.cooldown_desc', { h, m }))
+        .setFooter({ text: t(lang, 'economy.daily.cooldown_footer') })
+        .setTimestamp();
+      return reply({ embeds: [cdEmbed] });
+    }
     db.addCoins(user.id, guildId, reward, 'daily');
-    db.setLastDaily(user.id, guildId, now, streak);
 
     const newUserData = db.getUser(user.id, guildId);
     const nextStreakTarget = streak < 3 ? 3 : streak < 7 ? 7 : streak < 30 ? 30 : streak < 100 ? 100 : null;

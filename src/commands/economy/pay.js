@@ -34,6 +34,12 @@ module.exports = {
       return interaction.reply({ content: t(guildId, 'economy.pay.bot'), flags: 64 });
     }
 
+    // 🔒 المستلم لازم يكون عضو فعلي بهذا السيرفر — لا تحويلات لحسابات خارجية/وهمية
+    const _recipientMember = await interaction.guild.members.fetch(recipient.id).catch(() => null);
+    if (!_recipientMember) {
+      return interaction.reply({ content: '❌ التحويل لأعضاء السيرفر فقط!', flags: 64 });
+    }
+
     try {
       const settings = db.getGuildSettings ? db.getGuildSettings(guildId) : {};
       const taxRate = Math.max(0, Math.min(50, Number(settings.transfer_tax ?? 0) || 0));
@@ -81,6 +87,12 @@ module.exports = {
     }
     if (recipient.bot) {
       return message.reply({ content: t(guildId, 'economy.pay.bot') });
+    }
+
+    // 🔒 المستلم لازم يكون عضو فعلي بهذا السيرفر — لا تحويلات لحسابات خارجية/وهمية
+    const _recipientMember = await message.guild.members.fetch(recipient.id).catch(() => null);
+    if (!_recipientMember) {
+      return message.reply({ content: '❌ التحويل لأعضاء السيرفر فقط!' });
     }
 
     try {

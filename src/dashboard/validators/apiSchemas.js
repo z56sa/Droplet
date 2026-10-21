@@ -63,7 +63,7 @@ const settingsSchema = z.object({
 
 // Whitelist Validation
 const whitelistSchema = z.object({
-    userId: z.string().min(15, 'Invalid Discord User ID').max(22),
+    userId: z.string().regex(/^\d{15,22}$/, 'Invalid Discord User ID'),
     type: z.enum(['whitelist', 'antimod']).optional().default('whitelist')
 });
 
@@ -84,7 +84,7 @@ const warnPunishmentSchema = z.object({
 // Level Rewards Validation
 const levelRewardSchema = z.object({
     level: z.union([z.number(), z.string()]).transform(v => parseInt(v, 10)).pipe(z.number().int().min(1).max(1000)),
-    roleId: z.string().min(15).max(22),
+    roleId: z.string().regex(/^\d{15,22}$/, 'Invalid Role ID'),
     rewardType: z.enum(['text', 'voice', 'shared']).optional().default('text'),
     voiceLevel: z.union([z.number(), z.string()]).optional().default(0)
 });
@@ -133,13 +133,13 @@ const suggestionSchema = z.object({
 
 // Staff Points Validation
 const staffPointsSchema = z.object({
-    userId: z.string().min(15).max(22),
+    userId: z.string().regex(/^\d{15,22}$/, 'Invalid Discord User ID'),
     points: z.union([z.number(), z.string()]).transform(v => parseInt(v, 10)).pipe(z.number().int())
 });
 
 // Invites Bonus Validation
 const inviteBonusSchema = z.object({
-    userId: z.string().min(15).max(22),
+    userId: z.string().regex(/^\d{15,22}$/, 'Invalid Discord User ID'),
     amount: z.union([z.number(), z.string()]).transform(v => parseInt(v, 10)).pipe(z.number().int())
 });
 
