@@ -18,7 +18,8 @@ module.exports = {
     }
     const ch = interaction.options.getChannel('channel');
     const msg = interaction.options.getString('message');
-    await ch.send({ content: msg });
+    // 🔒 بدون منشن عابر (everyone/here/roles/users) + سقف طول يشبه ديسكورد
+    await ch.send({ content: String(msg).slice(0, 2000), allowedMentions: { parse: [] } });
     return interaction.reply({ content: t(interaction.guild.id, 'general.send.sent'), flags: 64 });
   }
 };

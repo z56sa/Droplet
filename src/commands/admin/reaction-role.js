@@ -29,18 +29,21 @@ module.exports = {
         .setDescription('The message title (Embed Title)')
 
         .setRequired(true)
+        .setMaxLength(200)
     )
     .addStringOption(opt =>
       opt.setName('description')
         .setDescription('Message details and explanation')
 
         .setRequired(true)
+        .setMaxLength(1000)
     )
     .addStringOption(opt =>
       opt.setName('button_label')
         .setDescription('The text shown on the button')
 
         .setRequired(true)
+        .setMaxLength(80)
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
@@ -60,8 +63,8 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor(config.colors.primary)
-      .setTitle(title)
-      .setDescription(description)
+      .setTitle(String(title).slice(0, 250))
+      .setDescription(String(description).slice(0, 4000))
       .setFooter({ text: t(lang, 'admin.reactionrole.footer') });
 
     const row = new ActionRowBuilder().addComponents(

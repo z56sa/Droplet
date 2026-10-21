@@ -43,6 +43,23 @@ module.exports = {
       if (role.position >= interaction.guild.members.me.roles.highest.position)
         return interaction.editReply({ content: t(lang, 'moderation.role.higher') });
 
+      // 🔒 هيراركية المنفذ + منع الرتب الخطرة — سد ترقية النفس: عضو ManageRoles ما يمنح رتبة أدمنية/فوق رتبته
+      const _isOwnerOp = interaction.guild.ownerId === interaction.user.id;
+      const _callerTop = interaction.member.roles?.highest?.position || 0;
+      const _roleDanger = role.permissions?.has?.(PermissionFlagsBits.Administrator) ||
+        role.permissions?.has?.(PermissionFlagsBits.ManageRoles) ||
+        role.permissions?.has?.(PermissionFlagsBits.ManageGuild) ||
+        role.permissions?.has?.(PermissionFlagsBits.ManageWebhooks) ||
+        role.permissions?.has?.(PermissionFlagsBits.ManageChannels) ||
+        role.permissions?.has?.(PermissionFlagsBits.BanMembers) ||
+        role.permissions?.has?.(PermissionFlagsBits.KickMembers) ||
+        role.permissions?.has?.(PermissionFlagsBits.ModerateMembers);
+      if (!_isOwnerOp && (_roleDanger || role.position >= _callerTop)) {
+        return interaction.editReply({ content: _roleDanger
+          ? '🛑 هذه الرتبة تحتوي صلاحيات إدارية خطرة — ما يمكن منحها أو سحبها إلا بواسطة مالك السيرفر.'
+          : t(lang, 'moderation.role.higher') });
+      }
+
       if (sub === 'add') {
         try { await member.roles.add(role); }
         catch { return interaction.editReply({ content: t(lang, 'moderation.role.higher') }); }
@@ -72,9 +89,30 @@ module.exports = {
       const durationStr = interaction.options.getString('duration');
       const durationMs = ms(durationStr);
       if (!durationMs) return interaction.editReply({ content: t(lang, 'moderation.role.bad_duration') });
+      // 🔒 setTimeout ما ينحمل مدة فوق ~24.8 يوم (يفلت لـ1ms) — نرفض صريح بدل ما تنشال الرتبة لحظياً
+      if (durationMs > 24 * 24 * 60 * 60 * 1000) {
+        return interaction.editReply({ content: '⏳ المدة القصوى للرتبة المؤقتة 24 يوم — استخدم مدة أقصر (مثال: 20d).' });
+      }
 
       const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
       if (!member) return interaction.editReply({ content: t(lang, 'moderation.role.not_found') });
+
+      // 🔒 نفس حماية add/remove في فرع temp: هيراركية المنفذ + منع الرتب الخطرة
+      const _tOwner = interaction.guild.ownerId === interaction.user.id;
+      const _tTop = interaction.member.roles?.highest?.position || 0;
+      const _tDanger = role.permissions?.has?.(PermissionFlagsBits.Administrator) ||
+        role.permissions?.has?.(PermissionFlagsBits.ManageRoles) ||
+        role.permissions?.has?.(PermissionFlagsBits.ManageGuild) ||
+        role.permissions?.has?.(PermissionFlagsBits.ManageWebhooks) ||
+        role.permissions?.has?.(PermissionFlagsBits.ManageChannels) ||
+        role.permissions?.has?.(PermissionFlagsBits.BanMembers) ||
+        role.permissions?.has?.(PermissionFlagsBits.KickMembers) ||
+        role.permissions?.has?.(PermissionFlagsBits.ModerateMembers);
+      if (!_tOwner && (_tDanger || role.position >= _tTop)) {
+        return interaction.editReply({ content: _tDanger
+          ? '🛑 هذه الرتبة تحتوي صلاحيات إدارية خطرة — ما يمكن منحها إلا بواسطة مالك السيرفر.'
+          : t(lang, 'moderation.role.higher') });
+      }
 
       try { await member.roles.add(role); }
       catch { return interaction.editReply({ content: t(lang, 'moderation.role.higher') }); }
@@ -128,6 +166,22 @@ module.exports = {
     const target = message.mentions.members.first();
     const role = message.mentions.roles.first();
     if (!target || !role) return message.reply(t(lang, 'moderation.role.prefix_usage'));
+    // 🔒 نفس بوابات السلاش بالبريفكس: هيراركية المنفذ + منع الرتب الخطرة (ما كان أي فحص ترتيب أصلاً)
+    const _pOwner = message.guild.ownerId === message.author.id;
+    const _pTop = message.member.roles?.highest?.position || 0;
+    const _pDanger = role.permissions?.has?.(PermissionFlagsBits.Administrator) ||
+      role.permissions?.has?.(PermissionFlagsBits.ManageRoles) ||
+      role.permissions?.has?.(PermissionFlagsBits.ManageGuild) ||
+      role.permissions?.has?.(PermissionFlagsBits.ManageWebhooks) ||
+      role.permissions?.has?.(PermissionFlagsBits.ManageChannels) ||
+      role.permissions?.has?.(PermissionFlagsBits.BanMembers) ||
+      role.permissions?.has?.(PermissionFlagsBits.KickMembers) ||
+      role.permissions?.has?.(PermissionFlagsBits.ModerateMembers);
+    if (!_pOwner && (_pDanger || role.position >= _pTop)) {
+      return message.reply(_pDanger
+        ? '🛑 هذه الرتبة تحتوي صلاحيات إدارية خطرة — ما يمكن منحها أو سحبها إلا بواسطة مالك السيرفر.'
+        : t(lang, 'moderation.role.higher'));
+    }
     if (action === 'add') {
       try { await target.roles.add(role); }
       catch { return message.reply(t(lang, 'moderation.role.higher')); }

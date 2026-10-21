@@ -75,6 +75,23 @@ module.exports = {
       });
     }
 
+    // 🔒 هيراركية المنفذ + منع الرتب الخطرة — سد الترقية الجماعية (رتبة أدمنية جماعياً = انقلاب صلاحيات السيرفر)
+    const _raOwner = interaction.guild.ownerId === interaction.user.id;
+    const _raTop = interaction.member.roles?.highest?.position || 0;
+    const _raDanger = role.permissions?.has?.(PermissionFlagsBits.Administrator) ||
+      role.permissions?.has?.(PermissionFlagsBits.ManageRoles) ||
+      role.permissions?.has?.(PermissionFlagsBits.ManageGuild) ||
+      role.permissions?.has?.(PermissionFlagsBits.ManageWebhooks) ||
+      role.permissions?.has?.(PermissionFlagsBits.ManageChannels) ||
+      role.permissions?.has?.(PermissionFlagsBits.BanMembers) ||
+      role.permissions?.has?.(PermissionFlagsBits.KickMembers) ||
+      role.permissions?.has?.(PermissionFlagsBits.ModerateMembers);
+    if (!_raOwner && (_raDanger || role.position >= _raTop)) {
+      return interaction.reply({ content: _raDanger
+        ? '🛑 هذه الرتبة تحتوي صلاحيات إدارية خطرة — ما يمكن تطبيقها جماعياً إلا بواسطة مالك السيرفر.'
+        : t(lang, 'moderation.role_all.higher', { role: role.id }), flags: 64 });
+    }
+
     await interaction.deferReply().catch(() => {});
 
     // جلب جميع أعضاء السيرفر
@@ -176,6 +193,23 @@ module.exports = {
 
     if (role.managed) {
       return message.reply(t(lang, 'moderation.role_all.prefix_managed'));
+    }
+
+    // 🔒 نفس بوابات السلاش بالبريفكس: هيراركية المنفذ + منع الرتب الخطرة
+    const _praOwner = message.guild.ownerId === message.author.id;
+    const _praTop = message.member.roles?.highest?.position || 0;
+    const _praDanger = role.permissions?.has?.(PermissionFlagsBits.Administrator) ||
+      role.permissions?.has?.(PermissionFlagsBits.ManageRoles) ||
+      role.permissions?.has?.(PermissionFlagsBits.ManageGuild) ||
+      role.permissions?.has?.(PermissionFlagsBits.ManageWebhooks) ||
+      role.permissions?.has?.(PermissionFlagsBits.ManageChannels) ||
+      role.permissions?.has?.(PermissionFlagsBits.BanMembers) ||
+      role.permissions?.has?.(PermissionFlagsBits.KickMembers) ||
+      role.permissions?.has?.(PermissionFlagsBits.ModerateMembers);
+    if (!_praOwner && (_praDanger || role.position >= _praTop)) {
+      return message.reply(_praDanger
+        ? '🛑 هذه الرتبة تحتوي صلاحيات إدارية خطرة — ما يمكن تطبيقها جماعياً إلا بواسطة مالك السيرفر.'
+        : t(lang, 'moderation.role_all.prefix_higher', { role: role.id }));
     }
 
     const isGive = action === 'give' || action === 'add';

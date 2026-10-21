@@ -42,11 +42,15 @@ module.exports = {
     if (member && member.roles.highest.position >= interaction.member.roles.highest.position && interaction.user.id !== interaction.guild.ownerId)
       return interaction.editReply({ content: t(lang, 'moderation.ban.higher') });
 
-    // إرسال DM قبل الحظر مع رابط تقديم الاستئناف
     const durationMs = durationStr ? ms(durationStr) : null;
+    // 🔒 setTimeout ما يشتغل صح فوق ~24.8 يوم (يفلت لـ1ms فينكشف الحظر لحظياً) — رفض صريح بدل انفجار سلوكي
+    if (durationMs && durationMs > 24 * 24 * 60 * 60 * 1000) {
+      return interaction.editReply({ content: '⏳ الحظر المؤقت أقصى مدته 24 يوم — للمدد الأطول استخدم الحظر الدائم أو اختر مدة أقصر (مثال: 20d).' }).catch(() => {});
+    }
     const baseUrl = process.env.DASHBOARD_URL || config.dashboardUrl || 'https://droplet-mqwb.onrender.com';
     const appealUrl = `${baseUrl}/appeal`;
 
+    // إرسال DM قبل الحظر مع رابط تقديم الاستئناف
     const dmEmbed = new EmbedBuilder()
       .setColor(config.colors?.danger || '#e74c3c')
       .setTitle(t(lang, 'moderation.ban.dm_title', { guild: interaction.guild.name }))

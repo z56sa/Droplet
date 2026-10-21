@@ -15,8 +15,8 @@ module.exports = {
       sub.setName('add')
         .setDescription('Create a new staff task')
 
-        .addStringOption(opt => opt.setName('title').setDescription('The task title').setRequired(true))
-        .addStringOption(opt => opt.setName('description').setDescription('The required task details').setRequired(true))
+        .addStringOption(opt => opt.setName('title').setDescription('The task title').setRequired(true).setMaxLength(100))
+        .addStringOption(opt => opt.setName('description').setDescription('The required task details').setRequired(true).setMaxLength(1000))
         .addIntegerOption(opt => opt.setName('points').setDescription('Points earned on completion (default: 50)').setMinValue(1).setRequired(false))
         .addUserOption(opt => opt.setName('assign').setDescription('Assign to a specific admin (empty = all staff)').setRequired(false))
     )
@@ -72,8 +72,8 @@ module.exports = {
         .setColor('#3b82f6')
         .setTitle(t(lang, 'admin.task.created_title', { id: taskId }))
         .addFields(
-          { name: t(lang, 'admin.task.f_title'), value: `\`${title}\``, inline: false },
-          { name: t(lang, 'admin.task.f_details'), value: desc, inline: false },
+          { name: t(lang, 'admin.task.f_title'), value: `\`${String(title).slice(0, 200)}\``, inline: false },
+          { name: t(lang, 'admin.task.f_details'), value: String(desc).slice(0, 1000), inline: false },
           { name: t(lang, 'admin.task.f_points'), value: t(lang, 'admin.task.f_points_v', { n: points }), inline: true },
           { name: t(lang, 'admin.task.f_assigned'), value: assigned ? `<@${assigned.id}>` : t(lang, 'admin.task.assigned_all'), inline: true }
         )

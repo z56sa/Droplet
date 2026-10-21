@@ -15,8 +15,8 @@ module.exports = {
       sub.setName('add')
         .setDescription('Add a new auto-reply')
 
-        .addStringOption(opt => opt.setName('word').setDescription('The word that triggers the bot reply').setRequired(true))
-        .addStringOption(opt => opt.setName('reply').setDescription('The bot reply').setRequired(true))
+        .addStringOption(opt => opt.setName('word').setDescription('The word that triggers the bot reply').setRequired(true).setMaxLength(100))
+        .addStringOption(opt => opt.setName('reply').setDescription('The bot reply').setRequired(true).setMaxLength(1000))
     )
     .addSubcommand(sub =>
       sub.setName('list')
@@ -50,8 +50,8 @@ module.exports = {
         .setColor(config.colors.success)
         .setTitle(t(lang, 'admin.autoresponder.add_title'))
         .addFields(
-          { name: t(lang, 'admin.autoresponder.add_when'), value: `\`${word}\``, inline: true },
-          { name: t(lang, 'admin.autoresponder.add_reply'), value: reply, inline: true }
+          { name: t(lang, 'admin.autoresponder.add_when'), value: `\`${String(word).slice(0, 100)}\``, inline: true },
+          { name: t(lang, 'admin.autoresponder.add_reply'), value: String(reply).slice(0, 1024), inline: true }
         )
         .setTimestamp();
 

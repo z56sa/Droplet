@@ -26,11 +26,15 @@ module.exports = {
         const hadAdmin = oldMember.roles.cache.some(r => r.permissions.has(_PFB.Administrator));
         const gained = newMember.roles.cache.filter(r => !oldMember.roles.cache.has(r.id) && r.permissions.has(_PFB.Administrator));
         if (!hadAdmin && gained.size > 0 && newMember.id !== guild.ownerId) {
-          for (const [, r] of gained) await newMember.roles.remove(r).catch(() => {});
-          const _logId = settings.antinuke_alert_channel || settings.log_channel;
-          const _ch = _logId ? guild.channels.cache.get(_logId) : null;
-          if (_ch && _ch.isTextBased()) _ch.send(`⚠️ تم سحب رتبة إدارية مُنحت حديثاً لـ <@${newMember.id}> تلقائياً (حماية رتب الانضمام).`).catch(() => {});
-          return;
+          // 🔓 احترام قوائم الإعفاء قبل أي سحب — الويتهيست يقدر يمنح رتب إدارية بأمان
+          const _gmWhitelisted = db.isUserWhitelisted && db.isUserWhitelisted(guild.id, newMember.id, 'whitelist');
+          if (!_gmWhitelisted) {
+            for (const [, r] of gained) await newMember.roles.remove(r).catch(() => {});
+            const _logId = settings.antinuke_alert_channel || settings.log_channel;
+            const _ch = _logId ? guild.channels.cache.get(_logId) : null;
+            if (_ch && _ch.isTextBased()) _ch.send(`⚠️ تم سحب رتبة إدارية مُنحت حديثاً لـ <@${newMember.id}> تلقائياً (حماية رتب الانضمام).`).catch(() => {});
+            return;
+          }
         }
       }
     } catch {}

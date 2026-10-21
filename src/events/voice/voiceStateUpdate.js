@@ -52,7 +52,19 @@ module.exports = {
         const tpl = String(settings.temp_voice_name_template || '🔊 | {user}').slice(0, 90) || '🔊 | {user}';
         const chName = tpl.replace(/\{user\}|\[user\]/gi, member.user.username).replace(/\{name\}|\[name\]/gi, member.displayName || member.user.username);
         const userLimit = Math.max(0, Math.min(99, parseInt(settings.temp_voice_user_limit) || 0));
-        const tempVoiceChannel = await guild.channels.create({
+        // 🔁 منع تكرار الروم المؤقت: لو العضو عنده روم مؤقت شغّال (فيه أعضاء) بنفس السيرفر ننقله إليه
+        // بدل ما نبلش روم جديد كل ضغطة على روم الانتظار (يحرق كوتا القنوات)
+        let tempVoiceChannel = null;
+        let _tempReused = false;
+        const _ownedTemp = db.getTempVoiceByOwner ? db.getTempVoiceByOwner(guild.id, member.id) : null;
+        if (_ownedTemp) {
+          const _ownedChan = guild.channels.cache.get(_ownedTemp.channel_id);
+          if (_ownedChan && _ownedChan.members && _ownedChan.members.size > 0) {
+            tempVoiceChannel = _ownedChan;
+            _tempReused = true;
+          }
+        }
+        if (!tempVoiceChannel) tempVoiceChannel = await guild.channels.create({
           name: chName,
           type: ChannelType.GuildVoice,
           parent: categoryId || null,
@@ -72,7 +84,7 @@ module.exports = {
           ]
         });
 
-        if (db.createTempVoice) {
+        if (db.createTempVoice && !_tempReused) {
           db.createTempVoice(tempVoiceChannel.id, guild.id, member.id);
         }
 

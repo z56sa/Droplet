@@ -9,7 +9,7 @@ const embedUtil = {
     const icon = config.emojis?.success || '✅';
     return new EmbedBuilder()
       .setColor(config.colors?.success || '#22c55e')
-      .setTitle(`${icon} ${title}`)
+      .setTitle(`${icon} ${String(title).slice(0, 250)}`)
       .setDescription(description)
       .setTimestamp();
   },
@@ -21,7 +21,7 @@ const embedUtil = {
     const icon = config.emojis?.error || '❌';
     return new EmbedBuilder()
       .setColor(config.colors?.danger || '#ef4444')
-      .setTitle(`${icon} ${title}`)
+      .setTitle(`${icon} ${String(title).slice(0, 250)}`)
       .setDescription(description)
       .setTimestamp();
   },
@@ -33,7 +33,7 @@ const embedUtil = {
     const icon = config.emojis?.warning || '⚠️';
     return new EmbedBuilder()
       .setColor(config.colors?.warning || '#f59e0b')
-      .setTitle(`${icon} ${title}`)
+      .setTitle(`${icon} ${String(title).slice(0, 250)}`)
       .setDescription(description)
       .setTimestamp();
   },
@@ -44,7 +44,7 @@ const embedUtil = {
   primary(title, description) {
     return new EmbedBuilder()
       .setColor(config.colors.primary)
-      .setTitle(title)
+      .setTitle(String(title).slice(0, 256))
       .setDescription(description)
       .setTimestamp();
   },
@@ -55,7 +55,7 @@ const embedUtil = {
   log(title, description, color = config.colors.info) {
     return new EmbedBuilder()
       .setColor(color)
-      .setTitle(`📜 ${title}`)
+      .setTitle(`📜 ${String(title).slice(0, 250)}`)
       .setDescription(description)
       .setTimestamp();
   }

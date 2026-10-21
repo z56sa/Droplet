@@ -192,39 +192,51 @@ module.exports = {
     const userId = message.author.id;
     const settings = db.getGuildSettings(guildId) || {};
 
-    // 🛡️ Security Guardian
+    // 🛡️ Security Guardian — يتشغّل فقط لغير المعفيين من الأوتومود، وحذف روابط الدعوات صار اختيارياً بالإعدادات
+    // (security_guardian_invites افتراضياً مطفأ: الحذف التلقائي لأي رابط discord.gg كان يكسر نظام الدعوات —
+    //  فحص الأسرار/المرفقات الخطرة يبقى شغال دائماً)
     if (client.securityGuardian) {
-      try {
-        const securityScan = await client.securityGuardian.scanMessage(message);
-        const findings = securityScan?.findings || [];
-        const sensitiveFindings = findings.filter(f => !f.startsWith('Dangerous attachment:'));
-        const dangerousFiles = findings.filter(f => f.startsWith('Dangerous attachment:'));
+      const _sgExempt =
+        (settings.automod_whitelist_role && message.member?.roles.cache.has(settings.automod_whitelist_role)) ||
+        (settings.automod_whitelist_channel && message.channel.id === settings.automod_whitelist_channel) ||
+        (settings.automod_exempt_users && settings.automod_exempt_users.split(',').map(u => u.trim()).includes(userId)) ||
+        (settings.mod_exempt_roles && String(settings.mod_exempt_roles).split(/[,;\s]+/).filter(Boolean).some(rid => message.member?.roles.cache.has(rid))) ||
+        (db.isUserWhitelisted && db.isUserWhitelisted(guildId, userId, 'whitelist'));
+      if (!_sgExempt) {
+        try {
+          const securityScan = await client.securityGuardian.scanMessage(message);
+          const _sgInviteOn = isEnabled(settings.security_guardian_invites, false);
+          const _allFindings = securityScan?.findings || [];
+          const findings = _sgInviteOn ? _allFindings : _allFindings.filter(f => f !== 'Discord invite link');
+          const sensitiveFindings = findings.filter(f => !f.startsWith('Dangerous attachment:'));
+          const dangerousFiles = findings.filter(f => f.startsWith('Dangerous attachment:'));
 
-        if (sensitiveFindings.length || dangerousFiles.length) {
-          await message.delete().catch(() => {});
-          const reasons = [
-            ...sensitiveFindings.map(f => `Sensitive information: ${f}`),
-            ...dangerousFiles
-          ];
+          if (sensitiveFindings.length || dangerousFiles.length) {
+            await message.delete().catch(() => {});
+            const reasons = [
+              ...sensitiveFindings.map(f => `Sensitive information: ${f}`),
+              ...dangerousFiles
+            ];
+            await client.securityGuardian.report(
+              message.guild,
+              'Blocked security incident',
+              `User ${message.author.id} in guild ${guildId}. Findings: ${reasons.join(', ')}`,
+              'critical'
+            );
+            const warning = await message.channel.send({
+              content: t(guildId, 'events.automod.security', { mention: `${message.author}` })
+            }).catch(() => null);
+            if (warning) setTimeout(() => warning.delete().catch(() => {}), 7000);
+            return;
+          }
+        } catch (securityError) {
           await client.securityGuardian.report(
             message.guild,
-            'Blocked security incident',
-            `User ${message.author.id} in guild ${guildId}. Findings: ${reasons.join(', ')}`,
-            'critical'
-          );
-          const warning = await message.channel.send({
-            content: t(guildId, 'events.automod.security', { mention: `${message.author}` })
-          }).catch(() => null);
-          if (warning) setTimeout(() => warning.delete().catch(() => {}), 7000);
-          return;
+            'Security scanner error',
+            securityError?.stack || String(securityError),
+            'warning'
+          ).catch(() => {});
         }
-      } catch (securityError) {
-        await client.securityGuardian.report(
-          message.guild,
-          'Security scanner error',
-          securityError?.stack || String(securityError),
-          'warning'
-        ).catch(() => {});
       }
     }
 

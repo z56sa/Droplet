@@ -3,6 +3,9 @@ const db = require('../../database');
 const { getGuildLang, t } = require('../../utils/lang');
 const { isEnabled } = require('../../utils/isEnabled');
 
+// ⏳ كولداون خفيف: اقتراح واحد كل 30 ثانية لكل مستخدم — سد سبام قناة الاقتراحات
+const _suggestCooldown = new Map();
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('suggest')
@@ -10,11 +13,13 @@ module.exports = {
     .addStringOption(option =>
       option.setName('content')
         .setDescription('محتوى وتفاصيل الاقتراح')
-        .setRequired(true))
+        .setRequired(true)
+        .setMaxLength(1000))
     .addStringOption(option =>
       option.setName('title')
         .setDescription('عنوان مختصر للاقتراح (اختياري)')
-        .setRequired(false))
+        .setRequired(false)
+        .setMaxLength(100))
     .addStringOption(option =>
       option.setName('category')
         .setDescription('تصنيف الاقتراح')
@@ -57,6 +62,13 @@ module.exports = {
       return safeReply(t(guild.id, 'general.suggest.disabled'));
     }
 
+    // ⏳ كولداون 30 ثانية لكل مستخدم (يشمل السلاش والبريفكس)
+    const _sLast = _suggestCooldown.get(user.id) || 0;
+    if (Date.now() - _sLast < 30 * 1000) {
+      return safeReply('⏳ انتظر 30 ثانية بين كل اقتراح والتالي.');
+    }
+    _suggestCooldown.set(user.id, Date.now());
+
     let content = '';
     let title = null;
     let category = 'عام';
@@ -69,7 +81,7 @@ module.exports = {
       if (!args || args.length === 0) {
         return safeReply(t(guild.id, 'general.suggest.no_content'));
       }
-      content = args.join(' ');
+      content = args.join(' ').slice(0, 1000);
     }
 
     const channelId = settings.suggestions_channel || interactionOrMessage.channel.id;

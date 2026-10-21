@@ -123,6 +123,8 @@ const antiNuke = {
         const now = Date.now();
         for (const [, entry] of fetchedLogs.entries) {
           if (now - entry.createdTimestamp > 15000) continue;
+          // 🔒 اعتماد بسجل ما يميز الفعل — massTimeout لازم يعدّل زمن الكتم، MemberUpdate العادي (تعديل رتب) ما يعتبره
+          if (actionType === 'massTimeout' && !(entry.changes || []).some(c => c.key === 'communication_disabled_until')) continue;
           if (processedAuditLogIds.has(entry.id)) continue;
           processedAuditLogIds.add(entry.id);
           setTimeout(() => processedAuditLogIds.delete(entry.id), 60000);

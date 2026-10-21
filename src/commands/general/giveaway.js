@@ -15,7 +15,7 @@ module.exports = {
       sub.setName('start')
         .setDescription('Start a new giveaway with optional requirements and perks')
         .addStringOption(opt => opt.setName('duration').setDescription('Giveaway duration (e.g. 10m, 1h, 1d)').setRequired(true))
-        .addStringOption(opt => opt.setName('prize').setDescription('The prize').setRequired(true))
+        .addStringOption(opt => opt.setName('prize').setDescription('The prize').setRequired(true).setMaxLength(200))
         .addIntegerOption(opt => opt.setName('winners').setDescription('Number of winners (default: 1)').setMinValue(1).setMaxValue(20).setRequired(false))
         .addChannelOption(opt => opt.setName('channel').setDescription('Giveaway channel').addChannelTypes(ChannelType.GuildText).setRequired(false))
         .addRoleOption(opt => opt.setName('required_role').setDescription('Role required to enter').setRequired(false))
@@ -46,7 +46,7 @@ module.exports = {
 
     if (sub === 'start') {
       const durationStr = interaction.options.getString('duration');
-      const prize = interaction.options.getString('prize');
+      const prize = String(interaction.options.getString('prize') || '').slice(0, 200);
       const winnersCount = interaction.options.getInteger('winners') || 1;
       const channel = interaction.options.getChannel('channel') || interaction.channel;
       const requiredRole = interaction.options.getRole('required_role');
@@ -157,6 +157,8 @@ module.exports = {
   async finishGiveaway(messageId, client) {
     const giveaway = db.getGiveaway(messageId);
     if (!giveaway || giveaway.status === 'ended') return;
+    // 🔒 ما تنتهي إلا إذا وقتها انتهى فعلاً — يمنع المؤقت المفلطل (فوق 24.8 يوم يصير 1ms) من إنهائها مبكراً
+    if (giveaway.end_time && Number(giveaway.end_time) > Date.now() + 1000) return;
 
     db.endGiveaway(messageId);
     const gid = giveaway.guild_id;

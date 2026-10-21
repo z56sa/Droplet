@@ -72,6 +72,7 @@ module.exports = {
             .setDescription('The new point balance')
 
             .setRequired(true)
+            .setMinValue(0)
         )
     ),
 

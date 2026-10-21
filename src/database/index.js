@@ -1837,25 +1837,37 @@ function deleteTicketPanel(panelId) {
 
 // ⭐ Ticket Ratings (تقييمات الموظفين)
 function addTicketRating(guildId, ticketChannelId, userId, staffId, stars, feedback = '') {
-  const res = db.prepare(`
-    INSERT INTO ticket_ratings (guild_id, ticket_channel_id, user_id, staff_id, stars, feedback)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(guildId, ticketChannelId, userId, staffId, stars, feedback);
+  stars = Math.min(5, Math.max(1, Number(stars) || 5));
+  // 🔒 منع التزييف: تقييم واحد لكل (سيرفر، تذكرة، مقيِّم) — إعادة الضغط تُحدِّث بدل ما تتراكم صفوف ونقاط
+  const _prev = db.prepare('SELECT id FROM ticket_ratings WHERE guild_id = ? AND ticket_channel_id = ? AND user_id = ?').get(guildId, ticketChannelId, userId);
+  let _rid = null;
+  if (_prev) {
+    db.prepare('UPDATE ticket_ratings SET staff_id = ?, stars = ?, feedback = ? WHERE id = ?').run(staffId, stars, feedback, _prev.id);
+    _rid = _prev.id;
+  } else {
+    const res = db.prepare(`
+      INSERT INTO ticket_ratings (guild_id, ticket_channel_id, user_id, staff_id, stars, feedback)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(guildId, ticketChannelId, userId, staffId, stars, feedback);
+    _rid = res.lastInsertRowid;
+  }
 
-  // تحديث نقاط الموظف بناء على التقييم
+  // نقاط الموظف فقط عند أول تقييم، وفقط إذا للموظف صف نشاط حقيقي مسبق (بدون إنشاء صفوف مفبرك عبر getStaffMember)
   try {
     const pointsBonus = stars >= 4 ? (stars * 5) : 0;
-    if (pointsBonus > 0) {
-      getStaffMember(guildId, staffId);
-      db.prepare('UPDATE staff_activity SET points = points + ? WHERE guild_id = ? AND user_id = ?').run(pointsBonus, guildId, staffId);
+    if (!_prev && pointsBonus > 0) {
+      const _realStaff = db.prepare('SELECT 1 FROM staff_activity WHERE guild_id = ? AND user_id = ?').get(guildId, staffId);
+      if (_realStaff) {
+        db.prepare('UPDATE staff_activity SET points = points + ? WHERE guild_id = ? AND user_id = ?').run(pointsBonus, guildId, staffId);
+      }
     }
   } catch (e) {}
 
   try {
-    const _row = db.prepare('SELECT * FROM ticket_ratings WHERE id = ?').get(res.lastInsertRowid);
+    const _row = db.prepare('SELECT * FROM ticket_ratings WHERE id = ?').get(_rid);
     syncRow('ticket_ratings', 'id', _row);
   } catch (e) {}
-  return res.lastInsertRowid;
+  return _rid;
 }
 
 function getStaffRatings(guildId, staffId) {
@@ -2104,6 +2116,11 @@ function getTempVoice(channelId) {
   return db.prepare('SELECT * FROM temp_voices WHERE channel_id = ?').get(channelId);
 }
 
+function getTempVoiceByOwner(guildId, userId) {
+  // 🔁 تمنع تكرار الرومات المؤقتة: نجهِّز الروم المملوك لعضو واحد بالسيرفر
+  return db.prepare('SELECT * FROM temp_voices WHERE guild_id = ? AND user_id = ?').get(guildId, userId);
+}
+
 function getAllTempVoices() {
   try {
     return db.prepare('SELECT * FROM temp_voices').all();
@@ -2179,7 +2196,9 @@ function getPendingSubmissions(guildId) {
   return db.prepare("SELECT * FROM application_submissions WHERE guild_id = ? AND status = 'pending' ORDER BY id DESC").all(guildId);
 }
 
-function updateSubmissionStatus(id, status, reviewedBy) {
+function updateSubmissionStatus(id, status, reviewedBy, guildId = null) {
+  // 🔒 عزل سيرفر: بتمرير guildId ما تنقبل طلبات سيرفرات ثانية بمعرّفها فقط
+  if (guildId) return db.prepare('UPDATE application_submissions SET status = ?, reviewed_by = ? WHERE id = ? AND guild_id = ?').run(status, reviewedBy, id, guildId);
   return db.prepare('UPDATE application_submissions SET status = ?, reviewed_by = ? WHERE id = ?').run(status, reviewedBy, id);
 }
 
@@ -2992,6 +3011,7 @@ module.exports = {
   createTempVoice,
   isTempVoice,
   getTempVoice,
+  getTempVoiceByOwner,
   getAllTempVoices,
   deleteTempVoice,
   setReactionRole,

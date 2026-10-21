@@ -117,17 +117,32 @@ module.exports = {
         await interaction.deferReply({ flags: 64 }).catch(() => { });
         const rrData = db.getReactionRole(interaction.customId);
         if (rrData) {
+          // 🔒 عزل سيرفر: اللوحة لازم تخص نفس السيرفر يلي انضغط فيها الزر
+          if (rrData.guild_id && String(rrData.guild_id) !== String(interaction.guildId)) {
+            return interaction.editReply({ content: '🔒 هذه اللوحة تخص سيرفراً آخر.' });
+          }
           const role = interaction.guild.roles.cache.get(rrData.role_id);
           if (!role) {
             return interaction.editReply({ content: t(interaction.guildId, 'events.rr.not_found') });
           }
 
-          if (interaction.member.roles.cache.has(role.id)) {
-            await interaction.member.roles.remove(role);
-            return interaction.editReply({ content: t(interaction.guildId, 'events.rr.removed', { role: role.name }) });
-          } else {
-            await interaction.member.roles.add(role);
-            return interaction.editReply({ content: t(interaction.guildId, 'events.rr.added', { role: role.name }) });
+          // 🔒 هيراركية البوت: ما نكمل إلا إذا رتبة البوت أعلى من رتبة اللوحة
+          const _rrBotTop = interaction.guild.members.me?.roles?.highest?.position || 0;
+          if (role.position >= _rrBotTop) {
+            return interaction.editReply({ content: '⚠️ رتبة البوت أدنى من رتبة اللوحة — اطلب من الإدارة رفع رتبة البوت فوق رتب الأزرار.' });
+          }
+
+          try {
+            if (interaction.member.roles.cache.has(role.id)) {
+              await interaction.member.roles.remove(role);
+              return interaction.editReply({ content: t(interaction.guildId, 'events.rr.removed', { role: role.name }) });
+            } else {
+              await interaction.member.roles.add(role);
+              return interaction.editReply({ content: t(interaction.guildId, 'events.rr.added', { role: role.name }) });
+            }
+          } catch (_rrErr) {
+            console.error('[RR] فشل تبديل الرتبة:', _rrErr?.message || _rrErr);
+            return interaction.editReply({ content: '❌ ما قدرت أطبّق الرتبة — تأكد أن رتبة البوت أعلى من رتبة اللوحة وإنها مش مُدارة.' });
           }
         }
         return;
@@ -1381,6 +1396,10 @@ module.exports = {
       if (interaction.isButton() && interaction.customId.startsWith('view_transcript_')) {
         const ticketChannelId = interaction.customId.replace('view_transcript_', '');
         const trans = db.getTranscript(ticketChannelId);
+        // 🔒 عزل سيرفر: السجل لازم يخص نفس سيرفر الضاغط
+        if (trans && String(trans.guild_id || '') !== String(interaction.guildId)) {
+          return interaction.reply({ content: '🔒 هذا السجل يخص سيرفراً آخر.', flags: 64 });
+        }
         // 🔒 بوابة مثل الداشبورد: صاحب التذكرة أو الطاقم الإداري فقط
         if (trans) {
           const _vtOwner = String(trans.user_id || '') === String(interaction.user.id);
@@ -1504,11 +1523,22 @@ module.exports = {
       // 8. الضغط على نجوم التقييم (Ticket Rating Stars Button)
       if (interaction.isButton() && interaction.customId.startsWith('rate_ticket_')) {
         const parts = interaction.customId.split('_');
-        const rating = parseInt(parts[2], 10) || 5;
+        const rating = Math.min(5, Math.max(1, parseInt(parts[2], 10) || 5));
         const ticketId = parts[3] || '0';
         const staffId = parts[4] || '0';
         const guildId = parts[5] || interaction.guildId;
         const _tLang = guildId || interaction.guildId;
+        // 🔒 بوابة تقييم: التذكرة لازم تكون موجودة، لصاحبها فقط، وتطابق سيرفر الزر — يمنع تزوير نقاط الطاقم بأزرار مضروبة
+        const _rtTicket = db.getTranscript ? db.getTranscript(ticketId) : null;
+        if (!_rtTicket) {
+          return interaction.reply({ content: '⚠️ التذكرة غير موجودة — ما نقدر نتحقق من صحة التقييم.', flags: 64 });
+        }
+        if (String(_rtTicket.user_id || '') !== String(interaction.user.id)) {
+          return interaction.reply({ content: '🔒 هذا الزر مخصص لصاحب التذكرة فقط.', flags: 64 });
+        }
+        if (String(_rtTicket.guild_id || '') !== String(guildId)) {
+          return interaction.reply({ content: '🔒 بيانات التقييم ما تطابق التذكرة.', flags: 64 });
+        }
         try {
           const modal = new ModalBuilder()
             .setCustomId(`modal_review_${rating}_${ticketId}_${staffId}_${guildId || '0'}`.slice(0, 100))
@@ -1542,14 +1572,23 @@ module.exports = {
       if (interaction.isModalSubmit() && interaction.customId.startsWith('modal_review_')) {
         await interaction.deferReply({ flags: 64 }).catch(() => { });
         const parts = interaction.customId.split('_');
-        const rating = parseInt(parts[2], 10) || 5;
+        const rating = Math.min(5, Math.max(1, parseInt(parts[2], 10) || 5));
         const ticketId = parts[3];
         const staffId = parts[4] !== '0' ? parts[4] : null;
         const guildId = parts[5] || interaction.guildId;
         const comment = interaction.fields.getTextInputValue('review_comment') || t(guildId || interaction.guildId, 'events.ticket.rate_no_comment');
 
+        // 🔒 نفس بوابة الزر: التذكرة موجودة + صاحبها نفس الضاغط + السيرفر مطابق — سد تزييف النقاط عبر النافذة
+        const _rvTicket = db.getTranscript ? db.getTranscript(ticketId) : null;
+        if (!_rvTicket || String(_rvTicket.user_id || '') !== String(interaction.user.id)) {
+          return interaction.editReply({ content: '🔒 ما نقدر نتحقق من ملكية التذكرة — التقييم أُلغي.' });
+        }
+        if (String(_rvTicket.guild_id || '') !== String(guildId)) {
+          return interaction.editReply({ content: '🔒 بيانات التقييم ما تطابق التذكرة.' });
+        }
+
         if (db.addTicketRating) {
-          db.addTicketRating(guildId, ticketId, interaction.user.id, staffId || 'staff', rating, comment);
+          db.addTicketRating(guildId, ticketId, interaction.user.id, staffId || 'staff', rating, String(comment).slice(0, 1000));
         }
 
         const settings = db.getGuildSettings(guildId);
@@ -1626,8 +1665,15 @@ module.exports = {
         const appId = interaction.customId.replace('modal_submit_app_', '');
         const app = db.getApplication(appId);
 
-        if (!app) {
+        // 🔒 عزل سيرفر: النموذج لازم يخص نفس سيرفر الضاغط
+        if (!app || String(app.guild_id || '') !== String(interaction.guildId)) {
           return interaction.editReply({ content: t(interaction.guildId, 'events.app.not_found') });
+        }
+
+        // 🔒 سد سبام التقديم: طلب معلّق واحد لكل عضو — ما يقدر يغرق قناة المراجعة بإعادات
+        const _pendSubs = db.getPendingSubmissions ? (db.getPendingSubmissions(interaction.guild.id) || []) : [];
+        if (_pendSubs.some(s => String(s.user_id) === String(interaction.user.id))) {
+          return interaction.editReply({ content: '⏳ عندك طلب تقديم معلّق بالفعل — انتظر قرار الإدارة قبل الإعادة.' });
         }
 
         let questions = [];
@@ -1699,6 +1745,11 @@ module.exports = {
           return interaction.reply({ content: t(interaction.guildId, 'events.app.sub_missing'), flags: 64 });
         }
 
+        // 🔒 عزل سيرفر: الطلب يخص نفس سيرفر الضاغط
+        if (String(submission.guild_id || '') !== String(interaction.guildId)) {
+          return interaction.reply({ content: '🔒 هذا الطلب يخص سيرفراً آخر.', flags: 64 });
+        }
+
         const app = db.getApplication(submission.app_id);
         const reviewerRole = app?.reviewer_role;
         const hasPerm = interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) || 
@@ -1726,6 +1777,11 @@ module.exports = {
           return interaction.reply({ content: t(interaction.guildId, 'events.app.already'), flags: 64 });
         }
 
+        // 🔒 عزل سيرفر: الطلب يخص نفس سيرفر الضاغط — مانع قبول/رفض عابر للسيرفرات
+        if (String(submission.guild_id || '') !== String(interaction.guildId)) {
+          return interaction.reply({ content: '🔒 هذا الطلب يخص سيرفراً آخر.', flags: 64 });
+        }
+
         const app = db.getApplication(submission.app_id);
         const reviewerRole = app?.reviewer_role;
         const hasPerm = interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) || 
@@ -1736,7 +1792,7 @@ module.exports = {
         }
 
         await interaction.deferUpdate().catch(() => { });
-        db.updateSubmissionStatus(subId, 'accepted', interaction.user.id);
+        db.updateSubmissionStatus(subId, 'accepted', interaction.user.id, interaction.guild.id);
         db.addApplicationPoint(interaction.guild.id, interaction.user.id);
 
         // إعطاء الرتبة للمتقدم إن وجدت
@@ -1780,6 +1836,11 @@ module.exports = {
           return interaction.reply({ content: t(interaction.guildId, 'events.app.already'), flags: 64 });
         }
 
+        // 🔒 عزل سيرفر: الطلب يخص نفس سيرفر الضاغط
+        if (String(submission.guild_id || '') !== String(interaction.guildId)) {
+          return interaction.reply({ content: '🔒 هذا الطلب يخص سيرفراً آخر.', flags: 64 });
+        }
+
         const app = db.getApplication(submission.app_id);
         const reviewerRole = app?.reviewer_role;
         const hasPerm = interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) || 
@@ -1815,6 +1876,11 @@ module.exports = {
           return interaction.editReply({ content: t(interaction.guildId, 'events.app.already') });
         }
 
+        // 🔒 عزل سيرفر: الطلب يخص نفس سيرفر الضاغط
+        if (String(submission.guild_id || '') !== String(interaction.guildId)) {
+          return interaction.editReply({ content: '🔒 هذا الطلب يخص سيرفراً آخر.' });
+        }
+
         const reason = interaction.fields.getTextInputValue('reject_reason') || t(interaction.guildId, 'events.app.reject_default');
         const app = db.getApplication(submission.app_id);
 
@@ -1826,7 +1892,7 @@ module.exports = {
           return interaction.editReply({ content: t(interaction.guildId, 'events.app.no_perm_reject') });
         }
 
-        db.updateSubmissionStatus(subId, 'rejected', interaction.user.id);
+        db.updateSubmissionStatus(subId, 'rejected', interaction.user.id, interaction.guild.id);
         db.addApplicationPoint(interaction.guild.id, interaction.user.id);
 
         // إشعار العضو بالخاص مع السبب

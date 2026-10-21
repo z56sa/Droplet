@@ -90,11 +90,27 @@ const syncLimiter = rateLimit({
     }
 });
 
+/**
+ * Write Limiter
+ * 40 writes per minute for settings/config saves — anti-flood without breaking dashboard UX
+ */
+const writeLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 40,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        error: 'Too Many Requests: عدد كبير من عمليات الحفظ في وقت قصير. انتظر قليلاً.'
+    }
+});
+
 module.exports = {
     apiLimiter,
     sensitiveActionLimiter,
     aiLimiter,
     appealLimiter,
     syncLimiter,
-    authLimiter
+    authLimiter,
+    writeLimiter
 };

@@ -46,7 +46,7 @@ function dashDateLocale(req, arLocale) {
 }
 
 const { requireAuth, createGuildAuthMiddleware } = require('./middleware/auth');
-const { apiLimiter, sensitiveActionLimiter, aiLimiter, appealLimiter, syncLimiter, authLimiter } = require('./middleware/rateLimiter');
+const { apiLimiter, sensitiveActionLimiter, aiLimiter, appealLimiter, syncLimiter, authLimiter, writeLimiter } = require('./middleware/rateLimiter');
 const { errorHandler } = require('./middleware/errorHandler');
 const {
     validate,
@@ -97,6 +97,37 @@ function isSafeImageUrl(u) {
         if (h.startsWith('[') || h.endsWith(']')) return false; // IPv6 literals ممنوعة
         return true;
     } catch { return false; }
+}
+
+// 🔒 طبقة ثانية ضد SSRF: حل اسم المضيف إلى IP ورفض العناوين الداخلية/الخاصة قبل أي جلب خارجي،
+// مع منع متابعة الـredirect حتى ما ينكشف المضيف الداخلي عبر رديركت من رابط خارجي
+const _dnsPromises = require('dns').promises;
+function _isPrivateIp(_ip) {
+    const s = String(_ip || '').toLowerCase();
+    if (s === '::1' || s === '::' || /^(f[cd]|fe[89ab])/.test(s)) return true; // IPv6 loopback/unique-local/link-local
+    const m = s.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (!m) return true;
+    const a = Number(m[1]), b = Number(m[2]);
+    if (a === 0 || a === 10 || a === 127) return true;            // loopback / private
+    if (a === 169 && b === 254) return true;                      // link-local (metadata)
+    if (a === 172 && b >= 16 && b <= 31) return true;             // private
+    if (a === 192 && b === 168) return true;                      // private
+    if (a === 100 && b >= 64 && b <= 127) return true;            // CGNAT
+    return false;
+}
+async function isSafeRemoteHost(u) {
+    let _u;
+    try { _u = new URL(String(u).trim()); } catch { return false; }
+    if (!isSafeImageUrl(_u.href)) return false;
+    try {
+        const _addrs = await _dnsPromises.lookup(_u.hostname, { all: true });
+        if (!_addrs || !_addrs.length || _addrs.some(a => _isPrivateIp(a.address))) return false;
+    } catch { return false; }
+    return true;
+}
+async function fetchSafeUrl(url, opts = {}) {
+    if (!(await isSafeRemoteHost(url))) return null;
+    try { return await fetch(new URL(String(url).trim()).href, { redirect: 'error', ...opts }); } catch { return null; }
 }
 
 module.exports = function (app, client) {
@@ -188,7 +219,7 @@ module.exports = function (app, client) {
             }
             _gitCommitCache = commit;
         }
-        res.json({ ok: true, commit: _gitCommitCache, bootTime: global._dropletBootTime || null, now: Date.now() });
+        res.json({ ok: true, commit: _gitCommitCache });
     });
     app.get('/api/bot-info', async (req, res) => {
         try {
@@ -947,7 +978,7 @@ module.exports = function (app, client) {
     });
 
     // 3. Admin Manage User Balance (Add / Remove / Set) with instant persistent write
-    app.post('/api/guilds/:guildId/economy/manage', requireGuildPermission, (req, res) => {
+    app.post('/api/guilds/:guildId/economy/manage', requireGuildPermission, sensitiveActionLimiter, (req, res) => {
         try {
             const { guildId } = req.params;
             const { targetUserId, action, amount } = req.body;
@@ -988,12 +1019,18 @@ module.exports = function (app, client) {
 
 
     // API: حفظ إعدادات السجلات
-    app.post('/api/logs/save', (req, res) => {
+    app.post('/api/logs/save', express.json({ limit: '64kb' }), writeLimiter, (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
-            const { settings } = req.body;
-            // يمكنك هنا إضافة الكود الخاص بـ database.updateLogsSettings(settings)
-            console.log('Received log settings:', settings);
+            // 🔒 تنظيف الحمولة: سقف عدد البطاقات + أطوال الحقول (بدون حقن محتوى المستخدم في اللوق)
+            const _in = (req.body || {}).settings;
+            if (!Array.isArray(_in)) return res.status(400).json({ success: false, error: 'بيانات غير صالحة' });
+            const settings = _in.slice(0, 30).map(it => ({
+                category: String((it && it.category) || '').slice(0, 32),
+                enabled: !!(it && it.enabled),
+                channel: String((it && it.channel) || '').slice(0, 25)
+            }));
+            console.log('[logs/save] cards saved:', settings.length, 'by', req.session?.user?.id || '?');
             res.json({ success: true });
         } catch (err) {
             res.status(500).json({ success: false, error: err.message });
@@ -1224,18 +1261,23 @@ module.exports = function (app, client) {
     // === Admin Store Endpoints ===
 
     // POST /api/guild/:guildId/store/admin/items — إضافة عنصر
-    app.post('/api/guild/:guildId/store/admin/items', requireGuildPermission, (req, res) => {
+    app.post('/api/guild/:guildId/store/admin/items', requireGuildPermission, sensitiveActionLimiter, (req, res) => {
         try {
             const { guildId } = req.params;
             const { name, description, item_type, icon, image_url, price, original_price, stock, role_id, booster_multiplier, booster_duration, cooldown_seconds, is_featured, badge_label } = req.body;
             if (!name || !price) return res.status(400).json({ success: false, error: 'الاسم والسعر مطلوبان' });
+            // 🔒 سقوف الحقول: منع حقن قيم عملاقة بسجلات المتجر (تبدو مكسورة بالإيمبدات والداشبورد)
+            const _sName = String(name).slice(0, 100);
+            const _sDesc = String(description || '').slice(0, 4000);
+            const _sIcon = String(icon || '🎁').slice(0, 8);
+            const _sBadge = String(badge_label || '').slice(0, 32);
             // 🔒 السعر لازم يكون رقم 0 أو أكثر (منع الأسعار السالبة)
             const _newPrice = Number(price);
             if (!Number.isFinite(_newPrice) || _newPrice < 0) return res.status(400).json({ success: false, error: 'السعر يجب أن يكون رقماً 0 أو أكثر' });
             const result = rawDb.prepare(`
                 INSERT INTO store_items (guild_id, name, description, item_type, icon, image_url, price, original_price, stock, role_id, booster_multiplier, booster_duration, cooldown_seconds, is_featured, badge_label)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(guildId, name, description || '', item_type || 'role', icon || '🎁', image_url || '', Number(price), Number(original_price || 0), Number(stock ?? -1), role_id || '', Number(booster_multiplier || 1.5), Number(booster_duration || 3600), Number(cooldown_seconds || 0), is_featured ? 1 : 0, badge_label || '');
+            `).run(guildId, _sName, _sDesc, item_type || 'role', _sIcon, image_url || '', Number(price), Number(original_price || 0), Number(stock ?? -1), role_id || '', Number(booster_multiplier || 1.5), Number(booster_duration || 3600), Number(cooldown_seconds || 0), is_featured ? 1 : 0, _sBadge);
             res.json({ success: true, id: result.lastInsertRowid });
         } catch (e) {
             res.status(500).json({ success: false, error: e.message });
@@ -1243,10 +1285,15 @@ module.exports = function (app, client) {
     });
 
     // PUT /api/guild/:guildId/store/admin/items/:itemId — تعديل عنصر
-    app.put('/api/guild/:guildId/store/admin/items/:itemId', requireGuildPermission, (req, res) => {
+    app.put('/api/guild/:guildId/store/admin/items/:itemId', requireGuildPermission, sensitiveActionLimiter, (req, res) => {
         try {
             const { guildId, itemId } = req.params;
             const fields = req.body;
+            // 🔒 سقوف الحقول عند تعديل عنصر المتجر
+            if (fields && fields.name !== undefined) fields.name = String(fields.name).slice(0, 100);
+            if (fields && fields.description !== undefined) fields.description = String(fields.description).slice(0, 4000);
+            if (fields && fields.icon !== undefined) fields.icon = String(fields.icon).slice(0, 8);
+            if (fields && fields.badge_label !== undefined) fields.badge_label = String(fields.badge_label).slice(0, 32);
             // 🔒 منع سعر سالب عند التعديل
             if (fields && fields.price !== undefined) {
                 const _upPrice = Number(fields.price);
@@ -3459,10 +3506,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
     var currentCat = 'all';
     var currentFilter = 'all';
-    var disabledCmds = ` + JSON.stringify((function() { try { var raw = settings.disabled_commands; if (!raw) return {}; var arr = typeof raw === "string" ? JSON.parse(raw) : raw; var m = {}; for (var i = 0; i < arr.length; i++) m[arr[i]] = true; return m; } catch(e) { return {}; } })()) + `;
-    var commandConfigs = ` + JSON.stringify((function() { try { var raw = settings.command_configs; if (!raw) return {}; return typeof raw === "string" ? JSON.parse(raw) : (raw || {}); } catch(e) { return {}; } })()) + `;
-    var guildRoles = ` + JSON.stringify((guildRoles || []).map(function(r) { return { id: r.id, name: r.name }; })) + `;
-    var guildChannels = ` + JSON.stringify((guildTextChannels || []).map(function(c) { return { id: c.id, name: c.name }; })) + `;
+    var disabledCmds = ` + JSON.stringify((function() { try { var raw = settings.disabled_commands; if (!raw) return {}; var arr = typeof raw === "string" ? JSON.parse(raw) : raw; var m = {}; for (var i = 0; i < arr.length; i++) m[arr[i]] = true; return m; } catch(e) { return {}; } })()).replace(/</g, '\\u003c') + `;
+    var commandConfigs = ` + JSON.stringify((function() { try { var raw = settings.command_configs; if (!raw) return {}; return typeof raw === "string" ? JSON.parse(raw) : (raw || {}); } catch(e) { return {}; } })()).replace(/</g, '\\u003c') + `;
+    var guildRoles = ` + JSON.stringify((guildRoles || []).map(function(r) { return { id: r.id, name: r.name }; })).replace(/</g, '\\u003c') + `;
+    var guildChannels = ` + JSON.stringify((guildTextChannels || []).map(function(c) { return { id: c.id, name: c.name }; })).replace(/</g, '\\u003c') + `;
 
     function isEn(name) { return !disabledCmds[name]; }
 
@@ -9366,7 +9413,7 @@ var categoryChannels = ${JSON.stringify({
     invites: settings.log_channel_invites || settings.log_channel || '',
     voice: settings.log_channel_voice || settings.log_channel || '',
     integrations: settings.log_channel_integrations || settings.log_channel || ''
-})};
+}).replace(/</g, '\\u003c')};
 
 // ---- UI state ----
 var currentCategory = 'members';
@@ -13526,7 +13573,7 @@ ${embedScriptHtml}
     app.use('/api/guild/:guildId', requireGuildPermission);
 
     // ⚖️ قرار الاستئناف (قبول = فك الحظر الفعلي + إبلاغ العضو) — محمي بالحارس أعلاه
-    app.post('/api/guild/:guildId/appeals/decide', express.urlencoded({ extended: false }), async (req, res) => {
+    app.post('/api/guild/:guildId/appeals/decide', express.urlencoded({ extended: false }), sensitiveActionLimiter, async (req, res) => {
         try {
             const guildId = req.params.guildId;
             const appealId = parseInt(String((req.body || {}).appealId || ''), 10);
@@ -13621,6 +13668,22 @@ ${embedScriptHtml}
             if (!fs.existsSync(uploadDir)) {
                 fs.mkdirSync(uploadDir, { recursive: true });
             }
+
+            // 🔒 منع امتلاء القرص: إذا المجلد تخطى 500 ملف نُشطف الأقدم حتى يرجع 400 (كل رفع ~8MB كحد أقصى)
+            try {
+                const _files = fs.readdirSync(uploadDir).map(f => {
+                    try {
+                        const _st = fs.statSync(path.join(uploadDir, f));
+                        return _st.isFile() ? { f, m: _st.mtimeMs } : null;
+                    } catch { return null; }
+                }).filter(Boolean);
+                if (_files.length > 500) {
+                    _files.sort((x, y) => x.m - y.m);
+                    for (let i = 0; i < _files.length - 400; i++) {
+                        try { fs.unlinkSync(path.join(uploadDir, _files[i].f)); } catch {}
+                    }
+                }
+            } catch {}
 
             // ✅ تحقق وتطبيع: فكّ ترميز الصورة server-side وخزّن PNG مضموناً (يكشف الملفات التالفة/غير المدعومة فور الرفع بدل السقوط الصامت)
             let storeBuf = dataBuffer, storeExt = ext;
@@ -13803,7 +13866,7 @@ ${embedScriptHtml}
                 // تحقق فعلي من صلاحية رابط البانر قبل setImage (مهلة قصيرة)
                 if (hasBanner && isSafeImageUrl(bannerRaw)) {
                     try {
-                        const testRes = await fetch(String(bannerRaw).trim(), { method: 'HEAD', signal: timeoutSignal(8000) }).catch(() => null);
+                        const testRes = await fetchSafeUrl(bannerRaw, { method: 'HEAD', signal: timeoutSignal(8000) });
                         const ct = testRes && testRes.headers ? String(testRes.headers.get('content-type') || '') : '';
                         if (testRes && testRes.ok && (ct.includes('image') || ct === '')) {
                             emb.setImage(String(bannerRaw).trim());
@@ -13824,7 +13887,7 @@ ${embedScriptHtml}
                 if (hasBanner && isSafeImageUrl(bannerRaw)) {
                     // للنص العادي: أرسل البانر كمرفق مباشر إن كان الرابط يعمل
                     try {
-                        const r = await fetch(String(bannerRaw).trim(), { method: 'GET', signal: timeoutSignal(12000) }).catch(() => null);
+                        const r = await fetchSafeUrl(bannerRaw, { method: 'GET', signal: timeoutSignal(12000) });
                         if (r && r.ok) {
                             const ct = String(r.headers.get('content-type') || '');
                             if (ct.includes('image')) {
@@ -13844,7 +13907,7 @@ ${embedScriptHtml}
             if (wantImage) {
                 try {
                     const canvasUtil = require('../utils/canvas');
-                    const card = await canvasUtil.createWelcomeCard(member, (hasBanner && isSafeImageUrl(bannerRaw)) ? String(bannerRaw).trim() : null);
+                    const card = await canvasUtil.createWelcomeCard(member, (hasBanner && isSafeImageUrl(bannerRaw) && await isSafeRemoteHost(bannerRaw)) ? String(bannerRaw).trim() : null);
                     if (card && card.length > 0) {
                         files.length = 0;
                         files.push({ attachment: card, name: 'welcome_test.png' });
@@ -13852,7 +13915,7 @@ ${embedScriptHtml}
                             // createWelcomeCard يرسم تدرجاً عند فشل البانر — نميّز عبر محاولة تحميل البانر
                             if (!bannerApplied) {
                                 try {
-                                    const chk = await fetch(String(bannerRaw).trim(), { method: 'HEAD', signal: timeoutSignal(8000) }).catch(() => null);
+                                    const chk = await fetchSafeUrl(bannerRaw, { method: 'HEAD', signal: timeoutSignal(8000) });
                                     if (chk && chk.ok) { bannerApplied = true; bannerReason = ''; }
                                 } catch {}
                             }
@@ -13874,7 +13937,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/settings', express.json(), validate(settingsSchema), async (req, res) => {
+    app.post('/api/guild/:guildId/settings', express.json(), writeLimiter, validate(settingsSchema), async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -13970,7 +14033,10 @@ ${embedScriptHtml}
                 }
             }
             // ✅ تطبيق صورة البوت والبنر على حساب البوت فوراً (bot_about يُحفظ للعرض فقط — لا API له في ديسكورد)
-            if ((settings.bot_avatar !== undefined && settings.bot_avatar) || (settings.bot_banner !== undefined && settings.bot_banner)) {
+            // 🔒 بوابة مالك البوت: تغيير الأفاتار/البانر عالمي على حساب البوت — مو لأي أدمن سيرفر
+            const _botOwnerId = process.env.OWNER_ID || config.ownerId || (client?.application?.owner?.id) || null;
+            const _reqIsBotOwner = !!(_botOwnerId && String(req.session?.user?.id || '') === String(_botOwnerId));
+            if (_reqIsBotOwner && ((settings.bot_avatar !== undefined && settings.bot_avatar) || (settings.bot_banner !== undefined && settings.bot_banner))) {
                 try {
                     if (settings.bot_avatar && client?.user?.setAvatar) {
                         await client.user.setAvatar(String(settings.bot_avatar)).catch(() => {});
@@ -15016,7 +15082,8 @@ ${embedScriptHtml}
             const { appId } = req.params;
             const { title, description, log_channel, accepted_role, reviewer_role, questions, status, panel_image } = req.body;
 
-            const updated = database.updateApplication(appId, title, description, questions || [], log_channel, accepted_role, reviewer_role, status || 'open', panel_image || null);
+            // 🔒 عزل سيرفر: تعديل نموذج سيرفر آخر بمعرّفه فقط مسدود
+            const updated = database.updateApplication(appId, title, description, questions || [], log_channel, accepted_role, reviewer_role, status || 'open', panel_image || null, req.params.guildId);
             res.json({ success: true, app: updated });
         } catch(e) {
             res.status(500).json({ success: false, error: e.message });
@@ -15027,7 +15094,8 @@ ${embedScriptHtml}
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { appId } = req.params;
-            database.deleteApplication(appId);
+            // 🔒 عزل سيرفر: حذف نموذج سيرفر آخر بمعرّفه فقط مسدود
+            database.deleteApplication(appId, req.params.guildId);
             res.json({ success: true });
         } catch(e) {
             res.status(500).json({ success: false, error: e.message });
