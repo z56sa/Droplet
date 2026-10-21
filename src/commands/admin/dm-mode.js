@@ -14,6 +14,13 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
+    // 🔒 بوابة حية (سد مسار البريفكس عبر الشيم)
+    const callerPerms = interaction.member?.permissions;
+    const canManage = callerPerms && (callerPerms.has(PermissionFlagsBits.Administrator) || callerPerms.has(PermissionFlagsBits.ManageGuild));
+    if (!canManage) {
+      const lang = getGuildLang(interaction.guild.id);
+      return interaction.reply({ content: '🔒 هذا الأمر للإدارة فقط — تحتاج صلاحية Administrator أو Manage Server.', flags: 64 });
+    }
     const lang = getGuildLang(interaction.guild.id);
     const enabled = interaction.options.getBoolean('enabled');
     db.updateGuildSetting(interaction.guild.id, 'suggestions_dm_notify', enabled ? 1 : 0);

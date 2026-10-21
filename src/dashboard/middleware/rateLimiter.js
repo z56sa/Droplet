@@ -59,6 +59,21 @@ const appealLimiter = rateLimit({
     }
 });
 
+// ==========================================
+// Auth Limiter (OAuth / تسجيل الدخول)
+// 15 محاولة كل 10 دقائق لكل IP على /auth/discord{,/callback} و /logout —
+// يمنع زراعة جلسات شبح (فيلود جلسات قاعدة البيانات) وضرب نقطة OAuth
+// ==========================================
+const authLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 15,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).type('html').send('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>مهلة | Droplet</title></head><body style="background:#070d1d;color:#e2e8f0;font-family:\'Segoe UI\',Tahoma,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;"><div style="text-align:center;"><h1 style="color:#f59e0b;">⏳ محاولات كثيرة</h1><p style="color:#94a3b8;">عدد كبير من محاولات الدخول من هذا العنوان — حاول بعد 10 دقائق.</p></div></body></html>');
+    }
+});
+
 /**
  * Internal Sync Limiter
  * 30 requests per minute on /internal/sync/users — the bot pushes once per 3 min,
@@ -80,5 +95,6 @@ module.exports = {
     sensitiveActionLimiter,
     aiLimiter,
     appealLimiter,
-    syncLimiter
+    syncLimiter,
+    authLimiter
 };

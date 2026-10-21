@@ -8,6 +8,10 @@ const { cacheMessage } = require('../../utils/messageCache');
 
 const spamMap = new Map();
 
+// 🔒 ReDoS: كاش تعابير منتظمة مُجمَّعة مرة + قص المدخَل قبل الفحص — أنماط الأعضاء لا تُعاد ترجمتها بكل رسالة
+const _regexCache = new Map();
+const _regexProbeLen = 400;
+
 const DEBUG = false;
 const dlog = (...a) => { if (DEBUG) console.log(...a); };
 
@@ -110,7 +114,10 @@ function matchCustomAlias(trimmedContent, cmdConfigs, prefix, client, ctx) {
 
   const cfgKeys = Object.keys(cmdConfigs || {});
   const ctxTag = ctx && (ctx.guildId || ctx.channelId) ? ` guild=${ctx.guildId || '?'} channel=${ctx.channelId || '?'}` : '';
-  console.log(`[ALIAS]${ctxTag} input="${trimmedContent}" | firstWord="${firstWord}" | cfgKeys=${cfgKeys.length} | keys=${cfgKeys.slice(0,10).join(',')}`);
+  // 🔒 تعقيم ما يُطبع بالكونسول (سطور جديدة/نص طويل — منع غش السجلات داخل حاويات الاستضافة)
+  const _safeLog = String(trimmedContent).replace(/[\r\n\t]+/g, ' ').slice(0, 60);
+  const _safeWord = String(firstWord).replace(/[\r\n\t]+/g, ' ').slice(0, 60);
+  console.log(`[ALIAS]${ctxTag} input="${_safeLog}" | firstWord="${_safeWord}" | cfgKeys=${cfgKeys.length} | keys=${cfgKeys.slice(0,10).join(',')}`);
 
   for (const [cmdKey, cfg] of Object.entries(cmdConfigs)) {
     if (!cfg || !cfg.alias) continue;
@@ -627,7 +634,16 @@ module.exports = {
         else if (mode === 'starts') isMatch = testContent.startsWith(trig);
         else if (mode === 'ends') isMatch = testContent.endsWith(trig);
         else if (mode === 'regex') {
-          try { isMatch = new RegExp(r.trigger_word, r.case_sensitive ? '' : 'i').test(rawContent); } catch (e) {}
+          const _flags = r.case_sensitive ? '' : 'i';
+          const _ckey = `${r.id != null ? r.id : trig}|${_flags}|${trig}`;
+          let _re = _regexCache.get(_ckey);
+          if (_re === undefined) {
+            try { _re = new RegExp(r.trigger_word, _flags); } catch (e) { _re = null; }
+            _regexCache.set(_ckey, _re);
+            if (_regexCache.size > 500) _regexCache.clear(); // 🔒 سقف الكاش
+          }
+          // 🔒 قص المحتوى قبل الفحص — يحد أثر الأنماط الكارثية على الرسائل الطويلة
+          if (_re) { try { isMatch = _re.test(rawContent.slice(0, _regexProbeLen)); } catch (e) { isMatch = false; } }
         } else isMatch = testContent.includes(trig);
 
         if (!isMatch) continue;

@@ -144,6 +144,8 @@ async function loadBannerImage(bannerUrl) {
       if (!/^https?:\/\//i.test(raw)) return null;
     }
   } catch (e) { console.log('[welcome-card] disk check error:', e.message); }
+  // 🔒 SSRF: روابط خارجية https آمنة فقط — أي قيمة غريبة (file:// / private host) تسقط على التدرج الافتراضي
+  if (typeof raw !== 'string' || !isSafeExternalUrl(raw)) return null;
   try { const img = await loadImage(raw); console.log('[welcome-card] banner loaded from URL'); return img; }
   catch (e) { console.log('[welcome-card] URL banner failed:', e.message); return null; }
 }

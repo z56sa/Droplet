@@ -46,7 +46,7 @@ function dashDateLocale(req, arLocale) {
 }
 
 const { requireAuth, createGuildAuthMiddleware } = require('./middleware/auth');
-const { apiLimiter, sensitiveActionLimiter, aiLimiter, appealLimiter, syncLimiter } = require('./middleware/rateLimiter');
+const { apiLimiter, sensitiveActionLimiter, aiLimiter, appealLimiter, syncLimiter, authLimiter } = require('./middleware/rateLimiter');
 const { errorHandler } = require('./middleware/errorHandler');
 const {
     validate,
@@ -66,6 +66,23 @@ const {
 // ✅ Escape لعرض نصوص قادمة من مستخدمين/Discord داخل HTML
 function escHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// 🔒 أساس URL موثوق للروابط المبنية من الطلب (OAuth redirect، روابط الملفات، روابط المراجعة):
+// ما نعاوج الـ Host/Fwd-Host ما إلا إذا طابق النطاق المُعدّ — يمنع تسمم الهيدرات
+function trustedBaseUrl(req) {
+    const configured = process.env.DASHBOARD_URL || config.dashboardUrl || '';
+    const proto = req ? (req.headers['x-forwarded-proto'] || req.protocol || 'https') : 'https';
+    const host = req ? String(req.headers['x-forwarded-host'] || req.get('host') || '') : '';
+    let base = host ? `${proto}://${host}` : configured;
+    try {
+        if (configured) {
+            const _cfgHost = new URL(configured).host.toLowerCase();
+            const _reqHost = host.split(':')[0].toLowerCase();
+            if (host && _reqHost !== _cfgHost) base = configured;   // host غريب — نتجاوزه ونتوجه للمعدّ
+        }
+    } catch (e) {}
+    return base;
 }
 
 // 🔒 SSRF guard: روابط الصور الخارجية https فقط وبلا عناوين داخلية/خاصة
@@ -125,6 +142,8 @@ module.exports = function (app, client) {
 
     // Apply API rate limiter to all API endpoints
     app.use('/api/', apiLimiter);
+    // 🔒 Rate limit مسارات الدخول — يمنع زراعة جلسات شبح (صفوف جلسات لا تنتهي) وضرب نقطة OAuth
+    app.use(['/auth/discord', '/auth/discord/callback', '/logout'], authLimiter);
 
     // Helper: Discord OAuth2 config
     const getOAuthConfig = (req) => {
@@ -137,7 +156,16 @@ module.exports = function (app, client) {
         const forwardedProto = req ? (req.headers['x-forwarded-proto'] || req.protocol) : 'https';
         const host = req ? (req.headers['x-forwarded-host'] || req.get('host')) : null;
         const hostUrl = host ? `${forwardedProto}://${host}` : null;
-        const baseUrl = hostUrl || process.env.DASHBOARD_URL || config.dashboardUrl;
+        const configuredBase = process.env.DASHBOARD_URL || config.dashboardUrl || '';
+        let baseUrl = hostUrl || configuredBase;
+        // 🔒 Host pinning: الـ redirect_uri ما يتكسر بنطاق مزوّر من الهيديرز — أي host مو مطابق للمُعدّ تجاهله
+        try {
+            if (configuredBase && hostUrl) {
+                const _cfgHost = new URL(configuredBase).host.toLowerCase();
+                const _reqHost = String(host).split(':')[0].toLowerCase();
+                if (_reqHost !== _cfgHost) baseUrl = configuredBase;
+            }
+        } catch (e) {}
         const redirectUri = `${baseUrl}/auth/discord/callback`;
         return { clientId, clientSecret, redirectUri };
     };
@@ -212,8 +240,8 @@ module.exports = function (app, client) {
               _tAdminOk = !!_tm && (_tg.ownerId === _sessionUser.id || _tm.permissions.has(PermissionFlagsBits.ManageGuild));
             } catch {}
             if (!_tAdminOk) {
-              // fallback: snapshot سيرفرات يديرها المستخدم عند تسجيل الدخول
-              _tAdminOk = (req.session?.guilds || []).some(g => String(g.id) === String(transcript.guild_id));
+              // 🔒 fallback يصير فقط إذا فشل الجلب الحي — ومفروض تكون snapshot يدل فعلياً على مالك/إدارة
+              _tAdminOk = (req.session?.guilds || []).some(g => String(g.id) === String(transcript.guild_id) && (g.isOwner || (Number(g.permissions || 0) & 0x8) || (Number(g.permissions || 0) & 0x20)));
             }
           }
           if (!_tOwnerOk && !_tAdminOk) {
@@ -387,6 +415,12 @@ module.exports = function (app, client) {
                 }
             }
 
+            // 🔒 Session fixation: نوّلد معرف جلسة جديد قبل كتابة هوية المستخدم والتوكن
+            // (بدون هذا، شنط/روابط مُزروعة بمعرف جلسة معروفة تنقل المهاجم لجلسة الضحية بعد دخولها)
+            await new Promise((resolve) => {
+                try { req.session.regenerate((err) => { resolve(); }); } catch (e) { resolve(); }
+            });
+
             // Save to user session including OAuth token lifecycle
             req.session.user = {
                 id: userData.id,
@@ -419,7 +453,7 @@ module.exports = function (app, client) {
             res.redirect('/dashboard/manage');
         } catch (err) {
             console.error('[OAUTH ERROR] OAuth callback error:', err);
-            res.status(500).send('حدث خطأ أثناء تسجيل الدخول: ' + err.message);
+            res.status(500).send('حدث خطأ أثناء تسجيل الدخول: ' + escHtml(String((err && err.message) || err)));
         }
     });
 
@@ -778,7 +812,11 @@ module.exports = function (app, client) {
     app.post('/internal/sync/users', syncLimiter, (req, res) => {
         try {
             const token = String(req.headers['x-sync-token'] || '');
-            if (!process.env.BOT_TOKEN || token !== process.env.BOT_TOKEN) {
+            // 🔒 مقارنة ثابتة الزمن (timing-safe) — هاش مشترك الطول يمنع قياس زمن المقارنة لكشف التوكن
+            const _crypto = require('crypto');
+            const _expHash = _crypto.createHash('sha256').update(String(process.env.BOT_TOKEN || '')).digest();
+            const _gotHash = _crypto.createHash('sha256').update(token).digest();
+            if (!process.env.BOT_TOKEN || !_crypto.timingSafeEqual(_expHash, _gotHash)) {
                 return res.status(403).json({ success: false, error: 'invalid sync token' });
             }
             const rows = Array.isArray(req.body?.users) ? req.body.users.slice(0, 3000) : [];
@@ -969,11 +1007,28 @@ module.exports = function (app, client) {
     // مخزن مؤقت للعمليات الجارية (منع Race Conditions)
     const _purchaseLocks = new Set();
 
+    // 🔒 فحص عضوية حي في السيرفر (سد قراءة/شراء المتجر من غير أعضاء — العبور بقوي السيرفرات)
+    async function _isStoreMember(guildId, userId) {
+        try {
+            const _g = client?.guilds?.cache?.get(String(guildId));
+            if (!_g) return false;
+            let _m = _g.members.cache.get(String(userId));
+            if (!_m) _m = await _g.members.fetch(String(userId)).catch(() => null);
+            return !!_m;
+        } catch {
+            return false;
+        }
+    }
+
     // GET /api/guild/:guildId/store/items — جلب عناصر المتجر
-    app.get('/api/guild/:guildId/store/items', (req, res) => {
+    app.get('/api/guild/:guildId/store/items', async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
             const { guildId } = req.params;
+            // 🔒 أعضاء السيرفر فقط (المتجر بيانات خاصة بالسيرفر اللي ألبس فيه)
+            if (!(await _isStoreMember(guildId, req.session.user.id))) {
+                return res.status(403).json({ success: false, error: 'أعضاء السيرفر فقط يمكنهم عرض المتجر' });
+            }
             const items = rawDb.prepare(`
                 SELECT * FROM store_items
                 WHERE guild_id = ? AND is_active = 1
@@ -986,11 +1041,15 @@ module.exports = function (app, client) {
     });
 
     // GET /api/guild/:guildId/store/inventory — مخزون المستخدم
-    app.get('/api/guild/:guildId/store/inventory', (req, res) => {
+    app.get('/api/guild/:guildId/store/inventory', async (req, res) => {
         try {
             const { guildId } = req.params;
             const userId = req.session?.user?.id;
             if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
+            // 🔒 أعضاء السيرفر فقط
+            if (!(await _isStoreMember(guildId, userId))) {
+                return res.status(403).json({ success: false, error: 'أعضاء السيرفر فقط يمكنهم عرض المخزون' });
+            }
             const now = Math.floor(Date.now() / 1000);
             const inventory = rawDb.prepare(`
                 SELECT ui.*, si.name, si.icon, si.item_type, si.description
@@ -1007,15 +1066,23 @@ module.exports = function (app, client) {
     });
 
     // GET /api/guild/:guildId/store/transactions — سجل المعاملات (أدمن)
-    app.get('/api/guild/:guildId/store/transactions', (req, res) => {
+    app.get('/api/guild/:guildId/store/transactions', async (req, res) => {
         try {
             const { guildId } = req.params;
             const userId = req.session?.user?.id;
             if (!userId) return res.status(401).json({ success: false, error: 'غير مسجل الدخول' });
-            // التحقق من صلاحيات الأدمن (يمتلك MANAGE_GUILD)
-            const userGuilds = req.session?.guilds || [];
-            const guild = userGuilds.find(g => g.id === guildId);
-            const isAdmin = guild && (BigInt(guild.permissions || 0) & BigInt(0x20)) !== BigInt(0);
+            // 🔒 أعضاء السيرفر فقط
+            if (!(await _isStoreMember(guildId, userId))) {
+                return res.status(403).json({ success: false, error: 'أعضاء السيرفر فقط يمكنهم عرض المعاملات' });
+            }
+            // التحقق الحي من صلاحية الأدمن (سد الاعتماد على snapshot الجلسة — إزالة رتبة الإدارة يقطع السجل فوراً)
+            let isAdmin = false;
+            try {
+                const _g = client?.guilds?.cache?.get(String(guildId));
+                let _m = _g ? _g.members.cache.get(String(userId)) : null;
+                if (_g && !_m) _m = await _g.members.fetch(String(userId)).catch(() => null);
+                if (_m) isAdmin = (String(_g.ownerId) === String(userId)) || _m.permissions.has(PermissionFlagsBits.ManageGuild);
+            } catch (e) {}
             const query = isAdmin
                 ? rawDb.prepare(`SELECT * FROM store_transactions WHERE guild_id = ? ORDER BY created_at DESC LIMIT 100`).all(guildId)
                 : rawDb.prepare(`SELECT * FROM store_transactions WHERE guild_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 50`).all(guildId, userId);
@@ -1030,6 +1097,10 @@ module.exports = function (app, client) {
         const { guildId, itemId } = req.params;
         const userId = req.session?.user?.id;
         if (!userId) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
+        // 🔒 أعضاء السيرفر فقط — الشراء داخل سيرفر اللي اللاعب عضو به
+        if (!(await _isStoreMember(guildId, userId))) {
+            return res.status(403).json({ success: false, error: 'يجب أن تكون عضواً في هذا السيرفر للشراء' });
+        }
 
         const lockKey = `${userId}:${guildId}:${itemId}`;
         if (_purchaseLocks.has(lockKey)) {
@@ -2450,7 +2521,7 @@ function vReq() {
                 const _ch = _chId ? (botGuild.channels.cache.get(_chId) || await botGuild.channels.fetch(_chId).catch(() => null)) : null;
                 if (_ch && _ch.isTextBased()) {
                     const _userObj = client.users.cache.get(userId) || null;
-                    const _reviewUrl = `${req.protocol}://${req.get('host')}/dashboard/${guildId}/appeals`;
+                    const _reviewUrl = `${trustedBaseUrl(req)}/dashboard/${guildId}/appeals`;
                     await _ch.send({ embeds: [new EmbedBuilder()
                         .setColor('#f59e0b')
                         .setAuthor({ name: `${_username || 'مستخدم'} — طلب فك حظر`, iconURL: _userObj ? _userObj.displayAvatarURL({ size: 64 }) : undefined })
@@ -2613,8 +2684,9 @@ ${_cards || '<p style="color:#64748b;text-align:center;padding:34px;">لا تو�
                 } catch (e) {}
             }
             // fallback: نرجع لـ snapshot الجلسة فقط إذا فشل جلب العضو من ديسكورد (إعدادات خصوصية)
+            // 🔒 والمفروض تكون القيمة المخزنة تدل فعلياً على مالك أو Administrator أو ManageGuild — مش بس "بعضوية"
             if (!_livePermCheckDone) {
-                userCanManage = sessionGuilds.some(g => g.id === guildId);
+                userCanManage = sessionGuilds.some(g => g.id === guildId && (g.isOwner || (Number(g.permissions || 0) & 0x8) || (Number(g.permissions || 0) & 0x20)));
             }
             if (!userCanManage) {
                 return res.status(403).send(`
@@ -2839,7 +2911,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="relative flex items-center justify-between">
                                 <div class="flex items-center gap-4">
                                     <div class="text-right">
-                                        <h2 class="text-2xl font-black text-white">${guild.name || "Droplet'BOT"}</h2>
+                                        <h2 class="text-2xl font-black text-white">${escHtml(guild.name || "Droplet'BOT")}</h2>
                                         <p class="text-white/80 text-xs font-mono mt-0.5">ID: ${guildId}</p>
                                         <div class="flex items-center gap-1.5 mt-2 justify-end">
                                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -4277,7 +4349,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                                     <span>أعضاء معفيون من الفلتر</span>
                                     <span class="text-emerald-400">🛡️</span>
                                 </div>
-                                <input type="text" name="automod_exempt_users" value="${settings.automod_exempt_users || ''}" placeholder="ابحث عن عضو أو أدخل الـ ID..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right font-mono">
+                                <input type="text" name="automod_exempt_users" value="${escHtml(settings.automod_exempt_users || '')}" placeholder="ابحث عن عضو أو أدخل الـ ID..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right font-mono">
                                 <p class="text-[10px] text-gray-500 text-right">الأدمنية غير معفيين تلقائياً — أضفهم هنا إذا أردت</p>
                             </div>
 
@@ -4319,7 +4391,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                         const word = input.value.trim();
                         if (!word) return;
                         
-                        let current = ${JSON.stringify(String(settings.bad_words_list || ''))};
+                        let current = ${JSON.stringify(String(settings.bad_words_list || '')).replace(/</g, '\\u003c')};
                         let words = current ? current.split(/[\n,]+/).map(w => w.trim()).filter(Boolean) : [];
                         if (!words.includes(word)) {
                             words.push(word);
@@ -4333,7 +4405,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                     }
 
                     async function removeStrictBadWord(word) {
-                        let current = ${JSON.stringify(String(settings.bad_words_list || ''))};
+                        let current = ${JSON.stringify(String(settings.bad_words_list || '')).replace(/</g, '\\u003c')};
                         let words = current ? current.split(/[\n,]+/).map(w => w.trim()).filter(Boolean) : [];
                         words = words.filter(w => w !== word);
                         await fetch('/api/guild/${guildId}/settings', {
@@ -4349,7 +4421,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                         const word = input.value.trim();
                         if (!word) return;
 
-                        let current = ${JSON.stringify(String(settings.whitelist_words_list || ''))};
+                        let current = ${JSON.stringify(String(settings.whitelist_words_list || '')).replace(/</g, '\\u003c')};
                         let words = current ? current.split(/[\n,]+/).map(w => w.trim()).filter(Boolean) : [];
                         if (!words.includes(word)) {
                             words.push(word);
@@ -4363,7 +4435,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-left" dir="ltr"
                     }
 
                     async function removeWhitelistedWord(word) {
-                        let current = ${JSON.stringify(String(settings.whitelist_words_list || ''))};
+                        let current = ${JSON.stringify(String(settings.whitelist_words_list || '')).replace(/</g, '\\u003c')};
                         let words = current ? current.split(/[\n,]+/).map(w => w.trim()).filter(Boolean) : [];
                         words = words.filter(w => w !== word);
                         await fetch('/api/guild/${guildId}/settings', {
@@ -5888,14 +5960,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-2">
-                                        <span class="text-xs font-mono text-white" id="wlColorLabel">${settings.welcome_embed_color || '#ef5700'}</span>
-                                        <input type="color" name="welcome_embed_color" id="wlColorInput" value="${settings.welcome_embed_color || '#ef5700'}" onchange="saveWl('welcome_embed_color', this.value); document.getElementById('wlPreviewEmbed').style.borderRightColor = this.value; document.getElementById('wlColorLabel').innerText = this.value;" class="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0">
+                                        <span class="text-xs font-mono text-white" id="wlColorLabel">${escHtml(settings.welcome_embed_color || '#ef5700')}</span>
+                                        <input type="color" name="welcome_embed_color" id="wlColorInput" value="${escHtml(settings.welcome_embed_color || '#ef5700')}" onchange="saveWl('welcome_embed_color', this.value); document.getElementById('wlPreviewEmbed').style.borderRightColor = this.value; document.getElementById('wlColorLabel').innerText = this.value;" class="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0">
                                     </div>
                                     <span class="text-xs font-bold text-gray-300">لون الإيمبد</span>
                                 </div>
                                 <div id="wlPreviewEmbed" class="bg-[#070d1d] border-r-4 border-blue-400 rounded-xl p-5 space-y-4 text-right shadow-inner">
                                     <div class="flex items-center justify-end gap-2 text-xs font-bold text-white">
-                                        <span>${guild.name}</span>
+                                        <span>${escHtml(guild.name)}</span>
                                         <img src="${guildIcon}" class="w-5 h-5 rounded-full object-cover">
                                     </div>
                                     <div class="space-y-1">
@@ -5963,14 +6035,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-2">
-                                        <span class="text-xs font-mono text-white" id="lvColorLabel">${settings.leave_embed_color || '#ef4444'}</span>
-                                        <input type="color" name="leave_embed_color" id="lvColorInput" value="${settings.leave_embed_color || '#ef4444'}" onchange="saveWl('leave_embed_color', this.value); document.getElementById('lvPreviewEmbed').style.borderRightColor = this.value; document.getElementById('lvColorLabel').innerText = this.value;" class="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0">
+                                        <span class="text-xs font-mono text-white" id="lvColorLabel">${escHtml(settings.leave_embed_color || '#ef4444')}</span>
+                                        <input type="color" name="leave_embed_color" id="lvColorInput" value="${escHtml(settings.leave_embed_color || '#ef4444')}" onchange="saveWl('leave_embed_color', this.value); document.getElementById('lvPreviewEmbed').style.borderRightColor = this.value; document.getElementById('lvColorLabel').innerText = this.value;" class="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0">
                                     </div>
                                     <span class="text-xs font-bold text-gray-300">لون الإيمبد</span>
                                 </div>
                                 <div id="lvPreviewEmbed" class="bg-[#070d1d] border-r-4 border-rose-500 rounded-xl p-5 space-y-4 text-right shadow-inner">
                                     <div class="flex items-center justify-end gap-2 text-xs font-bold text-white">
-                                        <span>${guild.name}</span>
+                                        <span>${escHtml(guild.name)}</span>
                                         <img src="${guildIcon}" class="w-5 h-5 rounded-full object-cover">
                                     </div>
                                     <p id="pvLvMsg" class="text-xs text-gray-300">وداعاً **{user}**، نتمنى لك التوفيق</p>
@@ -6449,7 +6521,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">عنوان لوحة التذاكر (Panel Title)</label>
-                                    <input type="text" id="input_ticket_panel_title" name="ticket_panel_title" value="${settings.ticket_panel_title || 'التذكرة'}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
+                                    <input type="text" id="input_ticket_panel_title" name="ticket_panel_title" value="${escHtml(settings.ticket_panel_title || 'التذكرة')}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">قناة سجلات التذاكر (Transcripts Channel)</label>
@@ -6460,7 +6532,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="grid grid-cols-1 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">وصف اللوحة (يظهر تحت العنوان مثل: قم باختيار قسم التذكرة المناسب لفتحه)</label>
-                                    <textarea name="ticket_panel_desc" id="input_ticket_panel_desc" rows="2" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl p-4 text-xs text-white outline-none leading-relaxed text-right">${settings.ticket_panel_desc || 'قم باختيار قسم التذكرة المناسب لفتحه'}</textarea>
+                                    <textarea name="ticket_panel_desc" id="input_ticket_panel_desc" rows="2" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl p-4 text-xs text-white outline-none leading-relaxed text-right">${escHtml(settings.ticket_panel_desc || 'قم باختيار قسم التذكرة المناسب لفتحه')}</textarea>
                                 </div>
                             </div>
 
@@ -6474,7 +6546,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div id="ticket_placeholder_wrap">
                                     <label class="block text-xs font-bold text-gray-300 mb-2">نص القائمة المنسدلة (Placeholder — مثل: اختر نوع التذكرة)</label>
-                                    <input type="text" id="input_ticket_panel_placeholder" name="ticket_panel_placeholder" value="${settings.ticket_panel_placeholder || 'اختر نوع التذكرة'}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
+                                    <input type="text" id="input_ticket_panel_placeholder" name="ticket_panel_placeholder" value="${escHtml(settings.ticket_panel_placeholder || 'اختر نوع التذكرة')}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
                                 </div>
                             </div>
 
@@ -7153,12 +7225,12 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         </div>
                                         <span class="font-bold text-white">رسالة رفع المستوى (كتابي)</span>
                                     </div>
-                                    <input type="text" name="level_message" value="${settings.level_message || '🎉 مبروك {user}! وصلت للمستوى **{level}**!'}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
+                                    <input type="text" name="level_message" value="${escHtml(settings.level_message || '🎉 مبروك {user}! وصلت للمستوى **{level}**!')}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
                                 </div>
 
                                 <div class="space-y-2">
                                     <label class="block text-xs font-bold text-white text-right">رسالة رفع المستوى (صوتي)</label>
-                                    <input type="text" name="level_voice_msg" value="${settings.level_voice_msg || '🎤 مبروك {user}! وصلت للمستوى الصوتي **{level}**!'}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
+                                    <input type="text" name="level_voice_msg" value="${escHtml(settings.level_voice_msg || '🎤 مبروك {user}! وصلت للمستوى الصوتي **{level}**!')}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right">
                                 </div>
 
                                 <div class="bg-[#070d1d] border border-blue-500/20 p-4 rounded-xl flex items-center justify-between">
@@ -7178,7 +7250,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <!-- المعاينة وزر الحذف -->
                                         <div class="w-full md:w-auto flex flex-col items-center gap-2">
                                             <div class="w-full md:w-48 h-24 rounded-xl border border-blue-500/20 bg-[#0b1322] overflow-hidden flex items-center justify-center relative group">
-                                                <img id="img_level_up_image" src="${settings.level_up_image || ''}" class="w-full h-full object-cover ${settings.level_up_image ? '' : 'hidden'}">
+                                                <img id="img_level_up_image" src="${escHtml(settings.level_up_image || '')}" class="w-full h-full object-cover ${settings.level_up_image ? '' : 'hidden'}">
                                                 <div id="placeholder_level_up_image" class="text-gray-500 text-xs flex flex-col items-center gap-1 ${settings.level_up_image ? 'hidden' : ''}">
                                                     <span class="text-2xl">🖼️</span>
                                                     <span>لا توجد صورة</span>
@@ -8882,7 +8954,18 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         </div>
 
                         <script>
-                        const _guildRolesMap = ${JSON.stringify(guildRoles.reduce((acc, r) => { acc[r.id] = { name: r.name, color: r.hexColor || '#99aab5' }; return acc; }, {}))};
+                        const _guildRolesMap = ${JSON.stringify(guildRoles.reduce((acc, r) => { acc[r.id] = { name: r.name, color: r.hexColor || '#99aab5' }; return acc; }, {})).replace(/</g, '\\u003c')};
+
+                        function _escA(s) {
+                            // 🔒 إخفاء آمن قصير لقيم داخل HTML ديناميكي (اسم الرتبة أو بند قد يمتلك & < > " ')
+                            return String(s ?? '').replace(/[&<>"']/g, function (c) {
+                                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+                            });
+                        }
+                        function _escJ(s) {
+                            // 🔒 قيمة JS-string داخل attribute: JSON.stringify ثم escape — يمنع فكّ الترميز ثنائي المرحلة
+                            return _escA(JSON.stringify(String(s ?? '')));
+                        }
 
                         function getColorRoleIds() {
                             const val = document.getElementById('color_role_ids')?.value || '';
@@ -8930,12 +9013,12 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 const hexColor = roleInfo.color !== '#000000' ? roleInfo.color : '#94a3b8';
                                 return \`
                                     <div class="bg-[#070d1d] border border-blue-500/20 hover:border-pink-500/40 p-3 rounded-xl flex items-center justify-between gap-2 transition group shadow-md">
-                                        <button type="button" onclick="removeColorRole('\${id}')" title="حذف الرتبة من اللوحة" class="text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 w-7 h-7 rounded-lg flex items-center justify-center text-xs transition cursor-pointer">
+                                        <button type="button" onclick="removeColorRole(\${_escJ(id)})" title="حذف الرتبة من اللوحة" class="text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 w-7 h-7 rounded-lg flex items-center justify-center text-xs transition cursor-pointer">
                                             ✕
                                         </button>
                                         <div class="flex items-center gap-2.5 overflow-hidden text-right flex-1 justify-end">
                                             <div class="overflow-hidden">
-                                                <div class="text-xs font-bold text-white truncate" dir="auto">@\${roleInfo.name}</div>
+                                                <div class="text-xs font-bold text-white truncate" dir="auto">@\${_escA(roleInfo.name)}</div>
                                                 <div class="text-[10px] text-gray-500 font-mono">\${hexColor}</div>
                                             </div>
                                             <div class="w-5 h-5 rounded-full border border-white/20 shadow flex-shrink-0" style="background-color: \${hexColor};"></div>
@@ -9271,8 +9354,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 // =============================================
 
 // ---- Server-injected state ----
-var _logsGuildId = '${guildId}';
-var logsState = ${JSON.stringify((() => { try { const raw = settings.logs_config; const parsed = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : {}; return (parsed && typeof parsed === 'object') ? parsed : {}; } catch(e) { return {}; } })())};
+var _logsGuildId = '${String(guildId).replace(/[^0-9]/g, '')}';
+var logsState = ${JSON.stringify((() => { try { const raw = settings.logs_config; const parsed = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : {}; return (parsed && typeof parsed === 'object') ? parsed : {}; } catch(e) { return {}; } })()).replace(/</g, '\\u003c')};
 var categoryChannels = ${JSON.stringify({
     members: settings.log_channel_members || settings.log_channel || '',
     roles: settings.log_channel_roles || settings.log_channel || '',
@@ -10517,7 +10600,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <!-- Server selector pill (Exact to image) -->
                             <div class="bg-[#070d1d] border border-blue-500/20 px-4 py-2 rounded-2xl flex items-center gap-2.5 shadow-inner">
                                 <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                                <span class="text-xs font-bold text-white">${guild.name || "Droplet'BOT"}</span>
+                                <span class="text-xs font-bold text-white">${escHtml(guild.name || "Droplet'BOT")}</span>
                                 <div class="w-6 h-6 rounded-lg bg-blue-800/60 text-white text-xs font-black flex items-center justify-center border border-blue-500/20">Z</div>
                             </div>
                         </div>
@@ -10560,7 +10643,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <p class="text-white text-xs mt-0.5">تغيير اسم البوت المعروض في هذا السيرفر فقط</p>
                                 </div>
                             </div>
-                            <input type="text" name="bot_nickname" id="inpBotNick" value="${settings.bot_nickname || ''}" placeholder="${client?.user?.username || 'Droplet'}" oninput="document.getElementById('prevNickText').innerText = this.value || '${client?.user?.username || 'Droplet'}'" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-2xl px-5 py-3.5 text-xs text-white outline-none text-right font-bold transition">
+                            <input type="text" name="bot_nickname" id="inpBotNick" value="${escHtml(settings.bot_nickname || '')}" placeholder="${client?.user?.username || 'Droplet'}" oninput="document.getElementById('prevNickText').innerText = this.value || '${client?.user?.username || 'Droplet'}'" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-2xl px-5 py-3.5 text-xs text-white outline-none text-right font-bold transition">
                         </div>
 
                         <!-- 2. وصف البوت في السيرفر (About Me) -->
@@ -10666,12 +10749,12 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="w-10 h-10 rounded-2xl bg-blue-400/20 text-blue-400 border border-blue-500/20 flex items-center justify-center text-xl shadow-lg">⚙️</div>
                                 <div class="text-right">
                                     <h3 class="font-black text-white text-lg">الإعدادات العامة</h3>
-                                    <p class="text-white text-xs mt-0.5">إعدادات البوت لسيرفر ${guild.name || "Droplet'BOT"}</p>
+                                    <p class="text-white text-xs mt-0.5">إعدادات البوت لسيرفر ${escHtml(guild.name || "Droplet'BOT")}</p>
                                 </div>
                             </div>
                             <div class="bg-[#070d1d] border border-blue-500/20 px-4 py-2 rounded-2xl flex items-center gap-2.5 shadow-inner">
                                 <span class="w-2 h-2 rounded-full bg-gradient-to-l from-purple-600 to-blue-500 animate-pulse"></span>
-                                <span class="text-xs font-bold text-white">${guild.name || "Droplet'BOT"}</span>
+                                <span class="text-xs font-bold text-white">${escHtml(guild.name || "Droplet'BOT")}</span>
                                 <div class="w-6 h-6 rounded-lg bg-blue-800/60 text-white text-xs font-black flex items-center justify-center border border-blue-500/20">Z</div>
                             </div>
                         </div>
@@ -10686,7 +10769,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <span class="text-[10px] text-gray-500">Command Prefix</span>
                                         <h4 class="font-black text-white text-sm">البادئة (Prefix)</h4>
                                     </div>
-                                    <input type="text" name="prefix" id="inpPrefix" value="${settings.prefix || '!'}" placeholder="!" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-2xl px-6 py-4 text-center text-xl text-white font-mono font-black outline-none shadow-inner transition">
+                                    <input type="text" name="prefix" id="inpPrefix" value="${escHtml(settings.prefix || '!')}" placeholder="!" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-2xl px-6 py-4 text-center text-xl text-white font-mono font-black outline-none shadow-inner transition">
                                 </div>
                                 <p class="text-[11px] text-gray-500 text-right mt-4">الرمز المستخدم قبل الأوامر النصية</p>
                             </div>
@@ -12394,7 +12477,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-gray-300 mb-2">برفكس الأوامر (Prefix)</label>
-                                <input type="text" name="prefix" value="${settings.prefix || '#'}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right font-mono">
+                                <input type="text" name="prefix" value="${escHtml(settings.prefix || '#')}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right font-mono">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-gray-300 mb-2">قناة السجلات (Log Channel)</label>
@@ -12411,7 +12494,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>${guild.name} | Droplet Dashboard</title>
+                <title>${escHtml(guild.name || "Droplet'BOT")} | Droplet Dashboard</title>
                 <script src="https://cdn.tailwindcss.com"></script>
 
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12544,7 +12627,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <div class="text-right">
-                                        <h3 class="font-bold text-white text-xs truncate max-w-[130px]">${guild.name}</h3>
+                                        <h3 class="font-bold text-white text-xs truncate max-w-[130px]">${escHtml(guild.name)}</h3>
                                         <span class="text-[10px] text-white">الأعضاء: ${guild.memberCount || botGuild?.memberCount || 0}</span>
                                     </div>
                                     <div class="relative">
@@ -13435,7 +13518,7 @@ ${embedScriptHtml}
             `);
         } catch (error) {
             console.error("Guild dashboard error:", error);
-            res.status(500).send(`<pre style="color:red;background:#111;padding:20px;font-family:monospace">${error.stack || error.message || error}</pre>`);
+            res.status(500).send(`<pre style="color:red;background:#111;padding:20px;font-family:monospace">${escHtml(String((error && (error.stack || error.message)) || error))}</pre>`);
         }
     });
 
@@ -13506,7 +13589,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/upload-image', express.json({ limit: '20mb' }), async (req, res) => {
+    app.post('/api/guild/:guildId/upload-image', express.json({ limit: '12mb' }), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { imageBase64, fieldName } = req.body;
@@ -13565,9 +13648,8 @@ ${embedScriptHtml}
             const filePath = path.join(uploadDir, fileName);
             fs.writeFileSync(filePath, storeBuf);
 
-            const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-            const host = req.get('host');
-            let fullUrl = `${protocol}://${host}/uploads/${fileName}`;
+            // 🔒 رابط الملف من الأساس الموثوق — الـ Host header المزوّر تجاهله
+            const fullUrl = `${trustedBaseUrl(req)}/uploads/${fileName}`;
 
             // ✅ ثبات دائم بدون أي رسالة في الشات: نخزن bytes الصورة في guild_banners (تُزامَن لـ Turso) ونقدّمها من سيرفرنا
             // ⚠️ فقط بانر الترحيب يستخدم هذه الخانة — رفع بانر التذاكر أو غيره لا يلمسها أبداً (كان يسبب تداخل الصور)
@@ -13610,7 +13692,7 @@ ${embedScriptHtml}
                 if (m && !prevUrl.includes('cdn.discordapp.com')) {
                     const path = require('path');
                     const fs = require('fs');
-                    const fp = path.join(__dirname, 'public', 'uploads', m[1]);
+                    const fp = path.join(__dirname, 'public', 'uploads', path.basename(m[1]));
                     if (fs.existsSync(fp)) { try { fs.unlinkSync(fp); } catch {} }
                 }
             } catch {}
@@ -13806,6 +13888,15 @@ ${embedScriptHtml}
             if (settings && settings.bot_language !== undefined) {
                 settings.bot_language = (String(settings.bot_language).toUpperCase() === 'AR') ? 'AR' : 'EN';
             }
+            // 🔒 مفاتيح اللون: هِكس صحيح فقط (منع حقن قيم فارغة/شرير داخل color input و style)
+            if (settings) {
+                for (const k of ['welcome_embed_color', 'leave_embed_color']) {
+                    if (settings[k] !== undefined && settings[k] !== null && settings[k] !== '') {
+                        const _cv = String(settings[k]).trim();
+                        settings[k] = /^#[0-9a-fA-F]{6}$/.test(_cv) ? _cv : null;
+                    }
+                }
+            }
             // ✅ تنظيف النصوص: 'null' النصية والفارغ إلى null
             if (settings) {
                 for (const k of ['staff_banner_url', 'bot_about', 'bot_avatar', 'bot_banner', 'welcome_banner_image', 'ticket_panel_title', 'ticket_panel_desc', 'ticket_panel_placeholder', 'ticket_panel_banner', 'ticket_welcome_image', 'ticket_welcome_msg', 'ticket_panel_categories']) {
@@ -13814,7 +13905,7 @@ ${embedScriptHtml}
                     }
                 }
                 // 🔒 سياسة روابط الصور: https أو مسار داخلي /uploads فقط — يقطع javascript: والاختراق ب quotes من الأصل
-                for (const k of ['bot_avatar', 'bot_banner', 'welcome_banner_image', 'staff_banner_url', 'ticket_panel_banner', 'ticket_welcome_image']) {
+                for (const k of ['bot_avatar', 'bot_banner', 'welcome_banner_image', 'staff_banner_url', 'ticket_panel_banner', 'ticket_welcome_image', 'level_up_image']) {
                     if (settings[k] !== undefined && settings[k] !== null) {
                         const _sv = String(settings[k]).trim();
                         if (_sv === '' || (!/^https:\/\//i.test(_sv) && !_sv.startsWith('/uploads/'))) {
@@ -13995,6 +14086,9 @@ ${embedScriptHtml}
 
             if (database.addAutoResponder) {
                 const inserted = database.addAutoResponder(guildId, payload);
+                if (inserted && inserted.error) {
+                    return res.status(400).json({ success: false, error: inserted.error });
+                }
                 return res.json({ success: true, item: inserted });
             }
 
@@ -14085,7 +14179,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/clear-all-warnings', async (req, res) => {
+    app.post('/api/guild/:guildId/clear-all-warnings', sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;

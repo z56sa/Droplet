@@ -86,6 +86,15 @@ module.exports = {
 
     // 2. إدارة النقاط (applications points)
     if (subGroup === 'points') {
+      // 🔒 قراءة النقاط متاحة، لكن التعديل (set/reset_user/reset_server) للإدارة فقط — سد مسار البريفكس
+      const canModify = ['set', 'reset_user', 'reset_server'].includes(subCmd);
+      if (canModify) {
+        const callerPerms = interaction.member?.permissions;
+        const ok = callerPerms && (callerPerms.has(PermissionFlagsBits.ManageGuild) || callerPerms.has(PermissionFlagsBits.Administrator));
+        if (!ok) {
+          return interaction.reply({ content: t(lang, 'admin.applications.points_only_admin'), flags: 64 });
+        }
+      }
       if (subCmd === 'list') {
         const target = interaction.options.getUser('user') || interaction.user;
         const points = db.getUserApplicationPoints(guildId, target.id);

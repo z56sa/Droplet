@@ -4,6 +4,7 @@ const canvasUtil = require('../../utils/canvas');
 const config = require('../../config.json');
 const { isEnabled } = require('../../utils/isEnabled');
 const antiNuke = require('../../utils/antiNuke');
+const { isSafeExternalUrl } = require('../../utils/safeUrl');
 
 // مخزن مؤقت لكشف الريد (Raid Detection Map)
 const raidMap = new Map(); // guildId => [timestamps]
@@ -357,7 +358,8 @@ module.exports = {
                   if (_f.existsSync(_fp)) _bf = _f.readFileSync(_fp);
                 }
               } catch {}
-              if (!_bf && /^https?:\/\//i.test(_bu)) {
+              // 🔒 SSRF guard: https فقط وبلا شبكة داخلية — نفس حرس isSafeImageUrl
+              if (!_bf && isSafeExternalUrl(_bu)) {
                 const _sig = (() => { try { return AbortSignal.timeout(8000); } catch { return undefined; } })();
                 const _r = await fetch(_bu, { signal: _sig }).catch(() => null);
                 const _ct = _r && _r.headers ? String(_r.headers.get('content-type') || '') : '';

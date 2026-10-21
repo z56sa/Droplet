@@ -570,7 +570,17 @@ class TursoSync {
                   const m = String(gs?.welcome_banner_image || '').match(/\/uploads\/([^?#\/]+)$/);
                   if (m) {
                     const fp = path.join(upDir, path.basename(m[1]));
-                    if (!fs.existsSync(fp)) fs.writeFileSync(fp, Buffer.from(b64, 'base64'));
+                    if (!fs.existsSync(fp)) {
+                      // 🔒 فحص magic bytes قبل الكتابة: الصف القادم من Turso لازم يكون صورة حقيقية (لا HTML/JS مخادع)
+                      const _b = Buffer.from(b64, 'base64');
+                      const _isImage = _b.length > 16 && (
+                        (_b[0] === 0x89 && _b[1] === 0x50 && _b[2] === 0x4E && _b[3] === 0x47) ||        // PNG
+                        (_b[0] === 0xFF && _b[1] === 0xD8) ||                                          // JPEG
+                        (_b.toString('ascii', 0, 3) === 'GIF') ||                                      // GIF
+                        (_b.toString('ascii', 0, 4) === 'RIFF' && _b.toString('ascii', 8, 12) === 'WEBP') // WEBP
+                      );
+                      if (_isImage) fs.writeFileSync(fp, _b); else console.log('[TURSO] ⚠️ Banner restore skipped — payload is not a real image (guild ' + gid + ').');
+                    }
                   }
                 } catch {}
               } catch {}

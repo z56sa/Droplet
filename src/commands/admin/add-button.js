@@ -28,6 +28,13 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    // 🔒 بوابة حية (سد مسار البريفكس عبر الشيم — أمر إضافات الأزرار ينعكس على العضو العام)
+    const callerPerms = interaction.member?.permissions;
+    const canManage = callerPerms && callerPerms.has(PermissionFlagsBits.Administrator);
+    if (!canManage) {
+      const lang = getGuildLang(interaction.guild.id);
+      return interaction.reply({ content: '🔒 هذا الأمر للإدارة فقط — تحتاج صلاحية Administrator.', flags: 64 });
+    }
     const lang = getGuildLang(interaction.guild.id);
     const sub = interaction.options.getSubcommand();
     const msgId = interaction.options.getString('message_id');

@@ -116,6 +116,16 @@ module.exports = {
 
     // ─── Complete Task ───
     if (sub === 'done') {
+      // 🔒 بوابة الصلاحيات: منع أي عضو عادي من جمع نقاط الإدارة (كانت السلسلة مفتوحة)
+      const callerPerms = interaction.member?.permissions;
+      const isStaffing = callerPerms && (
+        callerPerms.has(PermissionFlagsBits.ModerateMembers) ||
+        callerPerms.has(PermissionFlagsBits.ManageGuild) ||
+        callerPerms.has(PermissionFlagsBits.Administrator)
+      );
+      if (!isStaffing) {
+        return interaction.reply({ content: '🔒 إنجاز المهام متاح للإدارة فقط (Moderate Members أو أعلى).', flags: 64 });
+      }
       const taskId = interaction.options.getInteger('id');
       const result = db.completeStaffTask(taskId, guildId, interaction.user.id);
 

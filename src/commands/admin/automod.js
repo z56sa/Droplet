@@ -74,6 +74,13 @@ module.exports = {
   aliases: ['رقابة', 'اوتومود'],
 
   async execute(interaction) {
+    // 🔒 بوابة حية (سد مسار البريفكس عبر الشيم) — أمر الرقابة كله إداري
+    const callerPerms = interaction.member?.permissions;
+    const canManage = callerPerms && (callerPerms.has(PermissionFlagsBits.Administrator) || callerPerms.has(PermissionFlagsBits.ManageGuild));
+    if (!canManage) {
+      const lang = getGuildLang(interaction.guild.id);
+      return interaction.reply({ content: '🔒 هذا الأمر للإدارة فقط — تحتاج صلاحية Administrator أو Manage Server.', flags: 64 });
+    }
     const lang = getGuildLang(interaction.guild.id);
     const sub = interaction.options.getSubcommand();
     const guildId = interaction.guild.id;

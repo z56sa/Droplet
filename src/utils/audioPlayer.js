@@ -215,16 +215,23 @@ class AudioPlayerManager {
         }
 
         const https = require('https');
-        const http = require('http');
         const { Readable } = require('stream');
         const { StreamType } = require('@discordjs/voice');
 
-        const fetchAudioStream = (url) => {
+        // 🔒 SSRF hardening: https فقط + عمق إعادة توجيه محدود + حظر الاستهداف الداخلي
+        const { isSafeExternalUrl } = require('./safeUrl');
+        const fetchAudioStream = (url, _depth = 0) => {
             return new Promise((resolve, reject) => {
-                const client = url.startsWith('https') ? https : http;
+                if (!isSafeExternalUrl(String(url || ''))) {
+                    return reject(new Error('مصدر البث غير مسموح: https خارجي آمن فقط'));
+                }
+                if (_depth > 3) {
+                    return reject(new Error('تجاوز الحد الأقصى لإعادة توجيه البث'));
+                }
+                const client = https;
                 const req = client.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 10000 }, (res) => {
                     if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-                        return resolve(fetchAudioStream(res.headers.location));
+                        return resolve(fetchAudioStream(res.headers.location, _depth + 1));
                     }
                     if (res.statusCode !== 200) {
                         return reject(new Error(`Failed to fetch audio: ${res.statusCode}`));

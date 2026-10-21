@@ -68,10 +68,23 @@ function createGuildAuthMiddleware(client) {
                 return next();
             }
 
-            // Fetch member in the guild to inspect actual Discord permissions
-            let member = guild.members.cache.get(userId);
-            if (!member) {
-                member = await guild.members.fetch(userId).catch(() => null);
+            // 🔒 fail-closed: جلب العضو حياً — التفرقة بين "موب عضو" و"فشل تقني بالجلب"
+            let member = null;
+            let _liveVerified = false;   // قدرنا نجيب صلاحيات العضو الحية
+            let _fetchFailed = false;    // فشل تقني (خصوصية/انقطاع) — مو "موب موجود"
+            try {
+                member = guild.members.cache.get(userId) || null;
+                if (member) {
+                    _liveVerified = true;
+                }
+                if (!_liveVerified) {
+                    member = await guild.members.fetch(userId);
+                    _liveVerified = true;
+                }
+            } catch (err) {
+                member = null;
+                // 10007 = Unknown Member (العضو مو بالسيرفر أصلاً) — هذا إثبات حي بالرفض مو فشل تقني
+                _fetchFailed = !(err && (err.code === 10007 || (err.rawError && err.rawError.code === 10007)));
             }
 
             if (member) {
@@ -83,14 +96,16 @@ function createGuildAuthMiddleware(client) {
                     req.guildMember = member;
                     return next();
                 }
-            }
-
-            // Fallback: Check OAuth cached guilds in session if member fetch was restricted
-            const sessionGuilds = req.session.guilds || [];
-            const cachedGuild = sessionGuilds.find(g => g.id === guildId);
-            if (cachedGuild && (cachedGuild.isOwner || (cachedGuild.permissions & 0x8) || (cachedGuild.permissions & 0x20))) {
-                req.guild = guild;
-                return next();
+                // ✅ العضو مؤكد حضورياً وبلا صلاحيات إدارة — رفض نهائي (بلا أي fallback)
+            } else if (_fetchFailed) {
+                // Fallback: فقط إذا تعذر التحقق الحي تقنياً (إعدادات خصوصية بالمثل)،
+                // ويجب تكون snapshot الجلسة يدل فعلياً على مالك أو Administrator أو ManageGuild
+                const sessionGuilds = req.session.guilds || [];
+                const cachedGuild = sessionGuilds.find(g => g.id === guildId);
+                if (cachedGuild && (cachedGuild.isOwner || (Number(cachedGuild.permissions || 0) & 0x8) || (Number(cachedGuild.permissions || 0) & 0x20))) {
+                    req.guild = guild;
+                    return next();
+                }
             }
 
             // User does not have permission

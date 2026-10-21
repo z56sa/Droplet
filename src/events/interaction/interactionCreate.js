@@ -1113,6 +1113,16 @@ module.exports = {
       // ==========================================
       if (interaction.isModalSubmit() && (interaction.customId.startsWith('modal_sugg_accept_') || interaction.customId.startsWith('modal_sugg_reject_') || interaction.customId.startsWith('modal_sugg_consider_'))) {
         await interaction.deferReply({ flags: 64 }).catch(() => {});
+        // 🔒 بوابة ثانية: الزر مفحوص، لكن النموذج قد يُرسل مباشرة من عنصر بمعدلات — نفس فحص الزر بالضبط
+        const _sgSettings = db.getGuildSettings ? db.getGuildSettings(interaction.guildId) : {};
+        const _sgStaffRoles = String(_sgSettings.suggestions_staff_roles || '').split(/[,;\s]+/).filter(Boolean);
+        const isStaffOrAdmin = interaction.member?.permissions?.has?.(PermissionFlagsBits.ManageGuild) ||
+                                interaction.member?.permissions?.has?.(PermissionFlagsBits.Administrator) ||
+                                interaction.member?.permissions?.has?.(PermissionFlagsBits.ModerateMembers) ||
+                                _sgStaffRoles.some(rid => interaction.member?.roles?.cache?.has?.(rid));
+        if (!isStaffOrAdmin) {
+          return interaction.editReply({ content: t(interaction.guildId, 'suggest.staff.only') });
+        }
         let actionType = 'accept';
         if (interaction.customId.startsWith('modal_sugg_reject_')) actionType = 'reject';
         if (interaction.customId.startsWith('modal_sugg_consider_')) actionType = 'consider';
@@ -1419,6 +1429,14 @@ module.exports = {
 
         if (interaction.member.roles.cache.has(role.id)) {
           return interaction.editReply({ content: t(interaction.guildId, 'events.verify2.already') });
+        }
+
+        // 🔒 فحص عمر الحساب (Anti-Alt) — نفس شرط زر التحقق الرئيسي حتى ما يتجاوز بقرار الزر الأصلي
+        if (settings.anti_alt_days && settings.anti_alt_days > 0) {
+          const accountAgeDays = (Date.now() - interaction.user.createdTimestamp) / (1000 * 60 * 60 * 24);
+          if (accountAgeDays < settings.anti_alt_days) {
+            return interaction.editReply({ content: t(interaction.guildId, 'events.verify.young', { days: settings.anti_alt_days, age: Math.floor(accountAgeDays) }) });
+          }
         }
 
         try {
@@ -1799,6 +1817,14 @@ module.exports = {
 
         const reason = interaction.fields.getTextInputValue('reject_reason') || t(interaction.guildId, 'events.app.reject_default');
         const app = db.getApplication(submission.app_id);
+
+        // 🔒 بوابة ثانية موحدة مع زر الرفض (النموذج قد يُرسل مباشرة): ManageGuild أو رتبة المراجع
+        const reviewerRole = app?.reviewer_role;
+        const hasPerm = (interaction.member?.permissions?.has?.(PermissionFlagsBits.ManageGuild)) ||
+                        (reviewerRole && interaction.member?.roles?.cache?.has?.(reviewerRole));
+        if (!hasPerm) {
+          return interaction.editReply({ content: t(interaction.guildId, 'events.app.no_perm_reject') });
+        }
 
         db.updateSubmissionStatus(subId, 'rejected', interaction.user.id);
         db.addApplicationPoint(interaction.guild.id, interaction.user.id);

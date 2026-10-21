@@ -2226,7 +2226,27 @@ function deleteReactionRole(customId) {
 // ==========================================
 // Auto Responders
 // ==========================================
+// 🔒 ReDoS guard: فحص أنماط regex من المستخدمين وقت الكتابة — (طول معقول + رفض التكرار المتداخل الكارثي)
+const _maxTriggerLen = 120;
+function unsafeUserRegex(mode, pattern) {
+  if (String(mode || '') !== 'regex') return null;
+  const p = String(pattern || '').trim();
+  if (!p) return null;
+  if (p.length > _maxTriggerLen) return 'نمط الـ regex طويل جداً — الحد الأقصى ' + _maxTriggerLen + ' حرفاً';
+  // تكرار متداخل: مجموعة بداخلها كوينتر ثم الكوينة نفسها مكررة — الصنف الأشهر للاصطدام الكارثي (مثال: (a+)+ / (?:a*){3,})
+  const _nestedQuant = new RegExp('\\([^()]*[+*]\\)\\s*([+*]|\\{\\d+(?:,\\d+)*\\})');
+  if (_nestedQuant.test(p)) return 'نمط الـ regex يحتوي تكراراً متداخلاً خطيراً (nested quantifier) — مرفوض حمايةً للأداء';
+  return null;
+}
+
 function addAutoResponder(guildId, data) {
+  // 🔒 نقطة تفتيش موحدة (داشبورد + أوامر) — النمط regex غير الآمن يُرفض قبل الحفظ
+  if (data && typeof data === 'object') {
+    const _mode = data.match_mode || data.matchMode || 'contains';
+    const _pattern = data.trigger_word || data.triggerWord || '';
+    const _bad = unsafeUserRegex(_mode, _pattern);
+    if (_bad) return { error: _bad };
+  }
   if (typeof data === 'string') {
     const triggerWord = data;
     const replyText = arguments[2] || '';
