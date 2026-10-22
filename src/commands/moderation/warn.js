@@ -128,10 +128,20 @@ module.exports = {
       const warnId = interaction.options.getInteger('warn_id');
       const warns = db.getWarnings(interaction.guild.id, targetUser.id);
       if (!warns[warnId - 1]) return interaction.reply({ content: t(lang, 'moderation.warn.remove_not_found', { id: warnId }), flags: 64 });
+      // 🔒 تدرج الرتب للحذف — مو عيب: الإداري الصغير ما يلغي/يفرّغ تحذيرات جو هو رتبته أعلى (سد M4)
+      const _wMember = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
+      if (_wMember && _wMember.roles.highest.position >= interaction.member.roles.highest.position && interaction.user.id !== interaction.guild.ownerId) {
+        return interaction.reply({ content: t(lang, 'moderation.warn.higher'), flags: 64 });
+      }
       db.db.prepare('DELETE FROM warnings WHERE id = ?').run(warns[warnId - 1].id);
       await interaction.reply({ content: t(lang, 'moderation.warn.removed', { id: warnId, tag: targetUser.tag }) });
 
     } else if (sub === 'clear') {
+      // 🔒 نفس بوابة الحذف — الإداري الأصغر ما يقدر يمحو تاريخ تحذيرات من رتبته أوعلى (إلا المالك)
+      const _wMember = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
+      if (_wMember && _wMember.roles.highest.position >= interaction.member.roles.highest.position && interaction.user.id !== interaction.guild.ownerId) {
+        return interaction.reply({ content: t(lang, 'moderation.warn.higher'), flags: 64 });
+      }
       db.clearWarnings(interaction.guild.id, targetUser.id);
       await interaction.reply({ content: t(lang, 'moderation.warn.cleared', { tag: targetUser.tag }) });
     }
@@ -165,6 +175,10 @@ module.exports = {
       if (!target || isNaN(num)) return message.reply(t(lang, 'moderation.warn.prefix_delwarn_usage'));
       const warns = db.getWarnings(message.guild.id, target.id);
       if (!warns[num - 1]) return message.reply(t(lang, 'moderation.warn.prefix_delwarn_not_found', { num }));
+      // 🔒 تدرج الرتب (بريفكس) — لا يحذف باد أن تحذير من أعلى منه (سد M4)
+      const _wMember = await message.guild.members.fetch(target.id).catch(() => null);
+      if (_wMember && _wMember.roles.highest.position >= message.member.roles.highest.position && message.author.id !== message.guild.ownerId)
+        return message.reply(t(lang, 'moderation.warn.higher'));
       db.db.prepare('DELETE FROM warnings WHERE id = ?').run(warns[num - 1].id);
       return message.reply(t(lang, 'moderation.warn.prefix_delwarn_removed', { num, tag: target.tag }));
     }
@@ -174,6 +188,10 @@ module.exports = {
     if (!target) return message.reply(t(lang, 'moderation.warn.prefix_usage'));
 
     if (action === 'clear') {
+      // 🔒 مسح كل التحذيرات يحتاج رتبة أعلى من الهدف (إلا المالك) — بلاها الإداري الصغير يمحو سوابق الرؤساء
+      const _cwMember = await message.guild.members.fetch(target.id).catch(() => null);
+      if (_cwMember && _cwMember.roles.highest.position >= message.member.roles.highest.position && message.author.id !== message.guild.ownerId)
+        return message.reply(t(lang, 'moderation.warn.higher'));
       db.clearWarnings(message.guild.id, target.id);
       return message.reply(t(lang, 'moderation.warn.prefix_cleared', { tag: target.tag }));
     }

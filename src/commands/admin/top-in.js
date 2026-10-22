@@ -54,6 +54,7 @@ module.exports = {
             .setDescription('Points to add')
 
             .setRequired(true)
+            .setMinValue(0)
         )
     )
     // 4. تعيين وتعديل نقاط إداري (Set Points)
@@ -152,7 +153,8 @@ module.exports = {
       }
 
       const targetUser = interaction.options.getUser('user');
-      const points = interaction.options.getInteger('points');
+      // 🔒 دفاع: نقاط ما تنسحب بالسالب عبر add-points (سد L4)
+      const points = Math.max(0, Math.floor(interaction.options.getInteger('points') || 0));
 
       db.addStaffPoints(guildId, targetUser.id, points);
       const updatedMember = db.getStaffMember(guildId, targetUser.id);

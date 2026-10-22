@@ -154,6 +154,11 @@ module.exports = {
         await interaction.deferReply({ flags: 64 }).catch(() => {});
 
         const voteType = interaction.customId === 'sugg_upvote' ? 'up' : 'down';
+        // 🔒 التصويت بعد الحسم الاداري ما ينمشي (الأزرار المعطلة client-side بس — حد JNI ذي المصير أضيق)
+        const _stSugg = db.getSuggestion ? db.getSuggestion(interaction.message.id) : null;
+        if (_stSugg?.status && _stSugg.status !== 'pending' && _stSugg.status !== 'considered') {
+          return interaction.editReply({ content: '🔒 الاقتراح محسوم من الإدارة — التصويت مغلق.' });
+        }
         const res = db.voteSuggestion(interaction.message.id, interaction.user.id, voteType);
         if (!res) {
           return interaction.editReply({ content: t(interaction.guildId, 'suggest.vote.not_found') });
@@ -1059,7 +1064,12 @@ module.exports = {
           return interaction.reply({ content: t(interaction.guildId, 'events.ticket.claim_taken', { user: ticketData.claimed_by }), flags: 64 });
         }
 
-        db.claimTicket(interaction.channel.id, interaction.user.id);
+        // 🔒 حماية سباق الاستلام (claimTicket صار شرطي claimed_by IS NULL ويرجع هل فعلاً صار استلام) — أوّل موظف يفوز
+        const _claimOk = db.claimTicket(interaction.channel.id, interaction.user.id);
+        if (!_claimOk) {
+          const _cRow = db.getTicket(interaction.channel.id);
+          return interaction.reply({ content: t(interaction.guildId, 'events.ticket.claim_taken', { user: _cRow?.claimed_by || 'موظف آخر للتو' }), flags: 64 });
+        }
         if (db.recordStaffAction) {
           db.recordStaffAction(interaction.guild.id, interaction.user.id, 'ticket_claim', ticketData?.user_id || null, 'استلام تذكرة');
         }
@@ -1356,6 +1366,8 @@ module.exports = {
         }
 
         // إرسال نسخة في الخاص لصاحب التذكرة مع أزرار التقييم
+        // 🔒 (سد M10): بوابة التقييم تعتمد على transcript محفوظ — إذا فشل التوليد/الحفظ ما تنرسل أزرار تقييم هدر، بس رسالة الختام تصير بلا أزرار
+        const _trSaved = typeof db.getTranscript === 'function' ? db.getTranscript(interaction.channel.id) : null;
         if (ticketData?.user_id) {
           try {
             const ticketOwner = await client.users.fetch(ticketData.user_id).catch(() => null);
@@ -1367,16 +1379,20 @@ module.exports = {
                 .setFooter({ text: t(interaction.guildId, 'events.ticket.rating_footer') })
                 .setTimestamp();
 
-              const ratingRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`rate_ticket_1_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel('⭐ 1').setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId(`rate_ticket_2_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel('⭐ 2').setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId(`rate_ticket_3_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel('⭐ 3').setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId(`rate_ticket_4_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel('⭐ 4').setStyle(ButtonStyle.Primary),
-                new ButtonBuilder().setCustomId(`rate_ticket_5_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel(t(interaction.guildId, 'events.ticket.rate_5')).setStyle(ButtonStyle.Success)
-              );
-
               const userFiles = transcriptResult?.attachment ? [transcriptResult.attachment] : [];
-              await ticketOwner.send({ embeds: [ratingEmbed], components: [ratingRow], files: userFiles }).catch(() => {});
+              if (_trSaved) {
+                const ratingRow = new ActionRowBuilder().addComponents(
+                  new ButtonBuilder().setCustomId(`rate_ticket_1_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel('⭐ 1').setStyle(ButtonStyle.Secondary),
+                  new ButtonBuilder().setCustomId(`rate_ticket_2_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel('⭐ 2').setStyle(ButtonStyle.Secondary),
+                  new ButtonBuilder().setCustomId(`rate_ticket_3_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel('⭐ 3').setStyle(ButtonStyle.Secondary),
+                  new ButtonBuilder().setCustomId(`rate_ticket_4_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel('⭐ 4').setStyle(ButtonStyle.Primary),
+                  new ButtonBuilder().setCustomId(`rate_ticket_5_${interaction.channel.id}_${staffClaimerId || '0'}_${interaction.guild.id}`).setLabel(t(interaction.guildId, 'events.ticket.rate_5')).setStyle(ButtonStyle.Success)
+                );
+                await ticketOwner.send({ embeds: [ratingEmbed], components: [ratingRow], files: userFiles }).catch(() => {});
+              } else {
+                // نسخة بلا أزرار: العضو يستلم الختام بس ما نصيّده تقييم يفشل إذا ضغط
+                await ticketOwner.send({ embeds: [ratingEmbed], files: userFiles }).catch(() => {});
+              }
             }
           } catch (e) {}
         }
@@ -1792,7 +1808,11 @@ module.exports = {
         }
 
         await interaction.deferUpdate().catch(() => { });
-        db.updateSubmissionStatus(subId, 'accepted', interaction.user.id, interaction.guild.id);
+        // 🔒 سد الضغط المزدوج: التحديث شرطي status='pending' — لو الضغطة الأسبع سرقت النقطة مرتين تنرفض هني
+        const _statusRes = db.updateSubmissionStatus(subId, 'accepted', interaction.user.id, interaction.guild.id, true);
+        if (!_statusRes || _statusRes.changes === 0) {
+          return interaction.editReply({ content: '⚠️ سبقه موظف آخر — الطلب انقبل/انرفض قبل شوية.', components: [] }).catch(() => {});
+        }
         db.addApplicationPoint(interaction.guild.id, interaction.user.id);
 
         // إعطاء الرتبة للمتقدم إن وجدت

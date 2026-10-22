@@ -138,8 +138,16 @@ function tryRunCodeSnippet(codeText) {
     try {
         // 🔒 سياق خالص: لا نمرر أي كائن/dالة من الـ host — كل الجواهر (Math/JSON/Date...) تأتي من عالم الـ context نفسه.
         // أي مرجع host (حتى console) يكشف Function الأصلي عبر constructor.constructor = RCE كامل خارج الـ sandbox.
+        // + (سد M13) سقف ذاكرة للسياق — كود شاطر قد يبلع/OOM العملية كلها (بوت + داشبورد) خلال مهلة الـ timeout اللي تقبل CPU حداً
         const vm = require('vm');
-        const context = vm.createContext({});
+        const context = vm.createContext({}, {
+            resourceLimits: {
+                maxYoungGenerationSizeMb: 16,
+                maxOldGenerationSizeMb: 64,
+                codeRangeSizeMb: 16,
+                stackSizeMb: 4
+            }
+        });
         vm.runInContext(`this.__out = []; this.console = { log: (...a) => this.__out.push(a.map(x => typeof x === 'object' ? JSON.stringify(x) : String(x)).join(' ')), error: (...a) => this.__out.push('[Error] ' + a.join(' ')), warn: (...a) => this.__out.push('[Warn] ' + a.join(' ')) };`, context, { timeout: 500 });
 
         const script = new vm.Script(code);

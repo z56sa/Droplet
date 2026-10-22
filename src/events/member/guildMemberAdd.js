@@ -15,6 +15,22 @@ module.exports = {
     const guild = member.guild;
     const settings = db.getGuildSettings(guild.id);
 
+    // 🔒 إعادة تطبيق العقوبات النشطة (سد M11): مغادرة السيرفر تنطيح الرتب — عضو يطلع ويرجع ياخذ السجن/الكتم طالما المدة لسا شغّالة بالجدول
+    try {
+      if (!member.user.bot) {
+        const _jailedRow = db.getJailUser ? db.getJailUser(guild.id, member.id) : null;
+        if (_jailedRow) {
+          const _jRole = settings.jail_role ? guild.roles.cache.get(settings.jail_role) : guild.roles.cache.find(r => r.name.toLowerCase() === 'jailed' || r.name.includes('سجن'));
+          if (_jRole && !member.roles.cache.has(_jRole.id)) await member.roles.add(_jRole).catch(() => {});
+        }
+        const _muteRow = db.getTempMute ? db.getTempMute(guild.id, member.id) : null;
+        if (_muteRow && (_muteRow.unmute_at || 0) > Math.floor(Date.now() / 1000)) {
+          const _mRole = settings.mute_role ? guild.roles.cache.get(settings.mute_role) : guild.roles.cache.find(r => r.name.toLowerCase() === 'muted' || r.name.includes('مكتوم'));
+          if (_mRole && !member.roles.cache.has(_mRole.id)) await member.roles.add(_mRole).catch(() => {});
+        }
+      }
+    } catch (e) {}
+
     // 0. فحوصات الأمان (Security Checks)
     // --- 0.1 Anti-Bot: حماية شاملة من البوتات غير المصرح بها ---
     // ✅ المنطق: أي بوت يدخل يُطرد إلا إذا كان البوت نفسه مصرّحاً مسبقاً (آيديه بالقائمة البيضاء أو عنده رتبة الاستثناء)

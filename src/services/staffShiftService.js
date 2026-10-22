@@ -29,11 +29,13 @@ class StaffShiftService {
     async _tick() {
         try {
             const activeShifts = db.getAllActiveShifts ? db.getAllActiveShifts() : [];
-            if (!activeShifts || activeShifts.length === 0) return;
+            // 🔒 إصلاح حرج (H1): ما عاد نرجّع مبكراً لو مافي شيفتات نشطة — فحوص انتهاء العقوبات
+            // (سجون/كتمات/بانات مؤقتة/ترقيات/رتب/رومات) لازم تشتغل دايماً ولا ترتبط بمشيئة شيفت خوالي
+            const shiftLoopList = (activeShifts && activeShifts.length > 0) ? activeShifts : [];
 
             const now = Math.floor(Date.now() / 1000);
 
-            for (const shift of activeShifts) {
+            for (const shift of shiftLoopList) {
                 const { guild_id, user_id, start_time } = shift;
                 const settings = db.getGuildSettings(guild_id);
                 if (!isEnabled(settings.staff_auto_logout, false)) continue;
@@ -263,7 +265,7 @@ class StaffShiftService {
                 }
             }
 
-            // ─── فحص انتهاء صلاحية الرومات المؤجرة (Expired Rented Channels) ───
+            // ─── فحص انتهاء الرومات المؤجرة (Expired Rented Channels) ───
             if (db.getExpiredRentedChannels) {
                 const expiredChannels = db.getExpiredRentedChannels();
                 for (const row of expiredChannels) {
@@ -273,6 +275,20 @@ class StaffShiftService {
                         if (channel) await channel.delete('انتهاء مدة استئجار الروم').catch(() => {});
                     }
                     db.deleteRentedChannel(row.guild_id, row.channel_id);
+                }
+            }
+
+            // ─── فحص انتهاء الرتب المؤقتة (Expired Temp Roles — جدول دائم بدل setTimeout بالذاكرة) ───
+            if (db.getExpiredTempRoles) {
+                const expiredTempRoles = db.getExpiredTempRoles();
+                for (const row of expiredTempRoles) {
+                    const guild = this.client.guilds.cache.get(row.guild_id);
+                    if (guild) {
+                        const member = guild.members.cache.get(row.user_id) || await guild.members.fetch(row.user_id).catch(() => null);
+                        const role = row.role_id ? guild.roles.cache.get(row.role_id) : null;
+                        if (member && role) await member.roles.remove(role, 'انتهاء مدة الرتبة المؤقتة').catch(() => {});
+                    }
+                    if (db.removeTempRoleJob) db.removeTempRoleJob(row.guild_id, row.user_id, row.role_id);
                 }
             }
         } catch (e) {

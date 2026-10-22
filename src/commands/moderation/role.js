@@ -130,8 +130,11 @@ module.exports = {
       const guildId = interaction.guild.id;
       const roleId = role.id;
       const tag = targetUser.tag;
+      // 🔒 (سد M14) الرتبة المؤقتة تسجّل بالجدول كمان — ريستارت ما يبطل المدة، الفحص الدوري يزيلها بإذن الله
+      try { if (db.addTempRoleJob) db.addTempRoleJob(guildId, targetUser.id, roleId, Math.floor(Date.now() / 1000) + Math.ceil(durationMs / 1000), interaction.user.id); } catch (e) {}
       setTimeout(async () => {
         await member.roles.remove(role).catch(() => {});
+        try { if (db.removeTempRoleJob) db.removeTempRoleJob(guildId, targetUser.id, roleId); } catch (e) {}
         const logEmbed = new EmbedBuilder().setColor('#e74c3c')
           .setTitle(t(guildId, 'moderation.role.title_expired'))
           .setDescription(t(guildId, 'moderation.role.desc_expired', { role: roleId, tag }))

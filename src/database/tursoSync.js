@@ -334,6 +334,116 @@ class TursoSync {
           created_at INTEGER DEFAULT (strftime('%s','now'))
         );
       `);
+      // 🔒 العقوبات + الجيوايز/الاقتراحات/الشيفتات: القرص مؤقت على Render — بدونها فريم الريستارت يخرب عقوبات شغّالة (سجن/كتم/بان مؤقت)
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS jail_users (
+          guild_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          moderator_id TEXT NOT NULL,
+          reason TEXT,
+          old_roles TEXT DEFAULT '[]',
+          jailed_at INTEGER,
+          jail_until INTEGER,
+          PRIMARY KEY (guild_id, user_id)
+        );
+      `);
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS temp_mutes (
+          id INTEGER PRIMARY KEY,
+          guild_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          moderator_id TEXT NOT NULL,
+          reason TEXT,
+          unmute_at INTEGER NOT NULL,
+          created_at INTEGER
+        );
+      `);
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS temp_bans (
+          id INTEGER PRIMARY KEY,
+          guild_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          moderator_id TEXT NOT NULL,
+          reason TEXT,
+          unban_at INTEGER NOT NULL,
+          created_at INTEGER
+        );
+      `);
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS temp_roles (
+          guild_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          role_id TEXT NOT NULL,
+          expires_at INTEGER,
+          added_by TEXT,
+          created_at INTEGER,
+          PRIMARY KEY (guild_id, user_id, role_id)
+        );
+      `);
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS giveaways (
+          id INTEGER PRIMARY KEY,
+          guild_id TEXT NOT NULL,
+          channel_id TEXT NOT NULL,
+          message_id TEXT UNIQUE,
+          prize TEXT NOT NULL,
+          winners_count INTEGER DEFAULT 1,
+          host_id TEXT NOT NULL,
+          end_time INTEGER NOT NULL,
+          required_role TEXT,
+          min_level INTEGER DEFAULT 0,
+          min_account_age INTEGER DEFAULT 0,
+          extra_role TEXT,
+          status TEXT DEFAULT 'active',
+          entries TEXT DEFAULT '[]',
+          description TEXT,
+          color TEXT,
+          image TEXT,
+          emoji TEXT,
+          btn_style TEXT,
+          entry_mode TEXT,
+          notify_winners INTEGER DEFAULT 1,
+          created_at INTEGER
+        );
+      `);
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS suggestions (
+          id INTEGER PRIMARY KEY,
+          guild_id TEXT NOT NULL,
+          channel_id TEXT,
+          message_id TEXT UNIQUE,
+          user_id TEXT NOT NULL,
+          title TEXT,
+          content TEXT NOT NULL,
+          category TEXT,
+          status TEXT,
+          status_reason TEXT,
+          reviewed_by TEXT,
+          reviewed_at INTEGER,
+          upvotes TEXT DEFAULT '[]',
+          downvotes TEXT DEFAULT '[]',
+          created_at INTEGER
+        );
+      `);
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS staff_shifts (
+          id INTEGER PRIMARY KEY,
+          guild_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          start_time INTEGER NOT NULL,
+          status TEXT DEFAULT 'active',
+          end_time INTEGER,
+          duration_seconds INTEGER DEFAULT 0,
+          ended_by TEXT DEFAULT 'user'
+        );
+      `);
+      // 1.6.1 يجب التأكد ان الاعمدة الجديدة للباقات موجودة (قواعد تورسو أقدم من الأعمدة الجديدة)
+      for (const col of ['required_role TEXT', 'min_level INTEGER DEFAULT 0', 'min_account_age INTEGER DEFAULT 0', 'extra_role TEXT', 'description TEXT', 'color TEXT', 'image TEXT', 'emoji TEXT', 'btn_style TEXT', 'entry_mode TEXT', 'notify_winners INTEGER DEFAULT 1', 'created_at INTEGER']) {
+        try {
+          const parts = col.split(' ');
+          await this.client.execute({ sql: `ALTER TABLE giveaways ADD COLUMN ${parts[0]} ${parts.slice(1).join(' ')}` });
+        } catch (e) { /* العمود موجود مسبقاً */ }
+      }
       // 1.7 Create staff_activity and staff_ranks tables in Turso
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS staff_activity (
@@ -523,6 +633,14 @@ class TursoSync {
           try { await this.restoreTable(localDb, 'store_items', 'id'); } catch (e) {}
           try { await this.restoreTable(localDb, 'store_transactions', 'id'); } catch (e) {}
           try { await this.restoreTable(localDb, 'user_inventory', 'id'); } catch (e) {}
+          // 🔒 ضروري: العقوبات/القرع/الاقتراحات/الشيفتات تستعاد من Turso — فقدانها على القرص المؤقت يعني تيمبان/سجن دائم وقرعة مسحوبة
+          try { await this.restoreTable(localDb, 'jail_users', ['guild_id', 'user_id']); } catch (e) {}
+          try { await this.restoreTable(localDb, 'temp_mutes', 'id'); } catch (e) {}
+          try { await this.restoreTable(localDb, 'temp_bans', 'id'); } catch (e) {}
+          try { await this.restoreTable(localDb, 'temp_roles', ['guild_id', 'user_id', 'role_id']); } catch (e) {}
+          try { await this.restoreTable(localDb, 'giveaways', 'id'); } catch (e) {}
+          try { await this.restoreTable(localDb, 'suggestions', 'id'); } catch (e) {}
+          try { await this.restoreTable(localDb, 'staff_shifts', 'id'); } catch (e) {}
           // ✅ Push back any local-only rows (created before sync existed) so nothing is lost
           try { await this.backupTable(localDb, 'auto_responders', 'id'); } catch (e) {}
           try { await this.backupTable(localDb, 'ticket_panels', 'panel_id'); } catch (e) {}
@@ -533,6 +651,14 @@ class TursoSync {
           try { await this.backupTable(localDb, 'store_items', 'id'); } catch (e) {}
           try { await this.backupTable(localDb, 'store_transactions', 'id'); } catch (e) {}
           try { await this.backupTable(localDb, 'user_inventory', 'id'); } catch (e) {}
+          // 🔒 ونفسها بالعكس: صفوف محلية قديمة أُنشئت قبل وجود التزامن — تُدفع ب Turso حتى لا تضيع
+          try { await this.backupTable(localDb, 'jail_users', ['guild_id', 'user_id']); } catch (e) {}
+          try { await this.backupTable(localDb, 'temp_mutes', 'id'); } catch (e) {}
+          try { await this.backupTable(localDb, 'temp_bans', 'id'); } catch (e) {}
+          try { await this.backupTable(localDb, 'temp_roles', ['guild_id', 'user_id', 'role_id']); } catch (e) {}
+          try { await this.backupTable(localDb, 'giveaways', 'id'); } catch (e) {}
+          try { await this.backupTable(localDb, 'suggestions', 'id'); } catch (e) {}
+          try { await this.backupTable(localDb, 'staff_shifts', 'id'); } catch (e) {}
         } else {
           // Turso has no guild settings yet — push local ones to Turso
           console.log('[TURSO] ℹ️ No guild settings in Turso yet. Pushing local guild settings to Turso...');
@@ -863,38 +989,53 @@ class TursoSync {
     this.enqueue({ sql, args });
   }
 
+  // 🛡️ pkCol يقبل مصفوفة (مفاتيح مركبة مثل jail_users(guild_id, user_id)) أو نص مفرد
+  _normPks(pkCol) {
+    const list = Array.isArray(pkCol) ? pkCol : String(pkCol || '').split('|');
+    const ok = list.map(c => String(c || '').trim()).filter(c => /^[A-Za-z_][A-Za-z0-9_]*$/.test(c));
+    return (ok.length > 0 && ok.length === list.length) ? ok : null;
+  }
+
   /**
-   * ✅ Generic row sync for any table with a PK (auto_responders, tickets, ticket_panels, ...).
-   * Upserts the full row into Turso; rows are keyed by pkCol.
+   * ✅ Generic row sync for any table with a PK (auto_responders, tickets, ticket_panels, ...
+   * and composite-key rows like jail_users / temp_roles). Upserts the full row into Turso.
    */
   queueTableRowSync(table, pkCol, row) {
     if (!this.enabled || !this.client || !table || !pkCol || !row) return;
-    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(pkCol)) return;
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table)) return;
+    const pks = this._normPks(pkCol);
+    if (!pks) return;
     try {
       const cols = Object.keys(row).filter(c => /^[A-Za-z_][A-Za-z0-9_]*$/.test(c) && row[c] !== undefined);
-      if (!cols.includes(pkCol)) return;
+      if (!pks.every(pk => cols.includes(pk))) return;
       const args = cols.map(c => {
         const v = row[c];
         if (typeof v === 'bigint') return Number(v);
         return (typeof v === 'object' && v !== null) ? JSON.stringify(v) : v;
       });
       const ph = cols.map(() => '?').join(', ');
-      const upd = cols.filter(c => c !== pkCol).map(c => `${c} = excluded.${c}`).join(', ');
+      const upd = cols.filter(c => !pks.includes(c)).map(c => `${c} = excluded.${c}`).join(', ');
       const sql = upd
-        ? `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${ph}) ON CONFLICT(${pkCol}) DO UPDATE SET ${upd};`
+        ? `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${ph}) ON CONFLICT(${pks.join(', ')}) DO UPDATE SET ${upd};`
         : `INSERT OR IGNORE INTO ${table} (${cols.join(', ')}) VALUES (${ph});`;
       this.enqueue({ sql, args });
     } catch (e) {}
   }
 
   /**
-   * ✅ Generic row delete for any table.
+   * ✅ Generic row delete for any table (single or composite pk).
+   * `id` يقبل قيمة واحدة أو قيم مرتّبة بنفس ترتيب pkCol للمركب.
    */
   queueTableRowDelete(table, pkCol, id) {
     if (!this.enabled || !this.client || !table || !pkCol || id === undefined || id === null) return;
-    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(pkCol)) return;
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table)) return;
+    const pks = this._normPks(pkCol);
+    if (!pks) return;
     try {
-      this.enqueue({ sql: `DELETE FROM ${table} WHERE ${pkCol} = ?`, args: [id] });
+      const vals = Array.isArray(id) ? id : [id];
+      if (vals.length !== pks.length) return;
+      const whr = pks.map(pk => `${pk} = ?`).join(' AND ');
+      this.enqueue({ sql: `DELETE FROM ${table} WHERE ${whr}`, args: vals });
     } catch (e) {}
   }
 
@@ -1218,6 +1359,15 @@ class TursoSync {
       } catch (err) {
         this.lastPacketError = err.message;
         console.error('[TURSO] Sync batch failed:', err.message);
+        // 🔒 سد الصمت: الدفعة الفاشلة ما تنمسح كلها — كل جملة تنعاد ٣ مرات كأقصى حد (بدل رميها فوراً بلا سؤال)
+        // — بعدها تتسرف مع تسجيل الخطأ؛ ما في سبام لانهائي ولا حلقة ميتة لأن العداد لكل جملة ثابت
+        const _retryItems = [];
+        for (const st of batch) {
+          const _atm = (st._tAttempts || 0) + 1;
+          if (_atm <= 3) { st._tAttempts = _atm; _retryItems.push(st); }
+        }
+        if (_retryItems.length > 0) this.syncQueue.push(..._retryItems);
+        else console.error('[TURSO] ❌ سقطت جمل مزامنة نهائياً بعد ٣ محاولات (تم تسربها):', err.message);
       }
     }
 

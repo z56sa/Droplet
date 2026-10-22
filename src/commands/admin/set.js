@@ -143,6 +143,10 @@ module.exports = {
       return interaction.reply({ content: t(lang, 'admin.set.no_perm'), flags: 64 });
     }
 
+    // 🔒 (سد M8) الهوية العالمية للبوت (اسم/صورة/حالة) خاصية لمالك البوت — أي أداري سيرفر ما يحوس بها
+    const _botOwnerId = process.env.OWNER_ID || (client?.application?.owner?.id ?? interaction.client?.application?.owner?.id ?? null);
+    const _isBotOwner = !!_botOwnerId && String(_botOwnerId) === String(interaction.user.id);
+
     const sub = interaction.options.getSubcommand();
     const guildId = interaction.guild.id;
 
@@ -229,6 +233,10 @@ module.exports = {
       const isGlobal = interaction.options.getBoolean('global') ?? false;
 
       if (isGlobal) {
+        // 🔒 (سد M8) اسم البوت عالمياً = مالك بيوت فقط
+        if (!_isBotOwner) {
+          return interaction.editReply({ content: '🔒 تغيير اسم البوت **عالمياً** لملك البوت فقط — أداري السيرفر يقدر يغيّر اسمه داخل سيرفره (بدون global).' });
+        }
         try {
           await client.user.setUsername(newName);
           return interaction.editReply({ content: t(lang, 'admin.set.name_global', { name: newName }) });
@@ -250,6 +258,10 @@ module.exports = {
     // 3. /set avatar
     if (sub === 'avatar') {
       await interaction.deferReply({ flags: 64 });
+      // 🔒 (سد M8) صورة البوت عالمياً = مالك البوت فقط
+      if (!_isBotOwner) {
+        return interaction.editReply({ content: '🔒 تغيير صورة البوت (العالمية) لملك البوت فقط.' });
+      }
       const attachment = interaction.options.getAttachment('image_file');
       const imgUrl = interaction.options.getString('image_url');
       const finalUrl = attachment ? attachment.url : imgUrl;
@@ -273,6 +285,10 @@ module.exports = {
     // 4. /set state
     if (sub === 'state') {
       await interaction.deferReply({ flags: 64 });
+      // 🔒 (سد M8) حالة/نشاط البوت ظاهر بكل السيرفرات = مالك البوت فقط
+      if (!_isBotOwner) {
+        return interaction.editReply({ content: '🔒 تغيير حالة البوت (الظاهرة بكل السيرفرات) لملك البوت فقط.' });
+      }
       const status = interaction.options.getString('status');
       const activityText = interaction.options.getString('activity_text');
       const activityType = interaction.options.getString('activity_type') || 'Watching';

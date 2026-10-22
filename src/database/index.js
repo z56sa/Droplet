@@ -897,6 +897,22 @@ try {
   `);
 } catch(e) {}
 
+// 🎭 جدول الرتب المؤقتة (Temp Roles) — بدلاً من setTimeout بالذاكرة فقط: وقت الانتهاء محفوظ بالداتابيس والفحص الدوري يزيل الرتبة حتى بعد الريستارت (سد role.js:133)
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS temp_roles (
+      guild_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      role_id TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      added_by TEXT,
+      created_at INTEGER DEFAULT (strftime('%s','now')),
+      PRIMARY KEY (guild_id, user_id, role_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_temp_roles_expire ON temp_roles(expires_at);
+  `);
+} catch(e) {}
+
 // إعدادات السجن والرول في guild_settings
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN jail_role TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN jail_channel TEXT;"); } catch(e) {}
@@ -1342,6 +1358,15 @@ function setGuildSetting(guildId, key, value) {
     console.error('[DB] ⛔ Rejected invalid settings key:', typeof key === 'string' ? key.slice(0, 60) : typeof key);
     return;
   }
+  // 🔒 سد تضخم القاعدة: قيمة نصية بلا سقف = DB bloat بأرض أحد الإداريين. حقول JSON كبيرة لها سقف أوسع والبقية بسقف 8000 حرف
+  if (typeof value === 'string') {
+    const _bigKeys = ['command_configs', 'ticket_panel_categories', 'broadcast_messages', 'anti_spam_config', 'auto_responder_json', 'custom_commands_json'];
+    const _cap = _bigKeys.includes(String(key)) ? 32000 : 8000;
+    if (value.length > _cap) {
+      console.warn(`[DB] ⛔ Rejected oversized settings value for key "${key}" — length=${value.length} > cap=${_cap}`);
+      return;
+    }
+  }
   // تأكد السجل موجود
   const _ins = db.prepare('INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)').run(guildId);
   // الصفوف الجديدة: كل مفاتيح التفعيل مطفية افتراضياً ثم يُطبق المفتاح المطلوب فقط
@@ -1352,6 +1377,14 @@ function setGuildSetting(guildId, key, value) {
     db.prepare(`UPDATE guild_settings SET ${key} = ? WHERE guild_id = ?`).run(value, guildId);
   } catch (err) {
     if (err.message && err.message.includes('no such column')) {
+      // 🔒 حد أعلى لأعمدة الجدول — تكرار عبثي لمفاتيح مجهولة ما يقدر يضخّم السكيما للأبد
+      try {
+        const _colCount = db.prepare('PRAGMA table_info(guild_settings)').all().length;
+        if (_colCount > 300) {
+          console.warn(`[DB] ⛔ Refusing to add settings column "${key}" — column budget exhausted (${_colCount})`);
+          return;
+        }
+      } catch (e) {}
       try {
         const colType = typeof value === 'number' ? 'INTEGER' : 'TEXT';
         db.exec(`ALTER TABLE guild_settings ADD COLUMN ${key} ${colType};`);
@@ -1583,6 +1616,9 @@ function setCoins(userId, guildId, amount) {
 }
 
 const transferCoins = db.transaction((guildId, senderId, receiverId, amount, tax = 0) => {
+  // 🔒 كلبة الدفاع: المبلغ لازم يكون عدداً موجباً صحيحاً — الصفر/السالب/النص تحوّل رفض صريح
+  amount = Math.floor(Number(amount) || 0);
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('INVALID_AMOUNT');
   const sender = getUser(senderId, guildId);
   const currentCoins = sender.coins || 0;
   const totalDeduction = amount + Math.max(0, tax);
@@ -1781,10 +1817,11 @@ function getGuildTickets(guildId, limit = 50) {
 }
 
 function claimTicket(channelId, staffId) {
-  db.prepare("UPDATE tickets SET claimed_by = ?, claimed_at = strftime('%s','now') WHERE channel_id = ?").run(staffId, channelId);
+  // 🔒 حماية TOCTOU: التحديث شرطي — الموظف الأخير فقط يكون قد استلم فعلاً، ونجيب .changes بدل CHECK-ثم-UPDATE
+  const _res = db.prepare("UPDATE tickets SET claimed_by = ?, claimed_at = strftime('%s','now') WHERE channel_id = ? AND claimed_by IS NULL").run(staffId, channelId);
   const _tRow = db.prepare('SELECT * FROM tickets WHERE channel_id = ?').get(channelId);
   syncRow('tickets', 'id', _tRow);
-  return _tRow;
+  return (_res && _res.changes === 1);
 }
 
 function unclaimTicket(channelId) {
@@ -2196,8 +2233,11 @@ function getPendingSubmissions(guildId) {
   return db.prepare("SELECT * FROM application_submissions WHERE guild_id = ? AND status = 'pending' ORDER BY id DESC").all(guildId);
 }
 
-function updateSubmissionStatus(id, status, reviewedBy, guildId = null) {
+function updateSubmissionStatus(id, status, reviewedBy, guildId = null, onlyPending = false) {
   // 🔒 عزل سيرفر: بتمرير guildId ما تنقبل طلبات سيرفرات ثانية بمعرّفها فقط
+  // 🔒 سباق الضغط المزدوج: بإسناد onlyPending=true، التحديث يطبق فقط لو الطلب لسا 'pending' — أقل تغيير يعني صار معالج مسبقاً
+  if (guildId && onlyPending)
+    return db.prepare("UPDATE application_submissions SET status = ?, reviewed_by = ? WHERE id = ? AND guild_id = ? AND status = 'pending'").run(status, reviewedBy, id, guildId);
   if (guildId) return db.prepare('UPDATE application_submissions SET status = ?, reviewed_by = ? WHERE id = ? AND guild_id = ?').run(status, reviewedBy, id, guildId);
   return db.prepare('UPDATE application_submissions SET status = ?, reviewed_by = ? WHERE id = ?').run(status, reviewedBy, id);
 }
@@ -2398,7 +2438,10 @@ function createGiveaway(messageId, channelId, guildId, prize, winnersCount, endT
     `).run(messageId, channelId, guildId, prize, winnersCount || 1, hostId, endTime, requiredRole, minLevel || 0, minAccountAge || 0, _extra);
   }
 
-  return db.prepare('SELECT * FROM giveaways WHERE message_id = ?').get(messageId);
+  const _gwRow = db.prepare('SELECT * FROM giveaways WHERE message_id = ?').get(messageId);
+  // 🔒 جان القرص: القرعة يُزامَن تلسو — بلاها الريستارت يمسح قرعة شغّالة ويضيع فائزينها
+  try { syncRow('giveaways', 'id', _gwRow); } catch (e) {}
+  return _gwRow;
 }
 
 
@@ -2423,6 +2466,8 @@ function getGiveawayEntries(messageId) {
 function updateGiveawayEntries(messageId, entries) {
   const jsonStr = typeof entries === 'string' ? entries : JSON.stringify(entries);
   db.prepare('UPDATE giveaways SET entries = ? WHERE message_id = ?').run(jsonStr, messageId);
+  // 🔒 قائمة المشاركين تتزامن بعد أي تغيّر — ما ترجع للنسخة القديمة بعد الريستارت
+  try { syncRow('giveaways', 'id', db.prepare('SELECT * FROM giveaways WHERE message_id = ?').get(messageId)); } catch (e) {}
 }
 
 function addGiveawayEntry(messageId, userId) {
@@ -2460,6 +2505,8 @@ function toggleGiveawayEntry(messageId, userId) {
 
 function endGiveaway(messageId) {
   db.prepare("UPDATE giveaways SET status = 'ended' WHERE message_id = ?").run(messageId);
+  // 🔒 الحالة النهائية تزامن تلسو — ما ترجع القرعة 'active' بعد الريستارت
+  try { syncRow('giveaways', 'id', db.prepare('SELECT * FROM giveaways WHERE message_id = ?').get(messageId)); } catch (e) {}
 }
 
 function getGuildGiveaways(guildId) {
@@ -2730,6 +2777,8 @@ function startStaffShift(guildId, userId) {
     const now = Math.floor(Date.now() / 1000);
     const res = db.prepare("INSERT INTO staff_shifts (guild_id, user_id, start_time, status) VALUES (?, ?, ?, 'active')").run(guildId, userId, now);
     const shift = db.prepare("SELECT * FROM staff_shifts WHERE id = ?").get(res.lastInsertRowid);
+    // 🔒 الشفت النشط يُزامَن — بعد الريستارت البوت يعرف منو شفت-إن (متابعة الساعات ما تنقطع)
+    try { if (shift) syncRow('staff_shifts', 'id', shift); } catch (e) {}
     return { success: true, shift };
   } catch (err) {
     console.error('[DB] startStaffShift error:', err);
@@ -2747,6 +2796,8 @@ function endStaffShift(guildId, userId, endedBy = 'user') {
 
     // إنهاء الشفت وحفظه في السجل
     db.prepare("DELETE FROM staff_shifts WHERE id = ?").run(shift.id);
+    // 🔒 حذف الشفت النشط يُزامَن (وإلا يرجع "نشط" بعد الريستارت لعضو خلّص شيفت)
+    try { syncRowDelete('staff_shifts', 'id', shift.id); } catch (e) {}
     db.prepare(`
       INSERT INTO staff_shift_logs (guild_id, user_id, start_time, end_time, duration_seconds, ended_by)
       VALUES (?, ?, ?, ?, ?, ?)
@@ -3091,7 +3142,10 @@ module.exports = {
       data.user_id, data.title || null, data.content, 
       data.category || 'عام', data.status || 'pending'
     );
-    return db.prepare('SELECT * FROM suggestions WHERE id = ?').get(res.lastInsertRowid);
+    const _sRow = db.prepare('SELECT * FROM suggestions WHERE id = ?').get(res.lastInsertRowid);
+    // 🔒 الاقتراح يُزامَن تلسو — الريستارت ما يمسح اقتراحات الأعضاء
+    try { syncRow('suggestions', 'id', _sRow); } catch (e) {}
+    return _sRow;
   },
   getGuildSuggestions: (guildId, status = null) => {
     if (status) {
@@ -3113,14 +3167,18 @@ module.exports = {
         SET status = ?, status_reason = ?, reviewed_by = ?, reviewed_at = strftime('%s','now')
         WHERE (id = ? OR message_id = ?) AND guild_id = ?
       `).run(status, statusReason, reviewerId, id, id, guildId);
-      return db.prepare('SELECT * FROM suggestions WHERE guild_id = ? AND (id = ? OR message_id = ?)').get(guildId, id, id) || null;
+      const _r1 = db.prepare('SELECT * FROM suggestions WHERE guild_id = ? AND (id = ? OR message_id = ?)').get(guildId, id, id) || null;
+      try { if (_r1) syncRow('suggestions', 'id', _r1); } catch (e) {}
+      return _r1;
     }
     db.prepare(`
       UPDATE suggestions 
       SET status = ?, status_reason = ?, reviewed_by = ?, reviewed_at = strftime('%s','now')
       WHERE id = ? OR message_id = ?
     `).run(status, statusReason, reviewerId, id, id);
-    return db.prepare('SELECT * FROM suggestions WHERE id = ? OR message_id = ?').get(id, id);
+    const _r2 = db.prepare('SELECT * FROM suggestions WHERE id = ? OR message_id = ?').get(id, id);
+    try { if (_r2) syncRow('suggestions', 'id', _r2); } catch (e) {}
+    return _r2;
   },
   voteSuggestion: (id, userId, voteType = 'up') => {
     const row = db.prepare('SELECT * FROM suggestions WHERE id = ? OR message_id = ?').get(id, id);
@@ -3154,6 +3212,8 @@ module.exports = {
     db.prepare('UPDATE suggestions SET upvotes = ?, downvotes = ? WHERE id = ?').run(
       JSON.stringify(upvotes), JSON.stringify(downvotes), row.id
     );
+    // 🔒 تصويت يُزامَن تلسو (العدّاد ما يصفّر مع الريستارت)
+    try { syncRow('suggestions', 'id', db.prepare('SELECT * FROM suggestions WHERE id = ?').get(row.id)); } catch (e) {}
     return {
       upvotesCount: upvotes.length,
       downvotesCount: downvotes.length,
@@ -3169,6 +3229,10 @@ module.exports = {
         INSERT OR REPLACE INTO jail_users (guild_id, user_id, moderator_id, reason, old_roles, jailed_at, jail_until)
         VALUES (?, ?, ?, ?, ?, strftime('%s','now'), ?)
       `).run(guildId, userId, moderatorId, reason, JSON.stringify(oldRoles), jailUntil);
+      // 🔒 القرص مؤقت: صف السجن ينكتب ب Turso حتى ما يضيع عند الريستارت ويصير السجن دائماً بالغلط
+      try {
+        syncRow('jail_users', ['guild_id', 'user_id'], db.prepare('SELECT * FROM jail_users WHERE guild_id = ? AND user_id = ?').get(guildId, userId));
+      } catch (e) {}
       return true;
     } catch(e) {
       console.error('Error jailing user:', e);
@@ -3177,10 +3241,12 @@ module.exports = {
   },
   unjailUser: (guildId, userId) => {
     try {
-      const row = db.prepare('SELECT * FROM jail_users WHERE guild_id = ? AND user_id = ?').get(guildId, userId);
+      const _jr = db.prepare('SELECT * FROM jail_users WHERE guild_id = ? AND user_id = ?').get(guildId, userId);
       db.prepare('DELETE FROM jail_users WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
-      return row;
-    } catch(e) {
+      // 🔒 الحذف يزامن تلسو — ما يرجع الصف مع الريستارت
+      try { if (_jr) syncRowDelete('jail_users', ['guild_id', 'user_id'], [String(guildId), String(userId)]); } catch (e) {}
+      return _jr;
+    } catch (err) {
       return null;
     }
   },
@@ -3197,14 +3263,28 @@ module.exports = {
   // 🔇 Temp Mutes System Exports
   addTempMute: (guildId, userId, moderatorId, reason, unmuteAt) => {
     try {
-      return db.prepare(`
+      const _res = db.prepare(`
         INSERT INTO temp_mutes (guild_id, user_id, moderator_id, reason, unmute_at)
         VALUES (?, ?, ?, ?, ?)
       `).run(guildId, userId, moderatorId, reason, unmuteAt);
+      // 🔒 مزامنة صف الكتم — ما يضيع مع القرص المؤقت ويلتهث الكتم يصير دائماً
+      try {
+        const _mRow = db.prepare('SELECT * FROM temp_mutes WHERE id = ?').get(_res.lastInsertRowid);
+        if (_mRow) syncRow('temp_mutes', 'id', _mRow);
+      } catch (e) {}
+      return _res;
     } catch(e) { return null; }
   },
   removeTempMute: (guildId, userId) => {
-    return db.prepare('DELETE FROM temp_mutes WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    let _old = [];
+    try { _old = db.prepare('SELECT id FROM temp_mutes WHERE guild_id = ? AND user_id = ?').all(guildId, userId); } catch (e) {}
+    const _res = db.prepare('DELETE FROM temp_mutes WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    // 🔒 وحذف الكتم يزامن تلسو (صفوف هذا العضو تنمسح بلا رجوع)
+    try { for (const r of _old) syncRowDelete('temp_mutes', 'id', r.id); } catch (e) {}
+    return _res;
+  },
+  getTempMute: (guildId, userId) => {
+    return db.prepare('SELECT * FROM temp_mutes WHERE guild_id = ? AND user_id = ? ORDER BY unmute_at DESC').get(guildId, userId);
   },
   getExpiredTempMutes: () => {
     const now = Math.floor(Date.now() / 1000);
@@ -3213,18 +3293,50 @@ module.exports = {
   // 🔨 Temp Bans System Exports
   addTempBan: (guildId, userId, moderatorId, reason, unbanAt) => {
     try {
-      return db.prepare(`
+      const _res = db.prepare(`
         INSERT INTO temp_bans (guild_id, user_id, moderator_id, reason, unban_at)
         VALUES (?, ?, ?, ?, ?)
       `).run(guildId, userId, moderatorId, reason, unbanAt);
+      // 🔒 مزامنة البان المؤقت — فقدانه عند الريستارت يعني بان دائم ما ينفك
+      try {
+        const _bRow = db.prepare('SELECT * FROM temp_bans WHERE id = ?').get(_res.lastInsertRowid);
+        if (_bRow) syncRow('temp_bans', 'id', _bRow);
+      } catch (e) {}
+      return _res;
     } catch(e) { return null; }
   },
   removeTempBan: (guildId, userId) => {
-    return db.prepare('DELETE FROM temp_bans WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    let _old = [];
+    try { _old = db.prepare('SELECT id FROM temp_bans WHERE guild_id = ? AND user_id = ?').all(guildId, userId); } catch (e) {}
+    const _res = db.prepare('DELETE FROM temp_bans WHERE guild_id = ? AND user_id = ?').run(guildId, userId);
+    try { for (const r of _old) syncRowDelete('temp_bans', 'id', r.id); } catch (e) {}
+    return _res;
   },
   getExpiredTempBans: () => {
     const now = Math.floor(Date.now() / 1000);
     return db.prepare('SELECT * FROM temp_bans WHERE unban_at <= ?').all(now);
+  },
+  // 🎭 Temp Roles System Exports (مثبت بس — السكان نفس لاصول العقوبات ب services)
+  addTempRoleJob: (guildId, userId, roleId, expiresAt, addedBy = null) => {
+    try {
+      db.prepare(`
+        INSERT OR REPLACE INTO temp_roles (guild_id, user_id, role_id, expires_at, added_by)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(guildId, userId, roleId, expiresAt, addedBy);
+      try { syncRow('temp_roles', ['guild_id', 'user_id', 'role_id'], db.prepare('SELECT * FROM temp_roles WHERE guild_id = ? AND user_id = ? AND role_id = ?').get(guildId, userId, roleId)); } catch (e) {}
+      return true;
+    } catch (e) { return false; }
+  },
+  removeTempRoleJob: (guildId, userId, roleId) => {
+    try {
+      db.prepare('DELETE FROM temp_roles WHERE guild_id = ? AND user_id = ? AND role_id = ?').run(guildId, userId, roleId);
+      try { syncRowDelete('temp_roles', ['guild_id', 'user_id', 'role_id'], [String(guildId), String(userId), String(roleId)]); } catch (e) {}
+      return true;
+    } catch (e) { return false; }
+  },
+  getExpiredTempRoles: () => {
+    const now = Math.floor(Date.now() / 1000);
+    return db.prepare('SELECT * FROM temp_roles WHERE expires_at <= ?').all(now);
   },
   // Compatibility aliases
   getTopXp: getLeaderboard,

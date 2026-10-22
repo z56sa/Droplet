@@ -561,7 +561,7 @@ module.exports = function (app, client) {
     });
 
     // 🚪 أمر خروج البوت من سيرفر معين غريب
-    app.post('/api/admin/leave-guild', express.json(), requireGuildPermission, async (req, res) => {
+    app.post('/api/admin/leave-guild', express.json(), requireGuildPermission, sensitiveActionLimiter, async (req, res) => {
         try {
             const { guildId } = req.body;
             if (!guildId) return res.status(400).json({ error: 'guildId required' });
@@ -1313,7 +1313,7 @@ module.exports = function (app, client) {
     });
 
     // DELETE /api/guild/:guildId/store/admin/items/:itemId — حذف عنصر
-    app.delete('/api/guild/:guildId/store/admin/items/:itemId', requireGuildPermission, (req, res) => {
+    app.delete('/api/guild/:guildId/store/admin/items/:itemId', requireGuildPermission, sensitiveActionLimiter, (req, res) => {
         try {
             const { guildId, itemId } = req.params;
             if (!guildId || !itemId) return res.status(400).json({ success: false, error: 'بيانات ناقصة' });
@@ -1793,8 +1793,8 @@ module.exports = function (app, client) {
                     coinsList.innerHTML = '<div class="leaderboard-row px-4 py-3 flex items-center justify-between transition-all bg-amber-500/5 ring-1 ring-inset ring-amber-500/30" data-my-row="true">'
                         + '<div class="lb-rank flex items-center gap-1.5 min-w-[50px]"><span class="text-xl">🥇</span></div>'
                         + '<div class="lb-user flex items-center gap-3 flex-1 min-w-0">'
-                        + '<img src="' + (${JSON.stringify(userAvatar)}) + '" class="w-8 h-8 rounded-xl object-cover shrink-0 ring-2 ring-amber-500">'
-                        + '<div class="min-w-0"><span class="text-xs text-white font-bold block truncate max-w-[150px] text-amber-300">' + (${JSON.stringify(user.username)}) + ' 👤</span><span class="text-[10px] text-gray-500 font-mono block">Lv.1</span></div>'
+                        + '<img src="' + (${JSON.stringify(userAvatar)}).replace(/</g, '\\u003c') + '" class="w-8 h-8 rounded-xl object-cover shrink-0 ring-2 ring-amber-500">'
+                        + '<div class="min-w-0"><span class="text-xs text-white font-bold block truncate max-w-[150px] text-amber-300">' + (${JSON.stringify(user.username)}).replace(/</g, '\\u003c') + ' 👤</span><span class="text-[10px] text-gray-500 font-mono block">Lv.1</span></div>'
                         + '</div>'
                         + '<div class="lb-stat shrink-0 text-left"><span class="text-xs font-black font-mono text-amber-400 my-coins-val">🪙 ' + Number(data.newBalance).toLocaleString() + '</span><span class="text-[10px] text-gray-600 block">Gold</span></div>'
                         + '</div>';
@@ -5845,7 +5845,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     </div>
                                     <div class="w-full md:w-auto flex flex-col items-end gap-2">
                                         <input type="file" id="file_welcome_banner_image" accept="image/*" class="hidden" onchange="(function(input){var file=input.files&&input.files[0];if(!file)return;try{input.value='';}catch(e){}function bt(t){var b=document.getElementById('btn_text_welcome_banner_image');if(b)b.innerText=t;}if(!file.type||file.type.indexOf('image/')!==0){bt('❌ ملف غير صالح');alert('❌ يرجى اختيار ملف صورة صالح');bt('رفع الصورة');return;}if(file.size>15*1024*1024){bt('❌ كبير جداً');alert('❌ حجم الصورة يتجاوز 15 ميجابايت');bt('رفع الصورة');return;}bt('جاري الرفع... ⏳');var reader=new FileReader();reader.onerror=function(){bt('رفع الصورة');alert('❌ تعذر قراءة الصورة من جهازك');};reader.onload=function(e){var gId=window.location.pathname.split('/')[2];fetch('/api/guild/'+gId+'/upload-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageBase64:e.target.result,fieldName:'welcome_banner_image'})}).then(function(r){return r.json().then(function(d){return{status:r.status,body:d};});}).then(function(out){var d=out.body||{};if(out.status===200&&d.success&&d.url){var hi=document.getElementById('input_welcome_banner_image');if(hi)hi.value=d.url;var im=document.getElementById('img_welcome_banner_image');if(im){im.src=d.url;im.classList.remove('hidden');}var ph=document.getElementById('placeholder_welcome_banner_image');if(ph)ph.classList.add('hidden');bt('✅ تم الرفع');fetch('/api/guild/'+gId+'/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({welcome_banner_image:d.url})}).catch(function(){});if(!d.persistent)alert('⚠️ تم الرفع لكن الاستضافة الدائمة فشلت — تحقق من صلاحيات البوت.');setTimeout(function(){bt('رفع الصورة');},3000);}else{var msg='❌ فشل ['+out.status+']: '+(d.error||'خطأ غير معروف');bt(msg);alert(msg);}}).catch(function(){bt('رفع الصورة');alert('❌ خطأ في الاتصال');});};reader.readAsDataURL(file);})(this)">
-                                        <input type="hidden" id="input_welcome_banner_image" name="welcome_banner_image" value="${settings.welcome_banner_image || ''}">
+                                        <input type="hidden" id="input_welcome_banner_image" name="welcome_banner_image" value="${escHtml(settings.welcome_banner_image || '')}">
                                         <label for="file_welcome_banner_image" class="px-6 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 text-white rounded-xl text-xs font-black transition shadow-lg flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
                                             <span>📤</span>
                                             <span id="btn_text_welcome_banner_image">رفع الصورة</span>
@@ -7325,7 +7325,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <!-- زر الرفع -->
                                         <div class="w-full md:w-auto flex justify-end">
                                             <input type="file" id="file_level_up_image" accept="image/*" class="hidden" onchange="uploadImageFile(this, 'level_up_image')">
-                                            <input type="hidden" id="input_level_up_image" name="level_up_image" value="${settings.level_up_image || ''}">
+                                            <input type="hidden" id="input_level_up_image" name="level_up_image" value="${escHtml(settings.level_up_image || '')}">
                                             <button type="button" onclick="document.getElementById('file_level_up_image').click()" class="px-5 py-2.5 bg-gradient-to-r from-blue-400 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-blue-700/30 flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center">
                                                 <span>📤</span>
                                                 <span id="btn_text_level_up_image">رفع الصورة</span>
@@ -8892,7 +8892,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">قسم الرومات المنشأة (Category ID)</label>
-                                    <input type="text" name="temp_voice_category" value="${settings.temp_voice_category || ''}" placeholder="آيدي الكاتيجوري الذي ستنشأ تحته الرومات..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono text-right">
+                                    <input type="text" name="temp_voice_category" value="${escHtml(settings.temp_voice_category || '')}" placeholder="آيدي الكاتيجوري الذي ستنشأ تحته الرومات..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono text-right">
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -9690,7 +9690,7 @@ function renderLogsGrid() {
         if (customChan)     html += '<span class="px-2 py-0.5 bg-blue-400/10 text-blue-400 border border-blue-500/20 rounded-lg text-[9px] font-bold flex items-center gap-1"><span>قناة مخصصة</span><i class="fa-solid fa-hashtag text-[8px]"></i></span>';
         html += '<span class="font-bold text-white text-xs">' + item.title + '</span>';
         html += '<span class="px-2 py-0.5 bg-[#16345c] text-gray-300 rounded-lg text-[9px] font-bold">' + cat.title + '</span>';
-        html += '<span class="w-2.5 h-2.5 rounded-full shadow-sm" style="background-color:' + customColor + '" title="لون الإيمبد"></span>';
+        html += '<span class="w-2.5 h-2.5 rounded-full shadow-sm" style="background-color:' + String(customColor || '').replace(/[^#a-zA-Z0-9]/g, '') + '" title="لون الإيمبد"></span>';
         html += '</div>';
         html += '<p class="text-[10px] text-white mt-0.5">' + item.desc + '</p>';
         html += '</div>';
@@ -11212,6 +11212,9 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                 const memberObj = botGuild?.members?.cache?.get(st.user_id);
                                                 const staffAvatar = memberObj?.user?.displayAvatarURL?.({ size: 64 }) || st.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
                                                 const staffDisplayName = escHtml(memberObj?.displayName || st.display_name || memberObj?.user?.username || st.username || `المشرف (${st.user_id.slice(-4)})`);
+                                                // 🔒 (سد M2) وسيط onclick يمشي كـ JSON-ستيرينغ مشفّر: JSON.stringify يهرب الـ quotes/newlines، escHtml يمنع ' " &
+                                                // — والمتصفح يفك الـ entities فيصير عند JS سترينغ سليم (escHtml وحده كانت تنتج &#39; يتحول ' بالتنفيذ ويفجّر الحد)
+                                                const staffDisplayNameJson = escHtml(JSON.stringify(String(memberObj?.displayName || st.display_name || memberObj?.user?.username || st.username || `المشرف (${st.user_id.slice(-4)})`)));
                                                 const staffHandle = escHtml(memberObj?.user?.tag || (st.username ? `@${st.username}` : st.user_id));
                                                 const badge = i === 0 ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : i === 1 ? 'bg-gray-300/20 text-blue-200 border-gray-400/30' : i === 2 ? 'bg-orange-700/20 text-orange-400 border-orange-600/30' : 'bg-blue-400/20 text-blue-300 border-blue-500/20';
                                                 const isOnline = !!activeObj;
@@ -11239,7 +11242,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                                     <td class="py-3.5 text-center font-mono font-bold text-amber-400">${st.mod_actions || 0}</td>
                                                     <td class="py-3.5 text-center font-mono font-black text-blue-400 text-sm">${Number(st.points || 0).toLocaleString()}</td>
                                                     <td class="py-3.5 text-center">
-                                                        <button type="button" onclick="modifyStaffPointsPrompt('${st.user_id}', '${staffDisplayName.replace(/'/g, "\\'")}')" class="px-2.5 py-1 bg-blue-400/30 hover:bg-gradient-to-l from-purple-600 to-blue-500 text-gray-300 rounded-lg text-[10px] font-bold transition" data-i18n="⭐ تعديل النقاط">
+                                                        <button type="button" onclick="modifyStaffPointsPrompt('${escHtml(st.user_id)}', ${staffDisplayNameJson})" class="px-2.5 py-1 bg-blue-400/30 hover:bg-gradient-to-l from-purple-600 to-blue-500 text-gray-300 rounded-lg text-[10px] font-bold transition" data-i18n="⭐ تعديل النقاط">
                                                             ⭐ تعديل النقاط
                                                         </button>
                                                     </td>
@@ -13737,7 +13740,7 @@ ${embedScriptHtml}
     // =============================================
     // Welcome Banner Remove API (إزالة صورة البانر + حذف الملف المحلي)
     // =============================================
-    app.post('/api/guild/:guildId/welcome-banner/remove', express.json(), async (req, res) => {
+    app.post('/api/guild/:guildId/welcome-banner/remove', express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -13778,7 +13781,7 @@ ${embedScriptHtml}
     // =============================================
     // Welcome Test API (ترحيب تجريبي فوري — يطابق رسالة الترحيب الحقيقية)
     // =============================================
-    app.post('/api/guild/:guildId/welcome-test', express.json(), async (req, res) => {
+    app.post('/api/guild/:guildId/welcome-test', express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -13997,6 +14000,22 @@ ${embedScriptHtml}
                     curConfigs['/game'].alias = cleanGameAlias;
                     settings.command_configs = JSON.stringify(curConfigs);
                 } catch (e) {}
+            }
+            // 🔒 (سد M1) سد تضخم القاعدة من مسار الحفظ: عدد المفاتيح وطول المفاتيح والقيم لها سقف واضح
+            if (settings && typeof settings === 'object' && !Array.isArray(settings)) {
+                const _ks = Object.keys(settings);
+                if (_ks.length > 100) {
+                    return res.status(400).json({ success: false, error: 'عدد الإعدادات المرسل كبير جداً (حد أقصى 100 مفتاح).' });
+                }
+                for (const k of _ks) {
+                    if (typeof k !== 'string' || k.length > 48) {
+                        return res.status(400).json({ success: false, error: 'اسم مفتاح إعداد غير صالح (طول غير مقبول).' });
+                    }
+                    const v = settings[k];
+                    if (typeof v === 'string' && v.length > 32000) {
+                        return res.status(400).json({ success: false, error: 'قيمة إعداد "' + k + '" أطول من الحد المسموح (32000 حرف).' });
+                    }
+                }
             }
             if (database.updateGuildSettings) {
                 database.updateGuildSettings(guildId, settings);
@@ -14544,7 +14563,7 @@ ${embedScriptHtml}
     // =============================================
     // Tickets Panel API (إرسال لوحة التذاكر للشات مباشرة)
     // =============================================
-    app.post('/api/guild/:guildId/tickets/send-panel', express.json(), async (req, res) => {
+    app.post('/api/guild/:guildId/tickets/send-panel', express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14708,7 +14727,7 @@ ${embedScriptHtml}
     // =============================================
     // Colors Picker Publish API (نشر لوحة الألوان)
     // =============================================
-    app.post('/api/guild/:guildId/colors/publish', express.json(), async (req, res) => {
+    app.post('/api/guild/:guildId/colors/publish', express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14774,7 +14793,7 @@ ${embedScriptHtml}
     // =============================================
     // Staff Activity & Shift API (نظام الإدارة والحضور)
     // =============================================
-    app.post('/api/guild/:guildId/staff/send-panel', express.json(), async (req, res) => {
+    app.post('/api/guild/:guildId/staff/send-panel', express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14878,7 +14897,7 @@ ${embedScriptHtml}
     // =============================================
     // Stat Channels API
     // =============================================
-    app.post('/api/guild/:guildId/stat-channels', express.json(), (req, res) => {
+    app.post('/api/guild/:guildId/stat-channels', express.json(), sensitiveActionLimiter, (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14916,7 +14935,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/stat-channels/:id/delete', (req, res) => {
+    app.post('/api/guild/:guildId/stat-channels/:id/delete', sensitiveActionLimiter, (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, id } = req.params;
@@ -14939,7 +14958,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/stat-channels/update-now', async (req, res) => {
+    app.post('/api/guild/:guildId/stat-channels/update-now', sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -15028,15 +15047,16 @@ ${embedScriptHtml}
             }
             const price = item.price;
 
-            const userRow = rawDb.prepare('SELECT SUM(coins) as coins FROM users WHERE user_id = ?').get(userId);
+            const guilds = req.session.guilds || [];
+            const primaryGuildId = guilds.length > 0 ? guilds[0].id : 'global';
+
+            // 🔒 (سد L1) تناسق الشيك/الخصم: نفس الصف (user_id + السيرفر الأساسي) يستخدم في الشيك والخصم معاً — الشيك القديم SUM عبر كل السيرفرات كان يسمح خصم أكبر من رصيد الصف المخصوم
+            const userRow = rawDb.prepare('SELECT coins FROM users WHERE user_id = ? AND guild_id = ?').get(userId, primaryGuildId);
             const coins = userRow?.coins || 0;
 
             if (coins < price) {
                 return res.status(400).json({ success: false, error: 'رصيدك الحالي (' + coins.toLocaleString() + ') لا يكفي لشراء هذا العنصر (' + price.toLocaleString() + ' 🪙)' });
             }
-
-            const guilds = req.session.guilds || [];
-            const primaryGuildId = guilds.length > 0 ? guilds[0].id : 'global';
 
             rawDb.prepare('INSERT OR IGNORE INTO users (user_id, guild_id, coins) VALUES (?, ?, 0)').run(userId, primaryGuildId);
             rawDb.prepare('UPDATE users SET coins = MAX(0, coins - ?) WHERE user_id = ? AND guild_id = ?').run(price, userId, primaryGuildId);
@@ -15102,7 +15122,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/applications/:appId/send-panel', express.json(), async (req, res) => {
+    app.post('/api/guild/:guildId/applications/:appId/send-panel', express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, appId } = req.params;

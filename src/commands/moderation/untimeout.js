@@ -25,6 +25,13 @@ module.exports = {
     if (!member) return interaction.reply({ content: t(lang, 'moderation.untimeout.not_found'), flags: 64 });
     if (!member.isCommunicationDisabled()) return interaction.reply({ content: t(lang, 'moderation.untimeout.not_isolated'), flags: 64 });
 
+    // 🔒 تدرج الرتب (سد M6): أي رضعة لا تلغي العزل لمن أعلى/مساوي إلا مالك السيرفر (والعضو لا يعزل نفسه أصلاً)
+    if (interaction.user.id !== interaction.guild.ownerId) {
+      if (member.id === interaction.guild.ownerId || member.roles.highest.position >= interaction.member.roles.highest.position) {
+        return interaction.reply({ content: '🔒 ما تنفع تفك العزل على عضو أعلى رتبة منك أو مساوية لها — بس مالك السيرفر لما يفك عزله نفسه.', flags: 64 });
+      }
+    }
+
     const reason = interaction.options.getString('reason') || t(lang, 'moderation.untimeout.default_reason');
     await interaction.deferReply().catch(() => {});
 

@@ -142,6 +142,14 @@ module.exports = {
       await interaction.deferReply().catch(() => {});
       const reason = interaction.options.getString('reason') || t(lang, 'moderation.mute.default_unmute_reason');
 
+      // 🔒 تدرج الرتب للفك (سد M5): لا فك كتم من أعلى رتبة/مسواية ولا من المالك (إلا مالك البوت نفسه أو مالك السيرفر)
+      const _umCallerOwner = interaction.user.id === interaction.guild.ownerId;
+      if (!_umCallerOwner && interaction.user.id !== member.id) {
+        if (member.id === interaction.guild.ownerId || member.roles.highest.position >= interaction.member.roles.highest.position) {
+          return interaction.editReply({ content: '🔒 ما تنفع تفك كتم عضو أعلى رتبة منك أو مساوية لها — بس مالك السيرفر ملّا العضو نفسه.' });
+        }
+      }
+
       if (muteRole && member.roles.cache.has(muteRole.id)) {
         await member.roles.remove(muteRole).catch(() => {});
       }
@@ -193,6 +201,13 @@ module.exports = {
       if (!targetUser) return message.reply(t(lang, 'moderation.mute.prefix_unmute_usage'));
       const member = await guild.members.fetch(targetUser.id).catch(() => null);
       if (!member) return message.reply(t(lang, 'moderation.mute.prefix_not_found'));
+
+      // 🔒 تدرج الرتب (بريفكس، سد M5): لا فك كتم فوق أو من تركة المالك (إلا مالك السيرفر/العضو نفسه)
+      if (message.author.id !== guild.ownerId && message.author.id !== member.id) {
+        if (member.id === guild.ownerId || member.roles.highest.position >= message.member.roles.highest.position) {
+          return message.reply('🔒 ما تنفع تفك كتم عضو أعلى رتبة منك أو مساوية لها — بس مالك السيرفر ملّا العضو نفسه.');
+        }
+      }
 
       if (muteRole && member.roles.cache.has(muteRole.id)) {
         await member.roles.remove(muteRole).catch(() => {});

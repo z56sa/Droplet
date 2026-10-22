@@ -184,6 +184,13 @@ module.exports = {
         return interaction.reply({ content: t(lang, 'moderation.jail.not_jailed'), flags: 64 });
       }
 
+      // 🔒 تدرج الرتب للفك (سد M7): لا فك سجن من أعلى رتبة/مساوية — وإلا أداري صغير يفك سجن مديره
+      if (interaction.user.id !== guild.ownerId) {
+        if (member.id === guild.ownerId || member.roles.highest.position >= interaction.member.roles.highest.position) {
+          return interaction.reply({ content: '🔒 ما تنفع تفك سجن عضو أعلى رتبة منك أو مساوية لها. خلي المسؤول الأعلى أو مالك السيرفر يتكفل.', flags: 64 });
+        }
+      }
+
       await interaction.deferReply().catch(() => {});
       const reason = interaction.options.getString('reason') || t(lang, 'moderation.jail.default_unjail_reason');
 
@@ -193,6 +200,25 @@ module.exports = {
           restoredRoles = JSON.parse(jailedRecord.old_roles);
         } catch (e) {}
       }
+
+      // 🔒 (سد M7-ب) الرتب المخزّنة تمر عبر فلتر — لا نعيد رتبة خطر إدارياً أو أعلى من المنفذ (نمط denylist R3)
+      const _dOwnerCheck = interaction.user.id === guild.ownerId;
+      const _dCallerTop = interaction.member.roles?.highest?.position || 0;
+      restoredRoles = restoredRoles.filter(rid => {
+        const r = guild.roles.cache.get(rid);
+        if (!r) return false;
+        const _dDanger = r.permissions?.has?.(PermissionFlagsBits.Administrator) ||
+          r.permissions?.has?.(PermissionFlagsBits.ManageRoles) ||
+          r.permissions?.has?.(PermissionFlagsBits.ManageGuild) ||
+          r.permissions?.has?.(PermissionFlagsBits.ManageWebhooks) ||
+          r.permissions?.has?.(PermissionFlagsBits.ManageChannels) ||
+          r.permissions?.has?.(PermissionFlagsBits.BanMembers) ||
+          r.permissions?.has?.(PermissionFlagsBits.KickMembers) ||
+          r.permissions?.has?.(PermissionFlagsBits.ModerateMembers);
+        if (_dDanger) return false;
+        if (!_dOwnerCheck && r.position >= _dCallerTop) return false;
+        return true;
+      });
 
       try {
         if (jailRole && member.roles.cache.has(jailRole.id)) {
@@ -249,13 +275,36 @@ module.exports = {
       const member = await guild.members.fetch(targetUser.id).catch(() => null);
       if (!member) return message.reply(t(lang, 'moderation.jail.prefix_not_found'));
 
+      // 🔒 تدرج الرتب (بريفكس): لا فك سجن فوق منك بالتسهرية (سد M7)
+      if (message.author.id !== guild.ownerId) {
+        if (member.id === guild.ownerId || member.roles.highest.position >= message.member.roles.highest.position) {
+          return message.reply('🔒 ما تنفع تفك سجن عضو أعلى رتبة منك أو مساوية لها. خلي المسؤول الأعلى أو مالك السيرفر يتكفل.');
+        }
+      }
+
       const record = db.unjailUser(guild.id, member.id);
       if (jailRole && member.roles.cache.has(jailRole.id)) {
         await member.roles.remove(jailRole).catch(() => {});
       }
       if (record && record.old_roles) {
         try {
-          const rIds = JSON.parse(record.old_roles);
+          // 🔒 نفس الفلتر من مسار السلاش: ما نُرجع رتبة خطرة أو أعلى من كاهنها الععوّض (سد M7-ب)
+          let rIds = JSON.parse(record.old_roles);
+          rIds = rIds.filter(rid => {
+            const r = guild.roles.cache.get(rid);
+            if (!r) return false;
+            const _pDanger = r.permissions?.has?.(PermissionFlagsBits.Administrator) ||
+              r.permissions?.has?.(PermissionFlagsBits.ManageRoles) ||
+              r.permissions?.has?.(PermissionFlagsBits.ManageGuild) ||
+              r.permissions?.has?.(PermissionFlagsBits.ManageWebhooks) ||
+              r.permissions?.has?.(PermissionFlagsBits.ManageChannels) ||
+              r.permissions?.has?.(PermissionFlagsBits.BanMembers) ||
+              r.permissions?.has?.(PermissionFlagsBits.KickMembers) ||
+              r.permissions?.has?.(PermissionFlagsBits.ModerateMembers);
+            if (_pDanger) return false;
+            if (message.author.id !== guild.ownerId && r.position >= message.member.roles.highest.position) return false;
+            return true;
+          });
           if (rIds.length) await member.roles.add(rIds).catch(() => {});
         } catch (e) {}
       }

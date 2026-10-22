@@ -27,8 +27,16 @@ module.exports = {
       return interaction.reply({ content: t(lang, 'tickets.ticket.staff_only'), flags: 64 });
     }
 
-    const name = interaction.options.getString('name');
-    await interaction.channel.setName(name);
+    // 🔒 (سد L5) سقف اسم القناة 100 حرف — بلاه Discord يرمي خطأ غير معالج
+    const name = String(interaction.options.getString('name') || '').trim().slice(0, 100);
+    if (!name) {
+      return interaction.reply({ content: '⚠️ اكتب اسم صالح للقناة (حتى 100 حرف).', flags: 64 });
+    }
+    try {
+      await interaction.channel.setName(name);
+    } catch (e) {
+      return interaction.reply({ content: '❌ تعذر تغيير اسم القناة — تأكد أن أذونات البوت كافية.', flags: 64 });
+    }
     return interaction.reply({ content: t(lang, 'tickets.rename.renamed', { name }) });
   }
 };
