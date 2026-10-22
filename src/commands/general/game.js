@@ -188,6 +188,8 @@ module.exports = {
     let answered = false;
 
     collector.on('collect', async msg => {
+      // 🔒 (سد R5-6) رسالتين صح بنفس دفعة الWS ما تكسبان معاً — أول متسابق فقط ياخذ الجائزة
+      if (answered) return;
       const cleanMsg = normalizeArabicText(msg.content);
       if (cleanMsg === expected || cleanMsg.includes(expected)) {
         answered = true;
@@ -217,7 +219,9 @@ module.exports = {
       }
     });
 
-    collector.on('end', (collected, reason) => {
+    // 🔒 (سد R5-7) اللعبة ترجع Promise تسوّي عند نهاية الcollector — قفل السيرفر يبقى شايل طول الجولة
+    // وسبق: startGame يطلق القفل بـfinally ثانيتين بعد البداية وتنطلق ألعاب متوازية متداخلة بنفس القناة
+    return new Promise(_roundOver => collector.on('end', (collected, reason) => {
       if (!answered && reason !== 'answered') {
         const timeoutEmbed = new EmbedBuilder()
           .setColor('#e74c3c')
@@ -227,7 +231,8 @@ module.exports = {
 
         channel.send({ embeds: [timeoutEmbed] });
       }
-    });
+      _roundOver();
+    }));
   },
 
   // 2. لعبة تفكيك وتركيب الكلمات
@@ -267,6 +272,8 @@ module.exports = {
     let answered = false;
 
     collector.on('collect', async msg => {
+      // 🔒 (سد R5-6) أول متسابق فقط
+      if (answered) return;
       const cleanMsg = normalizeArabicText(msg.content);
       if (cleanMsg === targetAnswer) {
         answered = true;
@@ -296,7 +303,8 @@ module.exports = {
       }
     });
 
-    collector.on('end', (collected, reason) => {
+    // 🔒 (سد R5-7) نفس العيد — القفل يبقى حتى نهاية الجولة
+    return new Promise(_roundOver => collector.on('end', (collected, reason) => {
       if (!answered && reason !== 'answered') {
         const timeoutEmbed = new EmbedBuilder()
           .setColor('#e74c3c')
@@ -306,7 +314,8 @@ module.exports = {
 
         channel.send({ embeds: [timeoutEmbed] });
       }
-    });
+      _roundOver();
+    }));
   },
 
   // 3. لعبة أسرع واحد يكتب
@@ -331,6 +340,8 @@ module.exports = {
     let answered = false;
 
     collector.on('collect', async msg => {
+      // 🔒 (سد R5-6) أول متسابق فقط
+      if (answered) return;
       const cleanMsg = normalizeArabicText(msg.content);
       if (cleanMsg === normalizedTarget) {
         answered = true;
@@ -362,7 +373,8 @@ module.exports = {
       }
     });
 
-    collector.on('end', (collected, reason) => {
+    // 🔒 (سد R5-7) نفس العيد — القفل يبقى حتى نهاية الجولة
+    return new Promise(_roundOver => collector.on('end', (collected, reason) => {
       if (!answered && reason !== 'answered') {
         const timeoutEmbed = new EmbedBuilder()
           .setColor('#e74c3c')
@@ -372,7 +384,8 @@ module.exports = {
 
         channel.send({ embeds: [timeoutEmbed] });
       }
-    });
+      _roundOver();
+    }));
   }
 };
 

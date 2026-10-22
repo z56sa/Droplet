@@ -268,6 +268,7 @@ db.exec(`
     end_time INTEGER,
     duration_seconds INTEGER DEFAULT 0,
     ended_by TEXT DEFAULT 'user', -- 'user', 'auto_afk', 'auto_offline', 'admin'
+    last_action_time INTEGER,
     UNIQUE(guild_id, user_id, status)
   );
 
@@ -896,6 +897,9 @@ try {
     CREATE INDEX IF NOT EXISTS idx_temp_bans_unban ON temp_bans(unban_at);
   `);
 } catch(e) {}
+
+// 🔒 (سد R5-2) عمود آخر تفاعل بالشيفت — السكيما القديمة ما كانت شايله فالخمول يُحسب من بداية الشفت بالغلط ويطلع الموظف "auto_inactive" رغم نشاطه
+try { db.exec("ALTER TABLE staff_shifts ADD COLUMN last_action_time INTEGER;"); } catch (e) {}
 
 // 🎭 جدول الرتب المؤقتة (Temp Roles) — بدلاً من setTimeout بالذاكرة فقط: وقت الانتهاء محفوظ بالداتابيس والفحص الدوري يزيل الرتبة حتى بعد الريستارت (سد role.js:133)
 try {

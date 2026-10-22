@@ -117,7 +117,10 @@ function matchCustomAlias(trimmedContent, cmdConfigs, prefix, client, ctx) {
   // 🔒 تعقيم ما يُطبع بالكونسول (سطور جديدة/نص طويل — منع غش السجلات داخل حاويات الاستضافة)
   const _safeLog = String(trimmedContent).replace(/[\r\n\t]+/g, ' ').slice(0, 60);
   const _safeWord = String(firstWord).replace(/[\r\n\t]+/g, ' ').slice(0, 60);
-  console.log(`[ALIAS]${ctxTag} input="${_safeLog}" | firstWord="${_safeWord}" | cfgKeys=${cfgKeys.length} | keys=${cfgKeys.slice(0,10).join(',')}`);
+  // 🔒 (سد R5-11) لوج كل رسالة بأي سيرفر أسد — الالتباس/كم الخواص; تعرضه بواسطة DROPLET_DEBUG_ALIAS=1 بالمحيطة
+  if (process.env.DROPLET_DEBUG_ALIAS === '1') {
+    console.log(`[ALIAS]${ctxTag} input="${_safeLog}" | firstWord="${_safeWord}" | cfgKeys=${cfgKeys.length} | keys=${cfgKeys.slice(0,10).join(',')}`);
+  }
 
   for (const [cmdKey, cfg] of Object.entries(cmdConfigs)) {
     if (!cfg || !cfg.alias) continue;
@@ -131,7 +134,10 @@ function matchCustomAlias(trimmedContent, cmdConfigs, prefix, client, ctx) {
       firstWord === (prefix + cleanAlias).toLowerCase() ||
       firstWord === ('/' + cleanAlias);
 
-    console.log(`[ALIAS] checking cmdKey="${cmdKey}" alias="${rawAlias}" cleanAlias="${cleanAlias}" → matched=${matched}`);
+    // 🔒 (سد R5-11) نفس البوب للـloop الداخلي — سطر بكل الارتباطات المستندة بكل رسالة
+    if (process.env.DROPLET_DEBUG_ALIAS === '1') {
+      console.log(`[ALIAS] checking cmdKey="${cmdKey}" alias="${rawAlias}" cleanAlias="${cleanAlias}" → matched=${matched}`);
+    }
 
     if (!matched) continue;
 
@@ -501,6 +507,13 @@ module.exports = {
         spamMap.delete(userId);
         return;
       }
+
+      // 🧹 (سد R5-10) تنظيف كسول: كل عضو حيّ بسرعة يبقى بالخريطة للأبد (رسايله محفوظة بياها) — نمو ذاكرة ما سقف
+      if (spamMap.size > 4000) {
+        for (const [_k, _v] of spamMap) {
+          if (now - (_v.lastMessage || 0) > 30000) spamMap.delete(_k);
+        }
+      }
     }
 
     // XP & Leveling
@@ -741,7 +754,8 @@ module.exports = {
         const _sgMode = String(settings.suggestion_mode || 'embed').toLowerCase();
         const _sgLine = settings.suggestions_line || '';
         const sentMsg = _sgMode === 'text'
-          ? await message.channel.send({ content: `💡 **اقتراح من ${message.author.tag}:**\n${content}${_sgLine ? `\n${_sgLine}` : ''}` }).catch(() => null)
+          // 🔒 (سد R5-4) مانيصاط @everyone/@here بأي محتوا أعضاء — النسخة النصية كانت نفس مذمرة
+          ? await message.channel.send({ content: `💡 **اقتراح من ${message.author.tag}:**\n${content}${_sgLine ? `\n${_sgLine}` : ''}`, allowedMentions: { parse: [] } }).catch(() => null)
           : await message.channel.send({ embeds: [suggEmbed], components }).catch(() => null);
 
         if (sentMsg) {

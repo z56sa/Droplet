@@ -120,11 +120,12 @@ module.exports = {
       const messageId = interaction.options.getString('message_id');
       const giveaway = db.getGiveaway(messageId);
 
-      if (!giveaway || giveaway.ended) {
+      // 🔒 (سد R5-14) الحقل الفعلي بالسكيما `status` — `giveaway.ended` كان دائماً undefined فالبوابة ميتة
+      if (!giveaway || giveaway.status === 'ended') {
         return interaction.reply({ content: t(gid, 'general.giveaway.end_not_found'), flags: 64 });
       }
 
-      await this.finishGiveaway(messageId, client);
+      await this.finishGiveaway(messageId, client, true);
       await interaction.reply({ content: t(gid, 'general.giveaway.end_done'), flags: 64 });
 
     } else if (sub === 'reroll') {
@@ -154,11 +155,12 @@ module.exports = {
     }
   },
 
-  async finishGiveaway(messageId, client) {
+  async finishGiveaway(messageId, client, force = false) {
     const giveaway = db.getGiveaway(messageId);
     if (!giveaway || giveaway.status === 'ended') return;
     // 🔒 ما تنتهي إلا إذا وقتها انتهى فعلاً — يمنع المؤقت المفلطل (فوق 24.8 يوم يصير 1ms) من إنهائها مبكراً
-    if (giveaway.end_time && Number(giveaway.end_time) > Date.now() + 1000) return;
+    // 🔒 (سد R5-13) /giveaway end الإداري يمرّر force=true — قبله كان يجرح من الحارس الواقي ويرد "تم" بلا أي فعل
+    if (!force && giveaway.end_time && Number(giveaway.end_time) > Date.now() + 1000) return;
 
     db.endGiveaway(messageId);
     const gid = giveaway.guild_id;

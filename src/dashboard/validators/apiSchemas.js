@@ -134,13 +134,15 @@ const suggestionSchema = z.object({
 // Staff Points Validation
 const staffPointsSchema = z.object({
     userId: z.string().regex(/^\d{15,22}$/, 'Invalid Discord User ID'),
-    points: z.union([z.number(), z.string()]).transform(v => parseInt(v, 10)).pipe(z.number().int())
+    // 🔒 سد R5: النقاط عدد صحيح محدود — السالب مسموح (نقص للتصحيح) بس بحد, مافي 1e300 ولا هائل
+    points: z.union([z.number(), z.string()]).transform(v => parseInt(v, 10)).pipe(z.number().int().min(-100000).max(100000))
 });
 
 // Invites Bonus Validation
 const inviteBonusSchema = z.object({
     userId: z.string().regex(/^\d{15,22}$/, 'Invalid Discord User ID'),
-    amount: z.union([z.number(), z.string()]).transform(v => parseInt(v, 10)).pipe(z.number().int())
+    // 🔒 سد R5: نفس رابط الكبس لمكافأة الدعوات
+    amount: z.union([z.number(), z.string()]).transform(v => parseInt(v, 10)).pipe(z.number().int().min(-100000).max(100000))
 });
 
 // AI Chat Validation

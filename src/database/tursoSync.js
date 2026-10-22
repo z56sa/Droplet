@@ -434,9 +434,12 @@ class TursoSync {
           status TEXT DEFAULT 'active',
           end_time INTEGER,
           duration_seconds INTEGER DEFAULT 0,
-          ended_by TEXT DEFAULT 'user'
+          ended_by TEXT DEFAULT 'user',
+          last_action_time INTEGER
         );
       `);
+      // 🔒 (سد R5-2) عمود آخر تفاعل للشيفت بالتلسو كمان — إعادة إنشاء الجدول ما تكفي للقواعد القديمة
+      try { await this.client.execute('ALTER TABLE staff_shifts ADD COLUMN last_action_time INTEGER'); } catch (e) {}
       // 1.6.1 يجب التأكد ان الاعمدة الجديدة للباقات موجودة (قواعد تورسو أقدم من الأعمدة الجديدة)
       for (const col of ['required_role TEXT', 'min_level INTEGER DEFAULT 0', 'min_account_age INTEGER DEFAULT 0', 'extra_role TEXT', 'description TEXT', 'color TEXT', 'image TEXT', 'emoji TEXT', 'btn_style TEXT', 'entry_mode TEXT', 'notify_winners INTEGER DEFAULT 1', 'created_at INTEGER']) {
         try {
@@ -1045,15 +1048,19 @@ class TursoSync {
    */
   async backupTable(localDb, table, pkCol) {
     if (!this.enabled || !this.client) return 0;
-    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(pkCol)) return 0;
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table)) return 0;
+    // 🔒 (سد R5-1) دعم المفتاح المركّب — كان يتخرب على المصفوفة ("guild_id,user_id" تفشل بالـregex)
+    // فاستعادة/دفع jail_users وtemp_roles عند الإقلاع كانت ترجع 0 صامتة والعقوبات تضيع بعد كل نشر
+    const pks = this._normPks(pkCol);
+    if (!pks) return 0;
     try {
       const rows = localDb.prepare(`SELECT * FROM ${table}`).all();
       let n = 0;
       for (const r of rows) {
         try {
           if (!r || typeof r !== 'object' || Array.isArray(r)) continue;
-          if (r[pkCol] === undefined || r[pkCol] === null) continue;
-          this.queueTableRowSync(table, pkCol, r);
+          if (!pks.every(pk => r[pk] !== undefined && r[pk] !== null)) continue;
+          this.queueTableRowSync(table, pks, r);
           n++;
         } catch (e) {}
       }
@@ -1067,7 +1074,10 @@ class TursoSync {
    */
   async restoreTable(localDb, table, pkCol) {
     if (!this.enabled || !this.client) return 0;
-    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(pkCol)) return 0;
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(table)) return 0;
+    // 🔒 (سد R5-1) نفس الدعم المركب — استعادة jail_users/temp_roles من تلسو كانت واقفة هنا بصمت
+    const pks = this._normPks(pkCol);
+    if (!pks) return 0;
     try {
       const res = await this.client.execute(`SELECT * FROM ${table}`);
       if (!res || !res.rows || res.rows.length === 0) return 0;
@@ -1077,16 +1087,16 @@ class TursoSync {
           try {
             if (!r || typeof r !== 'object' || Array.isArray(r)) continue;
             const cols = Object.keys(r).filter(c => /^[A-Za-z_][A-Za-z0-9_]*$/.test(c));
-            if (!cols.includes(pkCol)) continue;
+            if (!pks.every(pk => cols.includes(pk))) continue;
             const vals = cols.map(c => {
               const v = r[c];
               if (typeof v === 'bigint') return Number(v);
               return (typeof v === 'object' && v !== null) ? JSON.stringify(v) : v;
             });
             const ph = cols.map(() => '?').join(', ');
-            const upd = cols.filter(c => c !== pkCol).map(c => `${c} = excluded.${c}`).join(', ');
+            const upd = cols.filter(c => !pks.includes(c)).map(c => `${c} = excluded.${c}`).join(', ');
             const sql = upd
-              ? `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${ph}) ON CONFLICT(${pkCol}) DO UPDATE SET ${upd}`
+              ? `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${ph}) ON CONFLICT(${pks.join(', ')}) DO UPDATE SET ${upd}`
               : `INSERT OR IGNORE INTO ${table} (${cols.join(', ')}) VALUES (${ph})`;
             localDb.prepare(sql).run(...vals);
             n++;
@@ -1323,6 +1333,14 @@ class TursoSync {
   }
 
   enqueue(statement) {
+    // 🔒 (سد R5-9) سقف صلب للطابور — انقطاع تلسو طويل ما يبلع الذاكرة، الجمل الجديدة تُسلّب بهدوء حتى ينفجس الصرف
+    if (this.syncQueue.length > 5000) {
+      if (!this._queueOverflowWarned) {
+        this._queueOverflowWarned = true;
+        console.error('[TURSO] ⛔ Sync queue overflow (>5000) — dropping new statements until the queue drains');
+      }
+      return;
+    }
     this.syncQueue.push(statement);
     if (!this.isProcessingQueue) {
       this.processQueue();
@@ -1372,6 +1390,7 @@ class TursoSync {
     }
 
     this.isProcessingQueue = false;
+    this._queueOverflowWarned = false;
   }
 }
 

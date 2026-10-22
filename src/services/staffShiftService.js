@@ -291,6 +291,9 @@ class StaffShiftService {
                     if (db.removeTempRoleJob) db.removeTempRoleJob(row.guild_id, row.user_id, row.role_id);
                 }
             }
+
+            // 🧹 (سد R5-8) تنظيف دوري لذاكرة سجل الرسائل — كانت الدالة بلا أي منادٍ والجدول يعمّر للأبد
+            if (db.pruneOldMessageCache) { try { db.pruneOldMessageCache(); } catch (e) {} }
         } catch (e) {
             console.error('[StaffShiftService] Error in tick:', e.message);
         }

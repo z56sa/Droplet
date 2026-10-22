@@ -117,7 +117,8 @@ module.exports = {
       const _m = String(settings.suggestion_mode || 'embed').toLowerCase();
       const _line = settings.suggestions_line || '';
       const sentMsg = _m === 'text'
-        ? await targetChannel.send({ content: `💡 **${title ? title + '\n' : ''}**${content}${_line ? `\n${_line}` : ''}` })
+        // 🔒 (سد R5-4) مانيصاط الهدا الهايدر @everyone/@here من أي عضو — النص يوصل حرفياً بلا تنسح
+        ? await targetChannel.send({ content: `💡 **${title ? title + '\n' : ''}**${content}${_line ? `\n${_line}` : ''}`, allowedMentions: { parse: [] } })
         : await targetChannel.send({ embeds: [suggEmbed], components });
 
       if (isEnabled(settings.suggestions_auto_thread, false)) {

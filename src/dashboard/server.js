@@ -315,7 +315,7 @@ module.exports = function (app, client) {
 
 
     // ─── Staff Auto-Promotion Ranks API ───
-    app.post('/api/staff/ranks', express.json(), requireGuildPermission, (req, res) => {
+    app.post('/api/staff/ranks', express.json(), requireGuildPermission, sensitiveActionLimiter, (req, res) => {
         const { guildId, roleId, points, name } = req.body;
         if (!guildId || !roleId || !points) {
             return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
@@ -323,14 +323,20 @@ module.exports = function (app, client) {
         if (!/^\d{15,22}$/.test(String(roleId)) || isNaN(Number(points))) {
             return res.status(400).json({ success: false, message: 'بيانات غير صالحة' });
         }
-        database.setStaffRank(guildId, roleId, points, name || null);
+        // 🔒 (سد R5-15) كبس محكم: نقاط 0..100000 صحيحة واسم مقصوص — 1e300 أو نص ستريبل ماون كلها مرفوضة
+        const _pts = Math.max(0, Math.min(100000, Math.floor(Number(points) || 0)));
+        const _nm = String(name === undefined || name === null ? '' : name).slice(0, 64);
+        database.setStaffRank(guildId, roleId, _pts, _nm || null);
         return res.json({ success: true });
     });
 
-    app.post('/api/staff/ranks/delete', express.json(), requireGuildPermission, (req, res) => {
+    app.post('/api/staff/ranks/delete', express.json(), requireGuildPermission, sensitiveActionLimiter, (req, res) => {
         const { guildId, roleId } = req.body;
         if (!guildId || !roleId) {
             return res.status(400).json({ success: false, message: 'بيانات غير مكتملة' });
+        }
+        if (!/^\d{15,22}$/.test(String(roleId))) {
+            return res.status(400).json({ success: false, message: 'بيانات غير صالحة' });
         }
         database.removeStaffRank(guildId, roleId);
         return res.json({ success: true });
@@ -501,34 +507,8 @@ module.exports = function (app, client) {
     });
 
     // Bot Info API for public landing pages
-    app.get('/api/bot-info', (req, res) => {
-        const avatarUrl = client?.user?.avatar 
-            ? `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.png` 
-            : 'https://cdn.discordapp.com/embed/avatars/0.png';
-
-        // إحصائيات حقيقية وديناميكية 100% بناءً على السيرفرات المتواجد فيها البوت فعلياً
-        const realGuildsCount = client?.guilds?.cache ? client.guilds.cache.size : 0;
-
-        // حساب إجمالي الأعضاء الفعليين ديناميكياً من كل سيرفر يدخله البوت
-        let totalMembersCount = 0;
-        if (client?.guilds?.cache && client.guilds.cache.size > 0) {
-            client.guilds.cache.forEach(g => {
-                totalMembersCount += (g.memberCount || 0);
-            });
-        }
-
-        const realPing = (client?.ws?.ping !== undefined && client.ws.ping >= 0) ? Math.round(client.ws.ping) : 0;
-
-        res.json({
-            id: client?.user?.id || config.clientId,
-            username: client?.user?.username || config.botName || 'Droplet',
-            avatar: avatarUrl,
-            guildsCount: realGuildsCount,
-            dashboardUsersCount: totalMembersCount,
-            usersCount: totalMembersCount,
-            ping: realPing
-        });
-    });
+    // 🔒 (سد R5-18) حذفنا تسجيل /api/bot-info المكرر هنا — النسخة المعتمدة هي الأولى من القائمة (سطر 224)
+    // التكرار كان يخلّ النسخة الثانية ترسل رد بعد ما الأولى خلّصت → ERR_HTTP_HEADERS_SENT بلغة السجلات
 
     // 🔍 فحص وإظهار جميع السيرفرات المتواجد فيها البوت وأصحابها
     app.get('/api/admin/my-guilds', async (req, res) => {
@@ -649,7 +629,7 @@ module.exports = function (app, client) {
                 rankCoins: coinsRank >= 0 ? coinsRank + 1 : '99+'
             });
         } catch(e) {
-            res.status(500).json({ error: e.message });
+            res.status(500).json({ error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -835,7 +815,7 @@ module.exports = function (app, client) {
             const xpUsers = rawDb.prepare('SELECT COUNT(*) as n FROM users WHERE xp > 0').get()?.n || 0;
             return res.json({ success: true, rowsPulled: (tursoNow.lastPull && tursoNow.lastPull.rows) || 0, localUsers, xpUsers, pullError: (tursoNow.lastPull && tursoNow.lastPull.err) || null });
         } catch (e) {
-            return res.status(500).json({ success: false, error: e.message });
+            return res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -929,7 +909,7 @@ module.exports = function (app, client) {
             const localUsers = rawDb.prepare('SELECT COUNT(*) as n FROM users').get()?.n || 0;
             return res.json({ success: true, inserted: uCount, localUsers });
         } catch (e) {
-            return res.status(500).json({ success: false, error: e.message });
+            return res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -1073,7 +1053,7 @@ module.exports = function (app, client) {
             `).all(guildId);
             res.json({ success: true, items });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -1098,7 +1078,7 @@ module.exports = function (app, client) {
             `).all(userId, guildId, now);
             res.json({ success: true, inventory });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -1125,7 +1105,7 @@ module.exports = function (app, client) {
                 : rawDb.prepare(`SELECT * FROM store_transactions WHERE guild_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 50`).all(guildId, userId);
             res.json({ success: true, transactions: query });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -1280,7 +1260,7 @@ module.exports = function (app, client) {
             `).run(guildId, _sName, _sDesc, item_type || 'role', _sIcon, image_url || '', Number(price), Number(original_price || 0), Number(stock ?? -1), role_id || '', Number(booster_multiplier || 1.5), Number(booster_duration || 3600), Number(cooldown_seconds || 0), is_featured ? 1 : 0, _sBadge);
             res.json({ success: true, id: result.lastInsertRowid });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -1308,7 +1288,7 @@ module.exports = function (app, client) {
             rawDb.prepare(`UPDATE store_items SET ${sets}, updated_at = strftime('%s','now') WHERE id = @id AND guild_id = @guild_id`).run(values);
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -1320,7 +1300,7 @@ module.exports = function (app, client) {
             rawDb.prepare(`UPDATE store_items SET is_active = 0 WHERE id = ? AND guild_id = ?`).run(itemId, guildId);
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -4657,7 +4637,7 @@ const leaderboard = database.getInvitesLeaderboard ? database.getInvitesLeaderbo
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">الحد الأدنى لعمر الحساب باليوم (كشف الحسابات الوهمية Fake)</label>
-                                    <input type="number" id="invites_fake_days" value="${settings.invites_fake_days || 3}" min="0" max="90" onchange="saveInviteSetting('invites_fake_days', this.value)" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono text-right">
+                                    <input type="number" id="invites_fake_days" value="${escHtml(settings.invites_fake_days || 3)}" min="0" max="90" onchange="saveInviteSetting('invites_fake_days', this.value)" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono text-right">
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -7158,7 +7138,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center gap-2">
                                             <span class="text-xs text-white">ثانية</span>
-                                            <input type="number" name="level_cooldown_seconds" value="${settings.level_cooldown_seconds || 120}" class="w-20 bg-[#070d1d] border border-blue-500/20 rounded-xl px-3 py-1.5 text-xs text-white font-mono text-center outline-none">
+                                            <input type="number" name="level_cooldown_seconds" value="${escHtml(settings.level_cooldown_seconds || 120)}" class="w-20 bg-[#070d1d] border border-blue-500/20 rounded-xl px-3 py-1.5 text-xs text-white font-mono text-center outline-none">
                                         </div>
                                         <div class="text-right">
                                             <h5 class="text-xs font-bold text-white">فترة انتظار XP</h5>
@@ -7172,7 +7152,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center gap-2">
                                             <span class="text-xs text-white">XP/دقيقة</span>
-                                            <input type="number" name="level_voice_xp_rate" value="${settings.level_voice_xp_rate || 3}" class="w-20 bg-[#070d1d] border border-blue-500/20 rounded-xl px-3 py-1.5 text-xs text-white font-mono text-center outline-none">
+                                            <input type="number" name="level_voice_xp_rate" value="${escHtml(settings.level_voice_xp_rate || 3)}" class="w-20 bg-[#070d1d] border border-blue-500/20 rounded-xl px-3 py-1.5 text-xs text-white font-mono text-center outline-none">
                                         </div>
                                         <div class="text-right">
                                             <h5 class="text-xs font-bold text-white">XP الصوت في الدقيقة</h5>
@@ -7191,10 +7171,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                                 <div class="space-y-2">
                                     <div class="flex items-center justify-between text-xs font-bold">
-                                        <span class="px-3 py-1 bg-orange-950/60 text-blue-400 border border-orange-800/40 rounded-xl font-mono text-sm" id="voiceMinMembersVal">${settings.level_voice_min_members || 2}</span>
+                                        <span class="px-3 py-1 bg-orange-950/60 text-blue-400 border border-orange-800/40 rounded-xl font-mono text-sm" id="voiceMinMembersVal">${escHtml(settings.level_voice_min_members || 2)}</span>
                                         <span class="text-white">الحد الأدنى للأعضاء في القناة</span>
                                     </div>
-                                    <input type="range" name="level_voice_min_members" min="1" max="10" value="${settings.level_voice_min_members || 2}" oninput="document.getElementById('voiceMinMembersVal').innerText = this.value" class="w-full accent-blue-400 cursor-pointer">
+                                    <input type="range" name="level_voice_min_members" min="1" max="10" value="${escHtml(settings.level_voice_min_members || 2)}" oninput="document.getElementById('voiceMinMembersVal').innerText = this.value" class="w-full accent-blue-400 cursor-pointer">
                                     <p class="text-[10px] text-gray-500 text-right">عدد الأعضاء المطلوب في القناة لبدء حساب XP</p>
                                 </div>
 
@@ -8742,7 +8722,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         ${d === 0 ? 'بدون' : d + ' يوم'}
                                     </button>`).join('')}
                                 </div>
-                                <input type="hidden" name="anti_alt_days" id="inpAltDays" value="${settings.anti_alt_days || 3}">
+                                <input type="hidden" name="anti_alt_days" id="inpAltDays" value="${escHtml(settings.anti_alt_days || 3)}">
                             </div>
 
                             <!-- Raid Threshold (Members / 10s) -->
@@ -8756,10 +8736,10 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 </div>
                                 <div class="flex items-center gap-4">
                                     <div class="flex-1">
-                                        <input type="range" name="raid_threshold" id="raidSlider" min="3" max="30" step="1" value="${settings.raid_threshold || 5}" oninput="document.getElementById('raidThresholdNum').innerText = this.value" class="w-full accent-blue-400">
+                                        <input type="range" name="raid_threshold" id="raidSlider" min="3" max="30" step="1" value="${escHtml(settings.raid_threshold || 5)}" oninput="document.getElementById('raidThresholdNum').innerText = this.value" class="w-full accent-blue-400">
                                     </div>
                                     <div class="bg-[#070d1d] border border-blue-500/20 text-white font-black text-lg font-mono px-4 py-2 rounded-xl min-w-[52px] text-center">
-                                        <span id="raidThresholdNum">${settings.raid_threshold || 5}</span>
+                                        <span id="raidThresholdNum">${escHtml(settings.raid_threshold || 5)}</span>
                                     </div>
                                 </div>
                                 <p class="text-[11px] text-gray-500 text-right">كلما كان العدد أصغر، كلما كان النظام أكثر حساسية للغزو</p>
@@ -8778,7 +8758,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                         <p class="text-white text-[11px] mt-0.5">الإجراء التلقائي عند رصد غزو أو دخول مشبوه</p>
                                     </div>
                                 </div>
-                                <input type="hidden" name="antiraid_action" id="inpAntiraidAction" value="${settings.antiraid_action || 'kick'}">
+                                <input type="hidden" name="antiraid_action" id="inpAntiraidAction" value="${escHtml(settings.antiraid_action || 'kick')}">
                                 <div class="grid grid-cols-3 gap-2">
                                     <button type="button" onclick="selectRaidAction('kick', this)" class="raid-action-btn py-3 rounded-2xl border text-xs font-bold transition ${(settings.antiraid_action || 'kick') === 'kick' ? 'bg-blue-700/40 border-blue-400 text-white' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300'}">
                                         🪓 طرد
@@ -8898,11 +8878,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">الاسم الافتراضي للروم المنشأ</label>
-                                    <input type="text" name="temp_voice_name_template" value="${settings.temp_voice_name_template || '🔊 | {username}'}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right font-mono">
+                                    <input type="text" name="temp_voice_name_template" value="${escHtml(settings.temp_voice_name_template || '🔊 | {username}')}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none text-right font-mono">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">الحد الأقصى للمستخدمين الافتراضي</label>
-                                    <input type="number" name="temp_voice_user_limit" value="${settings.temp_voice_user_limit || 0}" placeholder="0 = غير محدود" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono text-right">
+                                    <input type="number" name="temp_voice_user_limit" value="${escHtml(settings.temp_voice_user_limit || 0)}" placeholder="0 = غير محدود" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono text-right">
                                 </div>
                             </div>
                         </div>
@@ -10870,7 +10850,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <!-- فترة التصفير (Clear Period Buttons) -->
                                 <div>
                                     <span class="block text-xs font-bold text-white mb-2.5 text-right">فترة التصفير</span>
-                                    <input type="hidden" name="auto_clear_period" id="inpClearPeriod" value="${settings.auto_clear_period || 'week'}">
+                                    <input type="hidden" name="auto_clear_period" id="inpClearPeriod" value="${escHtml(settings.auto_clear_period || 'week')}">
                                     
                                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                                         <button type="button" onclick="selectClearPeriod('week', this)" class="period-btn py-3 px-4 rounded-2xl border text-xs font-bold transition ${(settings.auto_clear_period || 'week') === 'week' ? 'bg-blue-700/40 border-blue-400 text-white shadow-md' : 'bg-[#070d1d] border-blue-500/20 text-white hover:text-gray-300'}">
@@ -10891,7 +10871,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <!-- أنواع العقوبات المشمولة (Punishment Types Pills) -->
                                 <div>
                                     <span class="block text-xs font-bold text-white mb-2.5 text-right">أنواع العقوبات المشمولة</span>
-                                    <input type="hidden" name="auto_clear_types" id="inpClearTypes" value="${settings.auto_clear_types || 'all'}">
+                                    <input type="hidden" name="auto_clear_types" id="inpClearTypes" value="${escHtml(settings.auto_clear_types || 'all')}">
                                     <div class="flex flex-wrap items-center gap-2 justify-end">
                                         <button type="button" onclick="selectClearTypes('all', this)" class="type-btn px-3 py-1.5 rounded-xl border text-xs font-bold transition ${(settings.auto_clear_types || 'all') === 'all' ? 'bg-blue-400/30 text-white border-blue-500/20' : 'bg-[#070d1d] text-white border-blue-500/20'}">كل الأنواع</button>
                                         <button type="button" onclick="selectClearTypes('warn', this)" class="type-btn px-3 py-1.5 rounded-xl border text-xs font-bold transition ${settings.auto_clear_types === 'warn' ? 'bg-blue-400/30 text-white border-blue-500/20' : 'bg-[#070d1d] text-white border-blue-500/20'}">تحذيرات فقط</button>
@@ -11616,6 +11596,15 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             return;
                         }
 
+                        // 🔒 (سد R5-1) تشفير قيمة نص السؤال داخل السمة — كان يُلصق خام في value="..." فأي حرف/موش دخيلة من نموذج أداري آخر تنبثق XSS
+                        // الإصلاح مزدوج: تشفير هنا + تحقق وكبس على مسار الإنشاء/التعديل (سفربايد)
+                        const escAtt = (s) => String(s == null ? '' : s)
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/'/g, '&#39;');
+
                         let html = '';
                         for (let i = 0; i < currentQuestions.length; i++) {
                             const q = currentQuestions[i];
@@ -11630,7 +11619,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 '</div>' +
                                 '<span class="text-xs font-bold text-gray-300">السؤال #' + (i + 1) + '</span>' +
                                 '</div>' +
-                                '<input type="text" placeholder="اكتب نص السؤال هنا..." value="' + (q.text || '') + '" oninput="updateQuestionText(' + i + ', this.value)" class="w-full bg-[#0b1322] border border-blue-500/20 focus:border-blue-400 rounded-xl px-3 py-2 text-xs text-white text-right outline-none">' +
+                                '<input type="text" placeholder="اكتب نص السؤال هنا..." value="' + escAtt(q.text || '') + '" oninput="updateQuestionText(' + i + ', this.value)" class="w-full bg-[#0b1322] border border-blue-500/20 focus:border-blue-400 rounded-xl px-3 py-2 text-xs text-white text-right outline-none">' +
                                 '</div>';
                         }
                         container.innerHTML = html;
@@ -12408,13 +12397,14 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                 `
             } else if (section === 'games') {
                 const gamesEnabled = settings.games_enabled !== 0 && settings.games_enabled !== '0' && settings.games_enabled !== false;
-                const capitalsReward = settings.game_reward_capitals || 75;
-                const wordsReward = settings.game_reward_words || 60;
-                const fastReward = settings.game_reward_fast || 85;
-                const garticReward = settings.game_reward_gartic || 90;
-                const mafiaReward = settings.game_reward_mafia || 120;
-                const rouletteReward = settings.game_reward_roulette || 100;
-                const gamesChannel = settings.games_channel || '';
+                // 🔒 (سد R5-2) تطبيع رقمي محكم من المصدر + escHtml — أي نص حقنيّ بالقيمة يموت هنا قبل ما يوصل لأي value="..."
+                const capitalsReward = escHtml(String(Math.max(0, Math.min(100000, Math.floor(Number(settings.game_reward_capitals) || 75)))));
+                const wordsReward = escHtml(String(Math.max(0, Math.min(100000, Math.floor(Number(settings.game_reward_words) || 60)))));
+                const fastReward = escHtml(String(Math.max(0, Math.min(100000, Math.floor(Number(settings.game_reward_fast) || 85)))));
+                const garticReward = escHtml(String(Math.max(0, Math.min(100000, Math.floor(Number(settings.game_reward_gartic) || 90)))));
+                const mafiaReward = escHtml(String(Math.max(0, Math.min(100000, Math.floor(Number(settings.game_reward_mafia) || 120)))));
+                const rouletteReward = escHtml(String(Math.max(0, Math.min(100000, Math.floor(Number(settings.game_reward_roulette) || 100)))));
+                const gamesChannel = settings.games_channel || ''; // (renderChannelSelect يشفر داخلياً)
 
                 formFieldsHtml = `
                     <div class="space-y-6 text-right" dir="rtl">
@@ -13635,7 +13625,7 @@ ${embedScriptHtml}
             return res.redirect(`/dashboard/${guildId}/appeals?done=${status}`);
         } catch (e) {
             console.error('[APPEAL] decide error:', e.message);
-            return res.status(500).json({ success: false, error: e.message });
+            return res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -13733,7 +13723,7 @@ ${embedScriptHtml}
             res.json({ success: true, url: fullUrl, persistent });
         } catch (e) {
             console.error('Upload image error:', e);
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -13774,7 +13764,7 @@ ${embedScriptHtml}
             res.json({ success: true });
         } catch (e) {
             console.error('[welcome-banner-remove] Error:', e);
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -13936,7 +13926,7 @@ ${embedScriptHtml}
             res.json({ success: true, bannerApplied, bannerReason, mode: isEmbed ? 'embed' : (wantImage ? 'image' : 'text'), bannerHost: (() => { try { return new URL(String(bannerRaw || '')).hostname; } catch { return null; } })() });
         } catch (e) {
             console.error('[welcome-test] Error:', e);
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14070,7 +14060,7 @@ ${embedScriptHtml}
             }
             res.json({ success: true, verified: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14094,7 +14084,7 @@ ${embedScriptHtml}
             res.json({ success: true, created: created.length, message: 'تم إنشاء ' + created.length + ' قناة سجلات بنجاح' });
         } catch (e) {
             console.error('Logs auto-setup error:', e);
-            res.status(500).json({ success: false, error: e.message || 'حدث خطأ أثناء الإنشاء' });
+            res.status(500).json({ success: false, error: 'حدث خطأ أثناء الإنشاء — راجع السجلات.' });
         }
     });
 
@@ -14111,7 +14101,7 @@ ${embedScriptHtml}
             res.json({ success: true, deleted, message: 'تم حذف ' + deleted + ' قناة وتعطيل السجلات' });
         } catch (e) {
             console.error('Logs delete-channels error:', e);
-            res.status(500).json({ success: false, error: e.message || 'حدث خطأ أثناء الحذف' });
+            res.status(500).json({ success: false, error: 'حدث خطأ أثناء الحذف — راجع السجلات.' });
         }
     });
 
@@ -14135,11 +14125,11 @@ ${embedScriptHtml}
 
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
-    app.delete('/api/guild/:guildId/whitelist', express.json(), validate(whitelistSchema), async (req, res) => {
+    app.delete('/api/guild/:guildId/whitelist', express.json(), validate(whitelistSchema), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14156,14 +14146,14 @@ ${embedScriptHtml}
 
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
     // =============================================
     // Autoresponder API
     // =============================================
-    app.post('/api/guild/:guildId/autoresponder', express.json(), validate(autoresponderSchema), async (req, res) => {
+    app.post('/api/guild/:guildId/autoresponder', express.json(), validate(autoresponderSchema), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14179,11 +14169,11 @@ ${embedScriptHtml}
 
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
-    app.delete('/api/guild/:guildId/autoresponder/:id', async (req, res) => {
+    app.delete('/api/guild/:guildId/autoresponder/:id', sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, id } = req.params;
@@ -14193,14 +14183,14 @@ ${embedScriptHtml}
             }
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
     // =============================================
     // Warn Punishments API
     // =============================================
-    app.post('/api/guild/:guildId/warn-punishments', express.json(), validate(warnPunishmentSchema), async (req, res) => {
+    app.post('/api/guild/:guildId/warn-punishments', express.json(), validate(warnPunishmentSchema), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14212,11 +14202,11 @@ ${embedScriptHtml}
             }
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
-    app.delete('/api/guild/:guildId/warn-punishments/:id', async (req, res) => {
+    app.delete('/api/guild/:guildId/warn-punishments/:id', sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, id } = req.params;
@@ -14226,14 +14216,14 @@ ${embedScriptHtml}
             }
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
     // =============================================
     // Level Rewards API
     // =============================================
-    app.post('/api/guild/:guildId/level-reward', express.json(), validate(levelRewardSchema), async (req, res) => {
+    app.post('/api/guild/:guildId/level-reward', express.json(), validate(levelRewardSchema), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14246,11 +14236,11 @@ ${embedScriptHtml}
             }
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
-    app.delete('/api/guild/:guildId/level-reward/:id', async (req, res) => {
+    app.delete('/api/guild/:guildId/level-reward/:id', sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, id } = req.params;
@@ -14260,7 +14250,7 @@ ${embedScriptHtml}
             }
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14272,7 +14262,7 @@ ${embedScriptHtml}
             rawDb.prepare('UPDATE users SET warnings = 0 WHERE guild_id = ?').run(guildId);
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14289,7 +14279,7 @@ ${embedScriptHtml}
             rawDb.prepare('DELETE FROM security_logs WHERE guild_id = ?').run(guildId);
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14359,7 +14349,7 @@ ${embedScriptHtml}
             res.json({ success: true });
         } catch (e) {
             console.error('[send-embed] Error:', e);
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14421,11 +14411,11 @@ ${embedScriptHtml}
 
             res.json({ success: true, messageId: msg.id });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
-    app.post('/api/guild/:guildId/suggestions', express.json(), validate(suggestionSchema), async (req, res) => {
+    app.post('/api/guild/:guildId/suggestions', express.json(), validate(suggestionSchema), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14439,6 +14429,10 @@ ${embedScriptHtml}
             if (channelId) {
                 const channel = client.channels.cache.get(channelId) || await client.channels.fetch(channelId).catch(() => null);
                 if (channel && channel.isTextBased()) {
+                    // 🔒 (سد R5-5) نفس عزل السيرفر: اقتراح الداشبورد ما ينشر بقناة سيرفر ثاني
+                    if (!channel.guildId || String(channel.guildId) !== String(guildId)) {
+                        return res.status(400).json({ success: false, error: 'قناة الاقتراحات تخص سيرفراً آخر' });
+                    }
                     const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
                     const avatarURL = req.session.user.avatar
                         ? `https://cdn.discordapp.com/avatars/${req.session.user.id}/${req.session.user.avatar}.png`
@@ -14486,7 +14480,7 @@ ${embedScriptHtml}
 
             res.json({ success: true, suggestion: newSugg });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14555,7 +14549,7 @@ ${embedScriptHtml}
 
             res.json({ success: true, updated });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14720,7 +14714,7 @@ ${embedScriptHtml}
             res.json({ success: true, warn: _panelWarn });
         } catch(e) {
             console.error('Error sending ticket panel:', e);
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14739,6 +14733,10 @@ ${embedScriptHtml}
 
             const channel = client?.channels?.cache?.get(channelId) || await client?.channels?.fetch(channelId).catch(() => null);
             if (!channel || !channel.isTextBased()) return res.status(400).json({ success: false, error: 'القناة غير موجودة أو ليست نصية' });
+            // 🔒 (سد R5-5) عزل سيرفر: القناة لازم تكون من نفس السيرفر — الكاش هنا عالمي وبدون فحص كان ينشر لوحة الألوان بقناة سيرفر ثاني
+            if (channel.guildId && String(channel.guildId) !== String(guildId)) {
+                return res.status(400).json({ success: false, error: 'القناة تخص سيرفراً آخر' });
+            }
             const guildObj = client?.guilds?.cache?.get(guildId);
             const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
@@ -14786,7 +14784,7 @@ ${embedScriptHtml}
             res.json({ success: true, count: validRoles.length });
         } catch(e) {
             console.error('Error publishing color picker:', e);
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14858,7 +14856,7 @@ ${embedScriptHtml}
             }
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14873,7 +14871,7 @@ ${embedScriptHtml}
             }
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14886,7 +14884,7 @@ ${embedScriptHtml}
             }
             res.json({ success: true });
         } catch (e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14931,7 +14929,7 @@ ${embedScriptHtml}
 
             res.json({ success: true });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14954,7 +14952,7 @@ ${embedScriptHtml}
             const rows = rawDb.prepare('SELECT * FROM stat_channels WHERE guild_id = ?').all(guildId);
             res.json({ success: true, data: rows });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -14967,7 +14965,7 @@ ${embedScriptHtml}
             await svc.forceUpdateGuild(guildId);
             res.json({ success: true, message: 'تم تحديث قنوات الإحصائيات الآن!' });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -15027,7 +15025,7 @@ ${embedScriptHtml}
                 total: botGuild.memberCount || 0
             });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message, online: 0, bots: 0, giveaways: 0 });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — راجع السجلات.', online: 0, bots: 0, giveaways: 0 });
         }
     });
 
@@ -15072,7 +15070,7 @@ ${embedScriptHtml}
             const afterBuy = rawDb.prepare('SELECT SUM(coins) as coins FROM users WHERE user_id = ?').get(userId);
             res.json({ success: true, newBalance: afterBuy?.coins || 0 });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -15080,37 +15078,73 @@ ${embedScriptHtml}
     // =============================================
     // Applications & Hiring System API
     // =============================================
-    app.post('/api/guild/:guildId/applications/create', express.json(), async (req, res) => {
+    // 🔒 (سد R5-16) دالة تحقق موحدة لنماذج التعيين: أطوال مقصوصة، أسئلة مُشكّلة صريحاً، الحقول IDs سليمة
+    // — الأصل كان يبلع أي شي من الـbody بالقطعة (سؤال `"><img onerror=...>` كان يمشي عادل)
+    function _validateApplicationPayload({ title, description, log_channel, accepted_role, reviewer_role, questions, panel_image }) {
+        const out = {};
+        out.title = String(title || '').slice(0, 200);
+        if (!out.title) return { error: 'عنوان النموذج مطلوب' };
+        out.description = String(description || '').slice(0, 2000);
+        const _lc = String(log_channel || '').trim();
+        if (!/^\d{15,22}$/.test(_lc)) return { error: 'قناة استقبال الطلبات غير صالحة' };
+        out.log_channel = _lc;
+        const roleOrEmpty = (v) => {
+            const s = String(v || '').trim();
+            return /^\d{15,22}$/.test(s) ? s : null;
+        };
+        out.accepted_role = roleOrEmpty(accepted_role);
+        out.reviewer_role = roleOrEmpty(reviewer_role);
+        out.panel_image = String(panel_image || '').slice(0, 500);
+        let qs = questions;
+        if (typeof qs === 'string') { try { qs = JSON.parse(qs); } catch (e) { qs = []; } }
+        if (!Array.isArray(qs)) qs = [];
+        out.questions = qs.slice(0, 10).map(q => {
+            const qq = (typeof q === 'object' && q) ? q : { text: String(q) };
+            const text = String(qq.text || '').slice(0, 500);
+            const type = (qq.type === 'short') ? 'short' : 'paragraph';
+            return { text, type };
+        }).filter(q => q.text.length > 0);
+        return out;
+    }
+
+    app.post('/api/guild/:guildId/applications/create', express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
-            const { title, description, log_channel, accepted_role, reviewer_role, questions, panel_image } = req.body;
+            const _c = _validateApplicationPayload(req.body);
+            if (_c.error) return res.status(400).json({ success: false, error: _c.error });
 
-            if (!title) return res.status(400).json({ success: false, error: 'عنوان النموذج مطلوب' });
-            if (!log_channel) return res.status(400).json({ success: false, error: 'قناة استقبال الطلبات مطلوبة' });
-
-            const newApp = database.createApplication(guildId, title, description, questions || [], log_channel, accepted_role, reviewer_role, panel_image || null);
+            const newApp = database.createApplication(guildId, _c.title, _c.description, _c.questions, _c.log_channel, _c.accepted_role, _c.reviewer_role, _c.panel_image || null);
             res.json({ success: true, app: newApp });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
-    app.post('/api/guild/:guildId/applications/:appId/update', express.json(), async (req, res) => {
+    app.post('/api/guild/:guildId/applications/:appId/update', express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
-            const { appId } = req.params;
-            const { title, description, log_channel, accepted_role, reviewer_role, questions, status, panel_image } = req.body;
+            const { guildId, appId } = req.params;
+            const { status } = req.body;
+
+            // 🔒 (سد R5-16) الحالة نص آمن فقط — أي عنوان نسخ فريب يرفض
+            const _appStatus = (status != null && status !== '') ? String(status).toLowerCase() : null;
+            if (_appStatus && !/^[a-z_]{1,24}$/.test(_appStatus)) {
+                return res.status(400).json({ success: false, error: 'حالة النموذج غير صالحة' });
+            }
+            const _c = _validateApplicationPayload(req.body);
+            if (_c.error) return res.status(400).json({ success: false, error: _c.error });
 
             // 🔒 عزل سيرفر: تعديل نموذج سيرفر آخر بمعرّفه فقط مسدود
-            const updated = database.updateApplication(appId, title, description, questions || [], log_channel, accepted_role, reviewer_role, status || 'open', panel_image || null, req.params.guildId);
+            // (panel_image الفاضية تتحول null حتى ما تمسح الصورة المخزنة عبر COALESCE)
+            const updated = database.updateApplication(appId, _c.title, _c.description, _c.questions, _c.log_channel, _c.accepted_role, _c.reviewer_role, _appStatus || 'open', _c.panel_image || null, guildId);
             res.json({ success: true, app: updated });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
-    app.post('/api/guild/:guildId/applications/:appId/delete', async (req, res) => {
+    app.post('/api/guild/:guildId/applications/:appId/delete', sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { appId } = req.params;
@@ -15118,7 +15152,7 @@ ${embedScriptHtml}
             database.deleteApplication(appId, req.params.guildId);
             res.json({ success: true });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -15159,7 +15193,7 @@ ${embedScriptHtml}
             await channel.send({ embeds: [panelEmbed], components: [row] });
             res.json({ success: true });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -15172,18 +15206,23 @@ ${embedScriptHtml}
     // =============================================
     // Invites API (Add Bonus & Reset)
     // =============================================
-    app.post('/api/guild/:guildId/invites/add-bonus', express.json(), validate(inviteBonusSchema), async (req, res) => {
+    app.post('/api/guild/:guildId/invites/add-bonus', express.json(), validate(inviteBonusSchema), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
             const { userId, amount } = req.body;
 
+            // 🔒 (سد R5-17) المبلغ عدد محدود ±100000 — نحط بيسمح سالب للتصحيح (نقص مكافأة) بس بحد, وNaN/الهائلة مرفوضة
+            const _amt = Math.floor(Number(amount));
+            if (!Number.isFinite(_amt) || Math.abs(_amt) > 100000) {
+                return res.status(400).json({ success: false, error: 'المبلغ غير صالح (حد أقصى ±100,000)' });
+            }
             if (database.addBonusInvites) {
-                database.addBonusInvites(guildId, userId, amount);
+                database.addBonusInvites(guildId, userId, _amt);
             }
             res.json({ success: true });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -15196,35 +15235,42 @@ ${embedScriptHtml}
             }
             res.json({ success: true });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
-    app.post('/api/guild/:guildId/invites/rewards', express.json(), async (req, res) => {
+    app.post('/api/guild/:guildId/invites/rewards', express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
             const { roleId, invites } = req.body;
-            if (!roleId || !invites) return res.status(400).json({ success: false, error: 'Missing parameters' });
+            // 🔒 (سد R5-17) الرول سنفليك + عدد صحيح 1..100000 — القيم السالبة (تحويل مركبة) وNaN والهائلة مرفوضة
+            if (!roleId || !/^\d{15,22}$/.test(String(roleId))) return res.status(400).json({ success: false, error: 'معرّف الرتبة غير صالح' });
+            const _reqInv = Math.floor(Number(invites));
+            if (!Number.isFinite(_reqInv) || _reqInv < 1 || _reqInv > 100000) {
+                return res.status(400).json({ success: false, error: 'عدد الدعوات المطلوب غير صالح (1 - 100000)' });
+            }
             if (database.addInviteReward) {
-                database.addInviteReward(guildId, String(roleId), Number(invites));
+                database.addInviteReward(guildId, String(roleId), _reqInv);
             }
             res.json({ success: true });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
-    app.delete('/api/guild/:guildId/invites/rewards/:roleId', async (req, res) => {
+    app.delete('/api/guild/:guildId/invites/rewards/:roleId', sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, roleId } = req.params;
+            // 🔒 نفس الحارس على حذف
+            if (!/^\d{15,22}$/.test(String(roleId))) return res.status(400).json({ success: false, error: 'معرّف الرتبة غير صالح' });
             if (database.deleteInviteReward) {
                 database.deleteInviteReward(guildId, roleId);
             }
             res.json({ success: true });
         } catch(e) {
-            res.status(500).json({ success: false, error: e.message });
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -15239,7 +15285,7 @@ ${embedScriptHtml}
             res.json({ success: true, response: aiResponse });
         } catch (e) {
             console.error('[Dashboard AI API Error]:', e);
-            res.status(500).json({ success: false, error: e.message || 'حدث خطأ أثناء معالجة الطلب' });
+            res.status(500).json({ success: false, error: 'حدث خطأ أثناء معالجة الطلب — راجع السجلات.' });
         }
     });
 

@@ -495,7 +495,8 @@ module.exports = {
       if (interaction.isButton() && interaction.customId === 'join_giveaway') {
         await interaction.deferReply({ flags: 64 }).catch(() => { });
         const giveaway = db.getGiveaway(interaction.message.id);
-        if (!giveaway || giveaway.ended) {
+        // 🔒 (سد R5-14) العمود الصحيح هو status — `ended` مو موجودة بالسكيما فالبوابة كانت ديد كود
+        if (!giveaway || giveaway.status === 'ended') {
           return interaction.editReply({ content: t(interaction.guildId, 'events.gwpro.ended') });
         }
 
@@ -1912,7 +1913,11 @@ module.exports = {
           return interaction.editReply({ content: t(interaction.guildId, 'events.app.no_perm_reject') });
         }
 
-        db.updateSubmissionStatus(subId, 'rejected', interaction.user.id, interaction.guild.id);
+        // 🔒 (سد R5-3) نفس بوابة القبول من R4: التحديث شرطي بـ pending — الضغط التوأم لاثنين موظفين ما يكسب نقطة مزدوجة
+        const _rejRes = db.updateSubmissionStatus(subId, 'rejected', interaction.user.id, interaction.guild.id, true);
+        if (!_rejRes || _rejRes.changes === 0) {
+          return interaction.editReply({ content: '⚠️ سبقه موظف آخر — الطلب انقبل/انرفض قبل شوية.' }).catch(() => {});
+        }
         db.addApplicationPoint(interaction.guild.id, interaction.user.id);
 
         // إشعار العضو بالخاص مع السبب
