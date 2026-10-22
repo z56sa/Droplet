@@ -999,7 +999,8 @@ module.exports = function (app, client) {
 
 
     // API: حفظ إعدادات السجلات
-    app.post('/api/logs/save', express.json({ limit: '64kb' }), writeLimiter, (req, res) => {
+    // 🔒 (Fix SEC-01) أُضيف requireGuildPermission — كان ينقص: أي مسجل دخول يقدر يرسل طلب لأي guild_id
+    app.post('/api/logs/save', express.json({ limit: '64kb' }), requireGuildPermission, writeLimiter, (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
             // 🔒 تنظيف الحمولة: سقف عدد البطاقات + أطوال الحقول (بدون حقن محتوى المستخدم في اللوق)
@@ -14970,7 +14971,8 @@ ${embedScriptHtml}
     });
 
     // Real-time Stats API (online members, bots, giveaways)
-    app.get('/api/guild/:guildId/online-count', async (req, res) => {
+    // 🔒 (Fix SEC-02) أُضيف requireGuildPermission — كان ينقص: أي مسجل دخول يقدر يستعلم عن أعضاء أي guild
+    app.get('/api/guild/:guildId/online-count', requireGuildPermission, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
