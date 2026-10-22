@@ -13566,7 +13566,7 @@ ${embedScriptHtml}
     app.use('/api/guild/:guildId', requireGuildPermission);
 
     // ⚖️ قرار الاستئناف (قبول = فك الحظر الفعلي + إبلاغ العضو) — محمي بالحارس أعلاه
-    app.post('/api/guild/:guildId/appeals/decide', express.urlencoded({ extended: false }), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/appeals/decide', requireGuildPermission, express.urlencoded({ extended: false }), sensitiveActionLimiter, async (req, res) => {
         try {
             const guildId = req.params.guildId;
             const appealId = parseInt(String((req.body || {}).appealId || ''), 10);
@@ -13629,7 +13629,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/upload-image', express.json({ limit: '12mb' }), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/upload-image', requireGuildPermission, express.json({ limit: '12mb' }), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { imageBase64, fieldName } = req.body;
@@ -13730,7 +13730,7 @@ ${embedScriptHtml}
     // =============================================
     // Welcome Banner Remove API (إزالة صورة البانر + حذف الملف المحلي)
     // =============================================
-    app.post('/api/guild/:guildId/welcome-banner/remove', express.json(), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/welcome-banner/remove', requireGuildPermission, express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -13771,7 +13771,7 @@ ${embedScriptHtml}
     // =============================================
     // Welcome Test API (ترحيب تجريبي فوري — يطابق رسالة الترحيب الحقيقية)
     // =============================================
-    app.post('/api/guild/:guildId/welcome-test', express.json(), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/welcome-test', requireGuildPermission, express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -13930,7 +13930,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/settings', express.json(), writeLimiter, validate(settingsSchema), async (req, res) => {
+    app.post('/api/guild/:guildId/settings', requireGuildPermission, express.json(), writeLimiter, validate(settingsSchema), async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14067,7 +14067,7 @@ ${embedScriptHtml}
     // =============================================
     // Logs Auto-Setup & Delete-Channels API
     // =============================================
-    app.post('/api/guild/:guildId/logs/auto-setup', express.json(), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/logs/auto-setup', requireGuildPermission, express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14088,7 +14088,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/logs/delete-channels', express.json(), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/logs/delete-channels', requireGuildPermission, express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14108,7 +14108,7 @@ ${embedScriptHtml}
     // =============================================
     // Whitelist & AntiMod API
     // =============================================
-    app.post('/api/guild/:guildId/whitelist', express.json(), validate(whitelistSchema), async (req, res) => {
+    app.post('/api/guild/:guildId/whitelist', requireGuildPermission, express.json(), validate(whitelistSchema), async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14129,7 +14129,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.delete('/api/guild/:guildId/whitelist', express.json(), validate(whitelistSchema), sensitiveActionLimiter, async (req, res) => {
+    app.delete('/api/guild/:guildId/whitelist', requireGuildPermission, express.json(), validate(whitelistSchema), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14153,7 +14153,7 @@ ${embedScriptHtml}
     // =============================================
     // Autoresponder API
     // =============================================
-    app.post('/api/guild/:guildId/autoresponder', express.json(), validate(autoresponderSchema), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/autoresponder', requireGuildPermission, express.json(), validate(autoresponderSchema), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14173,7 +14173,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.delete('/api/guild/:guildId/autoresponder/:id', sensitiveActionLimiter, async (req, res) => {
+    app.delete('/api/guild/:guildId/autoresponder/:id', requireGuildPermission, sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, id } = req.params;
@@ -14190,7 +14190,7 @@ ${embedScriptHtml}
     // =============================================
     // Warn Punishments API
     // =============================================
-    app.post('/api/guild/:guildId/warn-punishments', express.json(), validate(warnPunishmentSchema), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/warn-punishments', requireGuildPermission, express.json(), validate(warnPunishmentSchema), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14206,7 +14206,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.delete('/api/guild/:guildId/warn-punishments/:id', sensitiveActionLimiter, async (req, res) => {
+    app.delete('/api/guild/:guildId/warn-punishments/:id', requireGuildPermission, sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, id } = req.params;
@@ -14223,7 +14223,7 @@ ${embedScriptHtml}
     // =============================================
     // Level Rewards API
     // =============================================
-    app.post('/api/guild/:guildId/level-reward', express.json(), validate(levelRewardSchema), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/level-reward', requireGuildPermission, express.json(), validate(levelRewardSchema), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14240,7 +14240,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.delete('/api/guild/:guildId/level-reward/:id', sensitiveActionLimiter, async (req, res) => {
+    app.delete('/api/guild/:guildId/level-reward/:id', requireGuildPermission, sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, id } = req.params;
@@ -14254,7 +14254,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/clear-all-warnings', sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/clear-all-warnings', requireGuildPermission, sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14266,7 +14266,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/reset-data', sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/reset-data', requireGuildPermission, sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14283,7 +14283,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/send-embed', express.json(), sensitiveActionLimiter, validate(sendEmbedSchema), async (req, res) => {
+    app.post('/api/guild/:guildId/send-embed', requireGuildPermission, express.json(), sensitiveActionLimiter, validate(sendEmbedSchema), async (req, res) => {
         try {
             console.log('[send-embed] session user:', req.session?.user?.id, 'guildId:', req.params.guildId);
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'غير مسجل دخول، يرجى تسجيل الدخول مجدداً' });
@@ -14353,7 +14353,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/giveaways', express.json(), sensitiveActionLimiter, validate(giveawaySchema), async (req, res) => {
+    app.post('/api/guild/:guildId/giveaways', requireGuildPermission, express.json(), sensitiveActionLimiter, validate(giveawaySchema), async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14415,7 +14415,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/suggestions', express.json(), validate(suggestionSchema), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/suggestions', requireGuildPermission, express.json(), validate(suggestionSchema), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14484,7 +14484,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.patch('/api/guild/:guildId/suggestions/:id/status', express.json(), async (req, res) => {
+    app.patch('/api/guild/:guildId/suggestions/:id/status', requireGuildPermission, express.json(), async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, id } = req.params;
@@ -14557,7 +14557,7 @@ ${embedScriptHtml}
     // =============================================
     // Tickets Panel API (إرسال لوحة التذاكر للشات مباشرة)
     // =============================================
-    app.post('/api/guild/:guildId/tickets/send-panel', express.json(), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/tickets/send-panel', requireGuildPermission, express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14721,7 +14721,7 @@ ${embedScriptHtml}
     // =============================================
     // Colors Picker Publish API (نشر لوحة الألوان)
     // =============================================
-    app.post('/api/guild/:guildId/colors/publish', express.json(), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/colors/publish', requireGuildPermission, express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14791,7 +14791,7 @@ ${embedScriptHtml}
     // =============================================
     // Staff Activity & Shift API (نظام الإدارة والحضور)
     // =============================================
-    app.post('/api/guild/:guildId/staff/send-panel', express.json(), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/staff/send-panel', requireGuildPermission, express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14845,7 +14845,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/staff/set-points', express.json(), validate(staffPointsSchema), (req, res) => {
+    app.post('/api/guild/:guildId/staff/set-points', requireGuildPermission, express.json(), validate(staffPointsSchema), (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14860,7 +14860,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/staff/add-points', express.json(), validate(staffPointsSchema), (req, res) => {
+    app.post('/api/guild/:guildId/staff/add-points', requireGuildPermission, express.json(), validate(staffPointsSchema), (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14875,7 +14875,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/staff/reset', sensitiveActionLimiter, (req, res) => {
+    app.post('/api/guild/:guildId/staff/reset', requireGuildPermission, sensitiveActionLimiter, (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14895,7 +14895,7 @@ ${embedScriptHtml}
     // =============================================
     // Stat Channels API
     // =============================================
-    app.post('/api/guild/:guildId/stat-channels', express.json(), sensitiveActionLimiter, (req, res) => {
+    app.post('/api/guild/:guildId/stat-channels', requireGuildPermission, express.json(), sensitiveActionLimiter, (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14933,7 +14933,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/stat-channels/:id/delete', sensitiveActionLimiter, (req, res) => {
+    app.post('/api/guild/:guildId/stat-channels/:id/delete', requireGuildPermission, sensitiveActionLimiter, (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, id } = req.params;
@@ -14945,7 +14945,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.get('/api/guild/:guildId/stat-channels', (req, res) => {
+    app.get('/api/guild/:guildId/stat-channels', requireGuildPermission, (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -14956,7 +14956,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/stat-channels/update-now', sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/stat-channels/update-now', requireGuildPermission, sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -15107,7 +15107,7 @@ ${embedScriptHtml}
         return out;
     }
 
-    app.post('/api/guild/:guildId/applications/create', express.json(), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/applications/create', requireGuildPermission, express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -15121,7 +15121,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/applications/:appId/update', express.json(), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/applications/:appId/update', requireGuildPermission, express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, appId } = req.params;
@@ -15144,7 +15144,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/applications/:appId/delete', sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/applications/:appId/delete', requireGuildPermission, sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { appId } = req.params;
@@ -15156,7 +15156,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/applications/:appId/send-panel', express.json(), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/applications/:appId/send-panel', requireGuildPermission, express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, appId } = req.params;
@@ -15206,7 +15206,7 @@ ${embedScriptHtml}
     // =============================================
     // Invites API (Add Bonus & Reset)
     // =============================================
-    app.post('/api/guild/:guildId/invites/add-bonus', express.json(), validate(inviteBonusSchema), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/invites/add-bonus', requireGuildPermission, express.json(), validate(inviteBonusSchema), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -15226,7 +15226,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/invites/reset', express.json(), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/invites/reset', requireGuildPermission, express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -15239,7 +15239,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.post('/api/guild/:guildId/invites/rewards', express.json(), sensitiveActionLimiter, async (req, res) => {
+    app.post('/api/guild/:guildId/invites/rewards', requireGuildPermission, express.json(), sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId } = req.params;
@@ -15259,7 +15259,7 @@ ${embedScriptHtml}
         }
     });
 
-    app.delete('/api/guild/:guildId/invites/rewards/:roleId', sensitiveActionLimiter, async (req, res) => {
+    app.delete('/api/guild/:guildId/invites/rewards/:roleId', requireGuildPermission, sensitiveActionLimiter, async (req, res) => {
         try {
             if (!req.session?.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
             const { guildId, roleId } = req.params;

@@ -25,8 +25,11 @@ module.exports = {
       if (hasMentions && !isAdmin) {
         const mentionedUsers = [...(message.mentions?.users?.values() || [])];
         const mentionedRoles = [...(message.mentions?.roles?.values() || [])];
-        const logCh = settings.log_channel ? message.guild.channels.cache.get(settings.log_channel) : null;
-        const alertCh = logCh || message.channel;
+        const logChannelId = settings.antinuke_alert_channel || settings.security_logs_channel || settings.log_channel_messages || settings.log_channel;
+        const alertCh = logChannelId ? (message.guild.channels.cache.get(logChannelId) || await message.guild.channels.fetch(logChannelId).catch(() => null)) : null;
+
+        // 🔒 لا ترسل في شات الأعضاء إطلاقاً إذا لم تكن هناك روم سجلات محددة
+        if (!alertCh || !alertCh.isTextBased()) return;
 
         const ghostEmbed = new EmbedBuilder()
           .setColor('#FF4500')
