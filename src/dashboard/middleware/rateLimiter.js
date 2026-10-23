@@ -1,5 +1,14 @@
 const rateLimit = require('express-rate-limit');
 
+// 🔒 (سد R6-ي) مفتاح موحد: بجلسة مستخدم = مفتاح مستقر بلا غموض بروكسي؛ بدون = req.ip كما هو.
+// — خلف CF/Render (شبكة كثيرة القفزات) تمييز العنوان الحقيقي مبهم، والمفتاح-بالمستخدم يزيل الاعتماد على XFF للجلسات.
+// — المسارات المجهولة (appeals/OAuth قبل الدخول) تبقى req.ip مع trust proxy=1 (قيم المسبار المغشوش للعميل تبقى
+//   يمين-side خارج عمق الوثوق 1، فما تصير مفتاحاً — التحليل Express behind-proxies الرسمي).
+const _limiterKey = (req) => {
+    const uid = req.session && req.session.user && req.session.user.id;
+    return uid ? ('u:' + String(uid).slice(0, 24)) : (req.ip || 'anon');
+};
+
 /**
  * Standard API Rate Limiter
  * 120 requests per minute per IP for general dashboard browsing and stats
@@ -7,6 +16,7 @@ const rateLimit = require('express-rate-limit');
 const apiLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 120,
+    keyGenerator: _limiterKey,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -22,6 +32,7 @@ const apiLimiter = rateLimit({
 const sensitiveActionLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 20,
+    keyGenerator: _limiterKey,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -37,6 +48,7 @@ const sensitiveActionLimiter = rateLimit({
 const aiLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 15,
+    keyGenerator: _limiterKey,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -52,6 +64,7 @@ const aiLimiter = rateLimit({
 const appealLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: 3,
+    keyGenerator: _limiterKey,
     standardHeaders: true,
     legacyHeaders: false,
     handler: (req, res) => {
@@ -67,6 +80,7 @@ const appealLimiter = rateLimit({
 const authLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: 15,
+    keyGenerator: _limiterKey,
     standardHeaders: true,
     legacyHeaders: false,
     handler: (req, res) => {
@@ -82,6 +96,7 @@ const authLimiter = rateLimit({
 const syncLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 30,
+    keyGenerator: _limiterKey,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -97,6 +112,7 @@ const syncLimiter = rateLimit({
 const writeLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 40,
+    keyGenerator: _limiterKey,
     standardHeaders: true,
     legacyHeaders: false,
     message: {

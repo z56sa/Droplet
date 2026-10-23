@@ -12,9 +12,10 @@ function errorHandler(err, req, res, next) {
     const message = err.message || 'حدث خطأ داخلي في الخادم';
 
     if (req.originalUrl.startsWith('/api/')) {
+        // 🔒 (سد R6-4) ما نكشف رسالة الاستثناء الداخلية للعميل — الرمز يبقى (للمطوّر) والنص يكون عاماً
         return res.status(status).json({
             success: false,
-            error: message,
+            error: err.expose ? message : 'حدث خطأ داخلي — راجع سجلات الخادم.',
             code: err.code || 'INTERNAL_ERROR'
         });
     }

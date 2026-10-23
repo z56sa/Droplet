@@ -269,6 +269,8 @@ module.exports = {
       let welcomeChannel = null;
       if (settings.welcome_channel) {
         welcomeChannel = guild.channels.cache.get(settings.welcome_channel) || await guild.channels.fetch(settings.welcome_channel).catch(() => null);
+        // 🔒 (سد R6-1ب) عزل السيرفر — إعداد إداري ما ينيرس الترحيب بسيرفرنا بأي قناة تخص سيرفراً آخر
+        if (welcomeChannel && welcomeChannel.guildId && String(welcomeChannel.guildId) !== String(guild.id)) welcomeChannel = null;
       }
       
       // Fallback: If no custom channel set or not found, check system channel
@@ -409,6 +411,12 @@ module.exports = {
           }
         }
 
+        // 🔒 (سد R6-1أ) باب الثقة: pings المسموحة فقط = العضو الجديد + الداعي (بينما موجود بالقالب) —
+        // اسم/لقب عضو محتوي @everyone أو بيانة <@id> ما يطلع أي ذكر غير متوقع من القالب
+        sendPayload.allowedMentions = {
+            parse: [],
+            users: inviterObj ? [member.id, inviterObj.id] : [member.id]
+        };
         await welcomeChannel.send(sendPayload).catch((e) => console.error('فشل إرسال رسالة الترحيب:', e.message));
         } // end sendWelcome()
     } catch (welcomeErr) {
@@ -438,7 +446,7 @@ module.exports = {
     if (settings.log_channel) {
       try {
         const logChannel = guild.channels.cache.get(settings.log_channel) || await guild.channels.fetch(settings.log_channel).catch(() => null);
-        if (logChannel && logChannel.isTextBased()) {
+        if (logChannel && logChannel.isTextBased() && logChannel.guildId && String(logChannel.guildId) === String(guild.id)) {
           const joinEmbed = new EmbedBuilder()
             .setColor(config.colors.success || '#10b981')
             .setTitle('📥 عضو جديد انضم إلى السيرفر')

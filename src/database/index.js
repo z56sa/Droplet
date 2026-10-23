@@ -124,6 +124,7 @@ db.exec(`
     wallpaper TEXT DEFAULT 'default',
     warnings INTEGER DEFAULT 0,
     streak INTEGER DEFAULT 0,
+    bank_balance INTEGER DEFAULT 0,
     PRIMARY KEY (user_id, guild_id)
   );
 
@@ -900,6 +901,9 @@ try {
 
 // 🔒 (سد R5-2) عمود آخر تفاعل بالشيفت — السكيما القديمة ما كانت شايله فالخمول يُحسب من بداية الشفت بالغلط ويطلع الموظف "auto_inactive" رغم نشاطه
 try { db.exec("ALTER TABLE staff_shifts ADD COLUMN last_action_time INTEGER;"); } catch (e) {}
+
+// 🔒 (سد R6-2أ) مهاجرة عمود البنك عند الإقلاع بدل DDL متكرر داخل كل أمر بنك
+try { db.exec("ALTER TABLE users ADD COLUMN bank_balance INTEGER DEFAULT 0;"); } catch (e) {}
 
 // 🎭 جدول الرتب المؤقتة (Temp Roles) — بدلاً من setTimeout بالذاكرة فقط: وقت الانتهاء محفوظ بالداتابيس والفحص الدوري يزيل الرتبة حتى بعد الريستارت (سد role.js:133)
 try {
@@ -1795,7 +1799,8 @@ function createTicket(guildId, channelId, userId, category = 'General') {
 }
 
 function closeTicket(channelId, closedBy = null, reason = null) {
-  db.prepare("UPDATE tickets SET status = 'closed', closed_at = strftime('%s','now'), closed_by = ?, close_reason = ? WHERE channel_id = ?")
+  // 🔒 (سد R6-3د) الإغلاق شرطي — التذكرة المغلقة ما تنغلق مرة ثانية (idempotent مع تاريخ الإغلاق الأول محفوظ)
+  db.prepare("UPDATE tickets SET status = 'closed', closed_at = strftime('%s','now'), closed_by = ?, close_reason = ? WHERE channel_id = ? AND status != 'closed'")
     .run(closedBy, reason, channelId);
   const _tRow = db.prepare('SELECT * FROM tickets WHERE channel_id = ?').get(channelId);
   syncRow('tickets', 'id', _tRow);

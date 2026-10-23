@@ -247,6 +247,17 @@ async function shutdown(signal) {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
+// 🔒 (سد R6-3) شبكة أمان العملية: أي await بلا معالجة ما ينهار السيرفر بعد الآن
+// (كان kick/kick_fault/timeout بلا catch يرمي unhandled rejection ويعمل kill للنود على Render)
+process.on('unhandledRejection', (reason) => {
+    console.error('[CRASH-GUARD] unhandledRejection:', reason instanceof Error ? (reason.stack || reason.message) : reason);
+});
+// خطأ استثنائي غير قابلة للاستمرار (حالة فاسدة محتملة): نسجل ثم ننزل نظيفًا بلمسة turso — Render يعيد الإقلاع
+process.on('uncaughtException', (err) => {
+    console.error('[CRASH-GUARD] uncaughtException:', err instanceof Error ? (err.stack || err.message) : err);
+    shutdown('uncaughtException');
+});
+
 loginDashboardClient().catch(error => {
     console.error('[Dashboard] Discord startup error:', error);
 });

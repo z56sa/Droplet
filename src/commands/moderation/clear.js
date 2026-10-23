@@ -48,6 +48,13 @@ module.exports = {
     }
     clearCooldowns.set(userId, now);
 
+    // 🔒 (سد R6-4ب) تنظيف كسول — خريطة الكولداون ما تنمسح للأبد (سطور بسيطة، لكن نفس عادة الـspamMap)
+    if (clearCooldowns.size > 2000) {
+      for (const [k, v] of clearCooldowns) {
+        if (now - v > CLEAR_COOLDOWN_MS * 10) clearCooldowns.delete(k);
+      }
+    }
+
     await interaction.deferReply({ flags: 64 }).catch(() => {});
 
     const amount = interaction.options.getInteger('amount');

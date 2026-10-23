@@ -45,10 +45,18 @@ module.exports = (client) => {
                     }
 
                     const eventName = event.name === 'ready' ? 'clientReady' : event.name;
+                    // 🔒 (سد R6-3) كل حدث يُعالج داخل try/catch — رفض Promise داخل أي حدث ما ينهار العملية (كان يمرر الرفض مباشرة للنود بلا غطاء)
+                    const _safeExec = async (...args) => {
+                        try {
+                            await event.execute(...args, client);
+                        } catch (e) {
+                            console.error(`[EVENT ERROR] ${event.name}:`, e instanceof Error ? (e.stack || e.message) : e);
+                        }
+                    };
                     if (event.once) {
-                        client.once(eventName, (...args) => event.execute(...args, client));
+                        client.once(eventName, (...args) => _safeExec(...args));
                     } else {
-                        client.on(eventName, (...args) => event.execute(...args, client));
+                        client.on(eventName, (...args) => _safeExec(...args));
                     }
                     eventsCount++;
                 }

@@ -29,11 +29,7 @@ module.exports = {
 
   async handleBank(user, guildId, sub, amountArg, reply) {
     const lang = getGuildLang(guildId);
-    // تأكد أن عمود bank_balance موجود
-    try {
-      db.db.prepare('ALTER TABLE users ADD COLUMN bank_balance INTEGER DEFAULT 0').run();
-    } catch (e) {}
-
+    // 🔒 (سد R6-2أ) عمود bank_balance مصان بسكيما الإقلاع (CREATE + ALTER هجرة) — ما نبح DDL بكل استدعاء أمر
     const userData = db.getUser(user.id, guildId);
     const wallet = userData.coins || userData.credits || 0;
     const bank = userData.bank_balance || 0;
