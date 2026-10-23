@@ -22,10 +22,26 @@ const app = express();
 // Trust the first proxy so express-session can correctly set secure cookies.
 app.set('trust proxy', 1);
 
-// 🛡️ Security headers (CSP مغلقة لأن صفحات الداشبورد تعتمد styles/scripts داخلية — نفس تموضع helmet في index مرة واحدة)
+// 🛡️ Security headers — CSP حقيقية (متوافقة مع الصفحات المبنية بسكربتات/أنماط داخلية وonclick inline)
+// المصادر الخارجية مقفولة على ما تستعمله الصفحات فعلاً: cdn.tailwindcss (سكربت)، cdnjs + Google Fonts (أنماط/خطوط)، img https:+data:
 app.use(helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false // ضروري: صور أفتار/أيقونات من cdn.discordapp.com بدون CORP headers
+    crossOriginEmbedderPolicy: false, // ضروري: صور أفتار/أيقونات من cdn.discordapp.com بدون CORP headers
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com"],
+            scriptSrcAttr: ["'unsafe-inline'"], // معالجات onclick الداخلية بالصفحات
+            styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "data:", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "https:", "data:", "blob:"],
+            connectSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+            frameAncestors: ["'self'"],
+            upgradeInsecureRequests: null // التشغيل المحلي بالايف http — عند Render البروكسي يقدم https أصلاً
+        }
+    }
 }));
 
 const PORT = Number(process.env.PORT || 3000);
@@ -61,8 +77,15 @@ app.use((req, _res, next) => {
 });
 
 app.use(express.urlencoded({ extended: true }));
-// ✅ حد معقول: يكفي لرفع الصور (8MB ثنائية ≈ 11MB base64) — كان 20mb يسمح بأجسام ضخمة على كل مسار (DoS رخيص)
-app.use(express.json({ limit: '12mb' }));
+// 🔒 (سد R10-5) سقف الجسم العام نزل 2MB — يكفي أكبر دفعة مزامنة (~1.3MB بحدودها 3000 صف) وكل مسارات الحفظ.
+// المسار الوحيد المحتاج أجساماً ضخمة (رفع صور 8MB ثنائية ≈ 11MB base64) يتلقى سقفه الخاص عبر التوجيه تحت
+const _heavyJsonParser = express.json({ limit: '12mb' });
+const _smallJsonParser = express.json({ limit: '2mb' });
+const _uploadImageRe = /^\/api\/guild\/[^/]+\/upload-image$/;
+app.use(function bodyLimitRouter(req, res, next) {
+    if (_uploadImageRe.test(req.path)) return _heavyJsonParser(req, res, next);
+    return _smallJsonParser(req, res, next);
+});
 
 const client = new Client({
     intents: [

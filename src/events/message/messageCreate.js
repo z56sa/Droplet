@@ -155,12 +155,16 @@ function matchCustomAlias(trimmedContent, cmdConfigs, prefix, client, ctx) {
     }
 
     const command = resolveCommand(client, rawName);
-    console.log(`[ALIAS] MATCHED cmdKey="${cmdKey}" rawName="${rawName}" commandFound=${!!command}`);
-    if (!command) {
-      console.warn(`[ALIAS] الاختصار "${rawAlias}" مربوط بـ "${rawName}" بس الأمر مو موجود`);
-      console.log(`[ALIAS] client.commands keys: ${[...( client.commands?.keys() || [])].slice(0,20).join(',')}`);
-      continue;
+    // 🔒 (سد R10-1) هذول الثلاثة كانت بلا بوابة DEBUG — لاوغ-سبام على كل رسالة + قيم مخزنة خام (غش سجلات)
+    if (process.env.DROPLET_DEBUG_ALIAS === '1') {
+      const _safeRawName = String(rawName).replace(/[\r\n\t]+/g, ' ').slice(0, 60);
+      console.log(`[ALIAS]${ctxTag} MATCHED alias="${_safeWord}" rawName="${_safeRawName}" commandFound=${!!command}`);
+      if (!command) {
+        console.warn(`[ALIAS] الاختصار "${_safeWord}" مربوط بـ "${_safeRawName}" بس الأمر مو موجود`);
+        console.log(`[ALIAS] client.commands keys: ${[...(client.commands?.keys() || [])].slice(0, 20).join(',')}`);
+      }
     }
+    if (!command) continue;
     return { command, commandName: rawName, matchedCmdKey: cmdKey, args: extraArgs.concat(messageParts.slice(1)) };
   }
   return null;
@@ -343,7 +347,8 @@ module.exports = {
 
       if (settings.anti_mass_mention) {
         const mentionLimit = settings.max_mentions || 4;
-        const totalMentions = message.mentions.users.size + message.mentions.roles.size;
+        // 🔒 (سد R10-2) عدّ @everyone/@here — عضو عنده صلاحية everyone ما كان يدخل العد ويكمل يبلش بالكول
+        const totalMentions = message.mentions.users.size + message.mentions.roles.size + (message.mentions.everyone ? 1 : 0);
         if (totalMentions >= mentionLimit) {
           await message.delete().catch(() => {});
           await message.member?.timeout(5 * 60 * 1000, t(guildId, 'events.automod.audit_mention')).catch(() => {});

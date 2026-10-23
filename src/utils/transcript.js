@@ -32,10 +32,12 @@ async function generateHtmlTranscript(channel, options = {}) {
     if (msg.attachments && msg.attachments.size > 0) {
       msg.attachments.forEach(att => {
         const isImg = att.contentType && att.contentType.startsWith('image/');
+        // 🔒 (سد R10-4) رابط المرفق يُعقّم قبل دخوله السمات — اسم الملف يختاره المستخدم حتى داخل مسار CDN
+        const _attUrl = escapeHtml(String(att.url || ''));
         if (isImg) {
-          attachmentsHtml += `<div class="attachment" style="margin-top:8px;"><a href="${att.url}" target="_blank"><img src="${att.url}" alt="Attachment" class="att-img" /></a></div>`;
+          attachmentsHtml += `<div class="attachment" style="margin-top:8px;"><a href="${_attUrl}" target="_blank"><img src="${_attUrl}" alt="Attachment" class="att-img" /></a></div>`;
         } else {
-          attachmentsHtml += `<div class="attachment-file" style="margin-top:6px;"><a href="${att.url}" target="_blank" style="color:#38bdf8;text-decoration:none;">📎 ${escapeHtml(att.name)} (${(att.size / 1024).toFixed(1)} KB)</a></div>`;
+          attachmentsHtml += `<div class="attachment-file" style="margin-top:6px;"><a href="${_attUrl}" target="_blank" style="color:#38bdf8;text-decoration:none;">📎 ${escapeHtml(att.name)} (${(att.size / 1024).toFixed(1)} KB)</a></div>`;
         }
       });
     }
@@ -45,7 +47,8 @@ async function generateHtmlTranscript(channel, options = {}) {
       msg.embeds.forEach(emb => {
         const embTitle = emb.title ? `<div class="emb-title" style="font-weight:bold;color:white;margin-bottom:4px;font-size:14px;">${escapeHtml(emb.title)}</div>` : '';
         const embDesc = emb.description ? `<div class="emb-desc" style="color:#94a3b8;font-size:12.5px;">${escapeHtml(emb.description).replace(/\n/g, '<br>')}</div>` : '';
-        const color = emb.hexColor || '#5865F2';
+        // 🔒 (سد R10-4) اللون يدخل style ببصيغة هيكس مصادق عليها فقط
+        const color = /^#[0-9a-fA-F]{6}$/.test(String(emb.hexColor || '')) ? emb.hexColor : '#5865F2';
         embedsHtml += `<div class="embed-box" style="border-right:4px solid ${color};margin-top:8px;background:#0b0d14;padding:12px 14px;border-radius:8px;font-size:13px;">${embTitle}${embDesc}</div>`;
       });
     }
