@@ -7,6 +7,6 @@ const tracker = require('../../utils/inviteTracker');
 module.exports = {
   name: 'inviteDelete',
   async execute(invite) {
-    tracker.onInviteDelete(invite);
+    await tracker.onInviteDelete(invite).catch(() => {});
   }
 };

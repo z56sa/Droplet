@@ -10,6 +10,20 @@ class InviteTracker {
   constructor() {
     // guildId -> { invites: Map(code, { uses, maxUses, inviterId, inviterUser }), vanityUses: number, vanityCode: string }
     this.guildData = new Map();
+    // 🔒 (سد R9-1) قفل تسلسل لكل سيرفر — انضمام الأعضاء المتزامنين وكتابات كاش الدعوات ما يتداخلون
+    this._guildLocks = new Map();
+  }
+
+  _withGuildLock(guildId, fn) {
+    const prev = this._guildLocks.get(guildId) || Promise.resolve();
+    const run = prev.then(() => fn());
+    const done = run.catch(() => {});
+    this._guildLocks.set(guildId, done);
+    done.finally(() => {
+      // ما يشيل القفل إلا إذا هذي آخر مهمة خلصت للسيرفر هالمحدد
+      if (this._guildLocks.get(guildId) === done) this._guildLocks.delete(guildId);
+    });
+    return run;
   }
 
   async init(client) {
@@ -67,6 +81,12 @@ class InviteTracker {
    * فحص من دعا العضو بدقة ورصد الريد/الوهمي/إعادة الدخول/الـ Vanity
    */
   async findInviter(member) {
+    // 🔒 (سد R9-1) القسم الحرج يشتغل مسلسل لكل سيرفر — الجوين الثاني يقرا كاش محيّن من الأول.
+    // (السابقة: اثنين يجيبون fetch بتزامن → دعوة وحدة تنسن للاثنين، أو دلتا الأولى تنكتب بكاش الثانية قبل مقارنتها → إسناد ناقص)
+    return await this._withGuildLock(member.guild.id, () => this._findInviterCore(member));
+  }
+
+  async _findInviterCore(member) {
     const guild = member.guild;
     const settings = db.getGuildSettings(guild.id) || {};
     const fakeDaysThreshold = settings.invites_fake_days || 3;
@@ -380,23 +400,30 @@ class InviteTracker {
 
   onInviteCreate(invite) {
     if (!invite?.guild) return;
-    const data = this.guildData.get(invite.guild.id);
-    if (data?.invites) {
-      data.invites.set(invite.code, {
-        uses: invite.uses || 0,
-        maxUses: invite.maxUses || 0,
-        inviterId: invite.inviter?.id || null,
-        inviterUser: invite.inviter || null
-      });
-    }
+    // 🔒 (سد R9-1) التحديث داخل نفس القفل — كتابة كاش جداد ما تنكبب بكاش قديم جاي من انضمام شغّال
+    this._withGuildLock(invite.guild.id, () => {
+      const data = this.guildData.get(invite.guild.id);
+      if (data?.invites) {
+        data.invites.set(invite.code, {
+          uses: invite.uses || 0,
+          maxUses: invite.maxUses || 0,
+          inviterId: invite.inviter?.id || null,
+          inviterUser: invite.inviter || null
+        });
+      }
+      return null;
+    }).catch(() => {});
   }
 
   onInviteDelete(invite) {
     if (!invite?.guild) return;
-    const data = this.guildData.get(invite.guild.id);
-    if (data?.invites) {
-      data.invites.delete(invite.code);
-    }
+    this._withGuildLock(invite.guild.id, () => {
+      const data = this.guildData.get(invite.guild.id);
+      if (data?.invites) {
+        data.invites.delete(invite.code);
+      }
+      return null;
+    }).catch(() => {});
   }
 }
 

@@ -49,15 +49,27 @@ module.exports = {
     const totalMembers = client.guilds.cache.reduce((acc, g) => acc + (g.memberCount || g.members.cache.size || 0), 0);
     logger.info(`البوت متواجد في ${client.guilds.cache.size} سيرفر(ات) ويخدم ${totalMembers} مستخدم.`);
 
-    // تعيين الحالة والنشاط باسم البوت الحقيقي
+    // تعيين الحالة والنشاط — تُستعاد الحالة المحفوظة من القاعدة (قرار /set state يبقى بعد إعادة التشغيل)
+    // (قبل: كل إعادة تشغيل تكبّت الحالة للـ /help الافتراضي وتتجاهل قرار المالك)
+    let savedPresence = null;
+    try { savedPresence = require('../../database').getBotPresence(); } catch (e) {}
+    const activities = [];
+    if (savedPresence && savedPresence.activity_text) {
+      activities.push({
+        name: String(savedPresence.activity_text).slice(0, 128),
+        type: ActivityType[savedPresence.activity_type] || ActivityType.Watching
+      });
+    }
+    if (!activities.length) {
+      // الوضع الافتراضي (ما في قرار مخزّن بالقاعدة)
+      activities.push({
+        name: `/help | ${client.user.username}`,
+        type: ActivityType.Playing
+      });
+    }
     client.user.setPresence({
-      activities: [
-        {
-          name: `/help | ${client.user.username}`,
-          type: ActivityType.Playing
-        }
-      ],
-      status: 'online'
+      activities,
+      status: String((savedPresence && savedPresence.status) || 'online')
     });
   }
 };

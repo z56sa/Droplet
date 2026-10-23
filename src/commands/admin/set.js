@@ -311,6 +311,19 @@ module.exports = {
         }
 
         client.user.setPresence(presenceOptions);
+        // 🔒 (سد R9-4) نسجّل الحالة بالقاعدة — تُستعاد بعد إعادة التشغيل بدل الـ /help الافتراضي
+        try {
+          const prevPresence = typeof db.getBotPresence === 'function' ? db.getBotPresence() : null;
+          if (typeof db.saveBotPresence === 'function') {
+            db.saveBotPresence({
+              status: status || 'online',
+              activity_type: activityText ? activityType : ((prevPresence && prevPresence.activity_type) || null),
+              activity_text: activityText || ((prevPresence && prevPresence.activity_text) || null)
+            });
+          }
+        } catch (persistErr) {
+          console.error('[set state] فشل تخزين حالة البوت:', persistErr && persistErr.message ? persistErr.message : persistErr);
+        }
         return interaction.editReply({
           content: t(lang, 'admin.set.state_done', { status, type: activityType, text: activityText || t(lang, 'admin.set.state_none') })
         });

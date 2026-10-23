@@ -405,22 +405,12 @@ db.exec(`
     UNIQUE(guild_id, required_invites)
   );
 
-  -- 📢 Broadcasts System (نظام الإعلانات والمذيع الآلي المتقدم)
-  CREATE TABLE IF NOT EXISTS broadcasts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    guild_id TEXT NOT NULL,
-    channel_ids TEXT NOT NULL,
-    title TEXT,
-    message TEXT NOT NULL,
-    color TEXT DEFAULT '#9333ea',
-    image_url TEXT,
-    interval_minutes INTEGER DEFAULT 0,
-    scheduled_time INTEGER DEFAULT 0,
-    last_sent INTEGER DEFAULT 0,
-    is_recurring INTEGER DEFAULT 0,
-    status TEXT DEFAULT 'active',
-    created_by TEXT,
-    created_at INTEGER DEFAULT (strftime('%s','now'))
+  -- 🎭 حالة البوت المحفوظة (تُستعاد تلقائياً بعد إعادة التشغيل)
+  CREATE TABLE IF NOT EXISTS bot_presence (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    status TEXT DEFAULT 'online',
+    activity_type TEXT,
+    activity_text TEXT
   );
 
   -- 🛡️ Whitelist & Anti Mod System (القائمة البيضاء ونظام الحماية من العقوبات)
@@ -649,7 +639,6 @@ try { db.exec("ALTER TABLE guild_settings ADD COLUMN welcome_banner_image TEXT;"
 // ✅ bytes بانر الترحيب (ثبات دائم بلا أي رسالة ديسكورد — تُزامَن مع Turso وتُستعاد عند الإقلاع)
 try { db.exec("CREATE TABLE IF NOT EXISTS guild_banners (guild_id TEXT PRIMARY KEY, mime TEXT, data_b64 TEXT, updated_at INTEGER);"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN level_up_image TEXT;"); } catch(e) {}
-try { db.exec("ALTER TABLE guild_settings ADD COLUMN broadcast_image TEXT;"); } catch(e) {}
 
 try { db.exec("ALTER TABLE giveaways ADD COLUMN required_role TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE giveaways ADD COLUMN min_level INTEGER DEFAULT 0;"); } catch(e) {}
@@ -780,13 +769,6 @@ try { db.exec("ALTER TABLE guild_settings ADD COLUMN antiraid_dm_notify INTEGER 
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN antiraid_action TEXT DEFAULT 'kick';"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN antiraid_log_channel TEXT;"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN antiraid_whitelist_roles TEXT DEFAULT '';"); } catch(e) {}
-// نظام الإعلانات والمذيع الآلي (Auto-Broadcaster)
-try { db.exec("ALTER TABLE guild_settings ADD COLUMN broadcast_enabled INTEGER DEFAULT 0;"); } catch(e) {}
-try { db.exec("ALTER TABLE guild_settings ADD COLUMN broadcast_channel TEXT;"); } catch(e) {}
-try { db.exec("ALTER TABLE guild_settings ADD COLUMN broadcast_interval INTEGER DEFAULT 60;"); } catch(e) {}
-try { db.exec("ALTER TABLE guild_settings ADD COLUMN broadcast_messages TEXT DEFAULT '[]';"); } catch(e) {}
-try { db.exec("ALTER TABLE guild_settings ADD COLUMN broadcast_mention_role TEXT;"); } catch(e) {}
-
 // تخصيص مظهر البوت لكل سيرفر (Per-Server Bot Appearance)
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_nickname TEXT DEFAULT '';"); } catch(e) {}
 try { db.exec("ALTER TABLE guild_settings ADD COLUMN bot_about TEXT DEFAULT '';"); } catch(e) {}
@@ -1189,7 +1171,6 @@ const MODULE_OFF_FLAGS = [
   'anti_scam', 'anti_server_icon_change', 'anti_server_name_change',
   'anti_webhook_create', 'anti_webhook_spam', 'anti_webhook_update',
   'anti_mass_ban', 'anti_mass_kick',
-  'broadcast_enabled',
   'auto_clear_punishments',
   'autoresponder_enabled', 'giveaways_enabled', 'giveaway_enabled',
   'invites_enabled', 'invite_tracker_enabled',
@@ -1368,7 +1349,7 @@ function setGuildSetting(guildId, key, value) {
   }
   // 🔒 سد تضخم القاعدة: قيمة نصية بلا سقف = DB bloat بأرض أحد الإداريين. حقول JSON كبيرة لها سقف أوسع والبقية بسقف 8000 حرف
   if (typeof value === 'string') {
-    const _bigKeys = ['command_configs', 'ticket_panel_categories', 'broadcast_messages', 'anti_spam_config', 'auto_responder_json', 'custom_commands_json'];
+    const _bigKeys = ['command_configs', 'ticket_panel_categories', 'anti_spam_config', 'auto_responder_json', 'custom_commands_json'];
     const _cap = _bigKeys.includes(String(key)) ? 32000 : 8000;
     if (value.length > _cap) {
       console.warn(`[DB] ⛔ Rejected oversized settings value for key "${key}" — length=${value.length} > cap=${_cap}`);
@@ -2096,54 +2077,26 @@ function deleteInviteReward(guildId, idOrRole) {
 }
 
 // ==========================================
-// 📢 Broadcasts (نظام الإعلانات والمذيع الآلي)
+// 🎭 حالة البوت المحفوظة (تُستعاد بعد إعادة التشغيل — قرار /set state يبقى شغّال)
 // ==========================================
-function createBroadcast(data) {
-  const channelIdsStr = Array.isArray(data.channel_ids) ? data.channel_ids.join(',') : String(data.channel_ids || '');
-  const res = db.prepare(`
-    INSERT INTO broadcasts (guild_id, channel_ids, title, message, color, image_url, interval_minutes, scheduled_time, is_recurring, created_by, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    data.guild_id,
-    channelIdsStr,
-    data.title || null,
-    data.message,
-    data.color || '#9333ea',
-    data.image_url || null,
-    data.interval_minutes || 0,
-    data.scheduled_time || 0,
-    data.is_recurring ? 1 : 0,
-    data.created_by || null,
-    data.status || 'active'
-  );
-  return db.prepare('SELECT * FROM broadcasts WHERE id = ?').get(res.lastInsertRowid);
-}
-
-function getGuildBroadcasts(guildId) {
-  return db.prepare('SELECT * FROM broadcasts WHERE guild_id = ? ORDER BY id DESC').all(guildId);
-}
-
-function getBroadcast(id) {
-  return db.prepare('SELECT * FROM broadcasts WHERE id = ?').get(id);
-}
-
-function deleteBroadcast(id, guildId = null) {
-  if (guildId) {
-    return db.prepare('DELETE FROM broadcasts WHERE id = ? AND guild_id = ?').run(id, guildId);
+function getBotPresence() {
+  try {
+    return db.prepare('SELECT * FROM bot_presence WHERE id = 1').get() || null;
+  } catch (e) {
+    return null;
   }
-  return db.prepare('DELETE FROM broadcasts WHERE id = ?').run(id);
 }
 
-function getAllActiveBroadcasts() {
-  return db.prepare("SELECT * FROM broadcasts WHERE status = 'active'").all();
-}
-
-function updateBroadcastLastSent(id, timestamp = Date.now()) {
-  return db.prepare('UPDATE broadcasts SET last_sent = ? WHERE id = ?').run(timestamp, id);
-}
-
-function updateBroadcastStatus(id, status) {
-  return db.prepare('UPDATE broadcasts SET status = ? WHERE id = ?').run(status, id);
+function saveBotPresence(p) {
+  const status = String((p && p.status) || 'online').slice(0, 16);
+  const activityType = (p && p.activity_type) ? String(p.activity_type).slice(0, 24) : null;
+  const activityText = (p && p.activity_text) ? String(p.activity_text).slice(0, 128) : null;
+  db.prepare(`
+    INSERT INTO bot_presence (id, status, activity_type, activity_text)
+    VALUES (1, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET status = excluded.status, activity_type = excluded.activity_type, activity_text = excluded.activity_text
+  `).run(status, activityType, activityText);
+  return getBotPresence();
 }
 
 // ==========================================
@@ -3059,14 +3012,9 @@ module.exports = {
   removeGiveawayEntry,
   toggleGiveawayEntry,
   endGiveaway,
-  // 📢 Broadcasts
-  createBroadcast,
-  getGuildBroadcasts,
-  getBroadcast,
-  deleteBroadcast,
-  getAllActiveBroadcasts,
-  updateBroadcastLastSent,
-  updateBroadcastStatus,
+  // 🎭 حالة البوت المحفوظة
+  getBotPresence,
+  saveBotPresence,
   // Temp Voice
   createTempVoice,
   isTempVoice,

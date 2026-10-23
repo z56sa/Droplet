@@ -8,7 +8,7 @@ const antiNuke = require('../../utils/antiNuke');
 module.exports = {
   name: 'inviteCreate',
   async execute(invite) {
-    tracker.onInviteCreate(invite);
+    await tracker.onInviteCreate(invite).catch(() => {});
     if (invite.guild) {
       const inviterId = invite.inviter?.id || null;
       await antiNuke.checkAction(invite.guild, 'inviteSpam', null, inviterId);

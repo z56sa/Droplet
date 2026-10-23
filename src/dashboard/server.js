@@ -151,6 +151,23 @@ module.exports = function (app, client) {
 
     const requireGuildPermission = createGuildAuthMiddleware(client);
 
+    // 🔒 (سد R9-2) توكن خروج مشتق من سر الجلسة (HMAC لمعرف المستخدم) — روابط خارجية ما تقدر تولّده.
+    // ثابت لكل مستخدم حتى بعد تسجيل دخول جديد → ما يتعارض مع كاش صفحات الداشبورد (الرابط القديم يبقى سليم)
+    const logoutTokenFor = (userId) => {
+        try {
+            return crypto.createHmac('sha256', String(sessionSecret)).update(String(userId)).digest('hex').slice(0, 32);
+        } catch (e) {
+            return '';
+        }
+    };
+    const logoutHref = (req) => {
+        try {
+            const u = req?.session?.user;
+            if (u) return `/logout?t=${encodeURIComponent(logoutTokenFor(u.id))}`;
+        } catch (e) {}
+        return '/logout';
+    };
+
     app.use(express.static(require('path').join(__dirname, 'public'), { index: false }));
     // Never cache dashboard HTML in browsers (stale titles/content after deploys)
     app.use('/dashboard', function(req, res, next) {
@@ -458,20 +475,15 @@ module.exports = function (app, client) {
                 try { req.session.regenerate((err) => { resolve(); }); } catch (e) { resolve(); }
             });
 
-            // Save to user session including OAuth token lifecycle
+            // Save to user session (identity only)
             req.session.user = {
                 id: userData.id,
                 username: userData.global_name || userData.username,
                 discriminator: userData.discriminator,
                 avatar: userData.avatar
             };
-            req.session.token = {
-                accessToken: accessToken,
-                refreshToken: tokenData.refresh_token || null,
-                tokenType: tokenData.token_type || 'Bearer',
-                scope: tokenData.scope || '',
-                expiresAt: tokenData.expires_in ? Date.now() + (tokenData.expires_in * 1000) : null
-            };
+            // 🔒 (سد R9-2) ما نخزّن توكنات OAuth داخل الجلسة — access/refresh يستعملان حصراً داخل الكولباك ثم يهملان
+            // (ولا مستدعي واحد للتوكن بعد اللوغن — جلسة مسرّبة كانت تعني تسريب توكن ديسكورد كامل بلا داعٍ)
             req.session.guilds = manageableGuilds;
             req.session.lastActive = Date.now();
 
@@ -495,15 +507,23 @@ module.exports = function (app, client) {
     });
 
     app.get('/logout', (req, res) => {
-        if (req.session) {
-            req.session.destroy(err => {
-                if (err) console.error('[AUTH LOGOUT ERROR]', err);
-                res.clearCookie('connect.sid');
-                return res.redirect('/');
-            });
-        } else {
+        // 🔒 (سد R9-2) الخروج (GET) مربوط بتوكن HMAC معتمد timing-safe — منع CSRF-logout عبر رابط خارجي.
+        // SameSite=Lax تسمح بفرسل الكوكي في النافيغايشن العلوي فما تكفي لوحدها لوقف الحاله
+        const user = req.session?.user;
+        if (!user) return res.redirect('/');
+        const sent = String(req.query.t || '');
+        const expected = logoutTokenFor(user.id);
+        const _aBuf = Buffer.from(sent, 'utf8');
+        const _bBuf = Buffer.from(expected, 'utf8');
+        if (!_aBuf.length || _aBuf.length !== _bBuf.length || !crypto.timingSafeEqual(_aBuf, _bBuf)) {
+            // رد صامت — ما نكشف للمهاجم إذا التوكن صح أو لا
             return res.redirect('/');
         }
+        req.session.destroy(err => {
+            if (err) console.error('[AUTH LOGOUT ERROR]', err);
+            res.clearCookie('connect.sid');
+            return res.redirect('/');
+        });
     });
 
     // Bot Info API for public landing pages
@@ -1896,7 +1916,7 @@ module.exports = function (app, client) {
                             <span class="font-black text-xs uppercase tracking-wider">EN</span>
                         </button>
                         <span class="text-gray-700">|</span>
-                        <a href="/logout" data-i18n="logout" class="text-xs text-rose-400 hover:text-rose-300 font-bold transition">تسجيل الخروج</a>
+                        <a href="${logoutHref(req)}" data-i18n="logout" class="text-xs text-rose-400 hover:text-rose-300 font-bold transition">تسجيل الخروج</a>
                         <span class="text-gray-700">|</span>
                         <a href="https://discord.gg/zduGPYv7pE" target="_blank" data-i18n="support_server" class="text-xs text-white hover:text-blue-100 transition">الدعم الفني</a>
                         <span class="text-gray-700">|</span>
@@ -2356,7 +2376,7 @@ module.exports = function (app, client) {
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/></svg>
                                         <span class="flex items-center gap-2"><span>صوّت للبوت</span><span>🗳️</span></span>
                                     </a>
-                                    <a href="/logout" class="flex items-center justify-between px-3 py-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 font-medium transition w-full">
+                                    <a href="${logoutHref(req)}" class="flex items-center justify-between px-3 py-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 font-medium transition w-full">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                                         <span class="flex items-center gap-2"><span>تسجيل الخروج</span><span>🚪</span></span>
                                     </a>
