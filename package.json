@@ -22,7 +22,6 @@
     "@google/genai": "^2.23.0",
     "@libsql/client": "^0.18.0",
     "@napi-rs/canvas": "^0.1.100",
-    "@prisma/client": "^5.10.0",
     "better-sqlite3": "^11.8.1",
     "better-sqlite3-session-store": "^0.1.0",
     "cors": "^2.8.6",

@@ -21,7 +21,7 @@ const SUPPORTED_EXTENSIONS = new Set([
     'swift',
     'sql', 'psql',
     'sh', 'bash', 'zsh',
-    'json', 'yaml', 'yml', 'toml', 'env',
+    'json', 'yaml', 'yml', 'toml',
     'html', 'htm', 'css', 'scss', 'sass',
     'xml', 'graphql', 'gql',
     'md', 'txt', 'log'

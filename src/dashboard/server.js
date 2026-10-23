@@ -536,7 +536,9 @@ module.exports = function (app, client) {
             }
             res.json({ total: list.length, guilds: list });
         } catch(err) {
-            res.status(500).json({ error: err.message });
+            // 🔒 (سد R8-2) ما نفضح رسالة الاستثناء الخام للعميل — نسجلها ونعطي رداً عاماً
+            console.error('[API my-guilds]', err);
+            res.status(500).json({ error: 'حدث خطأ داخلي — راجع سجلات الخادم.' });
         }
     });
 
@@ -550,7 +552,9 @@ module.exports = function (app, client) {
             await g.leave();
             res.json({ success: true, message: `تم خروج البوت بنجاح من سيرفر ${g.name}` });
         } catch(err) {
-            res.status(500).json({ error: err.message });
+            // 🔒 (سد R8-2) رد عام فقط
+            console.error('[API leave-guild]', err);
+            res.status(500).json({ error: 'حدث خطأ داخلي — راجع سجلات الخادم.' });
         }
     });
 
@@ -730,7 +734,7 @@ module.exports = function (app, client) {
             });
         } catch (err) {
             console.error('Error claiming web daily:', err);
-            return res.status(500).json({ success: false, error: 'حدث خطأ أثناء معالجة الراتب اليومي: ' + err.message });
+            return res.status(500).json({ success: false, error: 'حدث خطأ داخلي — جرّب لاحقاً وراقب السجلات.' });
         }
     });
 
@@ -793,7 +797,9 @@ module.exports = function (app, client) {
             }
             return res.json(out);
         } catch (err) {
-            return res.status(500).json({ success: false, error: err.message });
+            // 🔒 (سد R8-2) رد عام حتى هنا (تشخيص owner-only لكن الاستثناء ما يفضل يطلع بروتوكول HTTP)
+            console.error('[API db-state]', err);
+            return res.status(500).json({ success: false, error: 'حدث خطأ داخلي — راجع سجلات الخادم.' });
         }
     });
 
@@ -932,7 +938,9 @@ module.exports = function (app, client) {
             }
             res.json({ success: true, leaderboard });
         } catch (err) {
-            res.status(500).json({ success: false, error: err.message });
+            // 🔒 (سد R8-2) رد عام
+            console.error('[API economy/leaderboard]', err);
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — راجع سجلات الخادم.' });
         }
     });
 
@@ -953,7 +961,9 @@ module.exports = function (app, client) {
                 }
             });
         } catch (err) {
-            res.status(500).json({ success: false, error: err.message });
+            // 🔒 (سد R8-2) رد عام
+            console.error('[API economy/user]', err);
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — راجع سجلات الخادم.' });
         }
     });
 
@@ -964,7 +974,8 @@ module.exports = function (app, client) {
             const { targetUserId, action, amount } = req.body;
             const val = parseInt(amount, 10);
 
-            if (!targetUserId || isNaN(val) || val < 0) {
+            // 🔒 (سد R8-2) فحص snowflake صحيح + سقف مبلغ — بدهنا رصيد عددي مجنون بلا قيدها
+            if (!targetUserId || !/^\d{15,22}$/.test(String(targetUserId)) || !Number.isInteger(val) || val < 0 || val > 10000000) {
                 return res.status(400).json({ success: false, error: 'بيانات غير صالحة' });
             }
 
@@ -993,30 +1004,15 @@ module.exports = function (app, client) {
                 newBalance
             });
         } catch (err) {
-            res.status(500).json({ success: false, error: err.message });
+            // 🔒 (سد R8-2) رد عام
+            console.error('[API economy/manage]', err);
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — راجع سجلات الخادم.' });
         }
     });
 
 
-    // API: حفظ إعدادات السجلات
-    // 🔒 (Fix SEC-01) أُضيف requireGuildPermission — كان ينقص: أي مسجل دخول يقدر يرسل طلب لأي guild_id
-    app.post('/api/logs/save', express.json({ limit: '64kb' }), requireGuildPermission, writeLimiter, (req, res) => {
-        try {
-            if (!req.session?.user) return res.status(401).json({ success: false, error: 'يجب تسجيل الدخول أولاً' });
-            // 🔒 تنظيف الحمولة: سقف عدد البطاقات + أطوال الحقول (بدون حقن محتوى المستخدم في اللوق)
-            const _in = (req.body || {}).settings;
-            if (!Array.isArray(_in)) return res.status(400).json({ success: false, error: 'بيانات غير صالحة' });
-            const settings = _in.slice(0, 30).map(it => ({
-                category: String((it && it.category) || '').slice(0, 32),
-                enabled: !!(it && it.enabled),
-                channel: String((it && it.channel) || '').slice(0, 25)
-            }));
-            console.log('[logs/save] cards saved:', settings.length, 'by', req.session?.user?.id || '?');
-            res.json({ success: true });
-        } catch (err) {
-            res.status(500).json({ success: false, error: err.message });
-        }
-    });
+    // 🔒 (سد R8-1) المسار /api/logs/save انحذف — كان «نجاح كاذب»: ما يكتب شي بالقاعدة ويكتب ✅ للإداري.
+    // الحفظ الفعلي لإعدادات السجلات يمر عبر POST /api/guild/:guildId/settings بمفتاح logs_config (الصفحة الحالية تستخدمه).
 
     // ============================================================
     // 🛍️ STORE SYSTEM — Economy Store API
@@ -13999,8 +13995,9 @@ ${embedScriptHtml}
                     return res.status(400).json({ success: false, error: 'عدد الإعدادات المرسل كبير جداً (حد أقصى 100 مفتاح).' });
                 }
                 for (const k of _ks) {
-                    if (typeof k !== 'string' || k.length > 48) {
-                        return res.status(400).json({ success: false, error: 'اسم مفتاح إعداد غير صالح (طول غير مقبول).' });
+                    // 🔒 (سد R8-1) معرف سليم فقط (حروف/أرقام/شرطة سفلية) — يمنع وصول أي شيء غير عالم SQL إلى ${key} داخل UPDATE/ALTER
+                    if (typeof k !== 'string' || k.length > 48 || !/^[A-Za-z0-9_]{2,48}$/.test(k)) {
+                        return res.status(400).json({ success: false, error: 'اسم مفتاح إعداد غير صالح (طول أو صيغة غير مقبولة).' });
                     }
                     const v = settings[k];
                     if (typeof v === 'string' && v.length > 32000) {
@@ -14842,7 +14839,9 @@ ${embedScriptHtml}
             await channel.send({ embeds: [embed], components: [row] });
             res.json({ success: true });
         } catch (err) {
-            res.status(500).json({ success: false, error: err.message });
+            // 🔒 (سد R8-2) رد عام
+            console.error('[API staff/send-panel]', err);
+            res.status(500).json({ success: false, error: 'حدث خطأ داخلي — راجع سجلات الخادم.' });
         }
     });
 
