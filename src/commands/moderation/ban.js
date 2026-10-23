@@ -161,7 +161,7 @@ module.exports = {
     const settings = db.getGuildSettings(guild.id);
     if (settings?.log_channel) {
       const ch = guild.channels.cache.get(settings.log_channel);
-      if (ch) ch.send({ embeds: [embed] }).catch(() => {});
+      if (ch && ch.isTextBased()) ch.send({ embeds: [embed] }).catch(() => {});
     }
   }
 };

@@ -142,7 +142,7 @@ module.exports = {
         const s = db.getGuildSettings(interaction.guild.id);
         if (s?.log_channel) {
           const ch = interaction.guild.channels.cache.get(s.log_channel);
-          if (ch) ch.send({ embeds: [logEmbed] }).catch(() => {});
+          if (ch && ch.isTextBased()) ch.send({ embeds: [logEmbed] }).catch(() => {});
         }
       }, durationMs);
 

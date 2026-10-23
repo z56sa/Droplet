@@ -318,7 +318,7 @@ module.exports = {
 
             if (settings.log_channel) {
               const logCh = message.guild.channels.cache.get(settings.log_channel);
-              if (logCh) {
+              if (logCh && logCh.isTextBased()) {
                 logCh.send({
                   embeds: [new EmbedBuilder()
                     .setColor('#E74C3C')
@@ -433,7 +433,7 @@ module.exports = {
           await tempWarn(`⚠️ ${message.author} تم حذف رسالة سكام مشبوهة.`);
           if (settings.log_channel) {
             const logCh = message.guild.channels.cache.get(settings.log_channel);
-            if (logCh) logCh.send({ embeds: [new EmbedBuilder().setColor('#ff9900').setTitle('⚠️ سكام محذوف').addFields({ name: 'العضو', value: `${message.author.tag}`, inline: true }, { name: 'القناة', value: `<#${message.channel.id}>`, inline: true }, { name: 'النص', value: '```' + message.content.substring(0, 500) + '```', inline: false }).setTimestamp()] }).catch(() => {});
+            if (logCh && logCh.isTextBased()) logCh.send({ embeds: [new EmbedBuilder().setColor('#ff9900').setTitle('⚠️ سكام محذوف').addFields({ name: 'العضو', value: `${message.author.tag}`, inline: true }, { name: 'القناة', value: `<#${message.channel.id}>`, inline: true }, { name: 'النص', value: '```' + message.content.substring(0, 500) + '```', inline: false }).setTimestamp()] }).catch(() => {});
           }
           return;
         }

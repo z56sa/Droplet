@@ -97,7 +97,10 @@ module.exports = {
         const logChannelId = settings.ticket_log_channel || settings.log_channel;
         if (logChannelId) {
           const logChannel = interaction.guild.channels.cache.get(logChannelId);
-          if (logChannel) {
+          // 🔒 (سد R7-3) فحص النوع + سقف السبب — سبب طويل غير محدود كان يفشل الإيمبد عند حد الحقل 1024 (فحسب API)
+          // فيضيع إعلان الترانسكربت بصمت
+          if (logChannel && logChannel.isTextBased()) {
+            const _safeReason = String(reason || '—').slice(0, 400);
             const closeEmbed = new EmbedBuilder()
               .setColor(config.colors.danger || '#ef4444')
               .setTitle(t(lang, 'tickets.ticket.log_title'))
@@ -106,7 +109,7 @@ module.exports = {
                 { name: t(lang, 'tickets.ticket.log_field_owner'), value: `<@${ticket.user_id}>`, inline: true },
                 { name: t(lang, 'tickets.ticket.log_field_closed_by'), value: `${interaction.user}`, inline: true },
                 { name: t(lang, 'tickets.ticket.log_field_web'), value: t(lang, 'tickets.ticket.log_web_link', { url: webUrl }), inline: false },
-                { name: t(lang, 'tickets.ticket.log_field_reason'), value: `\`${reason}\``, inline: false }
+                { name: t(lang, 'tickets.ticket.log_field_reason'), value: `\`${_safeReason}\``, inline: false }
               )
               .setTimestamp();
             await logChannel.send({ embeds: [closeEmbed], files: [transcriptResult.attachment] }).catch(() => {});

@@ -84,7 +84,8 @@ module.exports = {
       // 1. إرسال الرسالة في روم البوست المحدد
       if (settings.boost_channel) {
         const channel = guild.channels.cache.get(settings.boost_channel);
-        if (channel) {
+        // 🔒 (سد R7-2) روم البوست ممكن يضبط قناة غير نصية — الفحص يمنع الكراش ويحفظ عمل البوت
+        if (channel && channel.isTextBased()) {
           const rawMessage = settings.boost_message || '🎉 شكراً [user] لدعمك السيرفر بالبوست! أصبح عدد البوستات الآن [totalBoosts]!';
           const formattedMessage = formatText(rawMessage);
 

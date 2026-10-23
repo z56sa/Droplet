@@ -102,7 +102,8 @@ async function sendServerLog(guild, eventId, catKey, embedData = {}, opts = {}) 
         if (!targetChannelId) return;
 
         const targetChannel = guild.channels.cache.get(targetChannelId) || await guild.channels.fetch(targetChannelId).catch(() => null);
-        if (!targetChannel || !targetChannel.isTextBased()) return;
+        // 🔒 (سد R7-2ب) عزل السيرفر — إعداد يشير لقناة سيرفر آخر يُهبل بلا إرسال (عائلة cross-guild نفس سد R6)
+        if (!targetChannel || !targetChannel.isTextBased() || (targetChannel.guildId && String(targetChannel.guildId) !== String(guild.id))) return;
 
         // ✅ حقل الفاعل (المنفّذ) — يُدرج أولاً إذا الحدث مرّر actor
         try {

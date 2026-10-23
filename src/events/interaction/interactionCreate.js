@@ -402,7 +402,7 @@ module.exports = {
 
             if (settings.log_channel) {
               const logCh = interaction.guild.channels.cache.get(settings.log_channel);
-              if (logCh) {
+              if (logCh && logCh.isTextBased()) {
                 logCh.send({
                   embeds: [new EmbedBuilder()
                     .setColor('#2ECC71')
@@ -461,7 +461,7 @@ module.exports = {
 
               if (settings.log_channel) {
                 const logCh = interaction.guild.channels.cache.get(settings.log_channel);
-                if (logCh) {
+                if (logCh && logCh.isTextBased()) {
                   logCh.send({
                     embeds: [new EmbedBuilder()
                       .setColor('#2ECC71')

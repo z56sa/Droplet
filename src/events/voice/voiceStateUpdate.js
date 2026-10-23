@@ -115,40 +115,33 @@ module.exports = {
 
     // ==========================================
     // 2. سجلات الرومات الصوتية (Voice Logs)
+    // 🔒 (سد R7-1) كانت تُصبّ مباشرة في روم الإدارة العام بلا أي بوابة — كل حركة صوت بأي عضو
+    // كانت تغرق روم الإدارة وتدفن الباند/الكيتش الحقيقي. الآن عبر نظام serverLogger الموحد:
+    // بوابة logs_enabled + مفتاح لكل حدث (vc_join/vc_leave/vc_switch) + قناة الصوت المخصصة
+    // log_channel_voice — مطفية افتراضياً من لوحة السجلات حتى يفعّلها الإداري
     // ==========================================
-    if (!settings.log_channel) return;
-    const logChannel = guild.channels.cache.get(settings.log_channel);
-    if (!logChannel) return;
-
-    let embed = null;
+    const { sendServerLog } = require('../../utils/serverLogger');
 
     // دخول روم صوتي
     if (!oldState.channelId && newState.channelId) {
-      embed = new EmbedBuilder()
-        .setColor(config.colors.success)
-        .setTitle('🔊 دخول روم صوتي')
-        .setDescription(`قام **${member.user.tag}** (<@${member.id}>) بالدخول إلى الروم الصوتي <#${newState.channelId}>`)
-        .setTimestamp();
+      await sendServerLog(guild, 'vc_join', 'voice', {
+        title: '🔊 دخول روم صوتي',
+        desc: `قام **${member.user.tag}** (<@${member.id}>) بالدخول إلى الروم الصوتي <#${newState.channelId}>`
+      }).catch(() => {});
     }
     // مغادرة روم صوتي
     else if (oldState.channelId && !newState.channelId) {
-      embed = new EmbedBuilder()
-        .setColor(config.colors.danger)
-        .setTitle('🔇 مغادرة روم صوتي')
-        .setDescription(`قام **${member.user.tag}** (<@${member.id}>) بمغادرة الروم الصوتي <#${oldState.channelId}>`)
-        .setTimestamp();
+      await sendServerLog(guild, 'vc_leave', 'voice', {
+        title: '🔇 مغادرة روم صوتي',
+        desc: `قام **${member.user.tag}** (<@${member.id}>) بمغادرة الروم الصوتي <#${oldState.channelId}>`
+      }).catch(() => {});
     }
     // الانتقال بين الرومات الصوتية
     else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
-      embed = new EmbedBuilder()
-        .setColor(config.colors.info)
-        .setTitle('🔄 انتقال بين الرومات الصوتية')
-        .setDescription(`انتقل **${member.user.tag}** (<@${member.id}>) من <#${oldState.channelId}> إلى <#${newState.channelId}>`)
-        .setTimestamp();
-    }
-
-    if (embed) {
-      logChannel.send({ embeds: [embed] }).catch(() => {});
+      await sendServerLog(guild, 'vc_switch', 'voice', {
+        title: '🔄 انتقال بين الرومات الصوتية',
+        desc: `انتقل **${member.user.tag}** (<@${member.id}>) من <#${oldState.channelId}> إلى <#${newState.channelId}>`
+      }).catch(() => {});
     }
   }
 };

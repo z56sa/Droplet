@@ -33,7 +33,8 @@ module.exports = {
     if (isEnabled(settings.leave_enabled, false) && settings.leave_channel) {
       try {
         const leaveChannel = guild.channels.cache.get(settings.leave_channel) || await guild.channels.fetch(settings.leave_channel).catch(() => null);
-        if (leaveChannel && leaveChannel.isTextBased()) {
+        // 🔒 (سد R7-2) عزل السيرفر — إعداد إداري يشير لقناة سيرفر آخر ما ينرسل مغادرة باسيرفرنا عن طريق
+        if (leaveChannel && leaveChannel.isTextBased() && leaveChannel.guildId && String(leaveChannel.guildId) === String(guild.id)) {
           const inviterMention = inviterId ? `<@${inviterId}>` : 'غير معروف';
           const inviterName = inviterUser ? inviterUser.username : 'غير معروف';
           const inviterCount = inviterStats ? inviterStats.total : 0;
@@ -73,7 +74,8 @@ module.exports = {
     if (settings.log_channel) {
       try {
         const logChannel = guild.channels.cache.get(settings.log_channel) || await guild.channels.fetch(settings.log_channel).catch(() => null);
-        if (logChannel && logChannel.isTextBased()) {
+        // 🔒 (سد R7-2) عزل السيرفر — نفس حرس رسالة المغادرة أعلاه
+        if (logChannel && logChannel.isTextBased() && logChannel.guildId && String(logChannel.guildId) === String(guild.id)) {
           const inviterText = inviterId ? `<@${inviterId}>` : 'غير معروف';
           const leaveLogEmbed = new EmbedBuilder()
             .setColor('#ef4444')
