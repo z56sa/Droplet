@@ -12987,7 +12987,8 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
 
                 // 💾 حفظ الإعدادات — مسار واحد مضمون: مفوَّض على مستوى المستند (يعمل حتى لو أُعيد بناء الفورم)
                 // + منع مزدوج للإرسال الأصلي + حماية من الحفظ المتكرر
-                async function submitSettingsForm(form) {
+                window.submitSettingsForm = async function(form) {
+                    var submitSettingsForm = window.submitSettingsForm;
                     if (!form || form.dataset.saving === '1') return;
                     form.dataset.saving = '1';
                     try { if (typeof collectTicketCatsFromDOM === 'function') collectTicketCatsFromDOM(); } catch(e) {}
