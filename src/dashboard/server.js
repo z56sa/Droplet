@@ -5519,6 +5519,45 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     </div>
 
                     <script>
+                    window.saveWhitelistExplicit = function() {
+                        var btn = document.getElementById('topSaveBtn');
+                        var originalHtml = btn ? btn.innerHTML : '';
+                        if (btn) { btn.innerHTML = '<span>⏳</span><span>جاري الحفظ...</span>'; btn.disabled = true; }
+                        
+                        var master = document.getElementById('masterToggle');
+                        var gId = '${guildId}' || window.location.pathname.split('/')[2];
+                        if (master && gId) {
+                            var modKey = master.getAttribute('data-modkey') || 'anti_nuke_enabled';
+                            fetch('/api/guild/' + gId + '/settings', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ [modKey]: master.checked ? 1 : 0 })
+                            }).then(function(r) { return r.json(); }).then(function(d) {
+                                if (btn) {
+                                    btn.disabled = false;
+                                    btn.innerHTML = '<span>✓</span><span>تم الحفظ بنجاح</span>';
+                                    btn.classList.add('bg-emerald-600');
+                                    setTimeout(function() {
+                                        btn.innerHTML = originalHtml;
+                                        btn.classList.remove('bg-emerald-600');
+                                    }, 2000);
+                                }
+                            }).catch(function() {
+                                if (btn) {
+                                    btn.disabled = false;
+                                    btn.innerHTML = originalHtml;
+                                }
+                                alert('حدث خطأ أثناء الحفظ');
+                            });
+                        } else {
+                            if (btn) {
+                                btn.disabled = false;
+                                btn.innerHTML = '<span>✓</span><span>تم الحفظ</span>';
+                                setTimeout(function() { btn.innerHTML = originalHtml; }, 2000);
+                            }
+                        }
+                    };
+
                     async function addWhitelistUser(type) {
                         const inputId = type === 'antimod' ? 'antiModUserId' : 'wlUserId';
                         const input = document.getElementById(inputId);
@@ -12636,7 +12675,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 sm:pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
                                 <div class="flex items-center gap-3 order-2 sm:order-1">
                                     <label class="toggle"><input id="masterToggle" data-modkey="${(function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})()}" type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})(), this.checked, this)" ${(function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_k==='general_enabled'){return (String(_v)==='0'||String(_v)==='false')?'':'checked';}if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
-                                    <button type="button" id="topSaveBtn" onclick="try{if(window.saveCommandsExplicit){window.saveCommandsExplicit();}else if(window.submitSettingsForm){submitSettingsForm(document.getElementById('settingsForm'));}else{alert('⚠️ سكربت الحفظ غير متاح');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}" class="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-900/30 flex items-center gap-2 cursor-pointer">
+                                    <button type="button" id="topSaveBtn" onclick="try{if(window.saveWhitelistExplicit){window.saveWhitelistExplicit();}else if(window.saveCommandsExplicit){window.saveCommandsExplicit();}else if(window.submitSettingsForm){submitSettingsForm(document.getElementById('settingsForm'));}else{alert('⚠️ سكربت الحفظ غير متاح');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}" class="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-900/30 flex items-center gap-2 cursor-pointer">
                                         <span>💾</span>
                                         <span>حفظ التغييرات</span>
                                     </button>
