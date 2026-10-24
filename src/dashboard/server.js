@@ -198,22 +198,13 @@ module.exports = function (app, client) {
         const clientId = process.env.CLIENT_ID || process.env.DISCORD_CLIENT_ID || client?.user?.id || config.clientId;
         const clientSecret = process.env.CLIENT_SECRET || process.env.DISCORD_CLIENT_SECRET || config.clientSecret || '';
         if (!clientSecret) {
-            console.warn('[SECURITY] ⚠️ CLIENT_SECRET غير مضبوط — تسجيل دخول Discord OAuth2 لن يعمل. أضفه في متغيرات البيئة.');
+            console.warn('[SECURITY] ⚠️ CLIENT_SECRET غير مضبوط');
         }
-        // Dynamically deduce current active URL from request headers (works seamlessly regardless of Render custom domain or service rename)
-        const forwardedProto = req ? (req.headers['x-forwarded-proto'] || req.protocol) : 'https';
+        const forwardedProto = req ? (req.headers['x-forwarded-proto'] || req.protocol || 'https') : 'https';
         const host = req ? (req.headers['x-forwarded-host'] || req.get('host')) : null;
         const hostUrl = host ? `${forwardedProto}://${host}` : null;
-        const configuredBase = process.env.DASHBOARD_URL || config.dashboardUrl || '';
-        let baseUrl = hostUrl || configuredBase;
-        // 🔒 Host pinning: الـ redirect_uri ما يتكسر بنطاق مزوّر من الهيديرز — أي host مو مطابق للمُعدّ تجاهله
-        try {
-            if (configuredBase && hostUrl) {
-                const _cfgHost = new URL(configuredBase).host.toLowerCase();
-                const _reqHost = String(host).split(':')[0].toLowerCase();
-                if (_reqHost !== _cfgHost) baseUrl = configuredBase;
-            }
-        } catch (e) {}
+        let baseUrl = hostUrl || process.env.DASHBOARD_URL || config.dashboardUrl || 'https://droplet-mqwb.onrender.com';
+        baseUrl = baseUrl.replace(/\/+$/, '');
         const redirectUri = `${baseUrl}/auth/discord/callback`;
         return { clientId, clientSecret, redirectUri };
     };
