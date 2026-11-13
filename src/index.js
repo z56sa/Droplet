@@ -9,6 +9,10 @@
  * - Turso: persists user data across Render restarts
  */
 
+console.log('[INIT] Starting Droplet Dashboard process...');
+console.log('[INIT] Node Version:', process.version);
+console.log('[INIT] Environment PORT:', process.env.PORT);
+
 require('dotenv').config();
 
 const express = require('express');
