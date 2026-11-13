@@ -38,7 +38,9 @@ except ImportError:
     NEW_MCP = False
 
 # ───────────── الإعدادات ─────────────
-TOKEN = os.environ["BOT_TOKEN"]
+TOKEN = os.environ.get("BOT_TOKEN") or os.environ.get("DISCORD_TOKEN")
+if not TOKEN:
+    raise RuntimeError("لم يتم العثور على توكن البوت! أضف BOT_TOKEN أو DISCORD_TOKEN في متغيرات البيئة.")
 LOG_CHANNEL_ID = int(os.environ.get("LOG_CHANNEL_ID", "0"))
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
 MCP_URL = os.environ.get("MCP_SERVER_URL", "")
