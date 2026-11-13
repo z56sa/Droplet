@@ -1,6 +1,6 @@
 FROM node:20-bookworm-slim
 
-# Install build tools for native addons (better-sqlite3)
+# Install build tools for native addons
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     make \
@@ -14,6 +14,9 @@ RUN npm install --omit=dev
 
 COPY . .
 
-EXPOSE 3000
+ENV NODE_ENV=production
+ENV PORT=10000
+
+EXPOSE 10000
 
 CMD ["node", "src/index.js"]
