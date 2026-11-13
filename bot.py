@@ -21,6 +21,7 @@ from collections import defaultdict, deque
 from datetime import timedelta
 
 import aiohttp
+from aiohttp import web
 import discord
 import psutil
 from discord import app_commands
@@ -585,8 +586,34 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
 
 
+async def start_dummy_health_server():
+    """Starts a minimal HTTP server so Render Web Service detects an open port."""
+    port_str = os.environ.get("PORT")
+    if not port_str:
+        return
+    try:
+        port = int(port_str)
+    except ValueError:
+        return
+
+    async def handle_ping(request):
+        return web.Response(text="Droplet Bot is online! 🚀", status=200)
+
+    app = web.Application()
+    app.router.add_get("/", handle_ping)
+    app.router.add_get("/healthz", handle_ping)
+    app.router.add_get("/ping", handle_ping)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    print(f"[HEALTH] Web server bound to 0.0.0.0:{port} for Render health checks.")
+
+
 async def run_bot():
     """Start Discord without turning a temporary login 429 into a Render restart loop."""
+    await start_dummy_health_server()
     while True:
         try:
             await bot.start(TOKEN, reconnect=True)
