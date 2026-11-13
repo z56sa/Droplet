@@ -23,5 +23,6 @@ RUN pip3 install --no-cache-dir --break-system-packages -U -r requirements.txt
 COPY . .
 RUN chmod +x start.sh
 
-# Start script: Run both python bot.py and node src/index.js (Dashboard)
-CMD ["./start.sh"]
+# Run via sh explicitly to avoid any permission/exec format issues
+ENTRYPOINT ["/bin/sh"]
+CMD ["start.sh"]
