@@ -21,6 +21,7 @@ RUN pip3 install --no-cache-dir --break-system-packages -U -r requirements.txt
 
 # Copy all project files
 COPY . .
+RUN chmod +x start.sh
 
 # Start script: Run both python bot.py and node src/index.js (Dashboard)
-CMD ["sh", "-c", "python3 bot.py & node src/index.js"]
+CMD ["./start.sh"]
