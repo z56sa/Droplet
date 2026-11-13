@@ -1,6 +1,6 @@
 FROM node:20-slim
 
-# Install Python and dependencies build tools
+# Install Python and build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
@@ -11,18 +11,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Copy package.json and requirements.txt
+# Copy package files
 COPY package*.json ./
 COPY requirements.txt ./
 
-# Install Node and Python packages
+# Install dependencies
 RUN npm install --omit=dev
 RUN pip3 install --no-cache-dir --break-system-packages -U -r requirements.txt
 
 # Copy all project files
 COPY . .
-RUN chmod +x start.sh
 
-# Run via sh explicitly to avoid any permission/exec format issues
-ENTRYPOINT ["/bin/sh"]
-CMD ["start.sh"]
+# Run dashboard directly
+CMD ["node", "src/index.js"]
