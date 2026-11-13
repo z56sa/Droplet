@@ -217,7 +217,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 });
 
 async function loginDashboardClient() {
-    const token = process.env.DASHBOARD_BOT_TOKEN || process.env.BOT_TOKEN;
+    const token = process.env.DISCORD_TOKEN || process.env.BOT_TOKEN || process.env.DASHBOARD_BOT_TOKEN;
 
     if (!token) {
         console.error('[Discord] Missing BOT_TOKEN / DASHBOARD_BOT_TOKEN.');

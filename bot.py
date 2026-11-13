@@ -587,7 +587,9 @@ async def on_ready():
 
 
 async def start_dummy_health_server():
-    """Starts a minimal HTTP server so Render Web Service detects an open port."""
+    """Dummy server only if no main web service (like node dashboard) is running."""
+    if os.environ.get("RUN_DUMMY_PORT") != "true":
+        return
     port_str = os.environ.get("PORT")
     if not port_str:
         return
