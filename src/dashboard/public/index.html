@@ -360,8 +360,8 @@
                     <span class="lang-en">Servers Powered by Droplet</span>
                 </span>
             </div>
-            <div class="relative overflow-hidden w-full marquee-mask">
-                <div id="guildsTicker" class="flex items-center gap-4 overflow-x-auto py-3 px-2 no-scrollbar scroll-smooth">
+            <div class="relative overflow-hidden w-full marquee-mask" dir="ltr">
+                <div id="guildsTicker" class="flex items-center gap-4 overflow-x-auto py-3 px-2 no-scrollbar scroll-smooth" dir="ltr">
                     <!-- Dynamically populated -->
                 </div>
             </div>
@@ -575,7 +575,7 @@
                                 `;
                             }).join('');
 
-                            // تشغيل تحريك تلقائي مستمر بالسكرول البرمجي بدون أي تكرار أو لخبطة في الـ CSS
+                            // تشغيل تحريك تلقائي مستمر بالسكرول البرمجي بدون أي تكرار أو لخبطة
                             let scrollSpeed = 1;
                             let isPaused = false;
                             ticker.addEventListener('mouseenter', () => { isPaused = true; });
@@ -583,18 +583,17 @@
                             ticker.addEventListener('touchstart', () => { isPaused = true; }, { passive: true });
                             ticker.addEventListener('touchend', () => { isPaused = false; }, { passive: true });
 
-                            if (!window._guildsTickerInterval) {
-                                window._guildsTickerInterval = setInterval(() => {
-                                    if (isPaused) return;
-                                    ticker.scrollLeft += scrollSpeed;
-                                    // إذا وصل للنهاية يعكس الاتجاه أو يرجع بسلاسة
-                                    if (Math.abs(ticker.scrollLeft) + ticker.clientWidth >= ticker.scrollWidth - 2) {
-                                        scrollSpeed = -1;
-                                    } else if (ticker.scrollLeft <= 0 && scrollSpeed < 0) {
-                                        scrollSpeed = 1;
-                                    }
-                                }, 30);
-                            }
+                            if (window._guildsTickerInterval) clearInterval(window._guildsTickerInterval);
+                            window._guildsTickerInterval = setInterval(() => {
+                                if (isPaused) return;
+                                ticker.scrollLeft += scrollSpeed;
+                                const maxScroll = ticker.scrollWidth - ticker.clientWidth;
+                                if (ticker.scrollLeft >= maxScroll - 2) {
+                                    scrollSpeed = -1;
+                                } else if (ticker.scrollLeft <= 2) {
+                                    scrollSpeed = 1;
+                                }
+                            }, 25);
                         }
                     }
                 })
