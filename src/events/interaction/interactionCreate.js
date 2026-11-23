@@ -86,6 +86,28 @@ module.exports = {
         return;
       }
 
+      // 🎙️ أزرار وقوائم الرومات الصوتية المؤقتة (Temp Voice Control Panel)
+      if (
+        (interaction.isButton() && interaction.customId.startsWith('tv_')) ||
+        (interaction.isModalSubmit() && interaction.customId.startsWith('tv_mdl_')) ||
+        (interaction.isUserSelectMenu() && interaction.customId.startsWith('tv_sel_'))
+      ) {
+        try {
+          const { handleTempVoiceInteraction, handleTempVoiceModalOrSelect } = require('../../utils/tempVoiceManager');
+          if (interaction.isButton()) {
+            await handleTempVoiceInteraction(interaction);
+          } else {
+            await handleTempVoiceModalOrSelect(interaction);
+          }
+        } catch (e) {
+          logger.error('خطأ في معالجة لوحة الروم الصوتي المؤقت:', e);
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: '❌ حدث خطأ أثناء معالجة الطلب.', flags: 64 }).catch(() => {});
+          }
+        }
+        return;
+      }
+
       // 2.0 زر فحص رصيد المحفظة (Shop / Wallet Balance Button)
       if (interaction.isButton() && interaction.customId === 'shop_balance') {
         const guildId = interaction.guild.id;

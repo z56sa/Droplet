@@ -97,6 +97,17 @@ module.exports = {
           db.createTempVoice(tempVoiceChannel.id, guild.id, member.id);
         }
 
+        // إرسال لوحة التحكم التفاعلية للروم الصوتي
+        if (!_tempReused) {
+          try {
+            const { buildTempVoicePanel } = require('../../utils/tempVoiceManager');
+            const panelData = buildTempVoicePanel(tempVoiceChannel.id, member.id);
+            await tempVoiceChannel.send(panelData).catch(() => {});
+          } catch (e) {
+            console.error('فشل إرسال لوحة تحكم الروم الصوتي المؤقت:', e.message);
+          }
+        }
+
         // نقل العضو فوراً إلى الروم الصوتي الجديد
         await member.voice.setChannel(tempVoiceChannel).catch(err => {
           console.error('فشل في نقل العضو للروم المؤقت (تأكد من صلاحية Move Members للبوت):', err);
