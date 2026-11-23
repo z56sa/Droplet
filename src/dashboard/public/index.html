@@ -226,6 +226,25 @@
             setTimeout(function(){ location.reload(); }, 50);
         }
     </script>
+
+    <style>
+        @keyframes dropletMarquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-droplet-marquee {
+            display: flex;
+            width: max-content;
+            animation: dropletMarquee 28s linear infinite;
+        }
+        .animate-droplet-marquee:hover {
+            animation-play-state: paused;
+        }
+        .marquee-mask {
+            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+        }
+    </style>
 </head>
 
 <body class="min-h-screen flex flex-col justify-between bg-[#050a16] purple-glow-bg" data-droplet-manual-lang="1">
@@ -353,8 +372,10 @@
                     <span class="lang-en">Servers Powered by Droplet</span>
                 </span>
             </div>
-            <div id="guildsTicker" class="flex items-center gap-4 overflow-x-auto py-3 px-2 no-scrollbar scroll-smooth">
-                <!-- Dynamically populated -->
+            <div class="relative overflow-hidden w-full marquee-mask py-2">
+                <div id="guildsTicker" class="animate-droplet-marquee flex items-center gap-4">
+                    <!-- Dynamically populated -->
+                </div>
             </div>
         </div>
 
@@ -545,17 +566,19 @@
                     }
                     if (data && data.guilds && Array.isArray(data.guilds)) {
                         const ticker = document.getElementById('guildsTicker');
-                        if (ticker) {
-                            ticker.innerHTML = data.guilds.map(g => {
+                        if (ticker && data.guilds.length > 0) {
+                            // تكرار السيرفرات مرتين لعمل شريط حركة لانهائي بدون توقف (Seamless Infinite Loop)
+                            const list = [...data.guilds, ...data.guilds];
+                            ticker.innerHTML = list.map(g => {
                                 const initial = g.name ? g.name.charAt(0).toUpperCase() : '?';
                                 const iconHtml = g.icon 
                                     ? `<img src="${g.icon}" class="w-10 h-10 rounded-2xl object-cover ring-2 ring-blue-500/30 shadow-md flex-shrink-0" alt="${g.name}">`
                                     : `<div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black flex items-center justify-center text-sm shadow-md flex-shrink-0 ring-2 ring-blue-500/30">${initial}</div>`;
                                 return `
-                                    <div class="flex items-center gap-3 bg-[#0b1526]/80 backdrop-blur-md border border-blue-500/20 hover:border-blue-400/50 hover:bg-[#0f1d36] px-4 py-2.5 rounded-2xl flex-shrink-0 transition shadow-lg group cursor-default">
+                                    <div class="flex items-center gap-3 bg-[#0b1526]/90 backdrop-blur-md border border-blue-500/20 hover:border-blue-400/60 hover:bg-[#0f1d36] px-4 py-2.5 rounded-2xl flex-shrink-0 transition shadow-lg group cursor-default">
                                         ${iconHtml}
                                         <div class="text-right">
-                                            <div class="text-xs font-bold text-white group-hover:text-blue-300 transition truncate max-w-[140px]">${g.name}</div>
+                                            <div class="text-xs font-bold text-white group-hover:text-blue-300 transition truncate max-w-[150px]">${g.name}</div>
                                             <div class="text-[10px] text-gray-400 font-mono flex items-center gap-1 justify-end">
                                                 <span>${g.memberCount.toLocaleString()}</span>
                                                 <span>عضو 👥</span>
