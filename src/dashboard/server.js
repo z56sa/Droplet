@@ -2865,6 +2865,7 @@ ${_cards || '<p style="color:#64748b;text-align:center;padding:34px;">لا تو�
 
             const guildTextChannels = botGuild ? Array.from(botGuild.channels.cache.values()).filter(c => c.type === 0 || c.type === 5) : [];
             const guildVoiceChannels = botGuild ? Array.from(botGuild.channels.cache.values()).filter(c => c.type === 2) : [];
+            const guildCategories = botGuild ? Array.from(botGuild.channels.cache.values()).filter(c => c.type === 4) : [];
             const guildRoles = botGuild ? Array.from(botGuild.roles.cache.values()).filter(r => r.name !== '@everyone') : [];
 
             function renderChannelSelect(inputName, selectedId, isMulti = false) {
@@ -2872,6 +2873,24 @@ ${_cards || '<p style="color:#64748b;text-align:center;padding:34px;">لا تو�
                     <select name="${inputName}" id="${inputName}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right cursor-pointer">
                         <option value="">...اختر القناة</option>
                         ${guildTextChannels.map(c => `<option value="${c.id}" ${String(selectedId).includes(String(c.id)) ? 'selected' : ''}># ${escHtml(c.name)}</option>`).join('')}
+                    </select>
+                `;
+            }
+
+            function renderVoiceChannelSelect(inputName, selectedId) {
+                return `
+                    <select name="${inputName}" id="${inputName}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right cursor-pointer">
+                        <option value="">...اختر الروم الصوتي</option>
+                        ${guildVoiceChannels.map(c => `<option value="${c.id}" ${String(selectedId) === String(c.id) ? 'selected' : ''}>🔊 ${escHtml(c.name)}</option>`).join('')}
+                    </select>
+                `;
+            }
+
+            function renderCategorySelect(inputName, selectedId) {
+                return `
+                    <select name="${inputName}" id="${inputName}" class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-3 text-xs text-white outline-none text-right cursor-pointer">
+                        <option value="">...اختر الكاتيجوري (اختياري)</option>
+                        ${guildCategories.map(c => `<option value="${c.id}" ${String(selectedId) === String(c.id) ? 'selected' : ''}>📁 ${escHtml(c.name)}</option>`).join('')}
                     </select>
                 `;
             }
@@ -8915,11 +8934,11 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">روم الدخول الرئيسي (Join-to-Create Channel)</label>
-                                    ${renderChannelSelect('temp_voice_channel', settings.temp_voice_channel || '')}
+                                    ${renderVoiceChannelSelect('temp_voice_channel', settings.temp_voice_channel || '')}
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-gray-300 mb-2">قسم الرومات المنشأة (Category ID)</label>
-                                    <input type="text" name="temp_voice_category" value="${escHtml(settings.temp_voice_category || '')}" placeholder="آيدي الكاتيجوري الذي ستنشأ تحته الرومات..." class="w-full bg-[#070d1d] border border-blue-500/20 focus:border-blue-400 rounded-xl px-4 py-2.5 text-xs text-white outline-none font-mono text-right">
+                                    ${renderCategorySelect('temp_voice_category', settings.temp_voice_category || '')}
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -12675,7 +12694,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 sm:pb-6 mb-6 border-b border-blue-500/20${section === 'logs' ? ' hidden' : ''}">
                                 <div class="flex items-center gap-3 order-2 sm:order-1">
                                     <label class="toggle"><input id="masterToggle" data-modkey="${(function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})()}" type="checkbox" onchange="toggleModule('${guildId}', (function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};return _m[section]||(section+'_enabled');})(), this.checked, this)" ${(function(){var _m={general:'general_enabled',commands:'general_enabled',levels:'leveling_enabled',tempvoice:'temp_voice_enabled',boost:'boost_msg_enabled',protection:'anti_nuke_enabled','staff-activity':'staff_activity_enabled','protection-logs':'security_logs_enabled'};var _k=_m[section]||(section+'_enabled');var _v=settings[_k];if(_k==='general_enabled'){return (String(_v)==='0'||String(_v)==='false')?'':'checked';}if(_v===undefined||_v===null||_v==='')return '';var _s=String(_v).toLowerCase();if(_s==='0'||_s==='false')return '';return _v!==0?'checked':'';})()}><span class="slider"></span></label>
-                                    <button type="button" id="topSaveBtn" onclick="try{if(window.saveWhitelistExplicit){window.saveWhitelistExplicit();}else if(window.saveCommandsExplicit){window.saveCommandsExplicit();}else if(window.submitSettingsForm){submitSettingsForm(document.getElementById('settingsForm'));}else{alert('⚠️ سكربت الحفظ غير متاح');}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}" class="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-900/30 flex items-center gap-2 cursor-pointer">
+                                    <button type="button" id="topSaveBtn" onclick="try{if(window.saveWhitelistExplicit){window.saveWhitelistExplicit();}else if(window.saveCommandsExplicit){window.saveCommandsExplicit();}else{var _sf=document.getElementById('settingsForm');if(window.submitSettingsForm&&_sf){window.submitSettingsForm(_sf);}else if(_sf){_sf.requestSubmit?_sf.requestSubmit():_sf.submit();}else{alert('⚠️ لم يتم العثور على النموذج');}}}catch(err){alert('❌ خطأ الحفظ: '+(err&&err.message||err));}" class="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-900/30 flex items-center gap-2 cursor-pointer">
                                         <span>💾</span>
                                         <span>حفظ التغييرات</span>
                                     </button>
