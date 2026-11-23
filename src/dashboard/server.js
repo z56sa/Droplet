@@ -8916,7 +8916,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="text-xs text-white font-bold mt-1">الرومات المؤقتة النشطة حالياً</div>
                             </div>
                             <div class="bg-[#0b1322] border border-blue-500/20 p-4 rounded-2xl text-center">
-                                <div class="text-2xl font-black ${(Number(settings.temp_voice_enabled) === 1 && settings.temp_voice_channel) ? 'text-emerald-400' : 'text-gray-400'} font-mono">${(Number(settings.temp_voice_enabled) === 1 && settings.temp_voice_channel) ? 'مفعل ✓' : ((Number(settings.temp_voice_enabled) === 1) ? 'بانتظار الروم' : 'معطل ✕')}</div>
+                                <div id="tempVoiceStatusText" class="text-2xl font-black ${(Number(settings.temp_voice_enabled) === 1 && settings.temp_voice_channel) ? 'text-emerald-400' : 'text-gray-400'} font-mono">${(Number(settings.temp_voice_enabled) === 1 && settings.temp_voice_channel) ? 'مفعل ✓' : ((Number(settings.temp_voice_enabled) === 1) ? 'بانتظار الروم' : 'معطل ✕')}</div>
                                 <div class="text-xs text-white font-bold mt-1">حالة روم الإنشاء (Join-to-Create)</div>
                             </div>
                             <div class="bg-[#0b1322] border border-blue-500/20 p-4 rounded-2xl text-center">
@@ -8953,7 +8953,37 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                             </div>
                         </div>
 
-                        <!-- Active Temp Channels Table -->
+                        <script>
+function updateTempVoiceStatusUI() {
+    var mt = document.getElementById('masterToggle');
+    var it = document.getElementById('innerTempVoiceToggle');
+    var isChecked = (mt && mt.checked) || (it && it.checked);
+    var chSelect = document.getElementById('temp_voice_channel');
+    var hasChannel = chSelect && chSelect.value && chSelect.value.trim() !== '';
+    var st = document.getElementById('tempVoiceStatusText');
+    if (st) {
+        if (isChecked && hasChannel) {
+            st.textContent = 'مفعل ✓';
+            st.className = 'text-2xl font-black text-emerald-400 font-mono';
+        } else if (isChecked && !hasChannel) {
+            st.textContent = 'بانتظار الروم';
+            st.className = 'text-2xl font-black text-amber-400 font-mono';
+        } else {
+            st.textContent = 'معطل ✕';
+            st.className = 'text-2xl font-black text-gray-400 font-mono';
+        }
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    var mt = document.getElementById('masterToggle');
+    var it = document.getElementById('innerTempVoiceToggle');
+    var ch = document.getElementById('temp_voice_channel');
+    if (mt) mt.addEventListener('change', function() { if (it) it.checked = this.checked; updateTempVoiceStatusUI(); });
+    if (it) it.addEventListener('change', function() { if (mt) mt.checked = this.checked; updateTempVoiceStatusUI(); });
+    if (ch) ch.addEventListener('change', updateTempVoiceStatusUI);
+});
+</script>
+<!-- Active Temp Channels Table -->
                         <div class="bg-[#0b1322] border border-blue-500/20 p-6 rounded-3xl space-y-3 shadow-xl">
                             <h4 class="text-sm font-black text-white flex items-center justify-between pb-3 border-b border-blue-500/20">
                                 <span class="text-xs text-blue-400 font-bold">${activeTempVoices.length} روم نشط</span>
