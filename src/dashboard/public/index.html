@@ -232,14 +232,21 @@
             mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
             -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
         }
-        @keyframes floatMarquee {
+        @keyframes floatMarqueeLtr {
             0% { transform: translate3d(0, 0, 0); }
             100% { transform: translate3d(-50%, 0, 0); }
+        }
+        @keyframes floatMarqueeRtl {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(50%, 0, 0); }
         }
         .animate-float-marquee {
             display: flex;
             width: max-content;
-            animation: floatMarquee 25s linear infinite;
+            animation: floatMarqueeLtr 30s linear infinite;
+        }
+        html[dir="rtl"] .animate-float-marquee {
+            animation: floatMarqueeRtl 30s linear infinite;
         }
         .animate-float-marquee:hover {
             animation-play-state: paused;
@@ -567,8 +574,8 @@
                     if (data && data.guilds && Array.isArray(data.guilds)) {
                         const ticker = document.getElementById('guildsTicker');
                         if (ticker && data.guilds.length > 0) {
-                            // تكرار القائمة مرتين لتحقيق حركة مستمرة 100% دون فواصل
-                            const list = [...data.guilds, ...data.guilds];
+                            // تكرار القائمة 4 مرات لتحقيق حركة دوران مستمرة لا نهائية تماماً بدون أي فراغ
+                            const list = [...data.guilds, ...data.guilds, ...data.guilds, ...data.guilds];
                             ticker.innerHTML = list.map(g => {
                                 const initial = g.name ? g.name.charAt(0).toUpperCase() : '?';
                                 const iconHtml = g.icon 
