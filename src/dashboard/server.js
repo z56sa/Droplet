@@ -8899,7 +8899,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                     <div class="space-y-6 text-right" dir="rtl">
                         <!-- Header Banner -->
                         <div class="bg-gradient-to-r from-[#0a1430] via-[#0b1322] to-[#0a1430] border border-blue-500/20 p-6 rounded-3xl flex items-center justify-between shadow-2xl">
-                            <label class="toggle"><input type="checkbox" name="temp_voice_enabled" value="1" ${Number(settings.temp_voice_enabled) === 1 ? 'checked' : ''}><span class="slider"></span></label>
+                            <label class="toggle"><input type="checkbox" name="temp_voice_enabled" value="1" id="innerTempVoiceToggle" onchange="var mt = document.getElementById('masterToggle'); if(mt){ mt.checked = this.checked; toggleModule('${guildId}', 'temp_voice_enabled', this.checked, mt); }" ${Number(settings.temp_voice_enabled) === 1 ? 'checked' : ''}><span class="slider"></span></label>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
                                     <h4 class="font-black text-white text-xl flex items-center gap-2 justify-end"><span>الرومات الصوتية المؤقتة (Temp Voice)</span><span>🎙️</span></h4>
@@ -8916,7 +8916,7 @@ formFieldsHtml = `                    <div class="space-y-6 text-right" dir="rtl
                                 <div class="text-xs text-white font-bold mt-1">الرومات المؤقتة النشطة حالياً</div>
                             </div>
                             <div class="bg-[#0b1322] border border-blue-500/20 p-4 rounded-2xl text-center">
-                                <div class="text-2xl font-black text-emerald-400 font-mono">${settings.temp_voice_channel ? 'مفعل ✓' : 'غير معطى'}</div>
+                                <div class="text-2xl font-black ${(Number(settings.temp_voice_enabled) === 1 && settings.temp_voice_channel) ? 'text-emerald-400' : 'text-gray-400'} font-mono">${(Number(settings.temp_voice_enabled) === 1 && settings.temp_voice_channel) ? 'مفعل ✓' : ((Number(settings.temp_voice_enabled) === 1) ? 'بانتظار الروم' : 'معطل ✕')}</div>
                                 <div class="text-xs text-white font-bold mt-1">حالة روم الإنشاء (Join-to-Create)</div>
                             </div>
                             <div class="bg-[#0b1322] border border-blue-500/20 p-4 rounded-2xl text-center">
