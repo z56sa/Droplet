@@ -11,28 +11,226 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        @keyframes dropletMarqueeLtr {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
+        * { box-sizing: border-box; }
+        body {
+            background-color: #040714 !important;
+            color: #ffffff !important;
+            font-family: 'Cairo', sans-serif !important;
+            margin: 0;
+            padding: 0;
         }
-        @keyframes dropletMarqueeRtl {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(50%); }
+        html[lang="en"] body, html.droplet-lang-en body {
+            font-family: 'Cairo', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+            letter-spacing: -0.01em;
         }
-        .animate-droplet-marquee {
-            display: flex;
-            width: max-content;
-            animation: dropletMarqueeLtr 35s linear infinite;
+        html[lang="en"] h1, html.droplet-lang-en h1,
+        html[lang="en"] h2, html.droplet-lang-en h2,
+        html[lang="en"] h3, html.droplet-lang-en h3,
+        html[lang="en"] h4, html.droplet-lang-en h4 {
+            font-family: 'Cairo', 'Segoe UI', 'Poppins', system-ui, sans-serif !important;
         }
-        html[dir="rtl"] .animate-droplet-marquee {
-            animation: dropletMarqueeRtl 35s linear infinite;
+        html[dir="rtl"] * { direction: rtl; }
+        html[dir="ltr"] * { direction: ltr; }
+        html[dir="rtl"] main, html[dir="rtl"] section, html[dir="rtl"] #features {
+            text-align: center;
         }
-        .animate-droplet-marquee:hover {
-            animation-play-state: paused;
+        html[dir="rtl"] #features {
+            text-align: right !important;
         }
+        html[dir="ltr"] #features {
+            text-align: left !important;
+        }
+        .purple-glow-bg {
+            background: radial-gradient(circle at 50% 20%, rgba(168, 85, 247, 0.16), transparent 65%);
+        }
+        .droplet-badge {
+            background: rgba(192, 132, 252, 0.08);
+            border: 1px solid rgba(192, 132, 252, 0.3);
+            color: #c084fc;
+        }
+        body.light-mode .droplet-badge { color: #0284c7 !important; background: rgba(2, 132, 199, 0.1) !important; }
+        .droplet-btn-primary {
+            background: linear-gradient(135deg, #a855f7 0%, #2563eb 100%);
+            color: #ffffff;
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            box-shadow: 0 4px 14px rgba(168, 85, 247, 0.35);
+            transition: all 0.2s ease;
+        }
+        .droplet-btn-primary:hover {
+            background: linear-gradient(135deg, #c084fc 0%, #3b82f6 100%);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+            transform: translateY(-2px);
+        }
+        .droplet-btn-secondary {
+            background-color: #091124;
+            border: 1px solid rgba(192, 132, 252, 0.25);
+            color: #ffffff;
+            transition: all 0.25s ease;
+        }
+        .droplet-btn-secondary:hover {
+            background-color: #0d1733;
+            border-color: rgba(37, 99, 235, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        /* ===== Bilingual system: show/hide based on html[lang] =====
+           RULES ARE: 
+           .lang-ar / .lang-en     = inline text (span inside a parent)
+           .lang-ar-block / .lang-en-block = block-level content (full row)
+        */
+        .lang-ar       { display: inline; }
+        .lang-en       { display: none; }
+        .lang-ar-block { display: block; }
+        .lang-en-block { display: none; }
+
+        html[lang="ar"] .lang-ar        { display: inline !important; }
+        html[lang="ar"] .lang-en        { display: none   !important; }
+        html[lang="ar"] .lang-ar-block  { display: block  !important; }
+        html[lang="ar"] .lang-en-block  { display: none   !important; }
+
+        html[lang="en"] .lang-ar        { display: none   !important; }
+        html[lang="en"] .lang-en        { display: inline !important; }
+        html[lang="en"] .lang-ar-block  { display: none   !important; }
+        html[lang="en"] .lang-en-block  { display: block  !important; }
+
+        /* Compatibility with droplet-lang-* class names on <html> */
+        html.droplet-lang-ar .lang-ar        { display: inline !important; }
+        html.droplet-lang-ar .lang-en        { display: none   !important; }
+        html.droplet-lang-ar .lang-ar-block  { display: block  !important; }
+        html.droplet-lang-ar .lang-en-block  { display: none   !important; }
+        html.droplet-lang-en .lang-ar        { display: none   !important; }
+        html.droplet-lang-en .lang-en        { display: inline !important; }
+        html.droplet-lang-en .lang-ar-block  { display: none   !important; }
+        html.droplet-lang-en .lang-en-block  { display: block  !important; }
+
+        /* Inline-level elements: always inline when active */
+        html[lang="ar"] h1 .lang-ar, html[lang="ar"] h2 .lang-ar, html[lang="ar"] h3 .lang-ar, html[lang="ar"] h4 .lang-ar, html[lang="ar"] p .lang-ar, html[lang="ar"] a .lang-ar, html[lang="ar"] button .lang-ar, html[lang="ar"] span .lang-ar,
+        html.droplet-lang-ar h1 .lang-ar, html.droplet-lang-ar h2 .lang-ar, html.droplet-lang-ar h3 .lang-ar, html.droplet-lang-ar h4 .lang-ar, html.droplet-lang-ar p .lang-ar, html.droplet-lang-ar a .lang-ar, html.droplet-lang-ar button .lang-ar, html.droplet-lang-ar span .lang-ar {
+            display: inline !important;
+        }
+        html[lang="ar"] .lang-en, html.droplet-lang-ar .lang-en {
+            display: none !important;
+        }
+        html[lang="en"] h1 .lang-en, html[lang="en"] h2 .lang-en, html[lang="en"] h3 .lang-en, html[lang="en"] h4 .lang-en, html[lang="en"] p .lang-en, html[lang="en"] a .lang-en, html[lang="en"] button .lang-en, html[lang="en"] span .lang-en,
+        html.droplet-lang-en h1 .lang-en, html.droplet-lang-en h2 .lang-en, html.droplet-lang-en h3 .lang-en, html.droplet-lang-en h4 .lang-en, html.droplet-lang-en p .lang-en, html.droplet-lang-en a .lang-en, html.droplet-lang-en button .lang-en, html.droplet-lang-en span .lang-en {
+            display: inline !important;
+        }
+        html[lang="en"] .lang-ar, html.droplet-lang-en .lang-ar {
+            display: none !important;
+        }
+
+        /* ===== Force layout stability for Hero & Stats ===== */
+        main {
+            width: 100% !important;
+            max-width: 1100px !important;
+            padding-bottom: 4rem !important;
+        }
+        main > .droplet-badge { margin-bottom: 2.5rem !important; }
+        main > h1 { margin-bottom: 2.5rem !important; line-height: 1.15 !important; white-space: normal !important; word-break: normal !important; }
+        main > p { margin-bottom: 3rem !important; }
+        main > .flex.flex-wrap { margin-bottom: 3.5rem !important; }
+        main > .grid.grid-cols-3 { margin-bottom: 5rem !important; }
+        #features {
+            padding-top: 3rem !important;
+            margin-top: 3rem !important;
+            border-top: 1px solid rgba(96, 165, 250, 0.18);
+        }
+        #features > div {
+            margin-bottom: 3rem !important;
+        }
+        #features > .grid {
+            width: 100% !important;
+        }
+
+        html[dir="ltr"] #features .md\:col-span-3,
+        html[dir="ltr"] #features [dir="rtl"] {
+            direction: ltr !important;
+            text-align: left !important;
+        }
+        html[dir="ltr"] #features [class*="justify-end"] { justify-content: flex-start !important; }
+        html[dir="ltr"] #features .flex-row-reverse { flex-direction: row !important; }
+        html[dir="rtl"] #features .flex-row-reverse { flex-direction: row-reverse !important; }
+
+        /* Ensure lang-en line-breaks inside headings match Arabic structure */
+        h1 br, h2 br, h3 br { display: inline !important; }
+
+        /* Fix droplet-lang-en class inconsistencies with inline stylesheet */
+        html.droplet-lang-en main,
+        html[lang="en"] main {
+            direction: ltr !important;
+            text-align: center !important;
+        }
+        html.droplet-lang-ar main,
+        html[lang="ar"] main {
+            direction: rtl !important;
+            text-align: center !important;
+        }
+
+        /* Prevent card stacking overlap on top of stats */
+        .grid.grid-cols-1.md\:grid-cols-3 > div { min-height: 190px; }
+
+        /* ===== Ensure all links/buttons are always clickable ===== */
+        html { scroll-behavior: smooth; }
+        a, button {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            position: relative;
+            z-index: 1;
+        }
+        a.droplet-btn-primary, a.droplet-btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none !important;
+        }
+    /* Droplet glow theme */ button[class*=bg-blue-], a[class*=bg-blue-] { box-shadow: 0 0 20px rgba(168, 85, 247, .6), 0 0 55px rgba(59, 130, 246, .4); transition: box-shadow .25s ease; } button[class*=bg-blue-]:hover, a[class*=bg-blue-]:hover { box-shadow: 0 0 30px rgba(192, 132, 252, .8), 0 0 85px rgba(59, 130, 246, .5); } input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 2px rgba(147, 197, 253, .35), 0 0 22px rgba(147, 197, 253, .25); }/* Droplet blue text glow */ [class*="text-blue-100"], [class*="text-blue-200"], [class*="text-blue-300"] { text-shadow: 0 0 12px rgba(147, 197, 253, .4); }/* Droplet ambient background glow */ body::before { content:""; position:fixed; inset:0; pointer-events:none; background: radial-gradient(600px 300px at 85% -5%, rgba(59,130,246,.18), transparent 70%), radial-gradient(700px 350px at 10% 110%, rgba(59,130,246,.14), transparent 70%), radial-gradient(520px 260px at 12% 6%, rgba(168,85,247,.2), transparent 70%); }/* Droplet blended headings */ h1[class*="text-white"]:not([style]), h2[class*="text-white"]:not([style]) { background:linear-gradient(90deg,#c084fc,#60a5fa); -webkit-background-clip:text; background-clip:text; color:transparent !important; }</style>
+
+    <script>
+        /* ===== Apply saved lang on page load BEFORE body parsed ===== */
+        (function applySavedDropletLang() {
+            var saved = null;
+            try { saved = localStorage.getItem('droplet_dashboard_lang') || localStorage.getItem('droplet_lang'); } catch(e){}
+            if (!saved) {
+                var cook = document.cookie.match(/droplet_dashboard_lang=([^;]+)/);
+                saved = cook ? cook[1] : null;
+            }
+            var lang = (saved === 'en' || saved === 'ar') ? saved : null;
+            if (!lang) {
+                try {
+                    var nav = navigator.language || navigator.userLanguage || '';
+                    lang = nav.toLowerCase().startsWith('ar') ? 'ar' : 'en';
+                } catch(e){ lang = 'en'; }
+            }
+            document.documentElement.setAttribute('lang', lang);
+            document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+            document.documentElement.classList.toggle('droplet-lang-en', lang === 'en');
+            document.documentElement.classList.toggle('droplet-lang-ar', lang === 'ar');
+        })();
+
+        /* ===== Global lang toggle: switch attr + persist + reload (guarantees clean render) ===== */
+        function toggleDropletLang() {
+            var current = document.documentElement.getAttribute('lang') || 'ar';
+            var next = current === 'ar' ? 'en' : 'ar';
+            try {
+                localStorage.setItem('droplet_dashboard_lang', next);
+                localStorage.setItem('droplet_lang', next);
+            } catch(e){}
+            document.cookie = 'droplet_dashboard_lang=' + next + ';path=/;max-age=31536000;SameSite=Lax';
+            document.documentElement.setAttribute('lang', next);
+            document.documentElement.setAttribute('dir', next === 'ar' ? 'rtl' : 'ltr');
+            document.documentElement.classList.toggle('droplet-lang-en', next === 'en');
+            document.documentElement.classList.toggle('droplet-lang-ar', next === 'ar');
+            // Force clean re-render to avoid any CSS/DOM glitches
+            setTimeout(function(){ location.reload(); }, 50);
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .marquee-mask {
-            mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
-            -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+            mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
         }
     </style>
 </head>
@@ -162,8 +360,8 @@
                     <span class="lang-en">Servers Powered by Droplet</span>
                 </span>
             </div>
-            <div class="relative overflow-hidden w-full marquee-mask py-2">
-                <div id="guildsTicker" class="animate-droplet-marquee flex items-center gap-4">
+            <div class="relative overflow-hidden w-full marquee-mask">
+                <div id="guildsTicker" class="flex items-center gap-4 overflow-x-auto py-3 px-2 no-scrollbar scroll-smooth">
                     <!-- Dynamically populated -->
                 </div>
             </div>
@@ -357,26 +555,46 @@
                     if (data && data.guilds && Array.isArray(data.guilds)) {
                         const ticker = document.getElementById('guildsTicker');
                         if (ticker && data.guilds.length > 0) {
-                            // تكرار السيرفرات مرتين لعمل شريط حركة لانهائي بدون توقف (Seamless Infinite Loop)
-                            const list = [...data.guilds, ...data.guilds, ...data.guilds, ...data.guilds];
-                            ticker.innerHTML = list.map(g => {
+                            ticker.innerHTML = data.guilds.map(g => {
                                 const initial = g.name ? g.name.charAt(0).toUpperCase() : '?';
                                 const iconHtml = g.icon 
                                     ? `<img src="${g.icon}" class="w-10 h-10 rounded-2xl object-cover ring-2 ring-blue-500/30 shadow-md flex-shrink-0" alt="${g.name}">`
                                     : `<div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black flex items-center justify-center text-sm shadow-md flex-shrink-0 ring-2 ring-blue-500/30">${initial}</div>`;
                                 return `
-                                    <div class="flex items-center gap-3 bg-[#0b1526]/90 backdrop-blur-md border border-blue-500/20 hover:border-blue-400/60 hover:bg-[#0f1d36] px-4 py-2.5 rounded-2xl flex-shrink-0 transition shadow-lg group cursor-default">
+                                    <div class="flex items-center gap-3 bg-[#0b1526]/80 backdrop-blur-md border border-blue-500/20 hover:border-blue-400/50 hover:bg-[#0f1d36] px-4 py-2.5 rounded-2xl flex-shrink-0 transition shadow-lg group cursor-default">
                                         ${iconHtml}
                                         <div class="text-right">
-                                            <div class="text-xs font-bold text-white group-hover:text-blue-300 transition truncate max-w-[150px]">${g.name}</div>
+                                            <div class="text-xs font-bold text-white group-hover:text-blue-300 transition truncate max-w-[140px]">${g.name}</div>
                                             <div class="text-[10px] text-gray-400 font-mono flex items-center gap-1 justify-end">
                                                 <span>${g.memberCount.toLocaleString()}</span>
-                                                <span>عضو 👥</span>
+                                                <span class="lang-ar">عضو 👥</span>
+                                                <span class="lang-en">Members 👥</span>
                                             </div>
                                         </div>
                                     </div>
                                 `;
                             }).join('');
+
+                            // تشغيل تحريك تلقائي مستمر بالسكرول البرمجي بدون أي تكرار أو لخبطة في الـ CSS
+                            let scrollSpeed = 1;
+                            let isPaused = false;
+                            ticker.addEventListener('mouseenter', () => { isPaused = true; });
+                            ticker.addEventListener('mouseleave', () => { isPaused = false; });
+                            ticker.addEventListener('touchstart', () => { isPaused = true; }, { passive: true });
+                            ticker.addEventListener('touchend', () => { isPaused = false; }, { passive: true });
+
+                            if (!window._guildsTickerInterval) {
+                                window._guildsTickerInterval = setInterval(() => {
+                                    if (isPaused) return;
+                                    ticker.scrollLeft += scrollSpeed;
+                                    // إذا وصل للنهاية يعكس الاتجاه أو يرجع بسلاسة
+                                    if (Math.abs(ticker.scrollLeft) + ticker.clientWidth >= ticker.scrollWidth - 2) {
+                                        scrollSpeed = -1;
+                                    } else if (ticker.scrollLeft <= 0 && scrollSpeed < 0) {
+                                        scrollSpeed = 1;
+                                    }
+                                }, 30);
+                            }
                         }
                     }
                 })
