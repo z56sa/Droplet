@@ -232,6 +232,18 @@
             mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
             -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
         }
+        @keyframes floatMarquee {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-50%, 0, 0); }
+        }
+        .animate-float-marquee {
+            display: flex;
+            width: max-content;
+            animation: floatMarquee 25s linear infinite;
+        }
+        .animate-float-marquee:hover {
+            animation-play-state: paused;
+        }
     </style>
 </head>
 
@@ -360,8 +372,8 @@
                     <span class="lang-en">Servers Powered by Droplet</span>
                 </span>
             </div>
-            <div class="relative overflow-hidden w-full marquee-mask" dir="ltr">
-                <div id="guildsTicker" class="flex items-center gap-4 overflow-x-auto py-3 px-2 no-scrollbar scroll-smooth" dir="ltr">
+            <div class="relative overflow-hidden w-full marquee-mask">
+                <div id="guildsTicker" class="animate-float-marquee flex items-center gap-4 py-2">
                     <!-- Dynamically populated -->
                 </div>
             </div>
@@ -555,7 +567,9 @@
                     if (data && data.guilds && Array.isArray(data.guilds)) {
                         const ticker = document.getElementById('guildsTicker');
                         if (ticker && data.guilds.length > 0) {
-                            ticker.innerHTML = data.guilds.map(g => {
+                            // تكرار القائمة مرتين لتحقيق حركة مستمرة 100% دون فواصل
+                            const list = [...data.guilds, ...data.guilds];
+                            ticker.innerHTML = list.map(g => {
                                 const initial = g.name ? g.name.charAt(0).toUpperCase() : '?';
                                 const iconHtml = g.icon 
                                     ? `<img src="${g.icon}" class="w-10 h-10 rounded-2xl object-cover ring-2 ring-blue-500/30 shadow-md flex-shrink-0" alt="${g.name}">`
@@ -574,35 +588,6 @@
                                     </div>
                                 `;
                             }).join('');
-
-                            // تشغيل تحريك تلقائي حقيقي يدعم RTL و LTR في كل المتصفحات
-                            let step = 1;
-                            let isPaused = false;
-                            ticker.addEventListener('mouseenter', () => { isPaused = true; });
-                            ticker.addEventListener('mouseleave', () => { isPaused = false; });
-                            ticker.addEventListener('touchstart', () => { isPaused = true; }, { passive: true });
-                            ticker.addEventListener('touchend', () => { isPaused = false; }, { passive: true });
-
-                            if (window._guildsTickerInterval) clearInterval(window._guildsTickerInterval);
-                            window._guildsTickerInterval = setInterval(() => {
-                                if (isPaused) return;
-                                const isRtl = document.documentElement.getAttribute('dir') === 'rtl';
-                                const maxScroll = ticker.scrollWidth - ticker.clientWidth;
-                                if (maxScroll <= 0) return;
-
-                                if (isRtl) {
-                                    // المتصفحات تتعامل مع RTL كقيم سالبة أو موجبة عكسية
-                                    ticker.scrollBy({ left: -step });
-                                    if (Math.abs(ticker.scrollLeft) >= maxScroll - 2) {
-                                        ticker.scrollLeft = 0;
-                                    }
-                                } else {
-                                    ticker.scrollLeft += step;
-                                    if (ticker.scrollLeft >= maxScroll - 2) {
-                                        ticker.scrollLeft = 0;
-                                    }
-                                }
-                            }, 30);
                         }
                     }
                 })

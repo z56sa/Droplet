@@ -246,6 +246,11 @@ module.exports = function (app, client) {
             const guildsList = [];
             if (client?.guilds?.cache) {
                 client.guilds.cache.forEach(g => {
+                    // استبعاد سيرفر الدعم أو سيرفر البوت الخاص
+                    const gName = (g.name || '').toLowerCase();
+                    if (gName.includes('droplet') || gName.includes('support') || g.id === '1558818246944227418' || g.id === process.env.GUILD_ID) {
+                        return;
+                    }
                     const iconUrl = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=128` : null;
                     guildsList.push({
                         id: g.id,
