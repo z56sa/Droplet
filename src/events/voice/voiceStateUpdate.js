@@ -58,8 +58,13 @@ module.exports = {
     if (isEnabled(settings.temp_voice_enabled, false) && settings.temp_voice_channel && newState.channelId === settings.temp_voice_channel) {
       try {
         const categoryId = settings.temp_voice_category || newState.channel?.parentId;
-        const tpl = String(settings.temp_voice_name_template || '🔊 | {user}').slice(0, 90) || '🔊 | {user}';
-        const chName = tpl.replace(/\{user\}|\[user\]/gi, member.user.username).replace(/\{name\}|\[name\]/gi, member.displayName || member.user.username);
+        const tpl = String(settings.temp_voice_name_template || '🔊 | {name}').slice(0, 90) || '🔊 | {name}';
+        const memberName = member.displayName || member.user.globalName || member.user.username;
+        const chName = tpl
+          .replace(/\{username\}|\[username\]/gi, member.user.username)
+          .replace(/\{user\}|\[user\]/gi, memberName)
+          .replace(/\{name\}|\[name\]/gi, memberName)
+          .replace(/\{tag\}|\[tag\]/gi, member.user.tag);
         const userLimit = Math.max(0, Math.min(99, parseInt(settings.temp_voice_user_limit) || 0));
         // 🔁 منع تكرار الروم المؤقت: لو العضو عنده روم مؤقت شغّال (فيه أعضاء) بنفس السيرفر ننقله إليه
         // بدل ما نبلش روم جديد كل ضغطة على روم الانتظار (يحرق كوتا القنوات)
