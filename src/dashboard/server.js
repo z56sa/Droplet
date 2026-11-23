@@ -243,6 +243,20 @@ module.exports = function (app, client) {
                 });
             }
 
+            const guildsList = [];
+            if (client?.guilds?.cache) {
+                client.guilds.cache.forEach(g => {
+                    const iconUrl = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=128` : null;
+                    guildsList.push({
+                        id: g.id,
+                        name: g.name,
+                        icon: iconUrl,
+                        memberCount: g.memberCount || 0
+                    });
+                });
+                guildsList.sort((a, b) => b.memberCount - a.memberCount);
+            }
+
             res.json({
                 id: botUser?.id || config.clientId,
                 username: botUser?.username || config.botName || 'Droplet',
@@ -251,7 +265,8 @@ module.exports = function (app, client) {
                     : null,
                 guildsCount,
                 ping: Math.max(0, ping),
-                usersCount: totalMembers
+                usersCount: totalMembers,
+                guilds: guildsList
             });
         } catch (err) {
             res.json({ id: config.clientId, guildsCount: 0, ping: 0, usersCount: 0 });
